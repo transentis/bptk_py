@@ -1,7 +1,5 @@
 import config.config as config
 import datetime
-import time
-
 
 def log(message):
 

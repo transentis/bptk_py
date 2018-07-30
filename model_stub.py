@@ -104,6 +104,7 @@ class simulation_model():
         for key in list(self.equations.keys()):
             self.memo[key] = {}  # DICT VON DICTS
 
+    # The model memoizes its own results. This way, we optimize performance tremendously! Make sure each equation calls: self.memoize(equation,t)
     def memoize(self, equation, arg):
         mymemo = self.memo[equation]
         if arg in mymemo.keys():
