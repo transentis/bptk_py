@@ -34,7 +34,6 @@ class visualizations():
         print("TODO")
 
 
-    def get_color_settings(self,filename="Visualizations/transentis_style.json"):
 
 
 
