@@ -9,7 +9,7 @@ import pandas as pd
 
 class visualizations():
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def visualizeMultipleScenarios(self,scenarios, equations):
+    def generatePlottableDF(self, scenarios, equations):
         scenario_names = list(scenarios.keys())
 
         ## Generate df to plot
@@ -32,4 +32,7 @@ class visualizations():
 
     def visualizeOneScenario(self,equations):
         print("TODO")
+
+
+    def get_color_settings(self):
 

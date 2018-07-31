@@ -43,7 +43,7 @@ def run_and_visualize():
     dict_equations = { "potentialCustomers" : names }
 
 
-    plot = visualize.visualizeMultipleScenarios(sce,dict_equations)
+    plot = visualize.generatePlottableDF(sce, dict_equations)
     return plot
 
 
