@@ -1,10 +1,11 @@
 
 ### IMPORTS
 from  scenario_manager.scenario_manager import scenarioManager
-from scenario_manager.Scenario import scenario
+from scenario_manager.scenario import simulation_scenario
 from simulator.model_simulator import simulator
 import glob,os
 from logger.logger import log
+from Visualizations.visualize import visualizations
 
 ## DICT THAT STORES ALL MY SCENARIOS LATER!
 sce={}
@@ -35,9 +36,15 @@ def run_simulations(scenario_path):
         sc.result = simu.start(output=["frame"],equations=sc.equationsToSimulate)
 
 
+
 run_simulations("scenarios/")
+visualize = visualizations()
+names = ["TestScenario","TestScenario_2"]
+dict_equations = { "potentialCustomers" : names }
 
 
+plot = visualize.visualizeMultipleScenarios(sce,dict_equations)
+plot.plot()
 ## Run Scenarios
 
 ## Return Results

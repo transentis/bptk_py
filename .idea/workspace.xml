@@ -3,6 +3,13 @@
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Visualizations/visualize.py" beforeDir="false" afterPath="$PROJECT_DIR$/Visualizations/visualize.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenario_manager/Scenario.py" beforeDir="false" afterPath="$PROJECT_DIR$/scenario_manager/scenario.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenario_manager/scenario_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/scenario_manager/scenario_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenarios/scenario.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/scenario.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenarios/scenario_2.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/scenario_2.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -16,8 +23,8 @@
       <file leaf-file-name="model_simulator.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="15">
-              <caret line="48" selection-start-line="48" selection-end-line="48" />
+            <state relative-caret-position="-365">
+              <caret line="50" column="8" selection-start-line="50" selection-start-column="8" selection-end-line="50" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -25,8 +32,8 @@
       <file leaf-file-name="runner.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/runner.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="525">
-              <caret line="39" selection-start-line="39" selection-end-line="39" />
+            <state relative-caret-position="663">
+              <caret line="45" selection-start-line="45" selection-end-line="45" />
               <folding>
                 <element signature="e#13#75#0" expanded="true" />
               </folding>
@@ -34,11 +41,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="visualize.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="visualize.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" selection-start-line="10" selection-end-line="10" />
+            <state relative-caret-position="390">
+              <caret line="26" column="12" selection-start-line="26" selection-start-column="12" selection-end-line="26" selection-end-column="12" />
+              <folding>
+                <element signature="e#2#19#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -48,11 +58,11 @@
           <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
-      <file leaf-file-name="model_stub.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="model_stub.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1589">
-              <caret line="111" column="48" lean-forward="true" selection-start-line="111" selection-start-column="26" selection-end-line="111" selection-end-column="48" />
+            <state relative-caret-position="-149">
+              <caret line="56" lean-forward="true" selection-start-line="56" selection-end-line="56" />
               <folding>
                 <element signature="e#0#28#0" expanded="true" />
               </folding>
@@ -60,20 +70,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="scenario_2.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
+      <file leaf-file-name="scenario.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scenario_manager/scenario.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="91" selection-start-column="91" selection-end-column="91" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Scenario.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenario_manager/Scenario.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="7" selection-start-line="7" selection-end-line="7" />
+            <state relative-caret-position="150">
+              <caret line="10" column="54" selection-start-line="10" selection-start-column="54" selection-end-line="10" selection-end-column="54" />
+              <folding>
+                <element signature="e#0#16#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -82,7 +86,16 @@
         <entry file="file://$PROJECT_DIR$/scenarios/scenario.json">
           <provider selected="true" editor-type-id="text-editor">
             <state>
-              <caret column="89" selection-start-column="89" selection-end-column="89" />
+              <caret column="64" selection-start-column="50" selection-end-column="64" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scenario_2.json" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <caret column="139" lean-forward="true" selection-start-column="139" selection-end-column="157" />
             </state>
           </provider>
         </entry>
@@ -90,8 +103,8 @@
       <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/config/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="11" column="29" selection-start-line="11" selection-start-column="29" selection-end-line="11" selection-end-column="29" />
+            <state relative-caret-position="75">
+              <caret line="5" column="13" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
             </state>
           </provider>
         </entry>
@@ -110,6 +123,7 @@
       <find>'potentialCustomersReachedThroughMarketing'</find>
       <find>'acquisitionThroughMarketing'</find>
       <find>starting sim</find>
+      <find>print</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -128,20 +142,21 @@
         <option value="$PROJECT_DIR$/simulator/simulator.py" />
         <option value="$PROJECT_DIR$/results/results_TestScenario_30_7_2018.csv" />
         <option value="$PROJECT_DIR$/scenario_manager/Scenario.py" />
-        <option value="$PROJECT_DIR$/scenario_manager/scenario_manager.py" />
-        <option value="$PROJECT_DIR$/config/config.py" />
-        <option value="$PROJECT_DIR$/scenarios/scenario.json" />
-        <option value="$PROJECT_DIR$/scenarios/scenario_2.json" />
         <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
+        <option value="$PROJECT_DIR$/bptk_api.py" />
+        <option value="$PROJECT_DIR$/scenario_manager/scenario_manager.py" />
+        <option value="$PROJECT_DIR$/scenarios/scenario_2.json" />
+        <option value="$PROJECT_DIR$/scenarios/scenario.json" />
+        <option value="$PROJECT_DIR$/scenario_manager/scenario.py" />
+        <option value="$PROJECT_DIR$/config/config.py" />
         <option value="$PROJECT_DIR$/runner.py" />
         <option value="$PROJECT_DIR$/Visualizations/visualize.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="y" value="23" />
     <option name="width" value="2560" />
-    <option name="height" value="1359" />
+    <option name="height" value="1440" />
   </component>
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -173,6 +188,11 @@
               <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
               <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
               <item name="results" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
+              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
+              <item name="scenario_manager" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
@@ -281,14 +301,34 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
+    <configuration name="visualize" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="sd_py_simulator" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Visualizations" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Visualizations/visualize.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
     <list>
       <item itemvalue="Python.simulator" />
       <item itemvalue="Python.scenario_manager" />
       <item itemvalue="Python.runner" />
+      <item itemvalue="Python.visualize" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.runner" />
+        <item itemvalue="Python.visualize" />
         <item itemvalue="Python.simulator" />
         <item itemvalue="Python.scenario_manager" />
       </list>
@@ -307,14 +347,24 @@
     </task>
     <servers />
   </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1440" height="819" extended-state="6" />
+    <frame x="0" y="23" width="2560" height="1359" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.49941927" visible="true" weight="0.25" />
-      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49941927" visible="true" weight="0.25" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.3299611" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.3299611" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3299611" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3299611" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info id="Structure" order="1" sideWeight="0.5005807" side_tool="true" weight="0.25" />
@@ -327,13 +377,76 @@
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3299611" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/runner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="525">
+          <caret line="39" selection-start-line="39" selection-end-line="39" />
+          <folding>
+            <element signature="e#13#75#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="10" selection-start-line="10" selection-end-line="10" />
+          <folding>
+            <element signature="e#2#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulator_log.csv">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="91" selection-start-column="91" selection-end-column="91" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenario_manager/scenario.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" selection-start-line="7" selection-end-line="7" />
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/scenario.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="89" selection-start-column="89" selection-end-column="89" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="29" selection-start-line="11" selection-start-column="29" selection-end-line="11" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1650">
+          <caret line="111" column="48" lean-forward="true" selection-start-line="111" selection-start-column="26" selection-end-line="111" selection-end-column="48" />
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="585">
@@ -371,7 +484,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scenario_manager/Scenario.py">
+    <entry file="file://$PROJECT_DIR$/scenario_manager/scenario.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="105">
           <caret line="7" selection-start-line="7" selection-end-line="7" />
@@ -424,46 +537,11 @@
     <entry file="file://$PROJECT_DIR$/modules.xml" />
     <entry file="file://$PROJECT_DIR$/sd_model_simulator.iml" />
     <entry file="file://$PROJECT_DIR$/scenarios/scenario_1.json" />
-    <entry file="file://$PROJECT_DIR$/scenario_manager/scenario_manager.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="19" selection-start-line="14" selection-start-column="19" selection-end-line="14" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/workspace.xml">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/scenario_manager/Scenario.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" selection-start-line="7" selection-end-line="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/config/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="29" selection-start-line="11" selection-start-column="29" selection-end-line="11" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scenarios/scenario.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="89" selection-start-column="89" selection-end-column="89" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/simulator_log.csv">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="91" selection-start-column="91" selection-end-column="91" />
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/results/results_TestScenario_2_30_7_2018.csv">
       <provider selected="true" editor-type-id="text-editor" />
@@ -475,10 +553,71 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/.name">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bptk_api.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="139" lean-forward="true" selection-start-column="139" selection-end-column="157" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenario_manager/scenario.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="10" column="54" selection-start-line="10" selection-start-column="54" selection-end-line="10" selection-end-column="54" />
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/scenario.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="64" selection-start-column="50" selection-end-column="64" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenario_manager/scenario_manager.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="24" lean-forward="true" selection-start-line="24" selection-end-line="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="5" column="13" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-149">
+          <caret line="56" lean-forward="true" selection-start-line="56" selection-end-line="56" />
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-365">
+          <caret line="50" column="8" selection-start-line="50" selection-start-column="8" selection-end-line="50" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/runner.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="525">
-          <caret line="39" selection-start-line="39" selection-end-line="39" />
+        <state relative-caret-position="663">
+          <caret line="45" selection-start-line="45" selection-end-line="45" />
           <folding>
             <element signature="e#13#75#0" expanded="true" />
           </folding>
@@ -487,24 +626,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" selection-start-line="10" selection-end-line="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="48" selection-start-line="48" selection-end-line="48" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1589">
-          <caret line="111" column="48" lean-forward="true" selection-start-line="111" selection-start-column="26" selection-end-line="111" selection-end-column="48" />
+        <state relative-caret-position="390">
+          <caret line="26" column="12" selection-start-line="26" selection-start-column="12" selection-end-line="26" selection-end-column="12" />
           <folding>
-            <element signature="e#0#28#0" expanded="true" />
+            <element signature="e#2#19#0" expanded="true" />
           </folding>
         </state>
       </provider>

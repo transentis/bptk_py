@@ -3,7 +3,7 @@ import sys
 until = 1000
 
 log_modes = ["print","logfile"]
-log_modes = ["print"]
+log_modes = []
 log_file = "simulator_log.csv"
 root = "./"
 ## Setting the recursion limit. Python is usually very conservative here. Please be careful with this setting!

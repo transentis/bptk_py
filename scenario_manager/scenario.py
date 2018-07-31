@@ -1,12 +1,18 @@
 import importlib
+from logger.logger import log
 
-class scenario():
+class simulation_scenario():
 
     def __init__(self,dictionary):
 
         #### IMPORT MODEL FROM FILE
-        mod = importlib.import_module("simulation_models."+dictionary["model"])
-        self.model = mod.simulation_model() # Import the correct lib and load the class
+        try:
+            package_link = dictionary["model"].replace("/",".")
+            mod = importlib.import_module(package_link)
+            self.model = mod.simulation_model() # Import the correct lib and load the class
+        except ModuleNotFoundError as e:
+            log("[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(str(e)))
+            exit()
 
         ####
 
