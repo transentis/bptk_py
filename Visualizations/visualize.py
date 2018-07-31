@@ -1,11 +1,4 @@
-
-
-import matplotlib
-import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-
-
 
 class visualizations():
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
@@ -24,6 +17,7 @@ class visualizations():
                     series = df[equation]
                     series.name = scenario + "_" + equation
                     plot_df[series.name] = series
+
 
         return plot_df
 

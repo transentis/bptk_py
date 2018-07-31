@@ -53,6 +53,9 @@ class simulator():
         if start == None: start = self.starttime
         if until == None: until = self.until
 
+        if len(equations) == 0:
+            log("[ERROR] {}: No equation to simulate for given model! Check your scenario config of method parameters!".format(self.name))
+            exit()
 
         ###
         self.threads = []
@@ -63,7 +66,7 @@ class simulator():
             os.makedirs(config.root + "/results/")
 
 
-        log("[INFO] Starting {}  simulations".format((until-start) * len(equations)))
+        log("[INFO] {}: Starting {} simulations".format(self.name,(until-start) * len(equations)))
 
 
         # Starting the simulations equation-wise
@@ -82,7 +85,7 @@ class simulator():
 
             ## If you supplied "csv", I will output a CSV file with all results
             if "csv" in output:
-                log("[INFO] Simulations finished. Persisting results into CSV.")
+                log("[INFO] {}: Simulations finished. Persisting results into CSV.".format(self.name))
                 self.__write_results_to_csv(self.result_frame)
 
             ## If you supplied "frame", I will generate a DataFrame. Suggestion: Always overwrite the "output" to an empty list "[]" if you do multiple simulations with modifiying constants
@@ -123,9 +126,9 @@ class simulator():
     def change_const(self,name,value):
         if name in self.mod.constants:
             self.mod.equations[name] = lambda t : value
-            log("[INFO] Changed constant {} to {}".format(name,value))
+            log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
         else:
-            log("[WARN] Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(name))
+            log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
 
 
 
