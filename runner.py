@@ -51,25 +51,32 @@ def run_simulations(scenario_names,scenario_path="scenarios/",equations=[],outpu
     return scenarios
 
 # API call to run and visualize a
-def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq="D"):
+def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,freq="D"):
     scenario_objects = run_simulations(scenario_names=scenario_names,equations=equations)
     visualize = visualizations()
     dict_equations = {}
-
-    for equation in equations:
-        if equation not in dict_equations.keys():
-            dict_equations[equation] = []
-
+    if len(equations) == 0:
         for scenario_name in scenario_objects.keys():
             if scenario_name in scenario_names:
-                sc = scenario_objects[scenario_name]
-                if equation in sc.equationsToSimulate:
+                equations = scenario_objects[scenario_name].equationsToSimulate
+                for equation in equations:
+                    if equation not in dict_equations.keys():
+                        dict_equations[equation] = []
                     dict_equations[equation] += [scenario_name]
+    else:
+        for equation in equations:
+            if equation not in dict_equations.keys():
+                dict_equations[equation] = []
 
+            for scenario_name in scenario_objects.keys():
+                if scenario_name in scenario_names:
+                    sc = scenario_objects[scenario_name]
+                    if equation in sc.equationsToSimulate:
+                        dict_equations[equation] += [scenario_name]
 
 
     df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date="1/1/2018",freq=freq)
-    df.plot(kind=kind,stacked=stacked)
+    #df.plot(kind=kind,stacked=stacked)
     return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
@@ -101,7 +108,7 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq
 # N       nanoseconds
 
 
-#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
+print(run_and_visualize(scenario_names=["TestScenario_3"], kind="bar", stacked=True,freq="B"))
 ## Run Scenarios
 
 ## Return Results
