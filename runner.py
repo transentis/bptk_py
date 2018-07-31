@@ -45,6 +45,8 @@ def run_and_visualize():
 
     plot = visualize.visualizeMultipleScenarios(sce,dict_equations)
     return plot
+
+
 ## Run Scenarios
 
 ## Return Results

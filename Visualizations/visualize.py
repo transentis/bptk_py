@@ -14,6 +14,7 @@ class visualizations():
 
         ## Generate df to plot
         series_list = []
+        plot_df = pd.DataFrame()
         for scenario in scenarios:
             df = scenarios[scenario].result
 
@@ -22,10 +23,8 @@ class visualizations():
 
                     series = df[equation]
                     series.name = scenario + "_" + equation
-                    series_list += [series]
+                    plot_df[series.name] = series
 
-
-        plot_df = pd.DataFrame(series_list)
         return plot_df
 
             ## Create plot
