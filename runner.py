@@ -51,7 +51,7 @@ def run_simulations(scenario_names,scenario_path="scenarios/",equations=[],outpu
     return scenarios
 
 # API call to run and visualize a
-def run_and_visualize(scenario_names, equations, kind="line", stacked=False):
+def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq="D"):
     scenario_objects = run_simulations(scenario_names=scenario_names,equations=equations)
     visualize = visualizations()
     dict_equations = {}
@@ -68,14 +68,39 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False):
 
 
 
-    df = visualize.generatePlottableDF(scenario_objects, dict_equations)
+    df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date="1/1/2018",freq=freq)
     df.plot(kind=kind,stacked=stacked)
 
+# CODES FOR FREQUENCY / "FREQ" argument
+# Alias   Description
+# B       business day frequency
+# C       custom business day frequency (experimental)
+# D       calendar day frequency
+# W       weekly frequency
+# M       month end frequency
+# BM      business month end frequency
+# CBM     custom business month end frequency
+# MS      month start frequency
+# BMS     business month start frequency
+# CBMS    custom business month start frequency
+# Q       quarter end frequency
+# BQ      business quarter endfrequency
+# QS      quarter start frequency
+# BQS     business quarter start frequency
+# A       year end frequency
+# BA      business year end frequency
+# AS      year start frequency
+# BAS     business year start frequency
+# BH      business hour frequency
+# H       hourly frequency
+# T, min  minutely frequency
+# S       secondly frequency
+# L, ms   milliseonds
+# U, us   microseconds
+# N       nanoseconds
 
 
-
-
-#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","custommers2"], kind="bar", stacked=True)
+#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
 ## Run Scenarios
 
 ## Return Results

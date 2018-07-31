@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/Visualizations/visualize.py" beforeDir="false" afterPath="$PROJECT_DIR$/Visualizations/visualize.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulator/model_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator/model_simulator.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -14,20 +14,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="model_simulator.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
+      <file leaf-file-name="visualize.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1259">
-              <caret column="20" selection-start-column="20" selection-end-column="20" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="model_stub_2.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/simulation_models/model_stub_2.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="662">
-              <caret line="84" lean-forward="true" selection-start-line="84" selection-end-line="84" />
+            <state relative-caret-position="315">
+              <caret line="21" column="80" lean-forward="true" selection-start-line="21" selection-start-column="80" selection-end-line="21" selection-end-column="80" />
             </state>
           </provider>
         </entry>
@@ -36,78 +27,9 @@
         <entry file="file://$PROJECT_DIR$/runner.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="676">
-              <caret line="77" column="1" selection-start-line="77" selection-start-column="1" selection-end-line="77" selection-end-column="1" />
+              <caret line="102" column="1" selection-start-line="102" selection-start-column="1" selection-end-line="102" selection-end-column="1" />
               <folding>
                 <element signature="e#13#75#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario_3.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenarios/scenario_3.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="79" lean-forward="true" selection-start-column="79" selection-end-column="93" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="visualize.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="20" selection-start-line="20" selection-end-line="20" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario_manager.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenario_manager/scenario_manager.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="12" column="8" lean-forward="true" selection-start-line="12" selection-start-column="8" selection-end-line="12" selection-end-column="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="model_stub.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-149">
-              <caret line="56" selection-start-line="56" selection-end-line="56" />
-              <folding>
-                <element signature="e#0#28#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenarios/scenario.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="164" lean-forward="true" selection-start-column="164" selection-end-column="175" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario_2.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenarios/scenario_2.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="40" selection-start-column="40" selection-end-column="65" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/config/config.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" lean-forward="true" selection-start-line="9" selection-end-line="9" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -153,11 +75,11 @@
         <option value="$PROJECT_DIR$/scenarios/scenario_2.json" />
         <option value="$PROJECT_DIR$/Visualizations/transentis.mplstyle" />
         <option value="$PROJECT_DIR$/scenario_manager/scenario_manager.py" />
-        <option value="$PROJECT_DIR$/Visualizations/visualize.py" />
         <option value="$PROJECT_DIR$/simulation_models/model_stub_2.py" />
         <option value="$PROJECT_DIR$/scenarios/scenario_3.json" />
         <option value="$PROJECT_DIR$/config/config.py" />
         <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
+        <option value="$PROJECT_DIR$/Visualizations/visualize.py" />
         <option value="$PROJECT_DIR$/runner.py" />
       </list>
     </option>
@@ -614,13 +536,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" selection-start-line="20" selection-end-line="20" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/scenarios/scenario_3.json">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -647,15 +562,25 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1259">
-          <caret column="20" selection-start-column="20" selection-end-column="20" />
+        <state relative-caret-position="1575">
+          <caret line="114" column="29" lean-forward="true" selection-start-line="114" selection-start-column="29" selection-end-line="114" selection-end-column="29" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="21" column="80" lean-forward="true" selection-start-line="21" selection-start-column="80" selection-end-line="21" selection-end-column="80" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/runner.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="676">
-          <caret line="77" column="1" selection-start-line="77" selection-start-column="1" selection-end-line="77" selection-end-column="1" />
+          <caret line="102" column="1" selection-start-line="102" selection-start-column="1" selection-end-line="102" selection-end-column="1" />
           <folding>
             <element signature="e#13#75#0" expanded="true" />
           </folding>
