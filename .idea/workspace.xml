@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Visualizations/transentis.mplstyle" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Visualizations/transentis_style.json" beforeDir="false" afterPath="$PROJECT_DIR$/Visualizations/transentis_style.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -28,7 +26,7 @@
         <entry file="file://$PROJECT_DIR$/Visualizations/transentis_style.json">
           <provider selected="true" editor-type-id="text-editor">
             <state>
-              <caret column="164" selection-start-column="164" selection-end-column="164" />
+              <caret column="135" selection-start-column="135" selection-end-column="135" />
             </state>
           </provider>
         </entry>
@@ -610,7 +608,7 @@
     <entry file="file://$PROJECT_DIR$/Visualizations/transentis_style.json">
       <provider selected="true" editor-type-id="text-editor">
         <state>
-          <caret column="164" selection-start-column="164" selection-end-column="164" />
+          <caret column="135" selection-start-column="135" selection-end-column="135" />
         </state>
       </provider>
     </entry>
