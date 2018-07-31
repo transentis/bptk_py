@@ -36,15 +36,15 @@ def run_simulations(scenario_path):
         sc.result = simu.start(output=["frame"],equations=sc.equationsToSimulate)
 
 
+def run_and_visualize():
+    run_simulations("scenarios/")
+    visualize = visualizations()
+    names = ["TestScenario","TestScenario_2"]
+    dict_equations = { "potentialCustomers" : names }
 
-run_simulations("scenarios/")
-visualize = visualizations()
-names = ["TestScenario","TestScenario_2"]
-dict_equations = { "potentialCustomers" : names }
 
-
-plot = visualize.visualizeMultipleScenarios(sce,dict_equations)
-plot.plot()
+    plot = visualize.visualizeMultipleScenarios(sce,dict_equations)
+    return plot
 ## Run Scenarios
 
 ## Return Results
