@@ -20,7 +20,6 @@ class visualizations():
 
 
         plot_df.index= pd.date_range(start_date, periods=len(plot_df),freq=freq)
-        print(plot_df)
         return plot_df
 
             ## Create plot

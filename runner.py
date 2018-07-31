@@ -100,7 +100,7 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq
 # N       nanoseconds
 
 
-#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
+run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
 ## Run Scenarios
 
 ## Return Results
