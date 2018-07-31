@@ -44,7 +44,7 @@ def run_and_visualize():
 
 
     plot = visualize.generatePlottableDF(sce, dict_equations)
-    return plot
+    plot.plot()
 
 
 ## Run Scenarios
