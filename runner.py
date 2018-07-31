@@ -70,6 +70,7 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq
 
     df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date="1/1/2018",freq=freq)
     df.plot(kind=kind,stacked=stacked)
+    return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
 # Alias   Description
@@ -100,7 +101,7 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False,freq
 # N       nanoseconds
 
 
-run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
+#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","customers2"], kind="bar", stacked=True,freq="B")
 ## Run Scenarios
 
 ## Return Results

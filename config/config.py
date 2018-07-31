@@ -12,5 +12,3 @@ root = "./"
 ## Only change it if you observer an error regarding the recursion limit! Usually only appears if until is very high as the
 ## Recursion depth highly depends on this! For small simulations, no need to set it! Only if you exceed a recursion level or 1,000
 sys.setrecursionlimit(until*2)
-
-
