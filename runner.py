@@ -75,7 +75,7 @@ def run_and_visualize(scenario_names, equations, kind="line", stacked=False):
 
 
 
-run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","custommers2"], kind="bar", stacked=True)
+#run_and_visualize(scenario_names=["TestScenario", "TestScenario_3"], equations=["customers","custommers2"], kind="bar", stacked=True)
 ## Run Scenarios
 
 ## Return Results
