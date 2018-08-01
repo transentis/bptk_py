@@ -24,7 +24,7 @@ matplotlib_rc_settings = {
     "lines.markersize": 10,
     "xtick.labelsize": 12,
     "ytick.labelsize": 12,
-    "figure.figsize": (12, 15)
+    "figure.figsize": (15, 12)
 }
 
 transentis_colors = {
@@ -42,4 +42,4 @@ kind = "area"
 stacked = True
 figsize = matplotlib_rc_settings["figure.figsize"]
 alpha = 0.3
-linewidth = 4
+linewidth = matplotlib_rc_settings["lines.linewidth"]
