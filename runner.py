@@ -102,7 +102,7 @@ def run_and_visualize(scenario_names, equations=[], kind=config.kind,alpha=confi
 # U, us   microseconds
 # N       nanoseconds
 
-#print(run_and_visualize(scenario_names=["TestScenario_3"],freq="B",start_date="1/5/2018",title="Testing Fun"))
+print(run_and_visualize(scenario_names=["TestScenario_3"],equations=['bar'],freq="B",start_date="1/5/2018",title="Testing Fun"))
 ## Run Scenarios
 
 ## Return Results

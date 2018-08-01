@@ -37,7 +37,7 @@ linewidth = 4
 
 
 matplotlib_rc_settings = {
-    'font.family': "AutographScriptEFOP-Lig",
+    'font.family': "DejaVu Sans",
     "axes.titlesize": 18,
     "axes.labelsize": 10,
     "lines.linewidth": 3,
