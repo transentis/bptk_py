@@ -477,7 +477,7 @@ class simulation_model():
     # gf 
   		'capabilities▸learningCurve': lambda t : LERP(min( self.memoize('capabilities▸workforceExperience', t), 12 ),self.points['capabilities▸learningCurve']),
     #constants
-  		'cash▸desiredMothsOfCoverage': lambda t : 2
+  		'cash▸desiredMothsOfCoverage': lambda t : 20
       ,
   		'cashFlow▸investmentCashFlow': lambda t : 0
       ,

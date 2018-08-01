@@ -95,18 +95,6 @@ class simulator():
 
     def __simulate_equations(self,start=0,until=0, equations=[]):
 
-        ## First do constants
-        #for constant in self.mod.constants:
-        #    self.mod.memoize(constant,start)
-
-        #for converter in self.mod.converters:
-        #    for i in range(start,until+1):
-        #        self.mod.memoize(converter,i)
-
-        #for flow in self.mod.flows:
-        #    for i in range(start,until+1):
-        #        self.mod.memoize(flow,i)
-
         for equation in equations: # Start one thread for each equation
             t = Thread(target=self.__simulate, args=(equation,until,start))
             t.start()
