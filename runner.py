@@ -108,7 +108,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 # N       nanoseconds
 
 
-print(run_and_visualize(scenario_names=["TestScenario_3"], kind="bar", stacked=True,freq="B"))
+
 ## Run Scenarios
 
 ## Return Results
