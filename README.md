@@ -16,6 +16,8 @@ for key in config.matplotlib_rc_settings.keys():
     plt.rcParams[key] = config.matplotlib_rc_settings[key]
 ```
 
+Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py)
+
 ### Scenarios
 You write scenarios in JSON format. Example:
 
