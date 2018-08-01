@@ -14,7 +14,7 @@ plt.interactive(True)
 ## DICT THAT STORES ALL MY SCENARIOS LATER!
 ##
 
-def run_simulations(scenario_names, scenario_path="scenarios/", equations=[], output=["frame"]):
+def run_simulations(scenario_names, scenario_path="BPTK_Py/scenarios/", equations=[], output=["frame"]):
     ## Load scenarios
     path = scenario_path
     scenarios = {}
