@@ -4,8 +4,8 @@ import sys
 until = 1000
 
 log_modes = ["print", "logfile"]
-log_modes = ["print"]
-log_file = "simulator_log.csv"
+log_modes = ["logfile"]
+log_file = "simulator_log.log"
 root = "./"
 
 ## Setting the recursion limit. Python is usually very conservative here. Please be careful with this setting!
@@ -17,12 +17,12 @@ sys.setrecursionlimit(6000)
 ## matplotlib style setting
 matplotlib_rc_settings = {
     'font.family': "DejaVu Sans",
-    "axes.titlesize": 25,
-    "axes.labelsize": 18,
+    "axes.titlesize": 35,
+    "axes.labelsize": 25,
     "lines.linewidth": 3,
-    "lines.markersize": 10,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "lines.markersize": 15,
+    "xtick.labelsize": 15,
+    "ytick.labelsize": 15,
     "figure.figsize": (15, 12)
 }
 
