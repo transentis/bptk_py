@@ -51,32 +51,27 @@ def run_simulations(scenario_names,scenario_path="scenarios/",equations=[],outpu
     return scenarios
 
 # API call to run and visualize a
-def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,freq="D"):
+def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,freq="D",start_date="1/1/2018",title=""):
     scenario_objects = run_simulations(scenario_names=scenario_names,equations=equations)
     visualize = visualizations()
     dict_equations = {}
     if len(equations) == 0:
         for scenario_name in scenario_objects.keys():
+            equations += scenario_objects[scenario_name].equationsToSimulate
+
+    for equation in equations:
+        if equation not in dict_equations.keys():
+            dict_equations[equation] = []
+
+        for scenario_name in scenario_objects.keys():
             if scenario_name in scenario_names:
-                equations = scenario_objects[scenario_name].equationsToSimulate
-                for equation in equations:
-                    if equation not in dict_equations.keys():
-                        dict_equations[equation] = []
+                sc = scenario_objects[scenario_name]
+                if equation in sc.equationsToSimulate:
                     dict_equations[equation] += [scenario_name]
-    else:
-        for equation in equations:
-            if equation not in dict_equations.keys():
-                dict_equations[equation] = []
-
-            for scenario_name in scenario_objects.keys():
-                if scenario_name in scenario_names:
-                    sc = scenario_objects[scenario_name]
-                    if equation in sc.equationsToSimulate:
-                        dict_equations[equation] += [scenario_name]
 
 
-    df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date="1/1/2018",freq=freq)
-    #df.plot(kind=kind,stacked=stacked)
+    df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date=start_date,freq=freq)
+    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title)
     return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
@@ -108,7 +103,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 # N       nanoseconds
 
 
-
+print(run_and_visualize(scenario_names=["TestScenario_3"], kind="area", stacked=True,freq="B",start_date="1/5/2018",title="Testing Fun"))
 ## Run Scenarios
 
 ## Return Results
