@@ -84,9 +84,9 @@ class simulation_model():
     # flows 
   		'baz': lambda t : self.memoize('baz[1,1]', t) + self.memoize('baz[1,2]', t) + self.memoize('baz[1,3]', t) + self.memoize('baz[2,1]', t) + self.memoize('baz[2,2]', t) + self.memoize('baz[2,3]', t) + self.memoize('baz[3,1]', t) + self.memoize('baz[3,2]', t) + self.memoize('baz[3,3]', t),
   	
-  		'baz[1,1]': lambda t : 0,
+  		'baz[1,1]': lambda t : 95,
   	
-  		'baz[1,2]': lambda t : 0,
+  		'baz[1,2]': lambda t : 20,
   	
   		'baz[1,3]': lambda t : 0,
   	
