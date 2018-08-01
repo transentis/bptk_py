@@ -1,6 +1,7 @@
 *.pyc
 *__pycache
 *.csv
+*.log
 results/
 venv
 .idea/
