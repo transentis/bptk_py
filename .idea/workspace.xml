@@ -2,15 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/bptk.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/bptk.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BPTK_Py/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/config/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/simulation_models/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/simulation_models/model.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/simulator/model_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/simulator/model_simulator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simulator_log.log" beforeDir="false" afterPath="$PROJECT_DIR$/simulator_log.log" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -34,10 +30,19 @@
         </entry>
       </file>
       <file leaf-file-name="make_your_startup_grow.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json">
+        <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="12" selection-start-line="9" selection-start-column="12" selection-end-line="9" selection-end-column="12" />
+            <state relative-caret-position="90">
+              <caret line="6" column="14" selection-start-line="6" selection-start-column="14" selection-end-line="6" selection-end-column="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="367">
+              <caret line="497" column="8" selection-start-line="497" selection-start-column="8" selection-end-line="497" selection-end-column="37" />
             </state>
           </provider>
         </entry>
@@ -45,8 +50,8 @@
       <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/BPTK_Py/config/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" selection-start-line="10" selection-end-line="10" selection-end-column="16" />
+            <state relative-caret-position="705">
+              <caret line="47" lean-forward="true" selection-start-line="47" selection-end-line="47" />
             </state>
           </provider>
         </entry>
@@ -55,7 +60,7 @@
         <entry file="file://$PROJECT_DIR$/BPTK_Py/bptk.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1095">
-              <caret line="73" column="39" lean-forward="true" selection-start-line="73" selection-start-column="39" selection-end-line="73" selection-end-column="39" />
+              <caret line="73" column="39" selection-start-line="73" selection-start-column="39" selection-end-line="73" selection-end-column="39" />
               <folding>
                 <element signature="e#12#81#0" expanded="true" />
               </folding>
@@ -64,10 +69,10 @@
         </entry>
       </file>
       <file leaf-file-name="make_your_startup_grow_2.json" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json">
+        <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="840">
-              <caret line="56" column="1" selection-start-line="56" selection-start-column="1" selection-end-line="56" selection-end-column="1" />
+            <state relative-caret-position="105">
+              <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
             </state>
           </provider>
         </entry>
@@ -95,6 +100,14 @@
       <find>'</find>
       <find>capabilities▸totalWorkforceExperience</find>
       <find>employee</find>
+      <find>cashFlow▸cashFlowYtd</find>
+      <find>'cashFlow▸cashFlowIn'</find>
+      <find>'cashFlow▸cashFlow'</find>
+      <find>'cashFlow▸financingCashFlow':</find>
+      <find>'debt▸debtIn':</find>
+      <find>'debt▸fractionBorrowed':</find>
+      <find>cost</find>
+      <find>'cost▸paymentTransactionCost'</find>
     </findStrings>
     <replaceStrings>
       <replace>10</replace>
@@ -129,7 +142,6 @@
         <option value="$PROJECT_DIR$/scenario_manager/scenario.py" />
         <option value="$PROJECT_DIR$/scenarios/scenario_3.json" />
         <option value="$PROJECT_DIR$/config/config.py" />
-        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
         <option value="$PROJECT_DIR$/simulation_models/model.py" />
         <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
         <option value="$PROJECT_DIR$/runner.py" />
@@ -140,10 +152,12 @@
         <option value="$PROJECT_DIR$/BPTK_Py/logger/logger.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/simulator/model_simulator.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" />
-        <option value="$PROJECT_DIR$/BPTK_Py/config/config.py" />
-        <option value="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json" />
         <option value="$PROJECT_DIR$/BPTK_Py/bptk.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json" />
+        <option value="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json" />
+        <option value="$PROJECT_DIR$/BPTK_Py/config/config.py" />
+        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
+        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" />
       </list>
     </option>
   </component>
@@ -171,43 +185,7 @@
             <path>
               <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
               <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="config" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="logger" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="results" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="scenario_manager" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="scenarios" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="sd_py_simulator" type="b2602c69:ProjectViewProjectNode" />
-              <item name="sd_py_simulator" type="462c0819:PsiDirectoryNode" />
-              <item name="BPTK_Py" type="462c0819:PsiDirectoryNode" />
-              <item name="simulator" type="462c0819:PsiDirectoryNode" />
+              <item name="simulation_models" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -227,6 +205,7 @@
       <recent name="$PROJECT_DIR$/scenarios" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/simulator" />
       <recent name="$PROJECT_DIR$/simulation_models" />
       <recent name="$PROJECT_DIR$/scenarios" />
@@ -406,7 +385,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/results/result_potentialCustomers.csv" />
     <entry file="file://$PROJECT_DIR$/results/result_customers.csv" />
     <entry file="file://$PROJECT_DIR$/results/results.csv" />
     <entry file="file://$PROJECT_DIR$/results/results.csv_2018-07-30 11:25:27.983744" />
@@ -498,7 +476,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/simulation_models/model.m" />
     <entry file="file://$PROJECT_DIR$/simulation_models/model.js" />
-    <entry file="file://$PROJECT_DIR$/simulation_models/model.py" />
     <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
@@ -568,22 +545,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/config/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" selection-start-line="10" selection-end-line="10" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/bptk.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1095">
-          <caret line="73" column="39" lean-forward="true" selection-start-line="73" selection-start-column="39" selection-end-line="73" selection-end-column="39" />
-          <folding>
-            <element signature="e#12#81#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/BPTK_Py/results/results_TestScenario_2_30_7_2018.csv">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -595,17 +558,41 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json">
+    <entry file="file://$PROJECT_DIR$/BPTK_Py/config/config.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="12" selection-start-line="9" selection-start-column="12" selection-end-line="9" selection-end-column="12" />
+        <state relative-caret-position="705">
+          <caret line="47" lean-forward="true" selection-start-line="47" selection-end-line="47" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json">
+    <entry file="file://$PROJECT_DIR$/BPTK_Py/bptk.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="840">
-          <caret line="56" column="1" selection-start-line="56" selection-start-column="1" selection-end-line="56" selection-end-column="1" />
+        <state relative-caret-position="1095">
+          <caret line="73" column="39" selection-start-line="73" selection-start-column="39" selection-end-line="73" selection-end-column="39" />
+          <folding>
+            <element signature="e#12#81#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="367">
+          <caret line="497" column="8" selection-start-line="497" selection-start-column="8" selection-end-line="497" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" column="14" selection-start-line="6" selection-start-column="14" selection-end-line="6" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
         </state>
       </provider>
     </entry>

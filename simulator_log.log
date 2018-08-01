@@ -119,3 +119,195 @@
 2018-08-01 16:07:33.123123, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
 2018-08-01 16:07:33.123328, [INFO] MakeYouStartUpGrow: Starting 99 simulations
 2018-08-01 16:07:33.144844, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:18:00.260799, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:18:20.996831, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:18:21.002710, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:18:21.004255, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:18:21.004501, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:18:21.004662, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:18:21.004833, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0.5
+2018-08-01 16:18:21.004987, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:18:21.005152, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:18:21.036955, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:18:21.038214, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:18:21.038383, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:18:21.038520, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:18:21.038688, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:18:21.061689, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:20:07.256665, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:20:07.258609, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:20:07.260293, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:20:07.260556, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:07.260750, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:07.260909, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0.5
+2018-08-01 16:20:07.261064, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:20:07.261268, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:20:07.262035, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:20:07.263031, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:07.263185, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:07.263310, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:20:07.263464, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:20:07.263874, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:20:32.201552, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:20:32.240468, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:20:32.242566, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:20:32.242814, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:32.243011, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:32.243126, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0
+2018-08-01 16:20:32.243253, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:20:32.243383, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:20:32.243789, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:20:32.244737, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:32.244947, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:32.245101, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:20:32.245257, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:20:32.245646, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:20:37.378352, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:20:37.380549, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:20:37.382196, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:20:37.382450, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:37.382613, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:37.382747, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0
+2018-08-01 16:20:37.382877, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:20:37.383014, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:20:37.419199, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:20:37.420338, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:37.420570, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:20:37.420791, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:20:37.421024, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:20:37.449397, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:21:09.786626, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:21:09.788206, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:21:09.789492, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:21:09.789686, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:21:09.789852, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0
+2018-08-01 16:21:09.789988, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:21:09.790125, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:21:09.818772, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:21:54.747257, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:21:54.753056, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:21:54.754667, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:21:54.754897, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:21:54.755064, [INFO] MakeYouStartUpGrow_2: Changed constant debt▸fractionBorrowed to 0
+2018-08-01 16:21:54.755222, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:21:54.755384, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:21:54.782790, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:25:18.321627, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:25:18.323943, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:25:18.326042, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:18.326274, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:18.326418, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:25:18.326555, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:25:18.326696, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:25:18.360298, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:25:25.201850, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:25:25.203722, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:25:25.205853, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:25:25.206120, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:25.206281, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:25.206437, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:25:25.206595, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:25:25.206758, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:25:25.207198, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:25:25.208348, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:25.208593, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:25.208762, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:25:25.208932, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:25:25.209363, [INFO] Finished simulation of stock debt▸fractionBorrowed for t=1 to 100
+2018-08-01 16:25:36.250008, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:25:36.252158, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:25:36.254126, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:25:36.254348, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:36.254482, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:36.254613, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:25:36.254744, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:25:36.254882, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:25:36.285546, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:25:36.286505, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:36.286649, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:25:36.286771, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:25:36.286899, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:25:36.310388, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:26:01.778823, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:26:01.782784, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:26:01.812252, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:26:01.812462, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:26:01.812663, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:26:01.812812, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:26:01.834709, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:26:01.835625, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:26:01.835831, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:26:01.835966, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:26:01.858652, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:26:42.067629, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:26:42.069459, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:26:42.071168, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:26:42.071506, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:26:42.071670, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 0
+2018-08-01 16:26:42.071826, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:26:42.072022, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:26:42.102877, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:26:42.103824, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:26:42.103975, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:26:42.104107, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:26:42.126556, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:27:07.004990, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:27:07.008133, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:27:07.009477, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:27:07.009661, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:27:07.009791, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 1000000
+2018-08-01 16:27:07.009917, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:27:07.010047, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:27:07.034803, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:27:07.035752, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:27:07.035918, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:27:07.036051, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:27:07.063977, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:27:15.124490, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:27:15.128856, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:27:15.130218, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:27:15.130421, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:27:15.130547, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 10000
+2018-08-01 16:27:15.130668, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:27:15.130797, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:27:15.159015, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:27:15.160035, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:27:15.160228, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:27:15.160360, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:27:15.182825, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:27:46.166955, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:27:46.170799, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:27:46.172217, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:27:46.172410, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:27:46.172543, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 10000
+2018-08-01 16:27:46.172668, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=1000
+2018-08-01 16:27:46.172803, [INFO] MakeYouStartUpGrow_2: Starting 999 simulations
+2018-08-01 16:27:46.426361, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 1000
+2018-08-01 16:27:46.427789, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:27:46.427989, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:27:46.428141, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:27:46.451229, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:28:02.790913, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:28:02.792955, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:28:02.794531, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:28:02.794824, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:28:02.794966, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 10000
+2018-08-01 16:28:02.795101, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=1000
+2018-08-01 16:28:02.795323, [INFO] MakeYouStartUpGrow_2: Starting 999 simulations
+2018-08-01 16:28:03.063305, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 1000
+2018-08-01 16:28:03.064771, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:28:03.064986, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=1000
+2018-08-01 16:28:03.065166, [INFO] MakeYouStartUpGrow: Starting 999 simulations
+2018-08-01 16:28:03.364064, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 1000
+2018-08-01 16:28:13.807528, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:28:13.810086, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from scenarios/make_your_startup_grow_2.json
+2018-08-01 16:28:13.811564, [INFO] Successfully loaded scenario MakeYouStartUpGrow from scenarios/make_your_startup_grow.json
+2018-08-01 16:28:13.811747, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸paymentTransactionCost to 0.5
+2018-08-01 16:28:13.811872, [INFO] MakeYouStartUpGrow_2: Changed constant cost▸productDevelopmentWage to 10000
+2018-08-01 16:28:13.811992, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:28:13.812117, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:28:13.839208, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:28:13.840479, [INFO] MakeYouStartUpGrow: Changed constant cost▸paymentTransactionCost to 0.0
+2018-08-01 16:28:13.840701, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:28:13.840851, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:28:13.867381, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100

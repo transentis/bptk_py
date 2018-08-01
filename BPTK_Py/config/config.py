@@ -8,7 +8,7 @@ log_modes = ["logfile"]
 log_file = "simulator_log.log"
 root = "./"
 
-scenario_storage = "BPTK_Py/scenarios/"
+scenario_storage = "scenarios/"
 
 
 ## Setting the recursion limit. Python is usually very conservative here. Please be careful with this setting!

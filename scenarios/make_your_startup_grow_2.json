@@ -1,7 +1,7 @@
 {
   "constants": {
-    "marketingSpending": 6e4,
-    "initialCustomers": 100000
+    "cost▸paymentTransactionCost" : 0.5,
+    "cost▸productDevelopmentWage" : 10000
   },
   "name": "MakeYouStartUpGrow_2",
   "from": 1,
