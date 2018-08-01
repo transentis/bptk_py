@@ -22,13 +22,5 @@ class visualizations():
         plot_df.index= pd.date_range(start_date, periods=len(plot_df),freq=freq)
         return plot_df
 
-            ## Create plot
-
-
-    def visualizeOneScenario(self,equations):
-        print("TODO")
-
-
-
 
 

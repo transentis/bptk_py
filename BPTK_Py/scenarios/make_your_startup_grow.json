@@ -7,7 +7,7 @@
   "from": 1,
   "until": 100,
   "dt": 1,
-  "model": "simulation_models/model",
+  "model": "BPTK_Py/simulation_models/model",
   "equationsToSimulate": [
     "capabilities▸totalWorkforceExperience",
     "cash▸cash",

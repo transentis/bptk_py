@@ -1,5 +1,5 @@
 import importlib
-from logger.logger import log
+from BPTK_Py.logger.logger import log
 
 class simulation_scenario():
 

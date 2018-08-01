@@ -1,4 +1,4 @@
-import config.config as config
+import BPTK_Py.config.config as config
 import datetime
 
 

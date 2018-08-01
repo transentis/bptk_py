@@ -9,8 +9,8 @@ from sys import exit
 ######### IMPORTS
 from threading import Thread
 import datetime
-from logger.logger import log
-import config.config as config
+from BPTK_Py.logger.logger import log
+import BPTK_Py.config.config as config
 import pandas as pd
 import os
 #########

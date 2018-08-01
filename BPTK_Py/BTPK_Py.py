@@ -1,12 +1,12 @@
 ### IMPORTS
-from scenario_manager.scenario_manager import scenarioManager
+from BPTK_Py.scenario_manager.scenario_manager import scenarioManager
 
-from simulator.model_simulator import simulator
+from BPTK_Py.simulator.model_simulator import simulator
 import glob, os
-from logger.logger import log
-from Visualizations.visualize import visualizations
+from BPTK_Py.logger.logger import log
+from BPTK_Py.Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
-import config.config as config
+import BPTK_Py.config.config as config
 
 plt.interactive(True)
 
