@@ -51,7 +51,7 @@ def run_simulations(scenario_names,scenario_path="scenarios/",equations=[],outpu
     return scenarios
 
 # API call to run and visualize a
-def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,freq="D",start_date="1/1/2018",title=""):
+def run_and_visualize(scenario_names, equations=[], kind=config.kind,alpha=config.alpha, stacked=config.stacked,freq="D",start_date="1/1/2018",title="",visualize_from_period=0):
     scenario_objects = run_simulations(scenario_names=scenario_names,equations=equations)
     visualize = visualizations()
     dict_equations = {}
@@ -71,7 +71,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 
 
     df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date=start_date,freq=freq)
-    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title,alpha=0.4,color=config.colors)
+    df[visualize_from_period:].plot(kind=kind,stacked=stacked,figsize=config.figsize,title=title,alpha=alpha,color=config.colors,lw=config.linewidth)
     return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
@@ -102,7 +102,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 # U, us   microseconds
 # N       nanoseconds
 
-#print(run_and_visualize(scenario_names=["TestScenario_3"], kind="area", stacked=True,freq="B",start_date="1/5/2018",title="Testing Fun"))
+#print(run_and_visualize(scenario_names=["TestScenario_3"],freq="B",start_date="1/5/2018",title="Testing Fun"))
 ## Run Scenarios
 
 ## Return Results
