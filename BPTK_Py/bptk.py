@@ -95,7 +95,7 @@ def run_simulations(scenario_names, equations=[], output=["frame"]):
 
 # This method plots the outputs for one scenario. If the equations list is empty, we will simulate the equations form "equationsToSimulate" field in the scenario JSON file
 def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label=""):
+                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
 
     # Run the simulations for the scenario and the specified equations (or all if no equation is given)
     scenario_objects = run_simulations(scenario_names=[scenario_name], equations=equations)
@@ -126,11 +126,13 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
     if (len(y_label) > 0):
         ax.set_ylabel(y_label)
 
+    if return_df:
+        return df
 
 
 
 def plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label=""):
+                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
 
     # Run the simulations for the scenario and the specified equations (or all if no equation is given)
     scenario_objects = run_simulations(scenario_names=scenario_names, equations=[equation])
@@ -157,71 +159,5 @@ def plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=conf
     if (len(y_label) > 0):
         ax.set_ylabel(y_label)
 
-
-#x=plotOutputsForScenario(scenario_name="MakeYouStartUpGrow", equations=['cashFlow▸cashFlowYtd'],stacked=False, freq="D", start_date="1/11/2018",title="Testing Fun",x_label="Time",y_label="Number")
-#print(x)
-#run_simulations(scenario_names=["MakeYouStartUpGrow"], equations=['cashFlow▸cashFlowYtd'])
-def frame_plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label=""):
-
-    # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-    scenario_objects = run_simulations(scenario_names=scenario_names, equations=[equation])
-
-    # Visualize Object
-    visualize = visualizations()
-    dict_equations = {}
-
-    dict_equations[equation] = []
-
-    for scenario_name in scenario_names:
-        sc = scenario_objects[scenario_name] # <-- Obtain the actual scenario object
-        if equation in sc.model.equations.keys():
-            dict_equations[equation] += [scenario_name]
-
-    df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq)
-
-    ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.figsize, title=title,
-                                         alpha=alpha, color=config.colors, lw=config.linewidth)
-    if (len(x_label)>0):
-        ax.set_xlabel(x_label)
-
-    # Set the y-axis label
-    if (len(y_label) > 0):
-        ax.set_ylabel(y_label)
-
-    return df
-
-
-def frame_plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label=""):
-
-    # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-    scenario_objects = run_simulations(scenario_names=[scenario_name], equations=equations)
-
-    # Visualize Object
-    visualize = visualizations()
-    dict_equations = {}
-    if len(equations) == 0:
-        for scenario_name in scenario_objects.keys():
-            equations += scenario_objects[scenario_name].model.equations
-
-    for equation in equations:
-        if equation not in dict_equations.keys():
-            dict_equations[equation] = []
-
-        sc = scenario_objects[scenario_name] # <-- Obtain the actual scenario object
-        if equation in sc.model.equations.keys():
-            dict_equations[equation] += [scenario_name]
-
-    df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq)
-
-    ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.figsize, title=title,
-                                         alpha=alpha, color=config.colors, lw=config.linewidth)
-    if (len(x_label)>0):
-        ax.set_xlabel(x_label)
-
-    # Set the y-axis label
-    if (len(y_label) > 0):
-        ax.set_ylabel(y_label)
-
-    return df
+    if return_df:
+        return df
