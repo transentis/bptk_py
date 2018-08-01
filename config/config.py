@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 until = 1000
 
 log_modes = ["print","logfile"]
-log_modes = ["print"]
+log_modes = []
 log_file = "simulator_log.csv"
 root = "./"
 

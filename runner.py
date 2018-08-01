@@ -71,7 +71,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 
 
     df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date=start_date,freq=freq)
-    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title,alpha=0.4,color=config.color)
+    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title,alpha=0.4,color=config.colors)
     return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
