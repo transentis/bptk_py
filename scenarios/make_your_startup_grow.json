@@ -1,6 +1,6 @@
 {
   "constants": {
-    "cost▸paymentTransactionCost" : 0.0
+    "cost.paymentTransactionCost" : 0.0
   },
   "name": "MakeYouStartUpGrow",
   "from": 1,
