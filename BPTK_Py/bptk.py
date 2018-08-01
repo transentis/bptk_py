@@ -126,6 +126,8 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
     if (len(y_label) > 0):
         ax.set_ylabel(y_label)
 
+        ax.get_yaxis().get_major_formatter().set_scientific(False)
+
     if return_df:
         return df
 
@@ -158,6 +160,8 @@ def plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=conf
     # Set the y-axis label
     if (len(y_label) > 0):
         ax.set_ylabel(y_label)
+
+    ax.get_yaxis().get_major_formatter().set_scientific(False)
 
     if return_df:
         return df
