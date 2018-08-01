@@ -2,14 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/simulator/model_simulator_backup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulation_models/model.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulation_models/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulation_models/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulation_models/model_stub.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulation_models/model_stub_2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/simulator/model_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator/model_simulator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BTPK_Py.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/BTPK_Py_methods.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -23,11 +18,8 @@
       <file leaf-file-name="model_simulator.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="486">
-              <caret line="118" column="49" selection-start-line="118" selection-start-column="49" selection-end-line="118" selection-end-column="49" />
-              <folding>
-                <element signature="e#0#20#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="30">
+              <caret line="5" lean-forward="true" selection-start-line="5" selection-end-line="5" />
             </state>
           </provider>
         </entry>
@@ -35,20 +27,20 @@
       <file leaf-file-name="make_your_startup_grow.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
+            <state relative-caret-position="135">
+              <caret line="9" column="30" selection-start-line="9" selection-start-column="30" selection-end-line="9" selection-end-column="30" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="runner.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/runner.py">
+      <file leaf-file-name="BTPK_Py_methods.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/BTPK_Py_methods.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="24" selection-start-line="24" selection-end-line="24" />
+            <state relative-caret-position="360">
+              <caret line="131" column="197" selection-start-line="131" selection-start-column="1" selection-end-line="131" selection-end-column="197" />
               <folding>
                 <element signature="e#12#73#0" expanded="true" />
-                <element signature="e#2130#3289#0" />
+                <element signature="e#458#1860#0" />
                 <element signature="e#3292#3331#0" />
                 <element signature="e#5063#6274#0" />
               </folding>
@@ -56,11 +48,20 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="BTPK_Py.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/BTPK_Py.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="45">
+              <caret line="3" column="22" lean-forward="true" selection-start-line="3" selection-start-column="22" selection-end-line="3" selection-end-column="22" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="477" selection-start-line="477" selection-end-line="477" />
+            <state relative-caret-position="180">
+              <caret line="46" column="28" selection-start-line="46" selection-start-column="28" selection-end-line="46" selection-end-column="28" />
               <folding>
                 <element signature="e#270#287#0" expanded="true" />
               </folding>
@@ -125,16 +126,18 @@
         <option value="$PROJECT_DIR$/scenario_manager/scenario.py" />
         <option value="$PROJECT_DIR$/scenarios/scenario_3.json" />
         <option value="$PROJECT_DIR$/config/config.py" />
-        <option value="$PROJECT_DIR$/runner.py" />
         <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
         <option value="$PROJECT_DIR$/simulation_models/model.py" />
         <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
+        <option value="$PROJECT_DIR$/runner.py" />
+        <option value="$PROJECT_DIR$/BTPK_Py.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds">
+    <option name="y" value="23" />
     <option name="width" value="2560" />
-    <option name="height" value="1440" />
+    <option name="height" value="1359" />
   </component>
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -275,7 +278,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/BTPK_Py.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -364,7 +367,7 @@
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3299611" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3299611" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3299611" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3299611" />
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info id="Structure" order="1" sideWeight="0.5005807" side_tool="true" weight="0.25" />
@@ -384,24 +387,17 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="1" />
+      <option name="time" value="2" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="48" selection-start-line="48" selection-end-line="48" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/runner.py">
+    <entry file="file://$PROJECT_DIR$/BTPK_Py_methods.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="525">
           <caret line="39" selection-start-line="39" selection-end-line="39" />
           <folding>
             <element signature="e#12#73#0" expanded="true" />
-            <element signature="e#2130#3289#0" />
+            <element signature="e#458#1860#0" />
             <element signature="e#3292#3331#0" />
             <element signature="e#5063#6274#0" />
           </folding>
@@ -601,43 +597,47 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/runner.py">
+    <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="24" selection-start-line="24" selection-end-line="24" />
+        <state relative-caret-position="180">
+          <caret line="46" column="28" selection-start-line="46" selection-start-column="28" selection-end-line="46" selection-end-column="28" />
           <folding>
-            <element signature="e#12#73#0" expanded="true" />
-            <element signature="e#2130#3289#0" />
-            <element signature="e#3292#3331#0" />
-            <element signature="e#5063#6274#0" />
+            <element signature="e#270#287#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="486">
-          <caret line="118" column="49" selection-start-line="118" selection-start-column="49" selection-end-line="118" selection-end-column="49" />
+        <state relative-caret-position="30">
+          <caret line="5" lean-forward="true" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BTPK_Py_methods.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="131" column="197" selection-start-line="131" selection-start-column="1" selection-end-line="131" selection-end-column="197" />
           <folding>
-            <element signature="e#0#20#0" expanded="true" />
+            <element signature="e#12#73#0" expanded="true" />
+            <element signature="e#458#1860#0" />
+            <element signature="e#3292#3331#0" />
+            <element signature="e#5063#6274#0" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
+        <state relative-caret-position="135">
+          <caret line="9" column="30" selection-start-line="9" selection-start-column="30" selection-end-line="9" selection-end-column="30" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
+    <entry file="file://$PROJECT_DIR$/BTPK_Py.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="477" selection-start-line="477" selection-end-line="477" />
-          <folding>
-            <element signature="e#270#287#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="45">
+          <caret line="3" column="22" lean-forward="true" selection-start-line="3" selection-start-column="22" selection-end-line="3" selection-end-column="22" />
         </state>
       </provider>
     </entry>
