@@ -53,13 +53,13 @@ plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.a
 ```
 
 The first, plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. 
-*  ``kind``: Kind of plot (area, line, bar, ...)
-*  ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
-*  ``freq``: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
-*  ``start_date``: Date from which plot starts
-*  ``title``: Plot title
-*  ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
-*  ``x_label`` and ``y_label``: set the label names for the axis.
+*  kind: Kind of plot (area, line, bar, ...)
+*  alpha: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
+*  freq: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
+*  start_date: Date from which plot starts
+*  title: Plot title
+*  visualize_from_period: First index field to visualize from (in case we want to cut off the first x periods)
+*  x_label and y_label: set the label names for the axis.
 
 ## TODO
 * Monitoring: We need to monitor changes to specified itmx files and parse to python file
