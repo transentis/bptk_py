@@ -119,3 +119,79 @@
 2018-08-01 16:07:33.123123, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
 2018-08-01 16:07:33.123328, [INFO] MakeYouStartUpGrow: Starting 99 simulations
 2018-08-01 16:07:33.144844, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:37.722810, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:13:37.747058, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:13:37.747150, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:37.747213, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:37.747275, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:13:37.747396, [INFO] MakeYouStartUpGrow: Starting 198 simulations
+2018-08-01 16:13:37.768975, [INFO] Finished simulation of stock cash▸desiredMothsOfCoverage for t=1 to 100
+2018-08-01 16:13:37.782899, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:38.369949, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:13:38.374352, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:13:38.376147, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:13:38.376221, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:38.376267, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:38.376313, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:13:38.376363, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:13:38.408245, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:38.410110, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:38.410226, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:38.410304, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:13:38.410389, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:13:38.448689, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:54.840043, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:13:54.846013, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:13:54.846167, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:54.846234, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:54.846304, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:13:54.846377, [INFO] MakeYouStartUpGrow: Starting 198 simulations
+2018-08-01 16:13:54.857553, [INFO] Finished simulation of stock cash▸desiredMothsOfCoverage for t=1 to 100
+2018-08-01 16:13:54.881256, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:55.604633, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:13:55.606242, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:13:55.607766, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:13:55.608217, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:55.608342, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:55.608446, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:13:55.608538, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:13:55.642279, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:13:55.643603, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:55.643672, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:13:55.643724, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:13:55.643794, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:13:55.677626, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:14:26.223666, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:14:26.226872, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:14:26.227028, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:26.227086, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:26.227149, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:14:26.227200, [INFO] MakeYouStartUpGrow: Starting 198 simulations
+2018-08-01 16:14:26.228064, [INFO] Finished simulation of stock cash▸desiredMothsOfCoverage for t=1 to 100
+2018-08-01 16:14:26.256597, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:14:48.408715, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:14:48.410652, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:14:48.413550, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:14:48.413820, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:48.413882, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:48.413969, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:14:48.414064, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:14:48.446070, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:14:48.447598, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:48.447674, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:14:48.447729, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:14:48.447807, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:14:48.478726, [INFO] Finished simulation of stock capabilities▸totalWorkforceExperience for t=1 to 100
+2018-08-01 16:15:34.464405, [INFO] Attempting to load scenarios from scenarios folder.
+2018-08-01 16:15:34.466264, [INFO] Successfully loaded scenario MakeYouStartUpGrow_2 from BPTK_Py/scenarios/make_your_startup_grow_2.json
+2018-08-01 16:15:34.525521, [INFO] Successfully loaded scenario MakeYouStartUpGrow from BPTK_Py/scenarios/make_your_startup_grow.json
+2018-08-01 16:15:34.525637, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:15:34.525686, [WARN] MakeYouStartUpGrow_2: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:15:34.525736, [INFO] Starting simulation of model MakeYouStartUpGrow_2. starttime=1, stoptime=100
+2018-08-01 16:15:34.525825, [INFO] MakeYouStartUpGrow_2: Starting 99 simulations
+2018-08-01 16:15:34.556304, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
+2018-08-01 16:15:34.557740, [WARN] MakeYouStartUpGrow: Attempted to change a constant (marketingSpending) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:15:34.557843, [WARN] MakeYouStartUpGrow: Attempted to change a constant (initialCustomers) that does not exist in the simulation model! Ignoring! Please check your config for errors!
+2018-08-01 16:15:34.557907, [INFO] Starting simulation of model MakeYouStartUpGrow. starttime=1, stoptime=100
+2018-08-01 16:15:34.557977, [INFO] MakeYouStartUpGrow: Starting 99 simulations
+2018-08-01 16:15:34.589525, [INFO] Finished simulation of stock cashFlow▸cashFlowYtd for t=1 to 100
