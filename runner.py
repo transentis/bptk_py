@@ -153,10 +153,9 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
     # Set the y-axis label
     if (len(y_label) > 0):
         ax.set_ylabel(y_label)
-        
+
     return df
 
 ## Return Results
-#print(plotOutputsForScenario(scenario_name="TestScenario_3", freq="D", start_date="1/11/2018",
-#                        title="Testing Fun",x_label="Time",y_label="Number"))
+print(plotOutputsForScenario(scenario_name="TestScenario_3", freq="D", start_date="1/11/2018",title="Testing Fun",x_label="Time",y_label="Number"))
 

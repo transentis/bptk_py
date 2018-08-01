@@ -15,6 +15,18 @@ root = "./"
 # sys.setrecursionlimit(until*5)
 
 ## Style setting
+## matplotlib style setting
+matplotlib_rc_settings = {
+    'font.family': "DejaVu Sans",
+    "axes.titlesize": 25,
+    "axes.labelsize": 18,
+    "lines.linewidth": 3,
+    "lines.markersize": 10,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "figure.figsize": (12, 15)
+}
+
 transentis_colors = {
     "orange":       (100 / 100, 51 / 100, 0 / 100),
     "grey":         (34.1 / 100, 32.9 / 100, 34.1 / 100),
@@ -28,21 +40,6 @@ transentis_colors = {
 colors = [transentis_colors[color] for color in transentis_colors.keys()]
 kind = "area"
 stacked = True
-figsize = (10, 10)
+figsize = matplotlib_rc_settings["figure.figsize"]
 alpha = 0.3
 linewidth = 4
-
-
-## matplotlib style setting
-
-
-matplotlib_rc_settings = {
-    'font.family': "DejaVu Sans",
-    "axes.titlesize": 18,
-    "axes.labelsize": 10,
-    "lines.linewidth": 3,
-    "lines.markersize": 10,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "figure.figsize": (12, 10)
-}
