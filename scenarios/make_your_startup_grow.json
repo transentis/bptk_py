@@ -5,7 +5,7 @@
   },
   "name": "MakeYouStartUpGrow",
   "from": 1,
-  "until": 3,
+  "until": 100,
   "dt": 1,
   "model": "simulation_models/model",
   "equationsToSimulate": [

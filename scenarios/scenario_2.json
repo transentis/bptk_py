@@ -1,1 +1,0 @@
-{"constants": {"marketingSpending": 6e4, "initialCustomers": 1000}, "name": "TestScenario_2", "from": 0, "until": 30, "dt": 1, "model": "simulation_models/model_stub", "equationsToSimulate": ["customers", "potentialCustomers", "totalAcquisitonsThroughMarketing", "totalAcquisitonsThroughWordOfMouth"]}

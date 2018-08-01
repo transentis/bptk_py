@@ -44,14 +44,13 @@ def LERP(x, points):
 class simulation_model():
   def memoize(self, equation, arg):
     mymemo = self.memo[equation]
-    if equation in self.constants and int(arg) > 0:
-      return self.equations[equation](0)
     if arg in mymemo.keys():
       return mymemo[arg]
     else:
       result = self.equations[equation](arg)
       mymemo[arg] = result
-      return result
+
+    return result
 
   def __init__(self):
     # Simulation Buildins
@@ -60,93 +59,93 @@ class simulation_model():
     self.stoptime = 61
     self.equations = {
   	# Stocks 
-  		'capabilities▸totalWorkforceExperience': lambda t : max( 0, self.memoize('resources▸initialEmployees', t) * 12 if  t  <=  self.starttime  else self.memoize('capabilities▸totalWorkforceExperience', t-self.dt) +  self.dt  * ( self.memoize('capabilities▸gainingExperience', t-self.dt) - ( self.memoize('capabilities▸losingExperience', t) ) ) ),
+  		'capabilities▸totalWorkforceExperience': lambda t : max( 0, self.memoize('resources▸initialEmployees', t) * 12 if  t  <=  self.starttime  else self.memoize('capabilities▸totalWorkforceExperience',t-self.dt) +  self.dt  * ( self.memoize('capabilities▸gainingExperience',t-self.dt) - ( self.memoize('capabilities▸losingExperience',t-self.dt) ) ) ),
 
-  		'cash▸cash': lambda t : max( 0, self.memoize('equity▸initialShareholderStock', t) if  t  <=  self.starttime  else self.memoize('cash▸cash', t-self.dt) +  self.dt  * ( self.memoize('cash▸cashIn', t-self.dt) + self.memoize('cash▸cashFromBorrowing', t) - ( self.memoize('cash▸cashOut', t) ) ) ),
+  		'cash▸cash': lambda t : max( 0, self.memoize('equity▸initialShareholderStock', t) if  t  <=  self.starttime  else self.memoize('cash▸cash',t-self.dt) +  self.dt  * ( self.memoize('cash▸cashIn',t-self.dt) + self.memoize('cash▸cashFromBorrowing',t-self.dt) - ( self.memoize('cash▸cashOut',t-self.dt) ) ) ),
 
-  		'cashFlow▸cashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸cashFlowYtd', t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸cashFlowIn', t-self.dt) - ( self.memoize('cashFlow▸cashFlowReset', t) ) ),
+  		'cashFlow▸cashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸cashFlowYtd',t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸cashFlowIn',t-self.dt) - ( self.memoize('cashFlow▸cashFlowReset',t-self.dt) ) ),
 
-  		'cashFlow▸financingCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸financingCashFlowYtd', t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸financingCashFlowIn', t-self.dt) - ( self.memoize('cashFlow▸financingCashFlowReset', t) ) ),
+  		'cashFlow▸financingCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸financingCashFlowYtd',t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸financingCashFlowIn',t-self.dt) - ( self.memoize('cashFlow▸financingCashFlowReset',t-self.dt) ) ),
 
-  		'cashFlow▸investmentCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸investmentCashFlowYtd', t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸investmentCashFlowIn', t-self.dt) - ( self.memoize('cashFlow▸investmentCashFlowReset', t) ) ),
+  		'cashFlow▸investmentCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸investmentCashFlowYtd',t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸investmentCashFlowIn',t-self.dt) - ( self.memoize('cashFlow▸investmentCashFlowReset',t-self.dt) ) ),
 
-  		'cashFlow▸operatingCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸operatingCashFlowYtd', t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸operatingCashFlowIn', t-self.dt) - ( self.memoize('cashFlow▸operatingCashFlowReset', t) ) ),
+  		'cashFlow▸operatingCashFlowYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cashFlow▸operatingCashFlowYtd',t-self.dt) +  self.dt  * ( self.memoize('cashFlow▸operatingCashFlowIn',t-self.dt) - ( self.memoize('cashFlow▸operatingCashFlowReset',t-self.dt) ) ),
 
-  		'cost▸cashExpensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸cashExpensesYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸cashExpensesIn', t-self.dt) - ( self.memoize('cost▸cashExpensesReset', t) ) ),
+  		'cost▸cashExpensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸cashExpensesYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸cashExpensesIn',t-self.dt) - ( self.memoize('cost▸cashExpensesReset',t-self.dt) ) ),
 
-  		'cost▸expensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸expensesYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸expensesIs', t-self.dt) - ( self.memoize('cost▸yearlyExpensesReset', t) ) ),
+  		'cost▸expensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸expensesYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸expensesIs',t-self.dt) - ( self.memoize('cost▸yearlyExpensesReset',t-self.dt) ) ),
 
-  		'cost▸interestOnDebtYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸interestOnDebtYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸interestDebtIn', t-self.dt) - ( self.memoize('cost▸interestDebtReset', t) ) ),
+  		'cost▸interestOnDebtYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸interestOnDebtYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸interestDebtIn',t-self.dt) - ( self.memoize('cost▸interestDebtReset',t-self.dt) ) ),
 
-  		'cost▸marketingCostsYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸marketingCostsYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyMarketingCost', t-self.dt) - ( self.memoize('cost▸yearlyMarketingCostReset', t) ) ),
+  		'cost▸marketingCostsYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸marketingCostsYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyMarketingCost',t-self.dt) - ( self.memoize('cost▸yearlyMarketingCostReset',t-self.dt) ) ),
 
-  		'cost▸nonCashExpensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸nonCashExpensesYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸nonCashExpensesIn', t-self.dt) - ( self.memoize('cost▸nonCashExpensesReset', t) ) ),
+  		'cost▸nonCashExpensesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸nonCashExpensesYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸nonCashExpensesIn',t-self.dt) - ( self.memoize('cost▸nonCashExpensesReset',t-self.dt) ) ),
 
-  		'cost▸payables': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸payables', t-self.dt) +  self.dt  * ( self.memoize('cost▸payablesIn', t-self.dt) - ( self.memoize('cost▸payablesOut', t) ) ),
+  		'cost▸payables': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸payables',t-self.dt) +  self.dt  * ( self.memoize('cost▸payablesIn',t-self.dt) - ( self.memoize('cost▸payablesOut',t-self.dt) ) ),
 
-  		'cost▸serviceCostsYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸serviceCostsYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyServiceCost', t-self.dt) - ( self.memoize('cost▸yearlyServiceCostReset', t) ) ),
+  		'cost▸serviceCostsYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸serviceCostsYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyServiceCost',t-self.dt) - ( self.memoize('cost▸yearlyServiceCostReset',t-self.dt) ) ),
 
-  		'cost▸wagesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸wagesYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyWages', t-self.dt) - ( self.memoize('cost▸yearlyWageReset', t) ) ),
+  		'cost▸wagesYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸wagesYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyWages',t-self.dt) - ( self.memoize('cost▸yearlyWageReset',t-self.dt) ) ),
 
-  		'cost▸workplaceCostYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸workplaceCostYtd', t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyWorkplaceCosts', t-self.dt) - ( self.memoize('cost▸yearlyWorkplaceCostReset', t) ) ),
+  		'cost▸workplaceCostYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('cost▸workplaceCostYtd',t-self.dt) +  self.dt  * ( self.memoize('cost▸monthlyWorkplaceCosts',t-self.dt) - ( self.memoize('cost▸yearlyWorkplaceCostReset',t-self.dt) ) ),
 
-  		'customers▸customers': lambda t : 100 if  t  <=  self.starttime  else self.memoize('customers▸customers', t-self.dt) +  self.dt  * ( self.memoize('customers▸customerAcquisition', t-self.dt) ),
+  		'customers▸customers': lambda t : 100 if  t  <=  self.starttime  else self.memoize('customers▸customers',t-self.dt) +  self.dt  * ( self.memoize('customers▸customerAcquisition',t-self.dt) ),
 
-  		'customers▸dynamicMarketBudget': lambda t : max( 0, self.memoize('customers▸marketingBudget', t) if  t  <=  self.starttime  else self.memoize('customers▸dynamicMarketBudget', t-self.dt) +  self.dt  * ( self.memoize('customers▸dynamicMarketBudgetRateOfChange', t-self.dt) ) ),
+  		'customers▸dynamicMarketBudget': lambda t : max( 0, self.memoize('customers▸marketingBudget', t) if  t  <=  self.starttime  else self.memoize('customers▸dynamicMarketBudget',t-self.dt) +  self.dt  * ( self.memoize('customers▸dynamicMarketBudgetRateOfChange',t-self.dt) ) ),
 
-  		'customers▸marketingCustomers': lambda t : 0 if  t  <=  self.starttime  else self.memoize('customers▸marketingCustomers', t-self.dt) +  self.dt  * ( self.memoize('customers▸advCustIn', t-self.dt) ),
+  		'customers▸marketingCustomers': lambda t : 0 if  t  <=  self.starttime  else self.memoize('customers▸marketingCustomers',t-self.dt) +  self.dt  * ( self.memoize('customers▸advCustIn',t-self.dt) ),
 
-  		'customers▸potentialCustomers': lambda t : 6000000 if  t  <=  self.starttime  else self.memoize('customers▸potentialCustomers', t-self.dt) +  self.dt  * ( -1 * ( self.memoize('customers▸customerAcquisition', t-self.dt) ) ),
+  		'customers▸potentialCustomers': lambda t : 6000000 if  t  <=  self.starttime  else self.memoize('customers▸potentialCustomers',t-self.dt) +  self.dt  * ( -1 * ( self.memoize('customers▸customerAcquisition',t-self.dt) ) ),
 
-  		'customers▸wordOfMouthCustomers': lambda t : 0 if  t  <=  self.starttime  else self.memoize('customers▸wordOfMouthCustomers', t-self.dt) +  self.dt  * ( self.memoize('customers▸womCustIn', t-self.dt) ),
+  		'customers▸wordOfMouthCustomers': lambda t : 0 if  t  <=  self.starttime  else self.memoize('customers▸wordOfMouthCustomers',t-self.dt) +  self.dt  * ( self.memoize('customers▸womCustIn',t-self.dt) ),
 
-  		'debt▸debt': lambda t : self.memoize('debt▸initialDebt', t) if  t  <=  self.starttime  else self.memoize('debt▸debt', t-self.dt) +  self.dt  * ( self.memoize('debt▸debtIn', t-self.dt) - ( self.memoize('debt▸debtOut', t) ) ),
+  		'debt▸debt': lambda t : self.memoize('debt▸initialDebt', t) if  t  <=  self.starttime  else self.memoize('debt▸debt',t-self.dt) +  self.dt  * ( self.memoize('debt▸debtIn',t-self.dt) - ( self.memoize('debt▸debtOut',t-self.dt) ) ),
 
-  		'debt▸debtRepayments': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸debtRepayments', t-self.dt) +  self.dt  * ( self.memoize('debt▸repaymentsIn', t-self.dt) - ( self.memoize('debt▸repaymentsOut', t) ) ),
+  		'debt▸debtRepayments': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸debtRepayments',t-self.dt) +  self.dt  * ( self.memoize('debt▸repaymentsIn',t-self.dt) - ( self.memoize('debt▸repaymentsOut',t-self.dt) ) ),
 
-  		'debt▸interestOnDebt': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸interestOnDebt', t-self.dt) +  self.dt  * ( self.memoize('debt▸interestIn', t-self.dt) - ( self.memoize('debt▸interestOut', t) ) ),
+  		'debt▸interestOnDebt': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸interestOnDebt',t-self.dt) +  self.dt  * ( self.memoize('debt▸interestIn',t-self.dt) - ( self.memoize('debt▸interestOut',t-self.dt) ) ),
 
-  		'debt▸interestReductionAmount': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸interestReductionAmount', t-self.dt) +  self.dt  * ( self.memoize('debt▸interestReductionIn', t-self.dt) - ( self.memoize('debt▸interestReductionOut', t) ) ),
+  		'debt▸interestReductionAmount': lambda t : 0 if  t  <=  self.starttime  else self.memoize('debt▸interestReductionAmount',t-self.dt) +  self.dt  * ( self.memoize('debt▸interestReductionIn',t-self.dt) - ( self.memoize('debt▸interestReductionOut',t-self.dt) ) ),
 
-  		'earnings▸earnings': lambda t : 0 if  t  <=  self.starttime  else self.memoize('earnings▸earnings', t-self.dt) +  self.dt  * ( self.memoize('earnings▸yearlyEarnings', t-self.dt) ),
+  		'earnings▸earnings': lambda t : 0 if  t  <=  self.starttime  else self.memoize('earnings▸earnings',t-self.dt) +  self.dt  * ( self.memoize('earnings▸yearlyEarnings',t-self.dt) ),
 
-  		'equity▸stock': lambda t : max( 0, self.memoize('equity▸initialShareholderStock', t) if  t  <=  self.starttime  else self.memoize('equity▸stock', t-self.dt) +  self.dt  * 0 ),
+  		'equity▸stock': lambda t : max( 0, self.memoize('equity▸initialShareholderStock', t) if  t  <=  self.starttime  else self.memoize('equity▸stock',t-self.dt) +  self.dt  * 0 ),
 
-  		'productPortfolio▸featureIdeas': lambda t : max( 0, 200 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featureIdeas', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featureIdeasDocumented', t-self.dt) - ( self.memoize('productPortfolio▸featuresAccepted', t) + self.memoize('productPortfolio▸featuresDismissed', t) ) ) ),
+  		'productPortfolio▸featureIdeas': lambda t : max( 0, 200 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featureIdeas',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featureIdeasDocumented',t-self.dt) - ( self.memoize('productPortfolio▸featuresAccepted',t-self.dt) + self.memoize('productPortfolio▸featuresDismissed',t-self.dt) ) ) ),
 
-  		'productPortfolio▸featureReleaseCompletionStatus': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featureReleaseCompletionStatus', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresCompleted', t-self.dt) - ( self.memoize('productPortfolio▸frcsReset', t) ) ),
+  		'productPortfolio▸featureReleaseCompletionStatus': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featureReleaseCompletionStatus',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresCompleted',t-self.dt) - ( self.memoize('productPortfolio▸frcsReset',t-self.dt) ) ),
 
-  		'productPortfolio▸featuresInDesign': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInDesign', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresAccepted', t-self.dt) - ( self.memoize('productPortfolio▸featuresDesigned', t) ) ),
+  		'productPortfolio▸featuresInDesign': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInDesign',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresAccepted',t-self.dt) - ( self.memoize('productPortfolio▸featuresDesigned',t-self.dt) ) ),
 
-  		'productPortfolio▸featuresInDevelopment': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInDevelopment', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresDesigned', t-self.dt) - ( self.memoize('productPortfolio▸featuresDeveloped', t) ) ),
+  		'productPortfolio▸featuresInDevelopment': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInDevelopment',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresDesigned',t-self.dt) - ( self.memoize('productPortfolio▸featuresDeveloped',t-self.dt) ) ),
 
-  		'productPortfolio▸featuresInLaunch': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInLaunch', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresTested', t-self.dt) - ( self.memoize('productPortfolio▸featuresLaunched', t) ) ),
+  		'productPortfolio▸featuresInLaunch': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInLaunch',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresTested',t-self.dt) - ( self.memoize('productPortfolio▸featuresLaunched',t-self.dt) ) ),
 
-  		'productPortfolio▸featuresInTest': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInTest', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresDeveloped', t-self.dt) - ( self.memoize('productPortfolio▸featuresTested', t) ) ),
+  		'productPortfolio▸featuresInTest': lambda t : 1 if  t  <=  self.starttime  else self.memoize('productPortfolio▸featuresInTest',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸featuresDeveloped',t-self.dt) - ( self.memoize('productPortfolio▸featuresTested',t-self.dt) ) ),
 
-  		'productPortfolio▸timeSinceLastFeatureRelease': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸timeSinceLastFeatureRelease', t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸timePassing', t-self.dt) - ( self.memoize('productPortfolio▸featureReleaseTimerReset', t) ) ),
+  		'productPortfolio▸timeSinceLastFeatureRelease': lambda t : 0 if  t  <=  self.starttime  else self.memoize('productPortfolio▸timeSinceLastFeatureRelease',t-self.dt) +  self.dt  * ( self.memoize('productPortfolio▸timePassing',t-self.dt) - ( self.memoize('productPortfolio▸featureReleaseTimerReset',t-self.dt) ) ),
 
-  		'resources▸customerService': lambda t : self.memoize('resources▸initialCustomerService', t) if  t  <=  self.starttime  else self.memoize('resources▸customerService', t-self.dt) +  self.dt  * ( self.memoize('resources▸customerServiceIn', t-self.dt) - ( self.memoize('resources▸customerServiceOut', t) ) ),
+  		'resources▸customerService': lambda t : self.memoize('resources▸initialCustomerService', t) if  t  <=  self.starttime  else self.memoize('resources▸customerService',t-self.dt) +  self.dt  * ( self.memoize('resources▸customerServiceIn',t-self.dt) - ( self.memoize('resources▸customerServiceOut',t-self.dt) ) ),
 
-  		'resources▸managingDirectors': lambda t : 2 if  t  <=  self.starttime  else self.memoize('resources▸managingDirectors', t-self.dt) +  self.dt  * 0,
+  		'resources▸managingDirectors': lambda t : 2 if  t  <=  self.starttime  else self.memoize('resources▸managingDirectors',t-self.dt) +  self.dt  * 0,
 
-  		'resources▸marketing': lambda t : self.memoize('resources▸initialMarketing', t) if  t  <=  self.starttime  else self.memoize('resources▸marketing', t-self.dt) +  self.dt  * 0,
+  		'resources▸marketing': lambda t : self.memoize('resources▸initialMarketing', t) if  t  <=  self.starttime  else self.memoize('resources▸marketing',t-self.dt) +  self.dt  * 0,
 
-  		'resources▸productDesigner': lambda t : self.memoize('resources▸initialProductDesigner', t) if  t  <=  self.starttime  else self.memoize('resources▸productDesigner', t-self.dt) +  self.dt  * ( self.memoize('resources▸productDesignerIn', t-self.dt) ),
+  		'resources▸productDesigner': lambda t : self.memoize('resources▸initialProductDesigner', t) if  t  <=  self.starttime  else self.memoize('resources▸productDesigner',t-self.dt) +  self.dt  * ( self.memoize('resources▸productDesignerIn',t-self.dt) ),
 
-  		'resources▸productDeveloper': lambda t : self.memoize('resources▸initialProductDevelopers', t) if  t  <=  self.starttime  else self.memoize('resources▸productDeveloper', t-self.dt) +  self.dt  * ( self.memoize('resources▸producDeveloperIn', t-self.dt) ),
+  		'resources▸productDeveloper': lambda t : self.memoize('resources▸initialProductDevelopers', t) if  t  <=  self.starttime  else self.memoize('resources▸productDeveloper',t-self.dt) +  self.dt  * ( self.memoize('resources▸producDeveloperIn',t-self.dt) ),
 
-  		'resources▸productTester': lambda t : self.memoize('resources▸initialProductTester', t) if  t  <=  self.starttime  else self.memoize('resources▸productTester', t-self.dt) +  self.dt  * ( self.memoize('resources▸productTesterIn', t-self.dt) ),
+  		'resources▸productTester': lambda t : self.memoize('resources▸initialProductTester', t) if  t  <=  self.starttime  else self.memoize('resources▸productTester',t-self.dt) +  self.dt  * ( self.memoize('resources▸productTesterIn',t-self.dt) ),
 
-  		'revenue▸receivables': lambda t : 0 if  t  <=  self.starttime  else self.memoize('revenue▸receivables', t-self.dt) +  self.dt  * ( self.memoize('revenue▸receivablesIn', t-self.dt) - ( self.memoize('revenue▸receivablesOut', t) + self.memoize('revenue▸defaults', t) ) ),
+  		'revenue▸receivables': lambda t : 0 if  t  <=  self.starttime  else self.memoize('revenue▸receivables',t-self.dt) +  self.dt  * ( self.memoize('revenue▸receivablesIn',t-self.dt) - ( self.memoize('revenue▸receivablesOut',t-self.dt) + self.memoize('revenue▸defaults',t-self.dt) ) ),
 
-  		'revenue▸revenueYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('revenue▸revenueYtd', t-self.dt) +  self.dt  * ( self.memoize('revenue▸revenueIn', t-self.dt) - ( self.memoize('revenue▸yearlyRevenueReset', t) ) ),
+  		'revenue▸revenueYtd': lambda t : 0 if  t  <=  self.starttime  else self.memoize('revenue▸revenueYtd',t-self.dt) +  self.dt  * ( self.memoize('revenue▸revenueIn',t-self.dt) - ( self.memoize('revenue▸yearlyRevenueReset',t-self.dt) ) ),
 
-  		'taxes▸provisionsForTax': lambda t : 0 if  t  <=  self.starttime  else self.memoize('taxes▸provisionsForTax', t-self.dt) +  self.dt  * ( self.memoize('taxes▸taxProvisionsIn', t-self.dt) - ( self.memoize('taxes▸taxesBecomingDue', t) ) ),
+  		'taxes▸provisionsForTax': lambda t : 0 if  t  <=  self.starttime  else self.memoize('taxes▸provisionsForTax',t-self.dt) +  self.dt  * ( self.memoize('taxes▸taxProvisionsIn',t-self.dt) - ( self.memoize('taxes▸taxesBecomingDue',t-self.dt) ) ),
 
-  		'taxes▸taxPayment': lambda t : max( 0, 0 if  t  <=  self.starttime  else self.memoize('taxes▸taxPayment', t-self.dt) +  self.dt  * ( self.memoize('taxes▸newPayments', t-self.dt) - ( self.memoize('taxes▸paymentBeingMade', t) ) ) ),
+  		'taxes▸taxPayment': lambda t : max( 0, 0 if  t  <=  self.starttime  else self.memoize('taxes▸taxPayment',t-self.dt) +  self.dt  * ( self.memoize('taxes▸newPayments',t-self.dt) - ( self.memoize('taxes▸paymentBeingMade',t-self.dt) ) ) ),
 
-  		'taxes▸taxesDue': lambda t : 0 if  t  <=  self.starttime  else self.memoize('taxes▸taxesDue', t-self.dt) +  self.dt  * ( self.memoize('taxes▸taxesBecomingDue', t-self.dt) - ( self.memoize('taxes▸payingForTax', t) ) ),
+  		'taxes▸taxesDue': lambda t : 0 if  t  <=  self.starttime  else self.memoize('taxes▸taxesDue',t-self.dt) +  self.dt  * ( self.memoize('taxes▸taxesBecomingDue',t-self.dt) - ( self.memoize('taxes▸payingForTax',t-self.dt) ) ),
     # flows 
   		'capabilities▸gainingExperience': lambda t : max( 0, self.memoize('resources▸employees', t) ),
   	
@@ -160,29 +159,29 @@ class simulation_model():
   	
   		'cashFlow▸cashFlowIn': lambda t : self.memoize('cashFlow▸cashFlow', t),
   	
-  		'cashFlow▸cashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸cashFlowYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cashFlow▸cashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸cashFlowYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cashFlow▸financingCashFlowIn': lambda t : self.memoize('cashFlow▸financingCashFlow', t),
   	
-  		'cashFlow▸financingCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸financingCashFlowYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cashFlow▸financingCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸financingCashFlowYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cashFlow▸investmentCashFlowIn': lambda t : max( 0, self.memoize('cashFlow▸investmentCashFlow', t) ),
   	
-  		'cashFlow▸investmentCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸investmentCashFlowYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cashFlow▸investmentCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸investmentCashFlowYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cashFlow▸operatingCashFlowIn': lambda t : self.memoize('cashFlow▸operatingCashFlow', t),
   	
-  		'cashFlow▸operatingCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸operatingCashFlowYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cashFlow▸operatingCashFlowReset': lambda t : max( 0, self.memoize('cashFlow▸operatingCashFlowYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cost▸cashExpensesIn': lambda t : max( 0, self.memoize('cost▸cashExpenses', t) ),
   	
-  		'cost▸cashExpensesReset': lambda t : max( 0, self.memoize('cost▸cashExpensesYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸cashExpensesReset': lambda t : max( 0, self.memoize('cost▸cashExpensesYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cost▸expensesIs': lambda t : max( 0, self.memoize('cost▸expenses', t) ),
   	
   		'cost▸interestDebtIn': lambda t : max( 0, self.memoize('debt▸interestOnDebt', t) ),
   	
-  		'cost▸interestDebtReset': lambda t : max( 0, self.memoize('cost▸interestOnDebtYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸interestDebtReset': lambda t : max( 0, self.memoize('cost▸interestOnDebtYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cost▸monthlyMarketingCost': lambda t : max( 0, self.memoize('customers▸effectiveMarketingBudget', t) ),
   	
@@ -194,21 +193,21 @@ class simulation_model():
   	
   		'cost▸nonCashExpensesIn': lambda t : max( 0, self.memoize('cost▸nonCashExpenses', t) ),
   	
-  		'cost▸nonCashExpensesReset': lambda t : max( 0, self.memoize('cost▸nonCashExpensesYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸nonCashExpensesReset': lambda t : max( 0, self.memoize('cost▸nonCashExpensesYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'cost▸payablesIn': lambda t : max( 0, self.memoize('customers▸effectiveMarketingBudget', t) + self.memoize('cost▸serviceCost', t) + self.memoize('cost▸workplaceCost', t) ),
   	
   		'cost▸payablesOut': lambda t : max( 0, 0  if t - self.starttime < self.memoize('cost▸paymentTime', t) else self.memoize('cost▸payablesIn', ( t - (self.memoize('cost▸paymentTime', t)) )) ),
   	
-  		'cost▸yearlyExpensesReset': lambda t : max( 0, self.memoize('cost▸expensesYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸yearlyExpensesReset': lambda t : max( 0, self.memoize('cost▸expensesYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
-  		'cost▸yearlyMarketingCostReset': lambda t : max( 0, self.memoize('cost▸marketingCostsYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸yearlyMarketingCostReset': lambda t : max( 0, self.memoize('cost▸marketingCostsYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
-  		'cost▸yearlyServiceCostReset': lambda t : max( 0, self.memoize('cost▸serviceCostsYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸yearlyServiceCostReset': lambda t : max( 0, self.memoize('cost▸serviceCostsYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
-  		'cost▸yearlyWageReset': lambda t : max( 0, self.memoize('cost▸wagesYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸yearlyWageReset': lambda t : max( 0, self.memoize('cost▸wagesYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
-  		'cost▸yearlyWorkplaceCostReset': lambda t : max( 0, self.memoize('cost▸workplaceCostYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'cost▸yearlyWorkplaceCostReset': lambda t : max( 0, self.memoize('cost▸workplaceCostYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'customers▸advCustIn': lambda t : max( 0, self.memoize('customers▸acquisitionThroughMarketing', t) ),
   	
@@ -234,11 +233,11 @@ class simulation_model():
   	
   		'debt▸repaymentsOut': lambda t : max( 0, min( 0  if t - self.starttime < self.memoize('debt▸numberOfRepaymentPeriods', t) else self.memoize('debt▸repaymentsIn', ( t - (self.memoize('debt▸numberOfRepaymentPeriods', t)) )), self.memoize('debt▸debtRepayments', t) ) ),
   	
-  		'earnings▸yearlyEarnings': lambda t : self.memoize('earnings▸profitAfterTaxYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0,
+  		'earnings▸yearlyEarnings': lambda t : self.memoize('earnings▸profitAfterTaxYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0,
   	
   		'productPortfolio▸featureIdeasDocumented': lambda t : max( 0, self.memoize('productPortfolio▸featureIdeasFromCustomers', t) ),
   	
-  		'productPortfolio▸featureReleaseTimerReset': lambda t : max( 0, ( self.memoize('productPortfolio▸timeSinceLastFeatureRelease', t) ) / dt if self.memoize('productPortfolio▸featureReleaseLaunchPolicy', t) > 0 else 0 ),
+  		'productPortfolio▸featureReleaseTimerReset': lambda t : max( 0, ( self.memoize('productPortfolio▸timeSinceLastFeatureRelease', t) ) / self.dt if self.memoize('productPortfolio▸featureReleaseLaunchPolicy', t) > 0 else 0 ),
   	
   		'productPortfolio▸featuresAccepted': lambda t : max( 0, self.memoize('productPortfolio▸featureAcceptanceRate', t) ),
   	
@@ -254,7 +253,7 @@ class simulation_model():
   	
   		'productPortfolio▸featuresTested': lambda t : max( 0, min( self.memoize('resources▸featureTestCapacity', t) * self.memoize('productPortfolio▸featuresInTest', t) / self.memoize('productPortfolio▸featureTestEffort', t), self.memoize('productPortfolio▸featuresInTest', t) ) ),
   	
-  		'productPortfolio▸frcsReset': lambda t : max( 0, ( self.memoize('productPortfolio▸featureReleaseCompletionStatus', t) ) / dt if self.memoize('productPortfolio▸featureReleaseLaunchPolicy', t) == 1 else 0 ),
+  		'productPortfolio▸frcsReset': lambda t : max( 0, ( self.memoize('productPortfolio▸featureReleaseCompletionStatus', t) ) / self.dt if self.memoize('productPortfolio▸featureReleaseLaunchPolicy', t) == 1 else 0 ),
   	
   		'productPortfolio▸timePassing': lambda t : 1,
   	
@@ -276,7 +275,7 @@ class simulation_model():
   	
   		'revenue▸revenueIn': lambda t : max( 0, self.memoize('revenue▸revenue', t) ),
   	
-  		'revenue▸yearlyRevenueReset': lambda t : max( 0, self.memoize('revenue▸revenueYtd', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'revenue▸yearlyRevenueReset': lambda t : max( 0, self.memoize('revenue▸revenueYtd', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'taxes▸newPayments': lambda t : max( 0, self.memoize('taxes▸taxesBecomingDue', t) / self.memoize('taxes▸paymentPeriods', t) ),
   	
@@ -284,7 +283,7 @@ class simulation_model():
   	
   		'taxes▸paymentBeingMade': lambda t : max( 0, 0  if t - self.starttime < self.memoize('taxes▸paymentPeriods', t) else self.memoize('taxes▸newPayments', ( t - (self.memoize('taxes▸paymentPeriods', t)) )) ),
   	
-  		'taxes▸taxProvisionsIn': lambda t : max( 0, self.memoize('taxes▸yearlyIncomeTax', t)/ dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
+  		'taxes▸taxProvisionsIn': lambda t : max( 0, self.memoize('taxes▸yearlyIncomeTax', t)/ self.dt if 13 <= t and ((t -13) % 12) == 0 else 0 ),
   	
   		'taxes▸taxesBecomingDue': lambda t : max( 0, 0  if t - self.starttime < self.memoize('taxes▸averageTimeBeforeTaxesBecomeDue', t) else self.memoize('taxes▸taxProvisionsIn', ( t - (self.memoize('taxes▸averageTimeBeforeTaxesBecomeDue', t)) )) ),
   		# converters 

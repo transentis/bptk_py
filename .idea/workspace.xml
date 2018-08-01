@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/simulator/model_simulator_backup.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runner.py" beforeDir="false" afterPath="$PROJECT_DIR$/runner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenarios/scenario_3.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simulation_models/model.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/simulation_models/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulation_models/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simulation_models/model_stub.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simulation_models/model_stub_2.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator/model_simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator/model_simulator.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -20,32 +23,11 @@
       <file leaf-file-name="model_simulator.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
-              <caret line="104" column="36" selection-start-line="104" selection-start-column="36" selection-end-line="104" selection-end-column="36" />
+            <state relative-caret-position="486">
+              <caret line="118" column="49" selection-start-line="118" selection-start-column="49" selection-end-line="118" selection-end-column="49" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="runner.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/runner.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="691">
-              <caret line="162" column="93" selection-start-line="162" selection-start-column="93" selection-end-line="162" selection-end-column="93" />
-              <folding>
-                <element signature="e#13#75#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario_manager.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenario_manager/scenario_manager.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="14" column="29" lean-forward="true" selection-start-line="14" selection-start-column="29" selection-end-line="14" selection-end-column="29" />
             </state>
           </provider>
         </entry>
@@ -54,42 +36,33 @@
         <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="105">
-              <caret line="7" column="12" selection-start-line="7" selection-start-column="12" selection-end-line="7" selection-end-column="12" />
+              <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="runner.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/runner.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="270">
+              <caret line="24" selection-start-line="24" selection-end-line="24" />
+              <folding>
+                <element signature="e#12#73#0" expanded="true" />
+                <element signature="e#2130#3289#0" />
+                <element signature="e#3292#3331#0" />
+                <element signature="e#5063#6274#0" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="554">
-              <caret line="82" column="13" lean-forward="true" selection-start-line="82" selection-start-column="13" selection-end-line="82" selection-end-column="33" />
+            <state relative-caret-position="270">
+              <caret line="477" selection-start-line="477" selection-end-line="477" />
               <folding>
                 <element signature="e#270#287#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="scenario.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scenario_manager/scenario.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="63" selection-start-line="9" selection-start-column="63" selection-end-line="9" selection-end-column="63" />
-              <folding>
-                <element signature="e#0#16#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/config/config.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="675">
-              <caret line="45" lean-forward="true" selection-start-line="45" selection-end-line="45" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -151,11 +124,11 @@
         <option value="$PROJECT_DIR$/logger/logger.py" />
         <option value="$PROJECT_DIR$/scenario_manager/scenario.py" />
         <option value="$PROJECT_DIR$/scenarios/scenario_3.json" />
-        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
-        <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
-        <option value="$PROJECT_DIR$/simulation_models/model.py" />
         <option value="$PROJECT_DIR$/config/config.py" />
         <option value="$PROJECT_DIR$/runner.py" />
+        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
+        <option value="$PROJECT_DIR$/simulation_models/model.py" />
+        <option value="$PROJECT_DIR$/simulator/model_simulator.py" />
       </list>
     </option>
   </component>
@@ -236,6 +209,7 @@
       <recent name="$PROJECT_DIR$/scenarios" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/simulator" />
       <recent name="$PROJECT_DIR$/simulation_models" />
       <recent name="$PROJECT_DIR$/scenarios" />
     </key>
@@ -383,7 +357,8 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="2560" height="1359" extended-state="6" />
+    <frame x="2" y="23" width="2560" height="1359" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49941927" visible="true" weight="0.25" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3299611" />
@@ -413,23 +388,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/config/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="29" selection-start-line="11" selection-start-column="29" selection-end-line="11" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/simulation_models/model_stub.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1650">
-          <caret line="111" column="48" lean-forward="true" selection-start-line="111" selection-start-column="26" selection-end-line="111" selection-end-column="48" />
-          <folding>
-            <element signature="e#0#28#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="585">
@@ -442,7 +400,10 @@
         <state relative-caret-position="525">
           <caret line="39" selection-start-line="39" selection-end-line="39" />
           <folding>
-            <element signature="e#13#75#0" expanded="true" />
+            <element signature="e#12#73#0" expanded="true" />
+            <element signature="e#2130#3289#0" />
+            <element signature="e#3292#3331#0" />
+            <element signature="e#5063#6274#0" />
           </folding>
         </state>
       </provider>
@@ -573,13 +534,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/simulation_models/model.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="296">
-          <caret line="31" lean-forward="true" selection-start-line="31" selection-end-line="31" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Visualizations/visualize.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="330">
@@ -603,8 +557,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/scenario_manager/scenario_manager.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="14" column="29" lean-forward="true" selection-start-line="14" selection-start-column="29" selection-end-line="14" selection-end-column="29" />
+        <state relative-caret-position="330">
+          <caret line="23" lean-forward="true" selection-start-line="23" selection-end-line="23" />
         </state>
       </provider>
     </entry>
@@ -614,23 +568,6 @@
           <caret line="9" column="63" selection-start-line="9" selection-start-column="63" selection-end-line="9" selection-end-column="63" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="12" selection-start-line="7" selection-start-column="12" selection-end-line="7" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="104" column="36" selection-start-line="104" selection-start-column="36" selection-end-line="104" selection-end-column="36" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -645,22 +582,61 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
+    <entry file="file://$PROJECT_DIR$/simulator/model_simulator_backup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="554">
-          <caret line="82" column="13" lean-forward="true" selection-start-line="82" selection-start-column="13" selection-end-line="82" selection-end-column="33" />
-          <folding>
-            <element signature="e#270#287#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="11">
+          <caret line="72" column="35" selection-start-line="72" selection-start-column="35" selection-end-line="72" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model.m">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="128">
+          <caret line="34" column="17" lean-forward="true" selection-start-line="34" selection-start-column="17" selection-end-line="34" selection-end-column="17" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/runner.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="691">
-          <caret line="162" column="93" selection-start-line="162" selection-start-column="93" selection-end-line="162" selection-end-column="93" />
+        <state relative-caret-position="270">
+          <caret line="24" selection-start-line="24" selection-end-line="24" />
           <folding>
-            <element signature="e#13#75#0" expanded="true" />
+            <element signature="e#12#73#0" expanded="true" />
+            <element signature="e#2130#3289#0" />
+            <element signature="e#3292#3331#0" />
+            <element signature="e#5063#6274#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulator/model_simulator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="486">
+          <caret line="118" column="49" selection-start-line="118" selection-start-column="49" selection-end-line="118" selection-end-column="49" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" column="14" selection-start-line="7" selection-start-column="14" selection-end-line="7" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="477" selection-start-line="477" selection-end-line="477" />
+          <folding>
+            <element signature="e#270#287#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -3,7 +3,7 @@ from sys import exit
 #################################
 ## IMPORT YOUR OWN MODEL HERE! ##
 #################################
-
+from simulation_models.model_stub import simulation_model as simulation_model
 
 
 ######### IMPORTS
@@ -95,18 +95,6 @@ class simulator():
 
     def __simulate_equations(self,start=0,until=0, equations=[]):
 
-        ## First do constants
-        #for constant in self.mod.constants:
-        #    self.mod.memoize(constant,start)
-
-        #for converter in self.mod.converters:
-        #    for i in range(start,until+1):
-        #        self.mod.memoize(converter,i)
-
-        #for flow in self.mod.flows:
-        #    for i in range(start,until+1):
-        #        self.mod.memoize(flow,i)
-
         for equation in equations: # Start one thread for each equation
             t = Thread(target=self.__simulate, args=(equation,until,start))
             t.start()
@@ -114,9 +102,9 @@ class simulator():
 
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until,start):
-
         for i in range(start,until+1):
-            result = self.mod.memoize(equation,i)
+            result = self.mod.equations[equation](i)
+
 
             if not equation in self.results.keys():
                 self.results[equation] = {}
