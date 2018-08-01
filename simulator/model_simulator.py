@@ -102,7 +102,7 @@ class simulator():
 
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until,start):
-        for i in range(start,until):
+        for i in range(start,until+1):
             result = self.mod.equations[equation](i)
 
 
