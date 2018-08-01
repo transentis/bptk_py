@@ -19,6 +19,7 @@ def run_simulations(scenario_names, scenario_path="scenarios/", equations=[], ou
     path = scenario_path
     scenarios = {}
 
+
     log("[INFO] Attempting to load scenarios from scenarios folder.")
     for infile in glob.glob(os.path.join(scenario_path, '*.json')):
         scenario = scenarioManager().readScenario(infile)
@@ -40,6 +41,7 @@ def run_simulations(scenario_names, scenario_path="scenarios/", equations=[], ou
             # Find equations that I can actually simulate in the specific model of the scenario!
             equations_to_simulate = []
             for equation in equations:
+
                 if equation in sc.model.equations.keys():
                     equations_to_simulate += [equation]
 
@@ -67,6 +69,7 @@ def run_and_visualize(scenario_names, equations=[], kind=config.kind, alpha=conf
         for scenario_name in scenario_objects.keys():
             if scenario_name in scenario_names:
                 sc = scenario_objects[scenario_name]
+                print(sc.model.equations.keys())
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
@@ -126,14 +129,14 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
                            freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label=""):
 
     # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-    scenario_objects = run_simulations(scenario_names=scenario_name, equations=equations)
+    scenario_objects = run_simulations(scenario_names=[scenario_name], equations=equations)
 
     # Visualize Object
     visualize = visualizations()
     dict_equations = {}
     if len(equations) == 0:
         for scenario_name in scenario_objects.keys():
-            equations += scenario_objects[scenario_name].equationsToSimulate
+            equations += scenario_objects[scenario_name].model.equations
 
     for equation in equations:
         if equation not in dict_equations.keys():
@@ -156,6 +159,7 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
 
     return df
 
-## Return Results
-#print(plotOutputsForScenario(scenario_name="TestScenario_3", freq="D", start_date="1/11/2018",title="Testing Fun",x_label="Time",y_label="Number"))
 
+#x=plotOutputsForScenario(scenario_name="TestScenario_3", equations=["bar"], freq="D", start_date="1/11/2018",title="Testing Fun",x_label="Time",y_label="Number")
+
+print(x)
