@@ -1,13 +1,13 @@
 
 ### IMPORTS
 from  scenario_manager.scenario_manager import scenarioManager
-from scenario_manager.scenario import simulation_scenario
+
 from simulator.model_simulator import simulator
 import glob,os
 from logger.logger import log
 from Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
-import numpy as np
+import config.config as config
 plt.interactive(True)
 ## DICT THAT STORES ALL MY SCENARIOS LATER!
 ##
@@ -71,7 +71,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 
 
     df = visualize.generatePlottableDF(scenario_objects, dict_equations,start_date=start_date,freq=freq)
-    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title)
+    df.plot(kind=kind,stacked=stacked,figsize=(10,10),title=title,alpha=0.4,color=config.color)
     return df
 
 # CODES FOR FREQUENCY / "FREQ" argument
@@ -102,8 +102,7 @@ def run_and_visualize(scenario_names, equations=[], kind="line", stacked=False,f
 # U, us   microseconds
 # N       nanoseconds
 
-
-print(run_and_visualize(scenario_names=["TestScenario_3"], kind="area", stacked=True,freq="B",start_date="1/5/2018",title="Testing Fun"))
+#print(run_and_visualize(scenario_names=["TestScenario_3"], kind="area", stacked=True,freq="B",start_date="1/5/2018",title="Testing Fun"))
 ## Run Scenarios
 
 ## Return Results
