@@ -3,3 +3,5 @@
 *.csv
 results/
 venv
+.idea/
+.ipynb_checkpoints/
