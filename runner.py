@@ -162,4 +162,3 @@ def plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=
 
 #x=plotOutputsForScenario(scenario_name="TestScenario_3", equations=["bar"], freq="D", start_date="1/11/2018",title="Testing Fun",x_label="Time",y_label="Number")
 
-print(x)
