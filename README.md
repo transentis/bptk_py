@@ -61,5 +61,7 @@ The first, plots one or multiple equations for one scenario ("scenario_name"). T
 - ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
 - ``x_label`` and ``y_label``: set the label names for the axis.
 
+## TODO
+- Monitoring: We need to monitor changes to specified itmx files and parse to python file
 
 
