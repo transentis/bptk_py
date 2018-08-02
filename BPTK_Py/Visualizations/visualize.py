@@ -22,5 +22,8 @@ class visualizations():
         plot_df.index= pd.date_range(start_date, periods=len(plot_df),freq=freq)
         return plot_df
 
+    def update_plot_formats(self,ax):
+        ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
+        ax.set_yticklabels(ylabels)
 
-
+        #ax.get_yaxis().get_major_formatter().set_scientific(False)

@@ -26,7 +26,7 @@ matplotlib_rc_settings = {
     "lines.markersize": 15,
     "xtick.labelsize": 15,
     "ytick.labelsize": 15,
-    "figure.figsize": (15, 12)
+    "figure.figsize": (18, 12)
 }
 
 transentis_colors = {
