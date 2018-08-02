@@ -10,16 +10,13 @@ log_modes = ["logfile"]
 ### File to log to
 log_file = "simulator_log.log"
 
-
 ## Location of the scenarios (relative path from top level of working dir)
 scenario_storage = "scenarios/"
-
-
 
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-    'font.family': "DejaVu Sans",    # Later change to "AutographScriptEFOP-Lig"
+    'font.family': "DejaVu Sans",  # Later change to "AutographScriptEFOP-Lig"
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,
@@ -30,13 +27,14 @@ matplotlib_rc_settings = {
 }
 
 transentis_colors = {
-    "orange":       (100 / 100, 51 / 100, 0 / 100),
-    "grey":         (34.1 / 100, 32.9 / 100, 34.1 / 100),
-    "blue":         (0 / 100, 33.3 / 100, 45.1 / 100),
-    "turquoise":    (0 / 100, 58.8 / 100, 58.8 / 100),
-    "red":          (70.6 / 100, 0 / 100, 23.5 / 100),
-    "beige":        (68.6 / 100, 60.8 / 100, 39.2 / 100),
-    "olive":        (60.8 / 100, 60.8 / 100, 5.9 / 100)
+    "blue": (0 / 100, 33.3 / 100, 45.1 / 100),
+    "olive": (60.8 / 100, 60.8 / 100, 5.9 / 100),
+    "orange": (100 / 100, 51 / 100, 0 / 100),
+    "grey": (34.1 / 100, 32.9 / 100, 34.1 / 100),
+    "red": (70.6 / 100, 0 / 100, 23.5 / 100),
+    "beige": (68.6 / 100, 60.8 / 100, 39.2 / 100),
+    "turquoise": (0 / 100, 58.8 / 100, 58.8 / 100),
+
 }
 
 colors = [transentis_colors[color] for color in transentis_colors.keys()]

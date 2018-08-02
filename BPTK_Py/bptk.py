@@ -47,6 +47,8 @@ class bptk_wrapper():
                     if equation in sc.model.equations.keys():
                         equations_to_simulate += [equation]
 
+            ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
+
                 sc.result = simu.start(output=output, equations=equations_to_simulate)
             else:
                 sc.result = simu.start(output=output, equations=sc.equationsToSimulate)
