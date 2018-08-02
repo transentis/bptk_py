@@ -8,6 +8,8 @@ log_modes = ["logfile"]
 log_file = "simulator_log.log"
 root = "./"
 
+## Location of the Parser itmx -> py. Give the top level (i.e. the Git main folder, possibly on absolute path or use symlinks)
+parser_location = "/Users/dominikschroeck/Code/sd-compiler"
 scenario_storage = "scenarios/"
 
 

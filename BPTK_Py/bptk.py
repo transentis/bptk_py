@@ -7,6 +7,7 @@ from BPTK_Py.logger.logger import log
 from BPTK_Py.Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
 import BPTK_Py.config.config as config
+from BPTK_Py.model_monitor.model_monitor import modelMonitor
 
 plt.interactive(True)
 
@@ -19,6 +20,9 @@ class bptk_wrapper():
         import BPTK_Py.config.config as config
         for key in config.matplotlib_rc_settings.keys():
             plt.rcParams[key] = config.matplotlib_rc_settings[key]
+
+
+        self.mon = modelMonitor('simulation_models/make_your_startup_grow.itmx', 'simulation_models/model.py')
 
     def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
         ## Load scenarios
@@ -147,3 +151,7 @@ class bptk_wrapper():
         ### If user wanted a dataframe, here it is!
         if return_df:
             return df
+
+    ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
+    def destroy(self):
+        self.mon.kill()
