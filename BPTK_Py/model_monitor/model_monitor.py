@@ -15,8 +15,7 @@ class modelMonitor():
 
         self.execute_script = "/Users/dominikschroeck/Code/sd-compiler/bin/sdcc_test -i " + model_file + " -t py > " + dest
 
-
-        log("[INFO] Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
+        log("[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
         self.running = True
         self._cached_stamp = os.stat(self.model_file).st_mtime
         t = Thread(target=self.__monitor, args=())
@@ -30,12 +29,12 @@ class modelMonitor():
         while self.running:
             stamp = os.stat(self.model_file).st_mtime
             if stamp != self._cached_stamp:
-                log("[INFO] Observed a change to the model. Calling the parser")
+                log("[INFO] Model Monitor: Observed a change to the model. Calling the parser")
                 self._cached_stamp = stamp
 
                 # File has changed, so parse model again
                 #os.system(self.execute_script)
-                log("[INFO] UPDATE METHOD NOT YET IMPLEMENTED!")
+                log("[WARN] Model Monitor UPDATE METHOD NOT YET IMPLEMENTED!")
             time.sleep(1)
 
-
+        log("[INFO] Model Monitor: I got killed... Goodbye!")

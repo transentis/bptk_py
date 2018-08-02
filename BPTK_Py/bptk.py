@@ -21,14 +21,13 @@ class bptk_wrapper():
         for key in config.matplotlib_rc_settings.keys():
             plt.rcParams[key] = config.matplotlib_rc_settings[key]
 
-
-        self.mon = modelMonitor('simulation_models/make_your_startup_grow.itmx', 'simulation_models/model.py')
+        self.ScenarioManager = scenarioManager()
 
     def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = scenarioManager().getAvailableScenarios()
+        scenarios = self.ScenarioManager.getAvailableScenarios()
 
         #### Run the simulation scenarios
 
@@ -82,19 +81,17 @@ class bptk_wrapper():
     # U, us   microseconds
     # N       nanoseconds
 
-    ## Run Scenarios
-
     # This method plots the outputs for one scenario. If the equations list is empty, we will simulate the equations form "equationsToSimulate" field in the scenario JSON file
     def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
                                stacked=config.stacked,
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                               y_label="",series_names=[], return_df=False):
+                               y_label="", series_names=[], return_df=False):
 
         return self.__plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
                                     stacked=stacked,
                                     freq=freq, start_date=start_date, title=title,
                                     visualize_from_period=visualize_from_period,
-                                    x_label=x_label, y_label=y_label,series_names=series_names, return_df=return_df)
+                                    x_label=x_label, y_label=y_label, series_names=series_names, return_df=return_df)
 
     def plotScenarioForOutput(self, scenario_names, equation, kind=config.kind, alpha=config.alpha,
                               stacked=config.stacked,
@@ -104,12 +101,14 @@ class bptk_wrapper():
         return self.__plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
                                     stacked=stacked,
                                     freq=freq, start_date=start_date, title=title,
-                                    visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label, series_names=series_names,
+                                    visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                    series_names=series_names,
                                     return_df=return_df)
 
     # Private method that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def __plotScenarios(self, scenario_names, equations, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=[],
+                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                        series_names=[],
                         return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
@@ -133,7 +132,8 @@ class bptk_wrapper():
         ## Actual visualization
 
         ### Prepare the Plottable DataFrame
-        df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq,series_names=series_names)
+        df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq,
+                                           series_names=series_names)
 
         ### Get the plot object
         ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.figsize, title=title,
@@ -153,5 +153,7 @@ class bptk_wrapper():
             return df
 
     ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
+    ## It essentially only kills all the file monitors
     def destroy(self):
-        self.mon.kill()
+        log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
+        self.ScenarioManager.destroy()

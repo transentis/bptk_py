@@ -22,6 +22,7 @@ You write scenarios in JSON format. Example:
     "cost.paymentTransactionCost" : 0.5,
     "cost.productDevelopmentWage" : 10000
   },
+  "sourceModel" : "simulation_models/make_your_startup_grow.itmx",
   "name": "MakeYouStartUpGrow_2",
   "from": 1,
   "until": 100,
@@ -30,14 +31,10 @@ You write scenarios in JSON format. Example:
   "equationsToSimulate": [
     "capabilities.totalWorkforceExperience",
     "cash.cash",
-    "cashFlow.cashFlowYtd",
-    "cashFlow.financingCashFlowYtd",
-    "cashFlow.investmentCashFlowYtd",
-    "cashFlow.operatingCashFlowYtd"
   ]
 }
 ```
-The ``constants`` list stores the overrides for the constants. The other fields are self-explaining. The only required field is the ``name``, the simulation will exit with an error if no name is given. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then. It serves as a fallback if the equations are not specified in code.
+The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``, the simulation will exit with an error if no name is given. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then). It serves as a fallback if the equations are not specified in code. You should also consider using the ``sourceModel`` field as for each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected!
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
 ### API calls
@@ -64,7 +61,7 @@ The second method lets you plot one equation for multiple scenarios and uses the
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst.
 
 ## TODO
-* Monitoring: We need to monitor changes to specified itmx files and parse to python file
+* Monitoring: Whenever we change a specific model in stela, the changes should be written back to the model file. When BPTK_Py is initiated, a file monitor starts if a ``sourceModel`` is given in the scenario configuration. **Still pending the integration of the model parser.**
 
 
 

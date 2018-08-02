@@ -3,6 +3,7 @@
     "cost.paymentTransactionCost" : 0.5,
     "cost.productDevelopmentWage" : 10000
   },
+  "sourceModel" : "simulation_models/make_your_startup_grow.itmx",
   "name": "MakeYourStartUpGrow_2",
   "from": 1,
   "until": 100,
