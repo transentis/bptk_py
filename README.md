@@ -1,7 +1,6 @@
 # Business Prototyping Toolkit for Python
 Welcome to the Business Prototyping Toolkit for Python!
 
-## BPTK_Py
 BPTK_Py is the implementation of a simulation engine and plotting for Stela System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks.
 It requires a python-parsed version of the model containing the set of equations. We employ transentis' sdcc parser for this. An example model is available in [simulation_models/](simulation_models/)
 
@@ -13,7 +12,7 @@ bptk = bptk_wrapper()
 
 Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py)
 
-### Scenarios
+## Scenarios
 You write scenarios in JSON format. Example:
 
 ```
@@ -37,7 +36,7 @@ You write scenarios in JSON format. Example:
 The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``, the simulation will exit with an error if no name is given. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then). It serves as a fallback if the equations are not specified in code. You should also consider using the ``sourceModel`` field as for each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected!
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
-### API calls
+## API calls
 The ipython example notebook contains examples for the API calls. For now, there are two methods analysts can use:
 ```
 bptk.plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)

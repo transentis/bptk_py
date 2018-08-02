@@ -1,7 +1,16 @@
+
+####### IMPORTS
 import importlib
 from BPTK_Py.logger.logger import log
 import sys
+#######
 
+###############################
+## ClASS SIMULATION_SCENARIO ##
+###############################
+
+### This class stores the settings for each scenario in a dictionary
+### ...and some values in explicit variables.
 class simulation_scenario():
 
     def __init__(self,dictionary):

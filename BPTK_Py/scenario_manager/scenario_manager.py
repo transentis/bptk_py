@@ -8,25 +8,30 @@ import glob, os
 from BPTK_Py.model_monitor.model_monitor import modelMonitor
 ###
 
+
+###########################
+## ClASS scenarioManager ##
+###########################
+
+### This class reads and writes scenarios and starts the file monitors for each scenario's model
 class scenarioManager():
+
+    ### Setup required object variables
     def __init__(self):
         self.scenario_monitors = {}
 
+    ### write scenario (coming as a dict) to file
     def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
         json_string = json.dumps(dictionary)
         with open(filename, 'w',encoding="utf-8") as outfile:
             outfile.write(json_string)
 
 
-    def readScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
-        json_data = open(filename,encoding="utf-8").read()
-
-        return simulation_scenario(dict(json.loads(json_data)))
-
+    ### Returns all available scenarios and starts file monitors in case the source model is given
     def getAvailableScenarios(self,path=config.scenario_storage):
         scenarios = {}
         for infile in glob.glob(os.path.join(path, '*.json')):
-            scenario = self.readScenario(infile)
+            scenario = self.__readScenario(infile)
             scenarios[scenario.name] = scenario
 
             # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
@@ -37,7 +42,7 @@ class scenarioManager():
         return scenarios
 
 
-
+    ### prints all available scenarios to stdout
     def printAvailableScenarios(self,path=config.scenario_storage):
         scenarios = self.getAvailableScenarios(path=path)
         print("\n")
@@ -63,8 +68,17 @@ class scenarioManager():
 
             print("\n")
 
+        # Kill the monitoring threads because we do not require them
+        self.destroy()
 
-    # Kill all monitors
+
+    ### Kill all monitors
     def destroy(self):
         for scenario in self.scenario_monitors.keys():
             self.scenario_monitors[scenario].kill()
+
+    ### Read scenario from file and build a simulation_scenario object
+    def __readScenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
+        json_data = open(filename,encoding="utf-8").read()
+
+        return simulation_scenario(dict(json.loads(json_data)))

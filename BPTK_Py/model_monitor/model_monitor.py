@@ -1,15 +1,23 @@
+
+####### IMPORTS
 from threading import Thread
 import time
-import os
-from subprocess import call
-import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
-
 import os
+#######
 
+########################
+## ClASS MODELMONITOR ##
+########################
+
+### Simple monitoring script for itmx files. Still under development.
+### Monitors itmx files and invokes parser when a change is detected
 class modelMonitor():
-    def __init__(self, model_file, dest):
 
+    ## Init.
+    # model_file: path to itmx model
+    # dest: path to final python file
+    def __init__(self, model_file, dest):
 
         self.model_file = model_file
 
@@ -22,6 +30,7 @@ class modelMonitor():
         t.start()
 
 
+    ### Kill method. Thread will die after calling this
     def kill(self):
         self.running = False
 

@@ -1,8 +1,8 @@
 from sys import exit
 
-#################################
-## IMPORT YOUR OWN MODEL HERE! ##
-#################################
+###########################
+## CLASS MODEL SIMULATOR ##
+###########################
 
 
 
@@ -41,7 +41,6 @@ class simulator():
         # Setting a None object for my result_frame.
         self.result_frame = None
 
-        ## Create files for simulation results
 
         self.finished_simulations_count = 0
         self.name = name
@@ -62,8 +61,8 @@ class simulator():
         log("[INFO] Starting simulation of model {}. starttime={}, stoptime={}".format(self.name,str(start),str(until)))
 
 
-        if not os.path.exists(config.root + "/results/"):
-            os.makedirs(config.root + "/results/")
+        if not os.path.exists( "./results/"):
+            os.makedirs("./results/")
 
 
         log("[INFO] {}: Starting {} simulations".format(self.name,(until-start) * len(equations)))

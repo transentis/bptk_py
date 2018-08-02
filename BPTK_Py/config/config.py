@@ -1,34 +1,32 @@
-import sys
+##################################
+## BPTK_Py Global Configuration ##
+##################################
 
 
-until = 1000
-
+### LOG MODES. Simple list. Default: ["logfile"], not outputting the log to stdout. Use "print" to log to stdout
 log_modes = ["print", "logfile"]
 log_modes = ["logfile"]
-log_file = "simulator_log.log"
-root = "./"
 
-## Location of the Parser itmx -> py. Give the top level (i.e. the Git main folder, possibly on absolute path or use symlinks)
-parser_location = "/Users/dominikschroeck/Code/sd-compiler"
+### File to log to
+log_file = "simulator_log.log"
+
+
+## Location of the scenarios (relative path from top level of working dir)
 scenario_storage = "scenarios/"
 
 
-## Setting the recursion limit. Python is usually very conservative here. Please be careful with this setting!
-## Only change it if you observer an error regarding the recursion limit! Usually only appears if until is very high as the
-## Recursion depth highly depends on this! For small simulations, no need to set it! Only if you exceed a recursion level or 1,000
-#sys.setrecursionlimit(6000)
 
-## Style setting
+### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-    'font.family': "DejaVu Sans",
+    'font.family': "DejaVu Sans",    # Later change to "AutographScriptEFOP-Lig"
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,
     "lines.markersize": 15,
     "xtick.labelsize": 15,
     "ytick.labelsize": 15,
-    "figure.figsize": (18, 12)
+    "figure.figsize": (20, 10)
 }
 
 transentis_colors = {
