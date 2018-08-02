@@ -1,5 +1,6 @@
 import importlib
 from BPTK_Py.logger.logger import log
+import sys
 
 class simulation_scenario():
 
@@ -19,17 +20,43 @@ class simulation_scenario():
 
 
         ####
+        keys = dictionary.keys()
 
         self.constants =  dictionary["constants"]
         self.start = dictionary["from"]
-        self.until = dictionary["until"]
-        self.dt = dictionary["dt"]
+
+        if "from" in keys:
+            self.start = dictionary["from"]
+            self.model.starttime = self.start
+        else:
+            self.start = self.model.starttime
+
+        if "until" in keys:
+            self.until = dictionary["until"]
+            self.model.stoptime = self.until
+
+        else:
+            self.until = self.model.stoptime
+
+        if "dt" in keys:
+            self.dt = dictionary["dt"]
+            self.model.dt = self.dt
+        else:
+            self.dt = self.model.dt
+
+        if not "name" in keys:
+            log("[ERROR] No scenario name given! Will exit now!")
+            sys.exit()
+
         self.name = dictionary["name"]
-        self.equationsToSimulate = dictionary["equationsToSimulate"]
+
+
+        if "equationsToSimulate" in dictionary.keys(): self.equationsToSimulate = dictionary["equationsToSimulate"]
+
+
         self.results = None # When we finish a simulation, we will write the resulting dataframe in here
 
-        self.model.dt = self.dt
-        self.model.starttime = self.start
-        self.model.stoptime = self.until
+
+
 
 

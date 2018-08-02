@@ -8,12 +8,8 @@ It requires a python-parsed version of the model containing the set of equations
 
 An initial setup (that also employs the transentis color style) contains these lines:
 ```
-import BPTK_Py.bptk as bptk
-import BPTK_Py.config.config as config
-import importlib
-import matplotlib as plt
-for key in config.matplotlib_rc_settings.keys():
-    plt.rcParams[key] = config.matplotlib_rc_settings[key]
+from BPTK_Py.bptk import bptk_wrapper 
+bptk = bptk_wrapper()
 ```
 
 Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py)
@@ -42,25 +38,25 @@ You write scenarios in JSON format. Example:
   ]
 }
 ```
-The ``constants`` list stores the overrides for the constants. The other fields are self-explaining. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then. It serves as a fallback if the equations are not specified in code.
+The ``constants`` list stores the overrides for the constants. The other fields are self-explaining. The only required field is the ``name``, the simulation will exit with an error if no name is given. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then. It serves as a fallback if the equations are not specified in code.
 
 ### API calls
 The ipython example notebook contains examples for the API calls. For now, we use two methods:
 ```
-plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False)
+bptk.plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False)
 
-plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
+bptk.plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
 ```
 
 The first, plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. 
 
-* kind: Kind of plot (area, line, bar, ...)
-* alpha: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
-* freq: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
-* start_date: Date from which plot starts
-* title: Plot title
-* visualize_from_period: First index field to visualize from (in case we want to cut off the first x periods)
-* x_label and y_label: set the label names for the axis.
+* ``kind``: Kind of plot (area, line, bar, ...)
+* ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
+* ``freq``: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
+* ``start_date``: Date from which plot starts
+* ``title``: Plot title
+* ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
+* ``x_label and y_label``: set the label names for the axis.
 
 ## TODO
 * Monitoring: We need to monitor changes to specified itmx files and parse to python file

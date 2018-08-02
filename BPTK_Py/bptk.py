@@ -20,11 +20,10 @@ class bptk_wrapper():
         for key in config.matplotlib_rc_settings.keys():
             plt.rcParams[key] = config.matplotlib_rc_settings[key]
 
-    def run_simulations(self,scenario_names, equations=[], output=["frame"]):
+    def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
         ## Load scenarios
 
         scenarios = {}
-
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
         for infile in glob.glob(os.path.join(config.scenario_storage, '*.json')):
@@ -57,97 +56,92 @@ class bptk_wrapper():
 
         return scenarios
 
-
-# CODES FOR FREQUENCY / "FREQ" argument
-# Alias   Description
-# B       business day frequency
-# C       custom business day frequency (experimental)
-# D       calendar day frequency
-# W       weekly frequency
-# M       month end frequency
-# BM      business month end frequency
-# CBM     custom business month end frequency
-# MS      month start frequency
-# BMS     business month start frequency
-# CBMS    custom business month start frequency
-# Q       quarter end frequency
-# BQ      business quarter endfrequency
-# QS      quarter start frequency
-# BQS     business quarter start frequency
-# A       year end frequency
-# BA      business year end frequency
-# AS      year start frequency
-# BAS     business year start frequency
-# BH      business hour frequency
-# H       hourly frequency
-# T, min  minutely frequency
-# S       secondly frequency
-# L, ms   milliseonds
-# U, us   microseconds
-# N       nanoseconds
-
-# plotOutputsForScenario[scenarioMysgBaseCase, \
-# {mysg\[RightPointer]customers\[RightPointer]customers,
-#   mysg\[RightPointer]customers\[RightPointer]marketingCustomers,
-#   mysg\[RightPointer]customers\[RightPointer]wordOfMouthCustomers},
-#  AxesLabel -> {"Time", "Customers"},
-#  Ticks -> {{{13, simStartYear + 1}, {25, simStartYear + 2}, {37,
-#      simStartYear + 3}, {49, simStartYear + 4}}, ticks[2500]}]
-
-
-
+    # CODES FOR FREQUENCY / "FREQ" argument
+    # Alias   Description
+    # B       business day frequency
+    # C       custom business day frequency (experimental)
+    # D       calendar day frequency
+    # W       weekly frequency
+    # M       month end frequency
+    # BM      business month end frequency
+    # CBM     custom business month end frequency
+    # MS      month start frequency
+    # BMS     business month start frequency
+    # CBMS    custom business month start frequency
+    # Q       quarter end frequency
+    # BQ      business quarter endfrequency
+    # QS      quarter start frequency
+    # BQS     business quarter start frequency
+    # A       year end frequency
+    # BA      business year end frequency
+    # AS      year start frequency
+    # BAS     business year start frequency
+    # BH      business hour frequency
+    # H       hourly frequency
+    # T, min  minutely frequency
+    # S       secondly frequency
+    # L, ms   milliseonds
+    # U, us   microseconds
+    # N       nanoseconds
 
     ## Run Scenarios
 
     # This method plots the outputs for one scenario. If the equations list is empty, we will simulate the equations form "equationsToSimulate" field in the scenario JSON file
-    def plotOutputsForScenario(self,scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
+    def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
+                               stacked=config.stacked,
+                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
+                               y_label="",series_names=[], return_df=False):
 
-        return self.plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha, stacked=stacked,
-                             freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period,
-                             x_label=x_label, y_label=y_label, return_df=return_df)
+        return self.__plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
+                                    stacked=stacked,
+                                    freq=freq, start_date=start_date, title=title,
+                                    visualize_from_period=visualize_from_period,
+                                    x_label=x_label, y_label=y_label,series_names=series_names, return_df=return_df)
 
+    def plotScenarioForOutput(self, scenario_names, equation, kind=config.kind, alpha=config.alpha,
+                              stacked=config.stacked,
+                              freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
+                              y_label="", series_names=[], return_df=False):
 
-    def plotScenarioForOutput(self,scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
+        return self.__plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
+                                    stacked=stacked,
+                                    freq=freq, start_date=start_date, title=title,
+                                    visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label, series_names=series_names,
+                                    return_df=return_df)
 
-        return self.plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha, stacked=stacked,
-                               freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,return_df=return_df)
-
-
-    def plotScenarios(self,scenario_names, equations, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
+    # Private method that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
+    def __plotScenarios(self, scenario_names, equations, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
+                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=[],
+                        return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-        scenario_objects = self.run_simulations(scenario_names=scenario_names, equations=equations)
+        scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations)
 
         # Visualize Object
         visualize = visualizations()
         dict_equations = {}
 
-        #for equation in equations:
-         #   dict_equations[equation] = []
-
+        # for equation in equations:
+        #   dict_equations[equation] = []
 
         for scenario_name in scenario_names:
-            sc = scenario_objects[scenario_name] # <-- Obtain the actual scenario object
+            sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
                 if equation not in dict_equations.keys():
                     dict_equations[equation] = []
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
-
         ## Actual visualization
 
         ### Prepare the Plottable DataFrame
-        df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq)
+        df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq,series_names=series_names)
 
         ### Get the plot object
         ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.figsize, title=title,
                                              alpha=alpha, color=config.colors, lw=config.linewidth)
         ### Set axes labels and set the formats
-        if (len(x_label)>0):
+        if (len(x_label) > 0):
             ax.set_xlabel(x_label)
 
         # Set the y-axis label
