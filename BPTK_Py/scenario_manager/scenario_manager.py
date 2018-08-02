@@ -11,12 +11,12 @@ class scenarioManager():
 
     def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
         json_string = json.dumps(dictionary)
-        with open(filename, 'w') as outfile:
+        with open(filename, 'w',encoding="utf-8") as outfile:
             outfile.write(json_string)
 
 
     def readScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
-        json_data = open(filename).read()
+        json_data = open(filename,encoding="utf-8").read()
 
         return simulation_scenario(dict(json.loads(json_data)))
 
@@ -43,7 +43,7 @@ class scenarioManager():
                     print("Constants:")
                     constants_dic = dic_scenario[key]
                     for const_key in constants_dic.keys():
-                        print("\t {} : \t{}".format(str(const_key), str(constants_dic[const_key])))
+                        print(" \t {} : \t{}".format(str(const_key), str(constants_dic[const_key])))
 
                 elif key == "equationsToSimulate":
                     print("\n")

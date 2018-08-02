@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/bptk.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/bptk.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -97,8 +94,8 @@
       <file leaf-file-name="scenario_manager.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="810">
-              <caret line="54" column="57" selection-start-line="54" selection-start-column="57" selection-end-line="54" selection-end-column="57" />
+            <state relative-caret-position="270">
+              <caret line="18" column="49" selection-start-line="18" selection-start-column="49" selection-end-line="18" selection-end-column="49" />
               <folding>
                 <element signature="e#13#24#0" expanded="true" />
               </folding>
@@ -576,8 +573,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="810">
-          <caret line="54" column="57" selection-start-line="54" selection-start-column="57" selection-end-line="54" selection-end-column="57" />
+        <state relative-caret-position="270">
+          <caret line="18" column="49" selection-start-line="18" selection-start-column="49" selection-end-line="18" selection-end-column="49" />
           <folding>
             <element signature="e#13#24#0" expanded="true" />
           </folding>
