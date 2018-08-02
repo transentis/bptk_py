@@ -62,5 +62,6 @@ The first, plots one or multiple equations for one scenario ("scenario_name"). T
 ## TODO
 * Monitoring: We need to monitor changes to specified itmx files and parse to python file
 * Plotting: Probably more plots and ideas
+* Tool for defining scenarios
 
 

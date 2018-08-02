@@ -2,7 +2,7 @@
 from BPTK_Py.scenario_manager.scenario_manager import scenarioManager
 
 from BPTK_Py.simulator.model_simulator import simulator
-import glob, os
+
 from BPTK_Py.logger.logger import log
 from BPTK_Py.Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
@@ -23,14 +23,8 @@ class bptk_wrapper():
     def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
         ## Load scenarios
 
-        scenarios = {}
-
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        for infile in glob.glob(os.path.join(config.scenario_storage, '*.json')):
-            scenario = scenarioManager().readScenario(infile)
-            if scenario.name in scenario_names:
-                scenarios[scenario.name] = scenario
-                log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
+        scenarios = scenarioManager().getAvailableScenarios()
 
         #### Run the simulation scenarios
 

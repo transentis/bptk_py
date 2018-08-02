@@ -7,6 +7,7 @@ class simulation_scenario():
     def __init__(self,dictionary):
 
         #### IMPORT MODEL FROM FILE
+        self.dictionary = dictionary
         try:
             package_link = dictionary["model"].replace("/",".")
 
