@@ -2,7 +2,7 @@
   "constants": {
     "cost.paymentTransactionCost" : 0.0
   },
-  "name": "MakeYouStartUpGrow",
+  "name": "MakeYourStartUpGrow",
   "from": 1,
   "until": 100,
   "dt": 1,

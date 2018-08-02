@@ -3,7 +3,7 @@
     "cost.paymentTransactionCost" : 0.5,
     "cost.productDevelopmentWage" : 10000
   },
-  "name": "MakeYouStartUpGrow_2",
+  "name": "MakeYourStartUpGrow_2",
   "from": 1,
   "until": 100,
   "dt": 1,

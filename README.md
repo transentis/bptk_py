@@ -43,12 +43,12 @@ The ``constants`` list stores the overrides for the constants. The other fields 
 ### API calls
 The ipython example notebook contains examples for the API calls. For now, we use two methods:
 ```
-bptk.plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False)
+bptk.plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
 
-bptk.plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",return_df=False):
+bptk.plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False):
 ```
 
-The first, plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. 
+The first, plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations``).
 
 * ``kind``: Kind of plot (area, line, bar, ...)
 * ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
@@ -57,6 +57,7 @@ The first, plots one or multiple equations for one scenario ("scenario_name"). T
 * ``title``: Plot title
 * ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
 * ``x_label and y_label``: set the label names for the axis.
+* ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
 
 ## TODO
 * Monitoring: We need to monitor changes to specified itmx files and parse to python file

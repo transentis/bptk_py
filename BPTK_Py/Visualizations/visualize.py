@@ -40,7 +40,8 @@ class visualizations():
         columns = list(plot_df.columns)
         new_columns = {}
         for name in series_names:
-            new_columns[columns[i]] = name
+            if len(name) > 0:
+                new_columns[columns[i]] = name
             i += 1
 
         plot_df.rename(columns=new_columns, inplace=True)

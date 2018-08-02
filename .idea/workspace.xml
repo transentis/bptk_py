@@ -2,13 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7bd45edf-5057-42da-8c0f-078fb65a361c" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/Visualizations/transentis_style.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/bptk.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/bptk.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" beforeDir="false" afterPath="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -34,8 +31,8 @@
       <file leaf-file-name="make_your_startup_grow.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="1" selection-start-column="1" selection-end-column="1" />
+            <state relative-caret-position="60">
+              <caret line="4" column="19" selection-start-line="4" selection-start-column="19" selection-end-line="4" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -67,11 +64,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="bptk.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="bptk.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/BPTK_Py/bptk.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="486">
-              <caret line="98" column="95" selection-start-line="98" selection-start-column="95" selection-end-line="98" selection-end-column="95" />
+            <state relative-caret-position="1121">
+              <caret line="155" lean-forward="true" selection-start-line="155" selection-end-line="155" />
               <folding>
                 <element signature="e#12#81#0" expanded="true" />
               </folding>
@@ -82,8 +79,8 @@
       <file leaf-file-name="visualize.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="690">
-              <caret line="46" lean-forward="true" selection-start-line="46" selection-end-line="46" />
+            <state relative-caret-position="855">
+              <caret line="57" lean-forward="true" selection-start-line="57" selection-end-line="57" />
             </state>
           </provider>
         </entry>
@@ -112,11 +109,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="make_your_startup_grow_2.json" pinned="false" current-in-tab="false">
+      <file leaf-file-name="make_your_startup_grow_2.json" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret selection-end-line="18" selection-end-column="1" />
+            <state relative-caret-position="75">
+              <caret line="5" column="19" selection-start-line="5" selection-start-column="19" selection-end-line="5" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -197,14 +194,14 @@
         <option value="$PROJECT_DIR$/BPTK_Py/simulator/model_simulator.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow.json" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenarios/make_your_startup_grow_2.json" />
-        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
-        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" />
         <option value="$PROJECT_DIR$/simulation_models/model.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/config/config.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py" />
-        <option value="$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py" />
         <option value="$PROJECT_DIR$/BPTK_Py/bptk.py" />
+        <option value="$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py" />
+        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow.json" />
+        <option value="$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json" />
       </list>
     </option>
   </component>
@@ -508,20 +505,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/BPTK_Py/simulation_models/model.py" />
     <entry file="file://$PROJECT_DIR$/BPTK_Py/results/results_TestScenario_2_30_7_2018.csv" />
-    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret selection-end-line="18" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="1" selection-start-column="1" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/simulation_models/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
@@ -546,16 +529,6 @@
     <entry file="file://$PROJECT_DIR$/BPTK_Py/Visualizations/transentis_style.json">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="29" lean-forward="true" selection-start-line="14" selection-start-column="29" selection-end-line="14" selection-end-column="29" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="540">
@@ -576,20 +549,44 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="690">
-          <caret line="46" lean-forward="true" selection-start-line="46" selection-end-line="46" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/BPTK_Py/bptk.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="486">
-          <caret line="98" column="95" selection-start-line="98" selection-start-column="95" selection-end-line="98" selection-end-column="95" />
+        <state relative-caret-position="1121">
+          <caret line="155" lean-forward="true" selection-start-line="155" selection-end-line="155" />
           <folding>
             <element signature="e#12#81#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BPTK_Py/scenario_manager/scenario_manager.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="14" column="29" lean-forward="true" selection-start-line="14" selection-start-column="29" selection-end-line="14" selection-end-column="29" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BPTK_Py/Visualizations/visualize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="855">
+          <caret line="57" lean-forward="true" selection-start-line="57" selection-end-line="57" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="19" selection-start-line="4" selection-start-column="19" selection-end-line="4" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scenarios/make_your_startup_grow_2.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="5" column="19" selection-start-line="5" selection-start-column="19" selection-end-line="5" selection-end-column="19" />
         </state>
       </provider>
     </entry>
