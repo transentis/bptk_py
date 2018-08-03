@@ -6,6 +6,7 @@ from BPTK_Py.simulator.model_simulator import simulator
 from BPTK_Py.logger.logger import log
 from BPTK_Py.Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
+
 import BPTK_Py.config.config as config
 from BPTK_Py.model_monitor.model_monitor import modelMonitor
 
@@ -20,6 +21,9 @@ class bptk_wrapper():
         import BPTK_Py.config.config as config
         for key in config.matplotlib_rc_settings.keys():
             plt.rcParams[key] = config.matplotlib_rc_settings[key]
+
+
+
 
         self.ScenarioManager = scenarioManager()
 
@@ -236,7 +240,9 @@ class bptk_wrapper():
         if (len(y_label) > 0):
             ax.set_ylabel(y_label)
 
+
         visualize.update_plot_formats(ax)
+
 
         ### If user wanted a dataframe, here it is!
         if return_df:

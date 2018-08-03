@@ -1,4 +1,5 @@
 import pandas as pd
+import BPTK_Py.config.config as config
 
 class visualizations():
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
@@ -51,7 +52,7 @@ class visualizations():
         return plot_df
 
     def update_plot_formats(self,ax):
+
         ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
         ax.set_yticklabels(ylabels)
 
-        #ax.get_yaxis().get_major_formatter().set_scientific(False)

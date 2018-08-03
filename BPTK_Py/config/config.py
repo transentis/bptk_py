@@ -16,14 +16,15 @@ scenario_storage = "scenarios/"
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-    'font.family': "AutographScriptEFOP-Lig",  
+     "font.family" :  'AutographScriptEFOP-Lig',
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,
     "lines.markersize": 15,
     "xtick.labelsize": 15,
     "ytick.labelsize": 15,
-    "figure.figsize": (20, 10)
+    "figure.figsize": (20, 10),
+    'legend.fontsize': 15
 }
 
 transentis_colors = {
@@ -43,3 +44,4 @@ stacked = False
 figsize = matplotlib_rc_settings["figure.figsize"]
 alpha = 0.3
 linewidth = matplotlib_rc_settings["lines.linewidth"]
+
