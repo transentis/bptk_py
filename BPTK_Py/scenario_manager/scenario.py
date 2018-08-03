@@ -33,7 +33,7 @@ class simulation_scenario():
         keys = dictionary.keys()
 
         self.constants =  dictionary["constants"]
-        self.start = dictionary["from"]
+        #self.start = dictionary["from"]
 
         if "from" in keys:
             self.start = dictionary["from"]

@@ -56,7 +56,7 @@ class simulation_model():
     # Simulation Buildins
     self.dt = 1
     self.starttime = 1
-    self.stoptime = 61
+    self.stoptime = 100
     self.equations = {
   	# Stocks 
   		'capabilities.totalWorkforceExperience': lambda t : max( 0, self.memoize('resources.initialEmployees', t) * 12 if  t  <=  self.starttime  else self.memoize('capabilities.totalWorkforceExperience',t-self.dt) +  self.dt  * ( self.memoize('capabilities.gainingExperience',t-self.dt) - ( self.memoize('capabilities.losingExperience',t-self.dt) ) ) ),

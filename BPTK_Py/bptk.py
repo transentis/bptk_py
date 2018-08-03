@@ -22,16 +22,12 @@ class bptk_wrapper():
         for key in config.matplotlib_rc_settings.keys():
             plt.rcParams[key] = config.matplotlib_rc_settings[key]
 
-
-
-
         self.ScenarioManager = scenarioManager()
 
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
     def __run_simulations_with_strategy(self,scenario_names,equations=[],output=["frame"]):
-
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
         scenarios = self.ScenarioManager.getAvailableScenarios()
@@ -46,7 +42,7 @@ class bptk_wrapper():
             stoptime = scenario.until
 
             if len(equations) == 0:
-                log("[ERROR] No equation to simulate given. Simulation will not start!")
+                log("[ERROR] No equation to simulate given. Simulation will fail!")
 
             ## Read strategy from scenario
             strategy = {}
@@ -64,7 +60,7 @@ class bptk_wrapper():
 
 
             if len(points_to_change_at) == 0:
-                log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given equations without strategy!")
+                log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
                 scenarios[scenario.name] = self.__run_simulations(scenario_names=[scenario.name], equations=equations,output=["frame"])[scenario.name]
 
             # Simulation

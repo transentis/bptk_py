@@ -5,8 +5,5 @@
   },
   "source" : "simulation_models/make_your_startup_grow.itmx",
   "name": "MakeYourStartUpGrow_2",
-  "from": 1,
-  "until": 100,
-  "dt": 1,
   "model": "simulation_models/model"
 }

@@ -9,7 +9,7 @@
 	</header>
 	<sim_specs isee:simulation_delay="0" method="Euler" time_units="Months" isee:pause_after_rates="false" isee:instantaneous_flows="false">
 		<start>1</start>
-		<stop>61</stop>
+		<stop>100</stop>
 		<dt reciprocal="true">1</dt>
 	</sim_specs>
 	<dimensions>
