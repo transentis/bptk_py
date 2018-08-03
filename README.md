@@ -61,26 +61,26 @@ The second method lets you plot one equation for multiple scenarios and uses the
 The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.
 ```
 "strategy": {
-"1": {
-"cost.paymentTransactionCost": 0.4,
-"customers.marketingBudget": 5000
-},
-"2": {
-"cost.paymentTransactionCost": 0.8,
-"customers.marketingBudget": 10000
-},
-"50": {
-"cost.paymentTransactionCost": 0.65,
-"customers.marketingBudget": 0
-},
-"76": {
-"cost.paymentTransactionCost": 0.7,
-"customers.marketingBudget": 2000
-},
-"100": {
-"cost.paymentTransactionCost": 0.99,
-"customers.marketingBudget": 99000
-}
+    "1": {
+        "cost.paymentTransactionCost": 0.4,
+        "customers.marketingBudget": 5000
+    },
+    "2": {
+        "cost.paymentTransactionCost": 0.8,
+        "customers.marketingBudget": 10000
+    },
+    "50": {
+        "cost.paymentTransactionCost": 0.65,
+        "customers.marketingBudget": 0
+    },
+    "76": {
+        "cost.paymentTransactionCost": 0.7,
+        "customers.marketingBudget": 2000
+    },
+    "100": {
+        "cost.paymentTransactionCost": 0.99,
+        "customers.marketingBudget": 99000
+    }
 }
 ```
 This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. The full scenario for this strategy is available in [scenarios/make_your_startup_grow_with_strategy.json)](scenarios/make_your_startup_grow_with_strategy.json). To apply a strategy for a scenario, use the parameter ``strategy=True``. 
