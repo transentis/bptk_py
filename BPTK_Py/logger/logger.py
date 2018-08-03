@@ -8,5 +8,5 @@ def log(message):
         with open(config.log_file, "a", encoding="UTF-8") as myfile:
             myfile.write(str(datetime.datetime.now()) + ", " + message + "\n")
 
-    if "print" in config.log_modes or "[ERROR]" in message:
+    if "print" in config.log_modes or "[ERROR]" in message or "[WARN]" in message:
         print(str(datetime.datetime.now()) + ", " + message)

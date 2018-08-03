@@ -66,7 +66,7 @@ class simulation_scenario():
             self.equationsToSimulate = self.model.equations.keys()
 
 
-        self.results = None # When we finish a simulation, we will write the resulting dataframe in here
+        self.result = None # When we finish a simulation, we will write the resulting dataframe in here
 
 
 

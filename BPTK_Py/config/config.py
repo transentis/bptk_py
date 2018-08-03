@@ -16,7 +16,7 @@ scenario_storage = "scenarios/"
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-    'font.family': "DejaVu Sans",  # Later change to "AutographScriptEFOP-Lig"
+    'font.family': "AutographScriptEFOP-Lig",  
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,

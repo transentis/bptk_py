@@ -23,35 +23,123 @@ class bptk_wrapper():
 
         self.ScenarioManager = scenarioManager()
 
+    #### Run a Simulation with a strategy
+    ## A strategy modifies constants in given points of time.
+    ##
+    def run_simulations_with_strategy(self,scenario_name,equations=[],output=["frame"]):
+
+
+        log("[INFO] Attempting to load scenarios from scenarios folder.")
+        scenario = self.ScenarioManager.getAvailableScenarios()[scenario_name]
+
+        starttime = scenario.start
+        stoptime = scenario.until
+
+        if len(equations) == 0:
+            equations = scenario.equationsToSimulate
+
+        ## Read strategy from scenario
+        strategy = {}
+        if "strategy" in scenario.dictionary.keys():
+            strategy = scenario.dictionary["strategy"]
+
+        else:
+            print("THROW ERROR HERE")
+            return None
+
+        ## Cast all keys to int (standard JSON does not allow int keys)
+        strategy = {int(k): v for k, v in strategy.items()}
+
+        simu = simulator(model=scenario.model, name=scenario.name)
+
+        i = 0
+        points_to_change_at = list(strategy.keys())
+
+
+        if len(points_to_change_at) == 0:
+            log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given equations without strategy!")
+            return self.__run_simulations(scenario_names=[scenario_name], equations=equations,output=["frame"])
+
+        # Simulation
+
+        while i <= stoptime:
+
+            # If we are at point 0, initialize constants
+            if i == 0:
+                for const in scenario.constants.keys():
+                    simu.change_const(name=const, value=scenario.constants[const])
+
+            # If we are at the start-time, start simulation until the first stop point - 1
+            if i == starttime:
+                scenario.result  = simu.start(equations=equations, start=i, until=points_to_change_at[0]-1)
+
+            # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
+            if i > 0 and i == points_to_change_at[0]:
+
+                # Change constant
+                for const in strategy[points_to_change_at[0]]:
+                    simu.change_const(name=const, value=strategy[i][const])
+
+                # This happens if the strategy wants to change a constant in the stoptime moment. Simulate from now to stoptime
+                if i == stoptime:
+                    scenario.result = simu.start(equations=equations, start=i)
+                    log("[INFO] Simulating from {} to {}".format(str(i), str(stoptime)))
+                    i = i + 1
+
+                # Simulate from i to the next t -1 point where we modify constants
+                else:
+                    scenario.result = simu.start(equations=equations, start=i, until=points_to_change_at[1])
+                    log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
+                    i = points_to_change_at[0]
+
+                points_to_change_at.pop(0)
+
+
+            else:
+                # Just continue to next point in time...
+                i += 1
+
+        return {scenario_name : scenario}
+
+
+        
+
+
     def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
         scenarios = self.ScenarioManager.getAvailableScenarios()
 
+        # Filter irrelevant scenarios
+        scenarios = { key: scenarios[key] for key in scenario_names }
+
+
         #### Run the simulation scenarios
 
+
         for key in scenarios.keys():
-            sc = scenarios[key]
-            simu = simulator(model=sc.model, name=sc.name)
+            if key in scenario_names:
+                sc = scenarios[key]
+                simu = simulator(model=sc.model, name=sc.name)
 
-            for const in sc.constants.keys():
-                simu.change_const(name=const, value=sc.constants[const])
+                for const in sc.constants.keys():
+                    simu.change_const(name=const, value=sc.constants[const])
 
-            # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
-            if len(equations) > 0:
-                # Find equations that I can actually simulate in the specific model of the scenario!
-                equations_to_simulate = []
-                for equation in equations:
+                # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
+                if len(equations) > 0:
+                    # Find equations that I can actually simulate in the specific model of the scenario!
+                    equations_to_simulate = []
+                    for equation in equations:
 
-                    if equation in sc.model.equations.keys():
-                        equations_to_simulate += [equation]
+                        if equation in sc.model.equations.keys():
+                            equations_to_simulate += [equation]
 
-            ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
+                ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
 
-                sc.result = simu.start(output=output, equations=equations_to_simulate)
-            else:
-                sc.result = simu.start(output=output, equations=sc.equationsToSimulate)
+                    sc.result = simu.start(output=output, equations=equations_to_simulate)
+                else:
+                    sc.result = simu.start(output=output, equations=sc.equationsToSimulate)
 
         return scenarios
 

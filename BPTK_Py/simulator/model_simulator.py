@@ -53,6 +53,7 @@ class simulator():
         if until == None: until = self.until
 
         if len(equations) == 0:
+
             log("[ERROR] {}: No equation to simulate for given model! Check your scenario config of method parameters!".format(self.name))
             exit()
 
