@@ -30,83 +30,88 @@ class bptk_wrapper():
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
-    def run_simulations_with_strategy(self,scenario_name,equations=[],output=["frame"]):
+    def __run_simulations_with_strategy(self,scenario_names,equations=[],output=["frame"]):
 
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenario = self.ScenarioManager.getAvailableScenarios()[scenario_name]
+        scenarios = self.ScenarioManager.getAvailableScenarios()
 
-        starttime = scenario.start
-        stoptime = scenario.until
+        scenarios = {key: scenarios[key] for key in scenario_names}
 
-        if len(equations) == 0:
-            equations = scenario.equationsToSimulate
+        #### Run the simulation scenarios
 
-        ## Read strategy from scenario
-        strategy = {}
-        if "strategy" in scenario.dictionary.keys():
-            strategy = scenario.dictionary["strategy"]
+        for key in scenarios.keys():
+            scenario = scenarios[key]
+            starttime = scenario.start
+            stoptime = scenario.until
 
-        else:
-            print("THROW ERROR HERE")
-            return None
+            if len(equations) == 0:
+                equations = scenario.equationsToSimulate
 
-        ## Cast all keys to int (standard JSON does not allow int keys)
-        strategy = {int(k): v for k, v in strategy.items()}
-
-        simu = simulator(model=scenario.model, name=scenario.name)
-
-        i = 0
-        points_to_change_at = list(strategy.keys())
+            ## Read strategy from scenario
+            strategy = {}
+            if "strategy" in scenario.dictionary.keys():
+                strategy = scenario.dictionary["strategy"]
 
 
-        if len(points_to_change_at) == 0:
-            log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given equations without strategy!")
-            return self.__run_simulations(scenario_names=[scenario_name], equations=equations,output=["frame"])
+            ## Cast all keys to int (standard JSON does not allow int keys)
+            strategy = {int(k): v for k, v in strategy.items()}
 
-        # Simulation
+            simu = simulator(model=scenario.model, name=scenario.name)
 
-        while i <= stoptime:
-
-            # If we are at point 0, initialize constants
-            if i == 0:
-                for const in scenario.constants.keys():
-                    simu.change_const(name=const, value=scenario.constants[const])
-
-            # If we are at the start-time, start simulation until the first stop point - 1
-            if i == starttime:
-                scenario.result  = simu.start(equations=equations, start=i, until=points_to_change_at[0]-1)
-
-            # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
-            if i > 0 and i == points_to_change_at[0]:
-
-                # Change constant
-                for const in strategy[points_to_change_at[0]]:
-                    simu.change_const(name=const, value=strategy[i][const])
-
-                # This happens if the strategy wants to change a constant in the stoptime moment. Simulate from now to stoptime
-                if i == stoptime:
-                    scenario.result = simu.start(equations=equations, start=i)
-                    log("[INFO] Simulating from {} to {}".format(str(i), str(stoptime)))
-                    i = i + 1
-
-                # Simulate from i to the next t -1 point where we modify constants
-                else:
-                    scenario.result = simu.start(equations=equations, start=i, until=points_to_change_at[1])
-                    log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
-                    i = points_to_change_at[0]
-
-                points_to_change_at.pop(0)
+            i = 0
+            points_to_change_at = list(strategy.keys())
 
 
+            if len(points_to_change_at) == 0:
+                log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given equations without strategy!")
+                scenarios[scenario.name] = self.__run_simulations(scenario_names=[scenario.name], equations=equations,output=["frame"])[scenario.name]
+
+            # Simulation
             else:
-                # Just continue to next point in time...
-                i += 1
+                while i <= stoptime:
 
-        return {scenario_name : scenario}
+                    # If we are at point 0, initialize constants
+                    if i == 0:
+                        for const in scenario.constants.keys():
+                            simu.change_const(name=const, value=scenario.constants[const])
 
 
-        
+                    # If we are at the start-time, start simulation until the first stop point - 1
+                    if i == starttime:
+                        scenario.result  = simu.start(equations=equations, start=i, until=points_to_change_at[0]-1)
+
+
+                    # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
+
+                    if i > 0 and not len(points_to_change_at) == 0:
+                        if i == points_to_change_at[0]:
+
+                        # Change constant
+                            for const in strategy[points_to_change_at[0]]:
+                                simu.change_const(name=const, value=strategy[i][const])
+
+                            # This happens if the strategy wants to change a constant in the stoptime moment or we reached the last modification. Simulate from now to stoptime
+                            if i == stoptime or len(points_to_change_at) == 1:
+                                scenario.result = simu.start(equations=equations, start=i)
+                                log("[INFO] Simulating from {} to {}".format(str(i), str(stoptime)))
+                                i = i + 1
+
+                            # Simulate from i to the next t -1 point where we modify constants
+                            else:
+                                scenario.result = simu.start(equations=equations, start=i, until=points_to_change_at[1]-1)
+                                log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
+                                i = points_to_change_at[0]
+
+                            points_to_change_at.pop(0)
+                        else:
+                            i+= 1
+
+                    else:
+                        # Just continue to next point in time...
+                        i += 1
+        return scenarios
+
 
 
     def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
@@ -179,34 +184,37 @@ class bptk_wrapper():
     def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
                                stacked=config.stacked,
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                               y_label="", series_names=[], return_df=False):
+                               y_label="", series_names=[], strategy=False, return_df=False):
 
         return self.__plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
                                     stacked=stacked,
                                     freq=freq, start_date=start_date, title=title,
                                     visualize_from_period=visualize_from_period,
-                                    x_label=x_label, y_label=y_label, series_names=series_names, return_df=return_df)
+                                    x_label=x_label, y_label=y_label, series_names=series_names,strategy=strategy, return_df=return_df)
 
     def plotScenarioForOutput(self, scenario_names, equation, kind=config.kind, alpha=config.alpha,
                               stacked=config.stacked,
                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                              y_label="", series_names=[], return_df=False):
+                              y_label="",strategy=False, series_names=[], return_df=False):
 
         return self.__plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
                                     stacked=stacked,
                                     freq=freq, start_date=start_date, title=title,
                                     visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                                    series_names=series_names,
+                                    series_names=series_names, strategy=strategy,
                                     return_df=return_df)
 
     # Private method that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def __plotScenarios(self, scenario_names, equations, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
                         freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                        series_names=[],
+                        series_names=[], strategy = False,
                         return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-        scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations)
+        if not strategy:
+            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations)
+        else:
+            scenario_objects = self.__run_simulations_with_strategy(scenario_names=scenario_names, equations=equations)
 
         # Visualize Object
         visualize = visualizations()

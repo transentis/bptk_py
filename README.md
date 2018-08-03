@@ -1,7 +1,7 @@
 # Business Prototyping Toolkit for Python
 Welcome to the Business Prototyping Toolkit for Python!
 
-BPTK_Py is the implementation of a simulation engine and plotting for Stela System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks.
+BPTK_Py is the implementation of a simulation and plotting engine for Stela System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks.
 It requires a python-parsed version of the model containing the set of equations. We employ transentis' sdcc parser for this. An example model is available in [simulation_models/](simulation_models/)
 
 An initial setup (that also employs the transentis color style) contains these lines:
@@ -27,14 +27,15 @@ You write scenarios in JSON format. Example:
   "until": 100,
   "dt": 1,
   "model": "simulation_models/model",
-  "equationsToSimulate": [
-    "capabilities.totalWorkforceExperience",
-    "cash.cash",
-  ]
 }
 ```
-The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``, the simulation will exit with an error if no name is given. The ``equationsToSimulate`` contains equations that the simulator is supposed to simulate. In this way, you do not need to specify the equations to simulate in the API (just leave the ``equation(s)`` parameters empty then). It serves as a fallback if the equations are not specified in code. You should also consider using the ``sourceModel`` field as for each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected!
+The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``, the simulation will exit with an error if no name is given.  You should consider using the ``sourceModel`` field. For each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
+
+## Monitoring of itmx source models
+Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications secondly. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
+For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
+The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
 
 ## API calls
 The ipython example notebook contains examples for the API calls. For now, there are two methods analysts can use:
@@ -56,11 +57,40 @@ The second method lets you plot one equation for multiple scenarios and uses the
 * ``x_label and y_label``: set the label names for the axis.
 * ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
 
+### Strategy simulation
+The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.
+```
+"strategy": {
+"1": {
+"cost.paymentTransactionCost": 0.4,
+"customers.marketingBudget": 5000
+},
+"2": {
+"cost.paymentTransactionCost": 0.8,
+"customers.marketingBudget": 10000
+},
+"50": {
+"cost.paymentTransactionCost": 0.65,
+"customers.marketingBudget": 0
+},
+"76": {
+"cost.paymentTransactionCost": 0.7,
+"customers.marketingBudget": 2000
+},
+"100": {
+"cost.paymentTransactionCost": 0.99,
+"customers.marketingBudget": 99000
+}
+}
+```
+This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. The full scenario for this strategy is available in [scenarios/make_your_startup_grow_with_strategy.json)](scenarios/make_your_startup_grow_with_strategy.json). To apply a strategy for a scenario, use the parameter ``strategy=True``. 
+
+**Note:** If you set the ``strategy=True`` but there is not strategy defined in the scenario, the simulator will just issue a Warning in the logfile and execute the simulation(s) without a strategy. 
+
+
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst.
 
-## TODO
-* Monitoring: Whenever we change a specific model in stela, the changes should be written back to the model file. When BPTK_Py is initiated, a file monitor starts if a ``sourceModel`` is given in the scenario configuration. **Still pending the integration of the model parser.**
 
 
 
