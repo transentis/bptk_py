@@ -13,6 +13,9 @@ log_file = "simulator_log.log"
 ## Location of the scenarios (relative path from top level of working dir)
 scenario_storage = "scenarios/"
 
+### SD-Py-Compiler Location
+sd_py_compiler_root = "~/Code/sd-compiler/"
+
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
@@ -24,7 +27,7 @@ matplotlib_rc_settings = {
     "xtick.labelsize": 15,
     "ytick.labelsize": 15,
     "figure.figsize": (20, 10),
-    'legend.fontsize': 15
+    'legend.fontsize': 17,
 }
 
 transentis_colors = {
@@ -42,6 +45,6 @@ colors = [transentis_colors[color] for color in transentis_colors.keys()]
 kind = "area"
 stacked = False
 figsize = matplotlib_rc_settings["figure.figsize"]
-alpha = 0.3
+alpha = 0.25
 linewidth = matplotlib_rc_settings["lines.linewidth"]
 

@@ -35,8 +35,8 @@ class scenarioManager():
             scenarios[scenario.name] = scenario
 
             # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
-            if "sourceModel" in scenario.dictionary.keys() and not scenario.name in self.scenario_monitors.keys():
-                self.scenario_monitors[scenario.name] = modelMonitor(scenario.dictionary["sourceModel"], str(scenario.dictionary["model"])+".py")
+            if "sourceModel" in scenario.dictionary.keys() and not scenario.dictionary["sourceModel"] in self.scenario_monitors.keys():
+                self.scenario_monitors[scenario.dictionary["sourceModel"] ] = modelMonitor(scenario.dictionary["sourceModel"], str(scenario.dictionary["model"])+".py")
             log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
         return scenarios
