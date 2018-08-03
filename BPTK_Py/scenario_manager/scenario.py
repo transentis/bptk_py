@@ -61,9 +61,6 @@ class simulation_scenario():
         self.name = dictionary["name"]
 
 
-        if "equationsToSimulate" in dictionary.keys(): self.equationsToSimulate = dictionary["equationsToSimulate"]
-        else:
-            self.equationsToSimulate = self.model.equations.keys()
 
 
         self.result = None # When we finish a simulation, we will write the resulting dataframe in here

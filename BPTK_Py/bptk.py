@@ -46,7 +46,7 @@ class bptk_wrapper():
             stoptime = scenario.until
 
             if len(equations) == 0:
-                equations = scenario.equationsToSimulate
+                log("[ERROR] No equation to simulate given. Simulation will not start!")
 
             ## Read strategy from scenario
             strategy = {}
@@ -148,7 +148,7 @@ class bptk_wrapper():
 
                     sc.result = simu.start(output=output, equations=equations_to_simulate)
                 else:
-                    sc.result = simu.start(output=output, equations=sc.equationsToSimulate)
+                    log("[ERROR] No equations to simulate given!")
 
         return scenarios
 
@@ -180,7 +180,7 @@ class bptk_wrapper():
     # U, us   microseconds
     # N       nanoseconds
 
-    # This method plots the outputs for one scenario. If the equations list is empty, we will simulate the equations form "equationsToSimulate" field in the scenario JSON file
+    # This method plots the outputs for one scenario.
     def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
                                stacked=config.stacked,
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
