@@ -60,7 +60,7 @@ class bptk_wrapper():
             simu = simulator(model=scenario.model, name=scenario.name)
 
             i = 0
-            points_to_change_at = list(strategy.keys())
+            points_to_change_at = sorted(list(strategy.keys())) # Get the strategy points to change at and sort ascending.
 
 
             if len(points_to_change_at) == 0:

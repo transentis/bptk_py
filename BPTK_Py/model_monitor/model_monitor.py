@@ -42,12 +42,12 @@ class modelMonitor():
         while self.running:
             stamp = os.stat(self.model_file).st_mtime
             if stamp != self._cached_stamp:
-                log("[INFO] Model Monitor: Observed a change to the model. Calling the parser")
+                log("[INFO] Model Monitor for {}: Observed a change to the model. Calling the parser".format(str(self.model_file)))
                 self._cached_stamp = stamp
 
                 # File has changed, so parse model again
                 os.system(self.execute_script)
-                log("[INFO] Model updated!")
+                log("[INFO] Model Monitor for {}: model updated!".format(str(self.model_file)))
             time.sleep(1)
 
-        log("[INFO] Model Monitor: I got killed... Goodbye!")
+        log("[INFO] Model Monitor for {}: I got killed... Goodbye!".format(str(self.model_file)))

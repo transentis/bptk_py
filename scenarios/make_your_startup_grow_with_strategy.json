@@ -2,7 +2,7 @@
   "constants": {
     "cost.paymentTransactionCost": 0.2
   },
-  "sourceModel": "simulation_models/make_your_startup_grow.itmx",
+  "source": "simulation_models/make_your_startup_grow.itmx",
   "name": "MakeYourStartUpGrow_strategy",
   "from": 1,
   "until": 100,

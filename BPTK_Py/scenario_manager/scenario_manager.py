@@ -35,8 +35,8 @@ class scenarioManager():
             scenarios[scenario.name] = scenario
 
             # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
-            if "sourceModel" in scenario.dictionary.keys() and not scenario.dictionary["sourceModel"] in self.scenario_monitors.keys():
-                self.scenario_monitors[scenario.dictionary["sourceModel"] ] = modelMonitor(scenario.dictionary["sourceModel"], str(scenario.dictionary["model"])+".py")
+            if "source" in scenario.dictionary.keys() and not scenario.dictionary["source"] in self.scenario_monitors.keys():
+                self.scenario_monitors[scenario.dictionary["source"] ] = modelMonitor(scenario.dictionary["source"], str(scenario.dictionary["model"])+".py")
             log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
         return scenarios
@@ -46,22 +46,28 @@ class scenarioManager():
     def printAvailableScenarios(self,path=config.scenario_storage):
         scenarios = self.getAvailableScenarios(path=path)
         print("\n")
+
+        def printdic(val):
+
+            if type(val) == dict:
+
+                for key in val.keys():
+
+                    print("\t \t {} \t : {}".format(str(key),str(printdic(val[key]))))
+            else:
+                return val
         for scenario in scenarios.keys():
             dic_scenario = scenarios[scenario].dictionary
 
+
             print("*************** Scenario: {} *********************".format(str(scenario)))
             for key in dic_scenario.keys():
-                if key == "constants":
-                    print("Constants:")
-                    constants_dic = dic_scenario[key]
-                    for const_key in constants_dic.keys():
-                        print(" \t {} : \t{}".format(str(const_key), str(constants_dic[const_key])))
-
-                elif key == "equationsToSimulate":
-                    print("\n")
-                    print("Equations to simulate (if not explicitly called in Wrapper): ")
-                    for item in dic_scenario[key]:
-                        print("\t {}".format(str(item)))
+                if type(dic_scenario[key]) == dict:
+                    print(key +":")
+                    nested_dic = dic_scenario[key]
+                    for nested_dic_key in nested_dic.keys():
+                        print(" \t {}: ".format(str(nested_dic_key)))
+                        printdic(nested_dic[nested_dic_key])
                 else:
 
                     print("{} \t: {}".format(str(key), str(dic_scenario[key])))
