@@ -32,6 +32,8 @@ You write scenarios in JSON format. A simple example may look like this:
 The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the (python) simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``. You should consider using the ``source`` field. For each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
+**Note:** I suggest you avoid setting the ``from`` /` ``until`` and  ``dt`` fields. Each model configures them in the itmx file. With many scenarios in place, it is better to have a single configuration point, i.e. the simulation model. In future releases, bptk might not parse the fields anymore!
+
 ## Monitoring of itmx source models
 Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
 
