@@ -22,22 +22,28 @@ class scenarioManager():
 
     ### write scenario (coming as a dict) to file
     def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
-        json_string = json.dumps(dictionary)
+        #json_string = json.dumps(dictionary)
         with open(filename, 'w',encoding="utf-8") as outfile:
-            outfile.write(json_string)
+            json.dump(dictionary,outfile,indent=4)
 
 
     ### Returns all available scenarios and starts file monitors in case the source model is given
     def getAvailableScenarios(self,path=config.scenario_storage):
         scenarios = {}
         for infile in glob.glob(os.path.join(path, '*.json')):
-            scenario = self.__readScenario(infile)
-            scenarios[scenario.name] = scenario
+            if len(scenarios.keys()) >0 :
+                scenarios_new = self.__readScenario(infile)
+                for key in scenarios_new.keys():
+                    scenarios[key] = scenarios_new[key]
+            else:
+                scenarios= self.__readScenario(infile)
+
 
             # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
-            if "source" in scenario.dictionary.keys() and not scenario.dictionary["source"] in self.scenario_monitors.keys():
-                self.scenario_monitors[scenario.dictionary["source"] ] = modelMonitor(scenario.dictionary["source"], str(scenario.dictionary["model"])+".py")
-            log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
+            for name,scenario in scenarios.items():
+                if "source" in scenario.dictionary.keys() and not scenario.dictionary["source"] in self.scenario_monitors.keys():
+                    self.scenario_monitors[scenario.dictionary["source"] ] = modelMonitor(scenario.dictionary["source"], str(scenario.dictionary["model"])+".py")
+                log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
         return scenarios
 
@@ -56,6 +62,7 @@ class scenarioManager():
                     print("\t \t {} \t : {}".format(str(key),str(printdic(val[key]))))
             else:
                 return val
+
         for scenario in scenarios.keys():
             dic_scenario = scenarios[scenario].dictionary
 
@@ -86,5 +93,16 @@ class scenarioManager():
     ### Read scenario from file and build a simulation_scenario object
     def __readScenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
         json_data = open(filename,encoding="utf-8").read()
+        json_dict = dict(json.loads(json_data))
 
-        return simulation_scenario(dict(json.loads(json_data)))
+        clean_dict = {}
+        ## Replace string keys as int
+        for key in json_dict.keys():
+            json_dict[int(key)] = json_dict.pop(key)
+
+        scenarios = {}
+        for key in json_dict.keys():
+            sce = simulation_scenario(json_dict[key])
+            scenarios[sce.name] = sce
+
+        return scenarios

@@ -13,22 +13,25 @@ bptk = bptk_wrapper()
 
 ## Scenarios
 Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. It may override model constants and define strategies. The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
-You write scenarios in JSON format. A simple example may look like this:
+You write scenarios in JSON format. One JSON file may contain more than one scenario and hence a key is required to distinguish the different scenarios. A simple example may look like this:
 
 ```
 {
-  "constants": {
-    "cost.paymentTransactionCost" : 0.5,
-    "cost.productDevelopmentWage" : 10000
-  },
-  "source" : "simulation_models/make_your_startup_grow.itmx",
-  "name": "MakeYouStartUpGrow_2",
-  "from": 1,
-  "until": 100,
-  "dt": 1,
-  "model": "simulation_models/model",
+    "1:" :{
+      "constants": {
+        "cost.paymentTransactionCost" : 0.5,
+        "cost.productDevelopmentWage" : 10000
+      },
+      "source" : "simulation_models/make_your_startup_grow.itmx",
+      "name": "MakeYouStartUpGrow_2",
+      "from": 1,
+      "until": 100,
+      "dt": 1,
+      "model": "simulation_models/model",
+    }
 }
 ```
+ For each scenario, you have to supply a <span style="color:red">**unique**</span> ID as an integer number in brackets. JSON does not support integer keys. But internally we cast the "1" to an integer value. The simulator will fail if you write text (such as "one").  When you use the same ID multiple times, the simulator will only retain one.
 The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the (python) simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``. You should consider using the ``source`` field. For each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
@@ -38,6 +41,7 @@ The repo contains the **Scenario Manager** ipython notebook in the top level. Yo
 Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
 
 For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
+
 The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
 
 **Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 

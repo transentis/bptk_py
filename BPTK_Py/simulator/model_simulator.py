@@ -77,7 +77,7 @@ class simulator():
             thread.join()
 
 
-        ## Results stored in a dataFrame (Simple memoization for further runs)
+        ## Results stored in a dataFrame in case the user decided to
         if not output is None:
             self.result_frame = pd.DataFrame(self.results)
             self.result_frame.index.name = "t"

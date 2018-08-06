@@ -1,9 +1,0 @@
-{
-  "constants": {
-    "cost.paymentTransactionCost" : 0.5,
-    "cost.productDevelopmentWage" : 10000
-  },
-  "source" : "simulation_models/make_your_startup_grow.itmx",
-  "name": "MakeYourStartUpGrow_2",
-  "model": "simulation_models/model"
-}
