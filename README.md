@@ -4,6 +4,10 @@ Welcome to the Business Prototyping Toolkit for Python!
 BPTK_Py is the implementation of a simulation and plotting engine for Stela System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab.
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
+## Installation
+To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` Pip will install the package and make it available system-wide. Now you can start working with the package
+
+## Initialization with 
 To initialize the framework and get access to the API methods (see later sections), use these lines:
 ```
 from BPTK_Py.bptk import bptk 

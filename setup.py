@@ -7,5 +7,9 @@ setup(name='BPTK_Py',
       author='Dominik Schroeck / transentis',
       author_email='dominik.schroeck@transentis.com',
       license='MIT',
-      packages=['BPTK_Py','BPTK_Py.scenario_manager',"BPTK_Py.logger","BPTK_Py.Visualizations","BPTK_Py.simulator","BPTK_Py.config","BPTK_Py.model_monitor"],
+      packages=['BPTK_Py', 'BPTK_Py.scenario_manager', "BPTK_Py.logger", "BPTK_Py.Visualizations", "BPTK_Py.simulator",
+                "BPTK_Py.config", "BPTK_Py.model_monitor"],
+      install_requires=[
+          'pandas','matplotlib'
+      ],
       zip_safe=False)
