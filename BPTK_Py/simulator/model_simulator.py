@@ -10,7 +10,6 @@ from sys import exit
 from threading import Thread
 import datetime
 from BPTK_Py.logger.logger import log
-import BPTK_Py.config.config as config
 import pandas as pd
 import os
 #########
