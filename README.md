@@ -5,14 +5,15 @@ BPTK_Py is the implementation of a simulation and plotting engine for Stela Syst
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
 ## Installation
-To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` Pip will install the package and make it available system-wide. Now you can start working with the package
+To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package
 
-## Initialization with 
-To initialize the framework and get access to the API methods (see later sections), use these lines:
+## Initialization in Python
+To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 ```
 from BPTK_Py.bptk import bptk 
 bptk = bptk()
 ```
+Now you are ready to play around with the APIs!
 
 ## Scenarios
 Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. It may override model constants and define strategies. The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
@@ -222,7 +223,9 @@ BPTK Py uses transentis' color and font style for the plots. You might not own o
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst. It also applies the example for the extended strategies.
 
-
+## TODO:
+* Decouple config from package: Agree on settings that we have to dynamically override (probably folders?)
+* Give user the option to not immediately plot but maybe only output a DataFrame user can work with. Requires: Build a method for plotting dataframes
 
 
 
