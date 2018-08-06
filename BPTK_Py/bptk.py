@@ -15,7 +15,7 @@ plt.interactive(True)
 
 ## DICT THAT STORES ALL MY SCENARIOS LATER!
 ##
-class bptk_wrapper():
+class bptk():
 
     def __init__(self):
         import BPTK_Py.config.config as config
@@ -24,17 +24,20 @@ class bptk_wrapper():
 
         self.ScenarioManager = scenarioManager()
 
+
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
-    def __run_simulations_with_strategy(self,scenario_names,equations=[],output=["frame"]):
+    def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.getAvailableScenarios()
+        scenarios = self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers)
+
 
         scenarios = {key: scenarios[key] for key in scenario_names}
 
         #### Run the simulation scenarios
+
 
         for key in scenarios.keys():
             scenario = scenarios[key]
@@ -52,6 +55,7 @@ class bptk_wrapper():
 
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {int(k): v for k, v in strategy.items()}
+
 
             simu = simulator(model=scenario.model, name=scenario.name)
 
@@ -110,13 +114,14 @@ class bptk_wrapper():
 
 
 
-    def __run_simulations(self, scenario_names, equations=[], output=["frame"]):
+    def __run_simulations(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.getAvailableScenarios()
+        scenarios = self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers)
 
         # Filter irrelevant scenarios
+
         scenarios = { key: scenarios[key] for key in scenario_names }
 
 
@@ -148,67 +153,45 @@ class bptk_wrapper():
 
         return scenarios
 
-    # CODES FOR FREQUENCY / "FREQ" argument
-    # Alias   Description
-    # B       business day frequency
-    # C       custom business day frequency (experimental)
-    # D       calendar day frequency
-    # W       weekly frequency
-    # M       month end frequency
-    # BM      business month end frequency
-    # CBM     custom business month end frequency
-    # MS      month start frequency
-    # BMS     business month start frequency
-    # CBMS    custom business month start frequency
-    # Q       quarter end frequency
-    # BQ      business quarter endfrequency
-    # QS      quarter start frequency
-    # BQS     business quarter start frequency
-    # A       year end frequency
-    # BA      business year end frequency
-    # AS      year start frequency
-    # BAS     business year start frequency
-    # BH      business hour frequency
-    # H       hourly frequency
-    # T, min  minutely frequency
-    # S       secondly frequency
-    # L, ms   milliseonds
-    # U, us   microseconds
-    # N       nanoseconds
-
     # This method plots the outputs for one scenario.
     def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
                                stacked=config.stacked,
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                               y_label="", series_names=[], strategy=False, return_df=False):
+                               y_label="", series_names=[], strategy=False, return_df=False,scenario_managers=[]):
 
-        return self.__plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
-                                    stacked=stacked,
-                                    freq=freq, start_date=start_date, title=title,
-                                    visualize_from_period=visualize_from_period,
-                                    x_label=x_label, y_label=y_label, series_names=series_names,strategy=strategy, return_df=return_df)
+        return self.plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
+                                  stacked=stacked,scenario_managers=scenario_managers,
+                                  freq=freq, start_date=start_date, title=title,
+                                  visualize_from_period=visualize_from_period,
+                                  x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
 
     def plotScenarioForOutput(self, scenario_names, equation, kind=config.kind, alpha=config.alpha,
-                              stacked=config.stacked,
+                              stacked=config.stacked,scenario_managers=[],
                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                               y_label="",strategy=False, series_names=[], return_df=False):
 
-        return self.__plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
-                                    stacked=stacked,
-                                    freq=freq, start_date=start_date, title=title,
-                                    visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                                    series_names=series_names, strategy=strategy,
-                                    return_df=return_df)
+        return self.plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
+                                  stacked=stacked,scenario_managers=scenario_managers,
+                                  freq=freq, start_date=start_date, title=title,
+                                  visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                  series_names=series_names, strategy=strategy,
+                                  return_df=return_df)
 
-    # Private method that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
-    def __plotScenarios(self, scenario_names, equations, kind=config.kind, alpha=config.alpha, stacked=config.stacked,
-                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                        series_names=[], strategy = False,
-                        return_df=False):
+    # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
+    def plotScenarios(self, scenario_names, equations,scenario_managers=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked,
+                      freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                      series_names=[], strategy = False,
+                      return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
+
+        # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
+        if len(scenario_names) == 0 or scenario_names[0] == '':
+            scenario_names= list(self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers).keys())
+
+
         if not strategy:
-            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations)
+            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,scenario_managers=scenario_managers)
         else:
             scenario_objects = self.__run_simulations_with_strategy(scenario_names=scenario_names, equations=equations)
 
@@ -252,8 +235,39 @@ class bptk_wrapper():
         if return_df:
             return df
 
+    def modify_strategy_for_complex_strategy(self,scenarios,extended_strategy):
+        for scenario_name in extended_strategy.keys():
+
+            # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
+            scenario = scenarios[scenario_name]
+
+            ## Points in time where the extended strategy makes changes
+            points_to_change_at = list(extended_strategy[scenario_name].keys())
+
+            # If the scenario does not store an initial strategy in its JSON, create an empty one
+            if "strategy" not in scenario.dictionary.keys():
+                scenario.dictionary["strategy"] = {}
+
+            ## Points in time where the original strategy makes changes (if any): These are the constant changes
+            points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
+
+            ## Extend existing strategy by the lambda methods
+            for t in points_to_change_at:
+                if int(t) in points_to_change_at_original_strategy:
+                    for name, equation in extended_strategy[scenario_name][t].items():
+                        scenario.dictionary["strategy"][str(t)][name] = equation
+                else:
+                    for name, equation in extended_strategy[scenario_name][t].items():
+                        scenario.dictionary["strategy"][str(t)] = {}
+                        scenario.dictionary["strategy"][str(t)][name] = equation
+        log("[INFO] Added extended strategy for scenarios")
     ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
     ## It essentially only kills all the file monitors
     def destroy(self):
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.ScenarioManager.destroy()
+
+
+    def reset_simulation_model(self,scenario_managers=[],scenario=""):
+        scenario = scenarioManager.getAvailableScenarios(scenario_managers=scenario_managers, scenario=scenario)
+        scenario.mod.memo = {}

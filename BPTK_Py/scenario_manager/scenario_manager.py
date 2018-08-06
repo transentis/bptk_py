@@ -9,6 +9,7 @@ from BPTK_Py.model_monitor.model_monitor import modelMonitor
 ###
 
 
+
 ###########################
 ## ClASS scenarioManager ##
 ###########################
@@ -19,6 +20,18 @@ class scenarioManager():
     ### Setup required object variables
     def __init__(self):
         self.scenario_monitors = {}
+        self.scenarios = {}
+
+    def add_scenario_during_runtime(self,scenario,source,model):
+        if scenario.name in self.scenarios.keys():
+            log("[ERROR] Scenario with name {} already exists! I will not overwrite.".format(scenario.name))
+        else:
+            self.scenarios[scenario.name] = scenario
+
+        if len(source) >0 :
+            if not source in self.scenario_monitors.keys():
+                self.scenario_monitors[source] = modelMonitor(source, str(
+                    model) + ".py")
 
     ### write scenario (coming as a dict) to file
     def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
@@ -28,7 +41,7 @@ class scenarioManager():
 
 
     ### Returns all available scenarios and starts file monitors in case the source model is given
-    def getAvailableScenarios(self,path=config.scenario_storage):
+    def getAvailableScenarios(self, path=config.scenario_storage, scenario_managers=[]):
         scenarios = {}
         for infile in glob.glob(os.path.join(path, '*.json')):
             if len(scenarios.keys()) >0 :
@@ -45,12 +58,22 @@ class scenarioManager():
                     self.scenario_monitors[scenario.dictionary["source"] ] = modelMonitor(scenario.dictionary["source"], str(scenario.dictionary["model"])+".py")
                 log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
-        return scenarios
+                if not name in self.scenarios.keys():
+
+                    self.scenarios[name] =  scenario
+
+
+        if len(scenario_managers) > 0:
+            return {key : value for  key, value in self.scenarios.items() if value.group in scenario_managers}
+
+        else:
+            return self.scenarios
 
 
     ### prints all available scenarios to stdout
-    def printAvailableScenarios(self,path=config.scenario_storage):
-        scenarios = self.getAvailableScenarios(path=path)
+    def printAvailableScenarios(self,path=config.scenario_storage,scenario_managers=[]):
+
+        scenarios = self.getAvailableScenarios(path=path, scenario_managers=scenario_managers)
         print("\n")
 
         def printdic(val):
@@ -85,6 +108,18 @@ class scenarioManager():
         self.destroy()
 
 
+    def get_scenario_managers(self):
+        if len(self.scenarios.keys()) == 0:
+            self.getAvailableScenarios()
+        groups_scenarios = {}
+        for name, scenario in self.scenarios.items():
+
+            if scenario.group not in groups_scenarios.keys():
+                groups_scenarios[scenario.group] = [scenario.name]
+            else:
+                groups_scenarios[scenario.group] += [scenario.name]
+
+        return groups_scenarios
     ### Kill all monitors
     def destroy(self):
         for scenario in self.scenario_monitors.keys():
@@ -94,15 +129,23 @@ class scenarioManager():
     def __readScenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
         json_data = open(filename,encoding="utf-8").read()
         json_dict = dict(json.loads(json_data))
-
-        clean_dict = {}
-        ## Replace string keys as int
-        for key in json_dict.keys():
-            json_dict[int(key)] = json_dict.pop(key)
-
         scenarios = {}
-        for key in json_dict.keys():
-            sce = simulation_scenario(json_dict[key])
-            scenarios[sce.name] = sce
+        for group_name in json_dict.keys():
+
+            group = group_name
+            model = json_dict[group_name]["model"]
+            scen_dict = json_dict[group_name]["scenarios"]
+
+            ## Replace string keys as int
+            for val in scen_dict.keys():
+
+                scen_dict[int(val)] = scen_dict.pop(val)
+
+
+
+            for scenario_id in scen_dict.keys():
+                sce = simulation_scenario(group=group,model=model,dictionary=scen_dict[scenario_id])
+                scenarios[sce.name] = sce
+
 
         return scenarios

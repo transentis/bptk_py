@@ -13,12 +13,15 @@ import sys
 ### ...and some values in explicit variables.
 class simulation_scenario():
 
-    def __init__(self,dictionary):
+    def __init__(self,group,dictionary,model):
+
+        self.group = group
 
         #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
+        self.dictionary["group"] = group
         try:
-            package_link = dictionary["model"].replace("/",".")
+            package_link = model.replace("/",".")
 
             mod = importlib.import_module(package_link)
 

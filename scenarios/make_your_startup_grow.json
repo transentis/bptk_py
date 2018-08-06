@@ -1,52 +1,99 @@
 {
-  "0": {
-    "constants": {
-      "cost.paymentTransactionCost": 0.0
-    },
-    "source": "simulation_models/make_your_startup_grow.itmx",
-    "name": "MakeYourStartUpGrow",
+  "ScenarioManager1": {
     "model": "simulation_models/model",
-    "equationsToSimulate": [
-      "cashFlow.cashFlowYtd"
-    ]
-  },
-  "1": {
-    "constants": {
-      "cost.paymentTransactionCost": 0.5,
-      "cost.productDevelopmentWage": 10000
-    },
     "source": "simulation_models/make_your_startup_grow.itmx",
-    "name": "MakeYourStartUpGrow_2",
-    "model": "simulation_models/model"
-  },
-  "2": {
-    "constants": {
-      "cost.paymentTransactionCost": 0.2
-    },
-    "source": "simulation_models/make_your_startup_grow.itmx",
-    "name": "MakeYourStartUpGrow_strategy",
-    "model": "simulation_models/model",
-    "strategy": {
+    "scenarios": {
+      "0": {
+        "constants": {
+          "cost.paymentTransactionCost": 0.0
+        },
+        "name": "MakeYourStartUpGrow"
+      },
       "1": {
-        "cost.paymentTransactionCost": 0.4,
-        "customers.marketingBudget": 5000
+        "constants": {
+          "cost.paymentTransactionCost": 0.5,
+          "cost.productDevelopmentWage": 10000
+        },
+        "name": "MakeYourStartUpGrow_2"
       },
       "2": {
-        "cost.paymentTransactionCost": 0.8,
-        "customers.marketingBudget": 10000
+        "constants": {
+          "cost.paymentTransactionCost": 0.2
+        },
+        "name": "MakeYourStartUpGrow_strategy",
+        "strategy": {
+          "1": {
+            "cost.paymentTransactionCost": 0.4,
+            "customers.marketingBudget": 5000
+          },
+          "2": {
+            "cost.paymentTransactionCost": 0.8,
+            "customers.marketingBudget": 10000
+          },
+          "50": {
+            "cost.paymentTransactionCost": 0.65,
+            "customers.marketingBudget": 0
+          },
+          "76": {
+            "cost.paymentTransactionCost": 0.7,
+            "customers.marketingBudget": 2000
+          },
+          "100": {
+            "cost.paymentTransactionCost": 0.99,
+            "customers.marketingBudget": 99000
+          }
+        }
+      }
+    }
+  },
+  "ScenarioManager2": {
+    "model": "simulation_models/model",
+    "source": "simulation_models/make_your_startup_grow.itmx",
+    "scenarios": {
+      "0": {
+        "constants": {
+          "cost.paymentTransactionCost": 0.0
+        },
+        "name": "MakeYourStartUpGrow-x"
       },
-      "50": {
-        "cost.paymentTransactionCost": 0.65,
-        "customers.marketingBudget": 0
+      "1": {
+        "constants": {
+          "cost.paymentTransactionCost": 0.5,
+          "cost.productDevelopmentWage": 10000
+        },
+        "name": "MakeYourStartUpGrow_jh2"
       },
-      "76": {
-        "cost.paymentTransactionCost": 0.7,
-        "customers.marketingBudget": 2000
-      },
-      "100": {
-        "cost.paymentTransactionCost": 0.99,
-        "customers.marketingBudget": 99000
+      "2": {
+        "constants": {
+          "cost.paymentTransactionCost": 0.2
+        },
+        "name": "MakeYourStartUpGrow_stjhrategy",
+        "strategy": {
+          "1": {
+            "cost.paymentTransactionCost": 0.4,
+            "customers.marketingBudget": 5000
+          },
+          "2": {
+            "cost.paymentTransactionCost": 0.8,
+            "customers.marketingBudget": 10000
+          },
+          "50": {
+            "cost.paymentTransactionCost": 0.65,
+            "customers.marketingBudget": 0
+          },
+          "76": {
+            "cost.paymentTransactionCost": 0.7,
+            "customers.marketingBudget": 2000
+          },
+          "100": {
+            "cost.paymentTransactionCost": 0.99,
+            "customers.marketingBudget": 99000
+          }
+        }
       }
     }
   }
 }
+
+
+

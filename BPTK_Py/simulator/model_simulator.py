@@ -124,11 +124,13 @@ class simulator():
         df.to_csv(filename)
 
     def change_const(self,name,value):
-        if name in self.mod.constants:
+        if  type(value) is int or type(value) is float :
             self.mod.equations[name] = lambda t : value
             log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
-        else:
-            log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
+        elif name in self.mod.equations.keys():
+            self.mod.equations[name] = value
+            log("[INFO] Changed equation {}".format(name))
+            #log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
 
 
 
