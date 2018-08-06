@@ -8,7 +8,7 @@ from BPTK_Py.Visualizations.visualize import visualizations
 import matplotlib.pyplot as plt
 
 import BPTK_Py.config.config as config
-from BPTK_Py.model_monitor.model_monitor import modelMonitor
+
 
 plt.interactive(True)
 
