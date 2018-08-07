@@ -24,6 +24,7 @@ class bptk():
             plt.rcParams[key] = value
 
         self.ScenarioManager = scenarioManager()
+        self.ScenarioManagers = {}
 
 
     #### Run a Simulation with a strategy
@@ -162,10 +163,10 @@ class bptk():
         return scenarios
 
     # This method plots the outputs for one scenario. Just wrapping the "plotScenario" method
-    def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"],
-                               stacked=config.configuration["stacked"],
-                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                               y_label="", series_names=[], strategy=False, return_df=False,scenario_managers=[]):
+    def plot_outputs_for_scenario(self, scenario_name, equations=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+                                  stacked=config.configuration["stacked"],
+                                  freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
+                                  y_label="", series_names=[], strategy=False, return_df=False, scenario_managers=[]):
 
         return self.plot_scenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
                                    stacked=stacked, scenario_managers=scenario_managers,
@@ -174,10 +175,10 @@ class bptk():
                                    x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
 
     # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenario" method
-    def plotScenarioForOutput(self, scenario_names, equation, kind=config.configuration["kind"], alpha=config.configuration["alpha"],
-                              stacked=config.configuration["stacked"],scenario_managers=[],
-                              freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                              y_label="",strategy=False, series_names=[], return_df=False):
+    def plot_scenario_for_output(self, scenario_names, equation, kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+                                 stacked=config.configuration["stacked"], scenario_managers=[],
+                                 freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
+                                 y_label="", strategy=False, series_names=[], return_df=False):
 
         return self.plot_scenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
                                    stacked=stacked, scenario_managers=scenario_managers,
