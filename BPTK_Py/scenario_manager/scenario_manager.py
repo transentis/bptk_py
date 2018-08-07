@@ -141,8 +141,6 @@ class scenarioManager():
                 source = json_dict[group_name]["source"]
             ## Replace string keys as int
 
-
-
             for scenario_name in scen_dict.keys():
                 sce = simulation_scenario(group=group,model_name=model_name,dictionary=scen_dict[scenario_name],name=scenario_name,source=source)
                 scenarios[scenario_name] = sce
