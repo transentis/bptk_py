@@ -1,9 +1,9 @@
 import pandas as pd
 import BPTK_Py.config.config as config
 
-class visualizations():
+class Visualizations():
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def generatePlottableDF(self, scenarios, equations,start_date="1/1/2018",freq="D",series_names=[]):
+    def generate_plottable_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names=[]):
         scenario_names = list(scenarios.keys())
 
         ## Generate df to plot

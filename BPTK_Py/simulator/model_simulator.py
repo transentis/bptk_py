@@ -23,7 +23,7 @@ now = datetime.datetime.now()
 ## Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant
 ## and continue running from 501 to 1000. You can then collect the whole results in a DataFrame using the output variable and adding "frame"
 ## Output as a DataFrame to external classes
-class simulator():
+class Simulator():
     def __init__(self,model=None,name="Simulation"):
         self.mod=model # The simulation model.
 

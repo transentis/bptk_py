@@ -1,10 +1,10 @@
 ### IMPORTS
-from BPTK_Py.scenario_manager.scenario_manager import scenarioManager
+from BPTK_Py.scenariomanager.scenario_manager import scenarioManager
 
-from BPTK_Py.simulator.model_simulator import simulator
+from BPTK_Py.simulator.model_simulator import Simulator
 
 from BPTK_Py.logger.logger import log
-from BPTK_Py.Visualizations.visualize import visualizations
+from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
 
 import BPTK_Py.config.config as config
@@ -32,7 +32,7 @@ class bptk():
     def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers)
+        scenarios = self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers)
 
 
         scenarios = {key: scenarios[key] for key in scenario_names}
@@ -58,7 +58,7 @@ class bptk():
             strategy = {int(k): v for k, v in strategy.items()}
 
 
-            simu = simulator(model=scenario.model, name=scenario.name)
+            simu = Simulator(model=scenario.model, name=scenario.name)
 
             i = 0
 
@@ -126,7 +126,7 @@ class bptk():
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers)
+        scenarios = self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers)
 
         # Filter irrelevant scenarios
 
@@ -139,7 +139,7 @@ class bptk():
         for key in scenarios.keys():
             if key in scenario_names:
                 sc = scenarios[key]
-                simu = simulator(model=sc.model, name=sc.name)
+                simu = Simulator(model=sc.model, name=sc.name)
 
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
@@ -167,11 +167,11 @@ class bptk():
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                                y_label="", series_names=[], strategy=False, return_df=False,scenario_managers=[]):
 
-        return self.plotScenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
-                                  stacked=stacked,scenario_managers=scenario_managers,
-                                  freq=freq, start_date=start_date, title=title,
-                                  visualize_from_period=visualize_from_period,
-                                  x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
+        return self.plot_scenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
+                                   stacked=stacked, scenario_managers=scenario_managers,
+                                   freq=freq, start_date=start_date, title=title,
+                                   visualize_from_period=visualize_from_period,
+                                   x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
 
     # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenario" method
     def plotScenarioForOutput(self, scenario_names, equation, kind=config.configuration["kind"], alpha=config.configuration["alpha"],
@@ -179,24 +179,24 @@ class bptk():
                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                               y_label="",strategy=False, series_names=[], return_df=False):
 
-        return self.plotScenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
-                                  stacked=stacked,scenario_managers=scenario_managers,
-                                  freq=freq, start_date=start_date, title=title,
-                                  visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                                  series_names=series_names, strategy=strategy,
-                                  return_df=return_df)
+        return self.plot_scenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
+                                   stacked=stacked, scenario_managers=scenario_managers,
+                                   freq=freq, start_date=start_date, title=title,
+                                   visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                   series_names=series_names, strategy=strategy,
+                                   return_df=return_df)
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
-    def plotScenarios(self, scenario_names, equations,scenario_managers=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                      freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                      series_names=[], strategy = False,
-                      return_df=False):
+    def plot_scenarios(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                       series_names=[], strategy = False,
+                       return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
 
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
         if len(scenario_names) == 0 or scenario_names[0] == '':
-            scenario_names= list(self.ScenarioManager.getAvailableScenarios(scenario_managers=scenario_managers).keys())
+            scenario_names= list(self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers).keys())
 
 
         if not strategy:
@@ -205,7 +205,7 @@ class bptk():
             scenario_objects = self.__run_simulations_with_strategy(scenario_names=scenario_names, equations=equations)
 
         # Visualize Object
-        visualize = visualizations()
+        visualize = Visualizations()
         dict_equations = {}
 
         # for equation in equations:
@@ -222,8 +222,8 @@ class bptk():
 
 
         ### Prepare the Plottable DataFrame
-        df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq,
-                                            series_names=series_names)
+        df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
+                                             series_names=series_names)
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:
@@ -281,5 +281,5 @@ class bptk():
 
 
     def reset_simulation_model(self,scenario_managers=[],scenario=""):
-        scenario = scenarioManager.getAvailableScenarios(scenario_managers=scenario_managers, scenario=scenario)
+        scenario = scenarioManager.get_available_scenarios(scenario_managers=scenario_managers, scenario=scenario)
         scenario.mod.memo = {}

@@ -11,7 +11,7 @@ import BPTK_Py.config.config as config
 ###############################
 
 ### This class stores the settings for each scenario
-class simulation_scenario():
+class simulationScenario():
 
     def __init__(self,group,dictionary,model_name,name,source=None):
         ## THE GROUP IS WHAT WE CALL A "SCENARIO MANAGER"

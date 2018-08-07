@@ -9,7 +9,9 @@ To install the package, cd to the directory of the package (the git repo's root)
 In order to keep your system clean, you may want to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html). Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 python3 -m venv bptk_test # This will create a subfolder with a minimal python environment
-source bptk_test/bin/activate # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
+# Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
+source bptk_test/bin/activate  #  For UNIX/Linux
+bptk_test\Scripts\activate.bat # For Windows
 cd /path/to/BPTK_Py_repo
 pip install .  # Install the package
 

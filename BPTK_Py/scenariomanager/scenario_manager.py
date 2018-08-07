@@ -1,11 +1,11 @@
 
 ### IMPORTS
 import json
-from BPTK_Py.scenario_manager.scenario import simulation_scenario
+from BPTK_Py.scenariomanager.scenario import simulationScenario
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 import glob, os
-from BPTK_Py.model_monitor.model_monitor import modelMonitor
+from BPTK_Py.modelmonitor.model_monitor import modelMonitor
 ###
 
 
@@ -35,14 +35,14 @@ class scenarioManager():
             self.__add_monitor(source, model)
 
     ### write scenario (coming as a dict) to file. Does not do any checking. Just converts dict to a JSON string
-    def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
+    def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json", dictionary={}):
         with open(filename, 'w',encoding="utf-8") as outfile:
             json.dump(dictionary,outfile,indent=4)
 
 
 
     ### Returns all available scenarios and starts file monitors in case the source model is given
-    def getAvailableScenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
+    def get_available_scenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
         scenarios = {}
         for infile in glob.glob(os.path.join(path, '*.json')):
             if len(scenarios.keys()) >0 :
@@ -73,9 +73,9 @@ class scenarioManager():
 
 
     ### prints all available scenarios to stdout
-    def printAvailableScenarios(self,path=config.configuration["scenario_storage"],scenario_managers=[]):
+    def print_available_scenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
 
-        scenarios = self.getAvailableScenarios(path=path, scenario_managers=scenario_managers)
+        scenarios = self.get_available_scenarios(path=path, scenario_managers=scenario_managers)
         print("\n")
 
         # Method that pretty-prints dictionaries
@@ -113,7 +113,7 @@ class scenarioManager():
     ## Returns all scenario manager names and their corresponding scenrio names
     def get_scenario_managers(self):
         if len(self.scenarios.keys()) == 0:
-            self.getAvailableScenarios()
+            self.get_available_scenarios()
         groups_scenarios = {}
         for name, scenario in self.scenarios.items():
 
@@ -148,7 +148,7 @@ class scenarioManager():
                 ## Replace string keys as int
 
                 for scenario_name in scen_dict.keys():
-                    sce = simulation_scenario(group=group,model_name=model_name,dictionary=scen_dict[scenario_name],name=scenario_name,source=source)
+                    sce = simulationScenario(group=group, model_name=model_name, dictionary=scen_dict[scenario_name], name=scenario_name, source=source)
                     scenarios[scenario_name] = sce
 
 
