@@ -13,7 +13,7 @@ import sys
 ### ...and some values in explicit variables.
 class simulation_scenario():
 
-    def __init__(self,group,dictionary,model):
+    def __init__(self,group,dictionary,model,name):
 
         self.group = group
 
@@ -57,11 +57,9 @@ class simulation_scenario():
         else:
             self.dt = self.model.dt
 
-        if not "name" in keys:
-            log("[ERROR] No scenario name given! Will exit now!")
-            sys.exit()
 
-        self.name = dictionary["name"]
+
+        self.name = name
 
 
 

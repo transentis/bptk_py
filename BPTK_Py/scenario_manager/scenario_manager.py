@@ -137,15 +137,12 @@ class scenarioManager():
             scen_dict = json_dict[group_name]["scenarios"]
 
             ## Replace string keys as int
-            for val in scen_dict.keys():
-
-                scen_dict[int(val)] = scen_dict.pop(val)
 
 
 
-            for scenario_id in scen_dict.keys():
-                sce = simulation_scenario(group=group,model=model,dictionary=scen_dict[scenario_id])
-                scenarios[sce.name] = sce
+            for scenario_name in scen_dict.keys():
+                sce = simulation_scenario(group=group,model=model,dictionary=scen_dict[scenario_name],name=scenario_name)
+                scenarios[scenario_name] = sce
 
 
         return scenarios

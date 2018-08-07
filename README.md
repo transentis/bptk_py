@@ -26,29 +26,27 @@ One JSON file may contain more than one scenario manager and hence a key is requ
         "model": "simulation_models/model",
         "source": "simulation_models/make_your_startup_grow.itmx",
         "scenarios": {
-            "0": {
+            "MakeYourStartUpGrow": {
                 "constants": {
                 "cost.paymentTransactionCost": 0.0
-                },
-                "name": "MakeYourStartUpGrow"
+                }
             },
-            "1": {
+            "MakeYourStartUpGrow_2": {
             "constants": {
                 "cost.paymentTransactionCost": 0.5,
                 "cost.productDevelopmentWage": 10000
-                },
-                "name": "MakeYourStartUpGrow_2"
+                }
             }
         }
     }
 }
 
 ```
- For each scenario, you have to supply a unique ID as an integer number in brackets. JSON does not support integer keys. But internally we cast the "1" to an integer value. The simulator will fail if you write text (such as "one").  When you use the same ID multiple times, the simulator will only retain one. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager.
-The ``constants`` list stores the overrides for the constants. The ``model`` parameter contains the relative path to the (python) simulation model. Please omit the ``.py`` file ending. The simulation will not start without a ``name``. You should consider using the ``source`` field. For each scenario, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
+We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. The ``model`` parameter contains the relative path to the (python) simulation model The scenarios follow in the ``scenarios`` tag.
+For each scenario, you have to supply a unique name as well. JSON does not support integer keys. When you use the same name multiple times, the simulator will only retain the latest one
+The ``constants`` list stores the overrides for the constants. . Please omit the ``.py`` file ending.  You should consider using the ``source`` field in the scenario manager tag. For each source file, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
-**Note:** I suggest you avoid setting the ``from`` /` ``until`` and  ``dt`` fields. Each model configures them in the itmx file. With many scenarios in place, it is better to have a single configuration point, i.e. the simulation model. In future releases, bptk might not parse the fields anymore!
 
 ## Monitoring of itmx source models
 Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
