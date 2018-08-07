@@ -1,9 +1,14 @@
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(name='BPTK_Py',
       version='0.2',
-      description='A python simulation engine for system dynamics models',
-      url='http://github.com/storborg/funniest',
+      description='A python simulation engine for Stela system dynamics models',
+      long_description=long_description,
+      long_description_content_type="text/markdown",
+      url='https://bitbucket.org/transentis/bptk_py/',
       author='Dominik Schroeck / transentis',
       author_email='dominik.schroeck@transentis.com',
       license='MIT',
@@ -13,6 +18,9 @@ setup(name='BPTK_Py',
           'pandas', 'matplotlib'
       ],
       include_package_data=True,
+      classifiers=(
+          "Programming Language :: Python :: 3",
+          "License :: OSI Approved :: MIT License",
+          "Operating System :: OS Independent",
+      ),
       zip_safe=False)
-
-

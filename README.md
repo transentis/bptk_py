@@ -243,9 +243,9 @@ dictionary = {"name" : name, "constants" : constants, "strategy" : strategy}
 scenario = simulation_scenario(group=scenario_manager["name"],dictionary=dictionary,model=scenario_manager["model"])
 
 bptk.ScenarioManager.add_scenario_during_runtime(scenario,source=scenario_manager["source"],model=scenario_manager["model"])
-````
+```
 
-When you successfully registerd the new scenario, you can easily plot it as you are used to!
+When you successfully registered the new scenario, you can easily plot it as you are used to!
 
 ## Reset simulations
 If you used complex strategies to modify equations, you might want to play around with other strategies for the same scenario. You will observer that sometimes changes do not seem to have an effect. This is due to the fact that ``bptk`` will not store the old lambda function. It runs the simulation until ``t-1``, inserts the new function and continues until the next change (or the model's stoptime). If you want to re-run the scenario with another modified strategy, just flush the ``ScenarioManager``'s ``scenario`` object before using the plotting methods using the following method:
@@ -260,8 +260,7 @@ BPTK Py uses transentis' color and font style for the plots. You might not own o
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst. It also applies the example for the extended strategies.
 
 ## TODO:
-* Decouple config from package: Agree on settings that we have to dynamically override (probably folders?)
-* Give user the option to not immediately plot but maybe only output a DataFrame user can work with. Requires: Build a method for plotting dataframes
+* Agent based modelling
 
 
 
