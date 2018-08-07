@@ -1,9 +1,14 @@
+from BPTK_Py.scenariomanager.scenario import simulationScenario
+import BPTK_Py.config.config as config
+from BPTK_Py.logger.logger import log
+import glob
 
 class ScenarioManagerFactory():
     def __init__(self):
         self.scenario_managers= {}
+        self.scenarios = {}
 
-        def readScenario(self, filename=""):
+        def __readScenario(self, filename=""):
             if len(filename) > 0:
                 json_data = open(filename, encoding="utf-8").read()
                 json_dict = dict(json.loads(json_data))
@@ -28,7 +33,12 @@ class ScenarioManagerFactory():
                 print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
 
         def get_available_scenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
+
+
+
+            # a) load all scenarios with their group
             scenarios = {}
+            groups = {}
             for infile in glob.glob(os.path.join(path, '*.json')):
                 if len(scenarios.keys()) > 0:
                     scenarios_new = self.__readScenario(infile)
@@ -47,8 +57,28 @@ class ScenarioManagerFactory():
                     if not name in self.scenarios.keys():
                         self.scenarios[name] = scenario
 
-            if len(scenario_managers) > 0:
-                return {key: value for key, value in self.scenarios.items() if value.group in scenario_managers}
 
-            else:
-                return self.scenarios
+            #if len(scenario_managers) > 0:
+            #    return {key: value for key, value in self.scenarios.items() if value.group in scenario_managers}
+
+            #else:
+             #   return self.scenarios
+
+            # b) Create ScenarioManagers for each group that I ever observed
+
+            for scenario in scenarios:
+                if scenario.group not in groups.keys():
+                    groups[scenario.group] += [scenario]
+                else:
+                    groups[scenario.group] = [scenario]
+
+            print(groups)
+
+
+            # c) Add Scenarios to ScenarioManagers
+
+            for group, scenarios in  groups.items():
+                print("TODO")
+                #INstantiate new scenario managers and add the scenarios
+
+                
