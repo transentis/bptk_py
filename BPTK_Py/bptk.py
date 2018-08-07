@@ -210,30 +210,32 @@ class bptk():
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
-        ## Actual visualization
 
-        ### Prepare the Plottable DataFrame
+            ## Actual visualization
+
+            ### Prepare the Plottable DataFrame
         df = visualize.generatePlottableDF(scenario_objects, dict_equations, start_date=start_date, freq=freq,
-                                           series_names=series_names)
+                                            series_names=series_names)
+        
+        if not return_df:
+            ### Get the plot object
+            ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"], title=title,
+                                                 alpha=alpha, color=config.configuration["colors"], lw=config.configuration["linewidth"])
 
-        ### Get the plot object
-        ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"], title=title,
-                                             alpha=alpha, color=config.configuration["colors"], lw=config.configuration["linewidth"])
-        ### Set axes labels and set the formats
-        if (len(x_label) > 0):
-            ax.set_xlabel(x_label)
+            ### Set axes labels and set the formats
+            if (len(x_label) > 0):
+                ax.set_xlabel(x_label)
 
-        # Set the y-axis label
-        if (len(y_label) > 0):
-            ax.set_ylabel(y_label)
+            # Set the y-axis label
+            if (len(y_label) > 0):
+                ax.set_ylabel(y_label)
 
-
-        visualize.update_plot_formats(ax)
-
+            visualize.update_plot_formats(ax)
 
         ### If user wanted a dataframe, here it is!
         if return_df:
             return df
+
 
     def modify_strategy_for_complex_strategy(self,scenarios,extended_strategy):
         for scenario_name in extended_strategy.keys():
