@@ -28,9 +28,14 @@ transentis_colors = {
 
 }
 
+import BPTK_Py
+import os
+
+
 configuration = {
-    # Path to sd-compiler git root
+    # Path to sd-compiler git root! Amend for your own needs
     "sd_py_compiler_root": "~/Code/sd-compiler/",
+    "bptk_Py_module_path" :os.path.dirname(BPTK_Py.__file__),
 
     # Graphic settings
     "matplotlib_rc_settings": matplotlib_rc_settings,

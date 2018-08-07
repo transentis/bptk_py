@@ -26,9 +26,8 @@ class simulation_scenario():
         self.dictionary["group"] = group
         try:
             if not os.path.isfile(model_name + ".py") :
-                import BPTK_Py
 
-                path = os.path.dirname(BPTK_Py.__file__)
+                path = config.configuration["bptk_Py_module_path"]
                 execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
                 os.system(execute_script)
 
