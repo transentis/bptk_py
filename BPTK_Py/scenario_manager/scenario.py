@@ -3,6 +3,8 @@
 import importlib
 from BPTK_Py.logger.logger import log
 import sys
+import os
+import BPTK_Py.config.config as config
 #######
 
 ###############################
@@ -13,15 +15,22 @@ import sys
 ### ...and some values in explicit variables.
 class simulation_scenario():
 
-    def __init__(self,group,dictionary,model,name):
+    def __init__(self,group,dictionary,model_name,name,source=None):
 
         self.group = group
+        self.source = source
+        self.model_name = model_name
 
         #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
         self.dictionary["group"] = group
         try:
-            package_link = model.replace("/",".")
+            if not os.path.isfile(model_name + ".py") :
+                execute_script = "sh BPTK_Py/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+                os.system(execute_script)
+
+            package_link = model_name.replace("/",".")
+
 
             mod = importlib.import_module(package_link)
 

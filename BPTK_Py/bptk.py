@@ -154,8 +154,8 @@ class bptk():
         return scenarios
 
     # This method plots the outputs for one scenario.
-    def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.kind, alpha=config.alpha,
-                               stacked=config.stacked,
+    def plotOutputsForScenario(self, scenario_name, equations=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+                               stacked=config.configuration["stacked"],
                                freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                                y_label="", series_names=[], strategy=False, return_df=False,scenario_managers=[]):
 
@@ -165,8 +165,8 @@ class bptk():
                                   visualize_from_period=visualize_from_period,
                                   x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
 
-    def plotScenarioForOutput(self, scenario_names, equation, kind=config.kind, alpha=config.alpha,
-                              stacked=config.stacked,scenario_managers=[],
+    def plotScenarioForOutput(self, scenario_names, equation, kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+                              stacked=config.configuration["stacked"],scenario_managers=[],
                               freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                               y_label="",strategy=False, series_names=[], return_df=False):
 
@@ -178,7 +178,7 @@ class bptk():
                                   return_df=return_df)
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
-    def plotScenarios(self, scenario_names, equations,scenario_managers=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked,
+    def plotScenarios(self, scenario_names, equations,scenario_managers=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                       series_names=[], strategy = False,
                       return_df=False):
@@ -217,8 +217,8 @@ class bptk():
                                            series_names=series_names)
 
         ### Get the plot object
-        ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.figsize, title=title,
-                                             alpha=alpha, color=config.colors, lw=config.linewidth)
+        ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"], title=title,
+                                             alpha=alpha, color=config.configuration["colors"], lw=config.configuration["linewidth"])
         ### Set axes labels and set the formats
         if (len(x_label) > 0):
             ax.set_xlabel(x_label)

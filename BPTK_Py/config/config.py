@@ -14,12 +14,12 @@ log_file = "simulator_log.log"
 scenario_storage = "scenarios/"
 
 ### SD-Py-Compiler Location
-sd_py_compiler_root = "~/Code/sd-compiler/"
+
 
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-     "font.family" :  'AutographScriptEFOP-Lig',
+    "font.family": 'AutographScriptEFOP-Lig',
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,
@@ -41,10 +41,20 @@ transentis_colors = {
 
 }
 
-colors = [transentis_colors[color] for color in transentis_colors.keys()]
-kind = "area"
-stacked = False
-figsize = matplotlib_rc_settings["figure.figsize"]
-alpha = 0.25
-linewidth = matplotlib_rc_settings["lines.linewidth"]
+#colors = [transentis_colors[color] for color in transentis_colors.keys()]
+#kind = "area"
+#stacked = False
+#figsize = matplotlib_rc_settings["figure.figsize"]
+#alpha = 0.25
+#linewidth = matplotlib_rc_settings["lines.linewidth"]
 
+configuration = {
+    "sd_py_compiler_root" : "~/Code/sd-compiler/",
+    "matplotlib_rc_settings": matplotlib_rc_settings,
+    "colors": [transentis_colors[color] for color in transentis_colors.keys()],
+    "kind": "area",
+    "stacked": False,
+    "figsize": matplotlib_rc_settings["figure.figsize"],
+    "alpha": 0.25,
+    "linewidth": matplotlib_rc_settings["lines.linewidth"],
+}

@@ -54,8 +54,9 @@ class scenarioManager():
 
             # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
             for name,scenario in scenarios.items():
-                if "source" in scenario.dictionary.keys() and not scenario.dictionary["source"] in self.scenario_monitors.keys():
-                    self.scenario_monitors[scenario.dictionary["source"] ] = modelMonitor(scenario.dictionary["source"], str(scenario.dictionary["model"])+".py")
+
+                if not scenario.source is None and not scenario.source in self.scenario_monitors.keys():
+                    self.scenario_monitors[scenario.source ] = modelMonitor(str(scenario.source), str(scenario.model_name)+".py")
                 log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
                 if not name in self.scenarios.keys():
@@ -133,15 +134,17 @@ class scenarioManager():
         for group_name in json_dict.keys():
 
             group = group_name
-            model = json_dict[group_name]["model"]
+            model_name = json_dict[group_name]["model"]
             scen_dict = json_dict[group_name]["scenarios"]
-
+            source = ""
+            if "source" in json_dict[group_name].keys():
+                source = json_dict[group_name]["source"]
             ## Replace string keys as int
 
 
 
             for scenario_name in scen_dict.keys():
-                sce = simulation_scenario(group=group,model=model,dictionary=scen_dict[scenario_name],name=scenario_name)
+                sce = simulation_scenario(group=group,model_name=model_name,dictionary=scen_dict[scenario_name],name=scenario_name,source=source)
                 scenarios[scenario_name] = sce
 
 

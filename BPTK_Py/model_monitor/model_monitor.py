@@ -22,7 +22,7 @@ class modelMonitor():
 
         self.model_file = model_file
 
-        self.execute_script = "sh BPTK_Py/shell_scripts/update_model.sh " + config.sd_py_compiler_root + " "  +  model_file + " " + dest
+        self.execute_script = "sh BPTK_Py/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
 
         log("[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
         self.running = True
