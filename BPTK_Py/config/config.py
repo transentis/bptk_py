@@ -3,19 +3,6 @@
 ##################################
 
 
-### LOG MODES. Simple list. Default: ["logfile"], not outputting the log to stdout. Use "print" to log to stdout
-log_modes = ["print", "logfile"]
-log_modes = ["logfile"]
-
-### File to log to
-log_file = "simulator_log.log"
-
-## Location of the scenarios (relative path from top level of working dir)
-scenario_storage = "scenarios/"
-
-### SD-Py-Compiler Location
-
-
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
@@ -41,15 +28,11 @@ transentis_colors = {
 
 }
 
-#colors = [transentis_colors[color] for color in transentis_colors.keys()]
-#kind = "area"
-#stacked = False
-#figsize = matplotlib_rc_settings["figure.figsize"]
-#alpha = 0.25
-#linewidth = matplotlib_rc_settings["lines.linewidth"]
-
 configuration = {
-    "sd_py_compiler_root" : "~/Code/sd-compiler/",
+    # Path to sd-compiler git root
+    "sd_py_compiler_root": "~/Code/sd-compiler/",
+
+    # Graphic settings
     "matplotlib_rc_settings": matplotlib_rc_settings,
     "colors": [transentis_colors[color] for color in transentis_colors.keys()],
     "kind": "area",
@@ -57,4 +40,11 @@ configuration = {
     "figsize": matplotlib_rc_settings["figure.figsize"],
     "alpha": 0.25,
     "linewidth": matplotlib_rc_settings["lines.linewidth"],
+
+    #Relative path to scenario storage
+    "scenario_storage": "scenarios/",
+
+    # Log mode. List of strings. Possible values: "print" / "logfile"
+    "log_modes": ["logfile"],
+    "log_file": "simulator_log.log"
 }

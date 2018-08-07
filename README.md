@@ -5,7 +5,15 @@ BPTK_Py is the implementation of a simulation and plotting engine for Stela Syst
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
 ## Installation
-To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package
+To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package.
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html). Following steps are required to set up the venv and and install BPTK_Py into it:
+```
+python3 -m venv bptk_test # This will create a subfolder with a minimal python environment
+source bptk_test/bin/activate # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
+cd /path/to/BPTK_Py_repo
+pip install .  # Install the package
+```
+Pip will make sure to download all required dependencies and now you are ready to play around with BPTK_Py! 
 
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
@@ -14,6 +22,20 @@ from BPTK_Py.bptk import bptk
 bptk = bptk()
 ```
 Now you are ready to play around with the APIs!
+
+## Override the configuration
+The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. It also stores the style settings for the plots. If you wish to override these settings, you can do so:
+```
+import BPTK_Py.config.config as config
+
+# Override setting "config_key":
+config.configuration["config_key"] = "VALUE"
+
+# Get available configuration keys:
+for key, value in config.configuration.items():
+    print("{} : {}".format(key,str(value)))
+
+```
 
 ## Scenarios
 Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. It may override model constants and define strategies. The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
@@ -47,6 +69,14 @@ For each scenario, you have to supply a unique name as well. JSON does not suppo
 The ``constants`` list stores the overrides for the constants. . Please omit the ``.py`` file ending.  You should consider using the ``source`` field in the scenario manager tag. For each source file, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
 The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
 
+### Changing scenario files during runtime
+If you changed a JSON scenario file during runtime and wish to reload the scenario(s), use the following method:
+
+```
+scenarioManager = bptk.ScenarioManager
+scenarioManager.scenarios.pop("NAME_OF_SCENARIO") 
+```
+
 
 ## Monitoring of itmx source models
 Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
@@ -57,13 +87,14 @@ The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/upd
 
 **Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 
-## API calls
-The ipython example notebook contains examples for the API calls. For now, there are two methods analysts can use:
+## Plotting API
+The ipython example notebook contains examples for the plotting API calls. For now, there are two methods analysts can use:
 ```
 bptk.plotOutputsForScenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
 
 bptk.plotScenarioForOutput(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False):
 ```
+
 
 The first plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations / scenario_managers``).
 The second method lets you plot one equation for multiple scenarios and uses the same parameter set.
@@ -216,7 +247,7 @@ bptk.reset_simulation_model(self,scenario_managers=[],scenario="")
 ```
 
 ## Look-and-Feel
-BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py). 
+BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
 
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst. It also applies the example for the extended strategies.

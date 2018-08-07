@@ -41,7 +41,7 @@ class scenarioManager():
 
 
     ### Returns all available scenarios and starts file monitors in case the source model is given
-    def getAvailableScenarios(self, path=config.scenario_storage, scenario_managers=[]):
+    def getAvailableScenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
         scenarios = {}
         for infile in glob.glob(os.path.join(path, '*.json')):
             if len(scenarios.keys()) >0 :
@@ -72,7 +72,7 @@ class scenarioManager():
 
 
     ### prints all available scenarios to stdout
-    def printAvailableScenarios(self,path=config.scenario_storage,scenario_managers=[]):
+    def printAvailableScenarios(self,path=config.configuration["scenario_storage"],scenario_managers=[]):
 
         scenarios = self.getAvailableScenarios(path=path, scenario_managers=scenario_managers)
         print("\n")
