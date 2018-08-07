@@ -20,8 +20,11 @@ class scenarioManager():
     ### Setup required object variables
     def __init__(self):
         self.scenario_monitors = {}
+
+        ### scenarios stores all available scenarios
         self.scenarios = {}
 
+    ### Add a simulation scenario during runtime and register it
     def add_scenario_during_runtime(self,scenario,source,model):
         if scenario.name in self.scenarios.keys():
             log("[ERROR] Scenario with name {} already exists! I will not overwrite.".format(scenario.name))
@@ -29,15 +32,13 @@ class scenarioManager():
             self.scenarios[scenario.name] = scenario
 
         if len(source) >0 :
-            if not source in self.scenario_monitors.keys():
-                self.scenario_monitors[source] = modelMonitor(source, str(
-                    model) + ".py")
+            self.__add_monitor(source, model)
 
-    ### write scenario (coming as a dict) to file
+    ### write scenario (coming as a dict) to file. Does not do any checking. Just converts dict to a JSON string
     def createScenario(self,filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",dictionary={}):
-        #json_string = json.dumps(dictionary)
         with open(filename, 'w',encoding="utf-8") as outfile:
             json.dump(dictionary,outfile,indent=4)
+
 
 
     ### Returns all available scenarios and starts file monitors in case the source model is given
@@ -56,7 +57,7 @@ class scenarioManager():
             for name,scenario in scenarios.items():
 
                 if not scenario.source is None and not scenario.source in self.scenario_monitors.keys():
-                    self.scenario_monitors[scenario.source ] = modelMonitor(str(scenario.source), str(scenario.model_name)+".py")
+                    self.__add_monitor(scenario.source, scenario.model_name)
                 log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
 
                 if not name in self.scenarios.keys():
@@ -77,6 +78,7 @@ class scenarioManager():
         scenarios = self.getAvailableScenarios(path=path, scenario_managers=scenario_managers)
         print("\n")
 
+        # Method that pretty-prints dictionaries
         def printdic(val):
 
             if type(val) == dict:
@@ -108,7 +110,7 @@ class scenarioManager():
         # Kill the monitoring threads because we do not require them
         self.destroy()
 
-
+    ## Returns all scenario manager names and their corresponding scenrio names
     def get_scenario_managers(self):
         if len(self.scenarios.keys()) == 0:
             self.getAvailableScenarios()
@@ -121,29 +123,41 @@ class scenarioManager():
                 groups_scenarios[scenario.group] += [scenario.name]
 
         return groups_scenarios
-    ### Kill all monitors
+
+    ### Kill all monitors and flush scenarios
     def destroy(self):
         for scenario in self.scenario_monitors.keys():
             self.scenario_monitors[scenario].kill()
-
-    ### Read scenario from file and build a simulation_scenario object
-    def __readScenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/scenarios/scenario.json"):
-        json_data = open(filename,encoding="utf-8").read()
-        json_dict = dict(json.loads(json_data))
-        scenarios = {}
-        for group_name in json_dict.keys():
-
-            group = group_name
-            model_name = json_dict[group_name]["model"]
-            scen_dict = json_dict[group_name]["scenarios"]
-            source = ""
-            if "source" in json_dict[group_name].keys():
-                source = json_dict[group_name]["source"]
-            ## Replace string keys as int
-
-            for scenario_name in scen_dict.keys():
-                sce = simulation_scenario(group=group,model_name=model_name,dictionary=scen_dict[scenario_name],name=scenario_name,source=source)
-                scenarios[scenario_name] = sce
+            self.scenario_monitors.pop(scenario)
 
 
-        return scenarios
+    ### Read scenarios from file and build a simulation_scenario object
+    def __readScenario(self, filename=""):
+        if len(filename)>0:
+            json_data = open(filename,encoding="utf-8").read()
+            json_dict = dict(json.loads(json_data))
+            scenarios = {}
+            for group_name in json_dict.keys():
+
+                group = group_name
+                model_name = json_dict[group_name]["model"]
+                scen_dict = json_dict[group_name]["scenarios"]
+                source = ""
+                if "source" in json_dict[group_name].keys():
+                    source = json_dict[group_name]["source"]
+                ## Replace string keys as int
+
+                for scenario_name in scen_dict.keys():
+                    sce = simulation_scenario(group=group,model_name=model_name,dictionary=scen_dict[scenario_name],name=scenario_name,source=source)
+                    scenarios[scenario_name] = sce
+
+
+            return scenarios
+        else:
+            print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
+
+    ### Add a file monitor for source itmx model and convert to .py model when changes are detected
+    def __add_monitor(self, source, model):
+        if not source in self.scenario_monitors.keys():
+            self.scenario_monitors[source] = modelMonitor(source, str(
+                model) + ".py")

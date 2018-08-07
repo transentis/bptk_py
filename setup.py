@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(name='BPTK_Py',
-      version='0.1',
-      description='A simulation engine for system dynamics models',
+      version='0.2',
+      description='A python simulation engine for system dynamics models',
       url='http://github.com/storborg/funniest',
       author='Dominik Schroeck / transentis',
       author_email='dominik.schroeck@transentis.com',

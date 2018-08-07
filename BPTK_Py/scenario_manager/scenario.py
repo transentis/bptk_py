@@ -2,7 +2,6 @@
 ####### IMPORTS
 import importlib
 from BPTK_Py.logger.logger import log
-import sys
 import os
 import BPTK_Py.config.config as config
 #######
@@ -11,19 +10,18 @@ import BPTK_Py.config.config as config
 ## ClASS SIMULATION_SCENARIO ##
 ###############################
 
-### This class stores the settings for each scenario in a dictionary
-### ...and some values in explicit variables.
+### This class stores the settings for each scenario
 class simulation_scenario():
 
     def __init__(self,group,dictionary,model_name,name,source=None):
-
+        ## THE GROUP IS WHAT WE CALL A "SCENARIO MANAGER"
         self.group = group
         self.source = source
         self.model_name = model_name
 
         #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
-        self.dictionary["group"] = group
+
         try:
 
             ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
@@ -48,40 +46,12 @@ class simulation_scenario():
         except ModuleNotFoundError as e:
             log("[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(str(e)))
 
-
-
-
-        #### Get keys of dictionary and modify model parameters - this is old and soon to be removed
-        # @deprecated
-        keys = dictionary.keys()
-
+        # Dictionary of the constants the scenario modifies in the beginning of the simulation
         self.constants =  dictionary["constants"]
-        #self.start = dictionary["from"]
-
-        if "from" in keys:
-            self.start = dictionary["from"]
-            self.model.starttime = self.start
-        else:
-            self.start = self.model.starttime
-
-        if "until" in keys:
-            self.until = dictionary["until"]
-            self.model.stoptime = self.until
-
-        else:
-            self.until = self.model.stoptime
-
-        if "dt" in keys:
-            self.dt = dictionary["dt"]
-            self.model.dt = self.dt
-        else:
-            self.dt = self.model.dt
-
-        # 201@deprecated over
 
         self.name = name
 
-        self.result = None # When we finish a simulation, we will write the resulting dataframe in here
+        self.result = None # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserver the pointer
 
 
 

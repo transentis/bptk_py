@@ -12,8 +12,12 @@ python3 -m venv bptk_test # This will create a subfolder with a minimal python e
 source bptk_test/bin/activate # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
 cd /path/to/BPTK_Py_repo
 pip install .  # Install the package
+
+## If you want Jupyter Lab as well: (HIGHLY RECOMMENDED)
+pip install jupyterlab
 ```
 Pip will make sure to download all required dependencies and now you are ready to play around with BPTK_Py! 
+If you executed the last line as well, you already have a functioning version of jupyter lab and can start working interactively using jupyter notebooks. Just type ``jupyter lab`` to get started.
 
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
@@ -111,7 +115,7 @@ The second method lets you plot one equation for multiple scenarios and uses the
 **The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
 
 ### Receive Data - not plot
-In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and set it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations and gain deeper insights into the data.
+In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
 
 ## Strategy simulation
 The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.

@@ -19,9 +19,10 @@ now = datetime.datetime.now()
 ### SIMULATOR CLASS
 
 ## Pretty simple simulator
-## Will just run the given simulation model from start to "until"
-## Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 100, then change a constant
+## Will just run the given simulation model from start to the model's stoptime
+## Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant
 ## and continue running from 501 to 1000. You can then collect the whole results in a DataFrame using the output variable and adding "frame"
+## Output as a DataFrame to external classes
 class simulator():
     def __init__(self,model=None,name="Simulation"):
         self.mod=model # The simulation model.
@@ -56,7 +57,7 @@ class simulator():
             log("[ERROR] {}: No equation to simulate for given model! Check your scenario config of method parameters!".format(self.name))
             exit()
 
-        ###
+        ### Store the simulation threads in a list
         self.threads = []
         log("[INFO] Starting simulation of model {}. starttime={}, stoptime={}".format(self.name,str(start),str(until)))
 
@@ -92,6 +93,7 @@ class simulator():
                 return self.result_frame
 
 
+    ## Private method that coordinates the equation simulation
     def __simulate_equations(self,start=0,until=0, equations=[]):
 
         for equation in equations: # Start one thread for each equation
@@ -102,6 +104,7 @@ class simulator():
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until,start):
 
+        ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results starting at the start
         for i in range(start,until+1):
             result = self.mod.memoize(equation,i)
 
@@ -116,13 +119,14 @@ class simulator():
             self.finished_simulations_count += 1
         log("[INFO] Finished simulation of stock {} for t={} to {}".format(str(equation),str(start),str(until)))
 
-
+    ## If user decided to get csv results
     def __write_results_to_csv(self,df):
         datestring = str(datetime.datetime.now().day) + "_" + str(datetime.datetime.now().month) +"_" + str(datetime.datetime.now().year)
         filename = "results/results_{}_{}.csv".format(self.name,datestring)
         df.to_csv(filename)
 
-    def change_const(self,name,value):
+    # Method that changes an equation. It can change constants by just receiving int/float values and creates lambda functions or it can replace lambda functions with lambda functions
+    def change_equation(self, name, value):
         if  type(value) is int or type(value) is float :
             self.mod.equations[name] = lambda t : value
             log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
