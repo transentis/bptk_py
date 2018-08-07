@@ -6,3 +6,5 @@ results/
 venv
 .idea/
 .ipynb_checkpoints/
+dist/
+*.egg-info

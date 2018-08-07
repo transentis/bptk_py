@@ -10,6 +10,9 @@ setup(name='BPTK_Py',
       packages=['BPTK_Py', 'BPTK_Py.scenario_manager', "BPTK_Py.logger", "BPTK_Py.Visualizations", "BPTK_Py.simulator",
                 "BPTK_Py.config", "BPTK_Py.model_monitor"],
       install_requires=[
-          'pandas','matplotlib'
+          'pandas', 'matplotlib'
       ],
+      include_package_data=True,
       zip_safe=False)
+
+
