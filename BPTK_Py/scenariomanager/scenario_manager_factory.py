@@ -43,10 +43,11 @@ class ScenarioManagerFactory():
         else:
             print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
 
-    def get_available_scenarios(self, path=config.configuration["scenario_storage"], scenario_managers=[]):
+    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[]):
         self.path=path
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
+            log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
 
             scenarios = {}
             groups = {}
@@ -67,8 +68,6 @@ class ScenarioManagerFactory():
 
 
 
-                print(scenarios['MakeYourStartUpGrow_strategy_ScenarioManager2'])
-
             # b) Create ScenarioManagers for each group that I ever observed
 
             for key, scenario in scenarios.items():
@@ -81,30 +80,73 @@ class ScenarioManagerFactory():
             # c) Add Scenarios to ScenarioManagers
             self.scenario_managers = {}
             for group, scenarios in groups.items():
-                self.scenario_managers[group] = scenarioManager(scenarios)
+                self.scenario_managers[group] = scenarioManager(scenarios,name=group)
 
                 # INstantiate new scenario managers and add the scenarios
         # b) Return self.scenarioManagers
+            log("[INFO] Successfully loaded all scenarios!")
 
-        return self.scenario_managers
+        if len(scenario_managers_to_filter)>0:
+            return_value = {k:v for k,v in self.scenario_managers.items() if k in scenario_managers_to_filter}
+
+            return return_value
+        else:
+            return self.scenario_managers
 
     def reset_scenario(self,scenario_manager,scenario_name):
-        scenario_filename = self.scenario_managers[scenario_manager].scenarios[scenario_name].filename
-        scenarios_from_file = self.__readScenario(filename=scenario_filename)
-        self.scenario_managers[scenario_manager].scenarios[scenario_name] = scenarios_from_file
+        log("[INFO] Reloading scenario {}".format(scenario_manager))
+
+        scenario_filename = self.get_scenario_managers()[scenario_manager].scenarios[scenario_name].filename
+
+        scenario_from_file = self.__readScenario(filename=scenario_filename)[scenario_name]
+
+        self.scenario_managers[scenario_manager].scenarios[scenario_name] = scenario_from_file
+
         log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager,scenario_name))
+
+    def reset_all_scenarios(self):
+        self.scenario_managers = {}
+        return self.get_scenario_managers()
 
     def get_scenario(self,scenario_manager, scenario_name):
         return self.scenario_managers[scenario_manager].scenarios[scenario_name]
 
 
+    def get_scenarios(self,scenario_managers=[],scenario_names=[]):
+
+        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+
+        scenarios = {}
+        for manager_name, manager in managers.items():
+            for scenario_name, scenario in manager.scenarios.items():
+                    if scenario_name in scenarios.keys():
+                        scenarios[scenario_name + "_" + manager_name] = scenario
+                        if scenario_name in scenario_names:
+                            scenario_names += [scenario_name + "_" + manager_name]
+                    else:
+                        scenarios[scenario_name] = scenario
+
+        if len(scenario_names)>0:
+            filtered_scenarios= {}
+            for key in scenario_names:
+                if key in scenarios.keys():
+                    filtered_scenarios[key] = scenarios[key]
+            scenarios = filtered_scenarios
+        return scenarios
 
 
-    def add_scenario_during_runtime(self, scenario, source, model):
-        if scenario.name in self.scenarios.keys():
+
+
+    def add_scenario_during_runtime(self, scenario, scenario_manager, source, model):
+        if scenario_manager not in self.get_scenario_managers().keys():
+            self.scenario_managers[scenario_manager] = scenarioManager({},name=scenario_manager)
+
+        manager = self.get_scenario_managers()[scenario_manager]
+
+        if scenario.name in manager.scenarios.keys():
             log("[ERROR] Scenario with name {} already exists! I will not overwrite.".format(scenario.name))
         else:
-            self.scenarios[scenario.name] = scenario
+            manager.scenarios[scenario.name] = scenario
 
         if len(source) > 0:
             self.__add_monitor(source, model)
@@ -121,3 +163,8 @@ class ScenarioManagerFactory():
             self.scenario_monitors[scenario].kill()
 
         self.scenario_monitors = {}
+
+
+    def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json", dictionary={}):
+        with open(filename, 'w',encoding="utf-8") as outfile:
+            json.dump(dictionary,outfile,indent=4)

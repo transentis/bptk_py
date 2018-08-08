@@ -32,11 +32,11 @@ class simulationScenario():
             if not os.path.isfile(model_name + ".py") :
 
                 if os.name == "nt":
-                    source = source.replace("/", "\\")
-                    model_name = model_name.replace("/", "\\")
+                    source_tmp = source.replace("/", "\\")
+                    model_name_tmp = model_name.replace("/", "\\")
                     execute_script = config.configuration[
                                               "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + \
-                                          config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+                                          config.configuration["sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp+".py"
 
                 else:
                     path = config.configuration["bptk_Py_module_path"]
