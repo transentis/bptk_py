@@ -27,8 +27,17 @@ class simulationScenario():
             ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
             if not os.path.isfile(model_name + ".py") :
 
-                path = config.configuration["bptk_Py_module_path"]
-                execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+                if os.name == "nt":
+                    source = source.replace("/", "\\")
+                    model_name = model_name.replace("/", "\\")
+                    execute_script = config.configuration[
+                                              "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + \
+                                          config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+
+                else:
+                    path = config.configuration["bptk_Py_module_path"]
+                    execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+
                 os.system(execute_script)
 
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"

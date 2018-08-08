@@ -21,9 +21,12 @@ class modelMonitor():
     def __init__(self, model_file, dest):
 
         self.model_file = model_file
-
-        self.execute_script = "sh " + config.configuration["bptk_Py_module_path"] + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
-
+        if os.name == "nt":
+            model_file = model_file.replace("/","\\")
+            dest = dest.replace("/","\\")
+            self.execute_script = config.configuration["bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
+        else:
+            self.execute_script = "sh " + config.configuration["bptk_Py_module_path"] + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
         log("[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
 
         # As long as this is True, I will keep monitoring. Otherwise the thread will terminate
