@@ -8,7 +8,7 @@ from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
 
 import BPTK_Py.config.config as config
-
+from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 
 plt.interactive(True)
 
@@ -23,8 +23,9 @@ class bptk():
         for key,value  in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 
-        self.ScenarioManager = scenarioManager()
-        self.ScenarioManagers = {}
+        self.scenario_manager_factory = ScenarioManagerFactory()
+
+
 
 
     #### Run a Simulation with a strategy
@@ -33,10 +34,11 @@ class bptk():
     def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers)
+
+        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,scenario_names=scenario_names)
 
 
-        scenarios = {key: scenarios[key] for key in scenario_names}
+
 
         #### Run the simulation scenarios
 
@@ -127,11 +129,7 @@ class bptk():
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers)
-
-        # Filter irrelevant scenarios
-
-        scenarios = { key: scenarios[key] for key in scenario_names }
+        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=[], scenario_names=scenario_names)
 
 
         #### Run the simulation scenarios
@@ -180,6 +178,7 @@ class bptk():
                                  freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                                  y_label="", strategy=False, series_names=[], return_df=False):
 
+
         return self.plot_scenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
                                    stacked=stacked, scenario_managers=scenario_managers,
                                    freq=freq, start_date=start_date, title=title,
@@ -197,13 +196,13 @@ class bptk():
 
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
         if len(scenario_names) == 0 or scenario_names[0] == '':
-            scenario_names= list(self.ScenarioManager.get_available_scenarios(scenario_managers=scenario_managers).keys())
+            scenario_names= list(self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
 
 
         if not strategy:
             scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,scenario_managers=scenario_managers)
         else:
-            scenario_objects = self.__run_simulations_with_strategy(scenario_names=scenario_names, equations=equations)
+            scenario_objects = self.__run_simulations_with_strategy(scenario_managers=scenario_managers,scenario_names=scenario_names, equations=equations)
 
         # Visualize Object
         visualize = Visualizations()
@@ -211,6 +210,10 @@ class bptk():
 
         # for equation in equations:
         #   dict_equations[equation] = []
+
+        # Clean up scenarios if we did not find all with the specified scenario managers
+        scenario_names = [key for key in scenario_objects.keys()]
+
 
         for scenario_name in scenario_names:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object

@@ -13,11 +13,15 @@ import BPTK_Py.config.config as config
 ### This class stores the settings for each scenario
 class simulationScenario():
 
-    def __init__(self,group,dictionary,model_name,name,source=None):
+    def __init__(self,group,dictionary,model_name,name,filename,source=None):
         ## THE GROUP IS WHAT WE CALL A "SCENARIO MANAGER"
         self.group = group
         self.source = source
         self.model_name = model_name
+
+        # Filename of the scenario
+        self.filename = filename
+
 
         #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
@@ -27,8 +31,17 @@ class simulationScenario():
             ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
             if not os.path.isfile(model_name + ".py") :
 
-                path = config.configuration["bptk_Py_module_path"]
-                execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+                if os.name == "nt":
+                    source_tmp = source.replace("/", "\\")
+                    model_name_tmp = model_name.replace("/", "\\")
+                    execute_script = config.configuration[
+                                              "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + \
+                                          config.configuration["sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp+".py"
+
+                else:
+                    path = config.configuration["bptk_Py_module_path"]
+                    execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " " + source + " " + model_name+".py"
+
                 os.system(execute_script)
 
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"

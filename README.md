@@ -24,7 +24,15 @@ If you executed the last line as well, you already have a functioning version of
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 ```
+# Set the path to the sd-compiler repo root:
+
+import BPTK_Py.config.config as config
+config.configuration["sd_py_compiler_root"] = "~/Code/sd-compiler/"  ## <--- Please change this path to the git repo of the sd_compiler package!
+
+## For Windows PC's, please use \\ for seperating folders and add additional \" to add quotation marks inside the string:
+config.configuration["sd_py_compilter_root"] = "\"C:\\Users\\Henrique Beck\\Code\\sd-compiler\""
 from BPTK_Py.bptk import bptk 
+
 bptk = bptk()
 ```
 Now you are ready to play around with the APIs!
@@ -96,9 +104,9 @@ The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/upd
 ## Plotting API
 The ipython example notebook contains examples for the plotting API calls. For now, there are two methods analysts can use:
 ```
-bptk.plot_outputs_for_scenario(scenario_name, equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
+bptk.plot_outputs_for_scenario(scenario_name,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
 
-bptk.plot_scenario_for_output(scenario_names, equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False):
+bptk.plot_scenario_for_output(scenario_names,scenario_managers=[], equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False):
 ```
 
 
@@ -113,6 +121,7 @@ The second method lets you plot one equation for multiple scenarios and uses the
 * ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
 * ``x_label and y_label``: set the label names for the axis.
 * ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
+* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
 
 **The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
 
@@ -148,6 +157,40 @@ The simulator is also able to simulate various strategies. A strategy defines wh
 This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. The full scenario for this strategy is available in [scenarios/make_your_startup_grow_with_strategy.json](scenarios/make_your_startup_grow_with_strategy.json). To apply a strategy for a scenario, use the parameter ``strategy=True``. 
 
 **Note:** If you set the ``strategy=True`` but there is not strategy defined in the scenario, the simulator will just issue a Warning in the logfile and execute the simulation(s) without a strategy. 
+
+## Advanced background: Scenario Managers and the factory
+As you observed, the simulator uses scenario managers to decouple scenarios from each other and group them. For this purpose, a ``scenarioManagerFactory`` is part of the package. It organizes the scenarios and scenario managers. Each scenario manager has a name and stores all scenarios that belong to it. The factory makes sure everything is organized correctly during runtime. If you want to receive all available scenario managers, issue this code:
+```
+scenario_managers = bptk.scenario_manager_factory.scenario_managers
+```
+
+This is a dictionary (name : object) of all available scenario managers. The scenario managers store a dictionary for all the scenarios, with the scenario names as keys. You may manually browse through the objects or just use the API methods as described above and use the names of the scenario managers. The factory will correctly identify the right scenarios. To obtain a scenario object or a list of all scenarios (for a specific scenario) manager manually, issue this code:
+```
+scenarios = bptk.scenario_manager_factory.get_scenarios(scenario_managers=[],scenario_names=[])
+```
+As you see, the parameters are lists. It is possible to filter by both. It will output duplicates (using the scenario managers' name as a suffix for each match) or nothing if it does not find any match. You see that complex queries are possible.
+
+Upon modifications of scenarios (JSON file) or to flush the simulation results, you may use the following code to reset:
+
+```
+scenario_manager_factory = bptk.scenario_manager_factory
+
+## Reload one specific scenario:
+scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2",scenario_name="MakeYourStartUpGrow-x")
+
+## Reset all scenarios (Returns the new scenario managers)
+bptk.scenario_manager_factory.reset_all_scenarios()
+
+```
+## Only reset simulation results
+If you used complex strategies to modify equations, you might want to play around with other strategies for the same scenario. You will observe that sometimes changes do not seem to have an effect. This is due to the fact that ``bptk`` will not store the old lambda function. It runs the simulation until ``t-1``, inserts the new function and continues until the next change (or the model's stoptime). If you want to re-run the scenario with another modified strategy, just flush the ``ScenarioManager``'s ``scenario model`` object before using the plotting methods using the following method:
+
+```
+scenario = bptk.scenario_manager_factory.get_scenario(scenario_name="blabla", scenario_manager="bar")
+scenario.model.memo = {}
+
+```
+
 
 ## Advanced: Extended Strategies
 Extended strategies give the user a lot of power over the simulation but are rather complex. The goal of such strategies is to replace certain equations of the model with custom lambda functions during runtime at specific times in the simulation. This is for advanced use only and currently considered unstable.
@@ -216,7 +259,7 @@ It is possible to add scenarios during runtime. For convenience, here is some ex
 First define the details for the scenario manager and then set up the name of the scenario, the strategy and the constants. The strategy may as well be one of the complex ones as described above. But be careful to define everything correctly.
 
 ```
-from BPTK_Py.scenario_manager.scenario import simulation_scenario
+from BPTK_Py.scenariomanager.scenario import simulationScenario
 
 scenario_manager = {
 name : "ScenarioManager3",
@@ -244,16 +287,12 @@ dictionary = {"name" : name, "constants" : constants, "strategy" : strategy}
 
 scenario = simulation_scenario(group=scenario_manager["name"],dictionary=dictionary,model=scenario_manager["model"])
 
-bptk.ScenarioManager.add_scenario_during_runtime(scenario,source=scenario_manager["source"],model=scenario_manager["model"])
+bptk.scenario_manager_factory.add_scenario_during_runtime(scenario,scenario_manager=scenario_manager["name"],source=scenario_manager["source"],model=scenario_manager["model"])
 ```
 
 When you successfully registered the new scenario, you can easily plot it as you are used to!
 
-## Reset simulations
-If you used complex strategies to modify equations, you might want to play around with other strategies for the same scenario. You will observer that sometimes changes do not seem to have an effect. This is due to the fact that ``bptk`` will not store the old lambda function. It runs the simulation until ``t-1``, inserts the new function and continues until the next change (or the model's stoptime). If you want to re-run the scenario with another modified strategy, just flush the ``ScenarioManager``'s ``scenario`` object before using the plotting methods using the following method:
-```
-bptk.reset_simulation_model(self,scenario_managers=[],scenario="")
-```
+
 
 ## Look-and-Feel
 BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
