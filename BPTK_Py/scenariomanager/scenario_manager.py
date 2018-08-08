@@ -18,21 +18,13 @@ from BPTK_Py.modelmonitor.model_monitor import modelMonitor
 class scenarioManager():
 
     ### Setup required object variables
-    def __init__(self):
-        self.scenario_monitors = {}
+    def __init__(self,scenarios):
 
         ### scenarios stores all available scenarios
-        self.scenarios = {}
+        self.scenarios = scenarios
+
 
     ### Add a simulation scenario during runtime and register it
-    def add_scenario_during_runtime(self,scenario,source,model):
-        if scenario.name in self.scenarios.keys():
-            log("[ERROR] Scenario with name {} already exists! I will not overwrite.".format(scenario.name))
-        else:
-            self.scenarios[scenario.name] = scenario
-
-        if len(source) >0 :
-            self.__add_monitor(source, model)
 
     ### write scenario (coming as a dict) to file. Does not do any checking. Just converts dict to a JSON string
     def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json", dictionary={}):

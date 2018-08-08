@@ -58,7 +58,7 @@
           "cost.productDevelopmentWage": 10000
         }
       },
-      "MakeYourStartUpGrow_stjhrategy": {
+      "MakeYourStartUpGrow_strategy": {
         "constants": {
           "cost.paymentTransactionCost": 0.2
         },
