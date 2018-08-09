@@ -13,7 +13,7 @@ setup(name='BPTK_Py',
       author_email='dominik.schroeck@transentis.com',
       license='MIT',
       packages=['BPTK_Py', 'BPTK_Py.scenariomanager', "BPTK_Py.logger", "BPTK_Py.visualizations", "BPTK_Py.simulator",
-                "BPTK_Py.config", "BPTK_Py.modelmonitor","BPTK_Py.widgetfactory"],
+                "BPTK_Py.config", "BPTK_Py.modelmonitor","BPTK_Py.widgetdecorator"],
       install_requires=[
           'pandas', 'matplotlib','ipywidgets'
       ],

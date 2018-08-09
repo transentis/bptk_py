@@ -27,7 +27,7 @@ bptk.scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2"
 scenarios = bptk.scenario_manager_factory.get_scenarios(
     scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"], scenario_managers=["ScenarioManager2"])
 
-from BPTK_Py.widgetfactory.widget_manager import widgetFactory
+from BPTK_Py.widgetdecorator.widget_manager import widgetFactory
 
 widget_gen = widgetFactory(bptk)
 

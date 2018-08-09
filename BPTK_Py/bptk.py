@@ -6,7 +6,7 @@ from BPTK_Py.simulator.model_simulator import Simulator
 from BPTK_Py.logger.logger import log
 from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
-from BPTK_Py.widgetfactory.widget_factory import widgetFactory
+from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
 
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
@@ -251,7 +251,7 @@ class bptk():
                          series_names=[], strategy=True,
                          return_df=False, constants=[]):
 
-        widget_factory = widgetFactory(self)
+        widget_factory = widgetDecorator(self)
         widget_factory.generate_sliders(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
                          alpha=alpha, stacked=stacked,
                          freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,

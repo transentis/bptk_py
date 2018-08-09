@@ -1,19 +1,18 @@
 from __future__ import print_function
 import BPTK_Py.config.config as config
-from BPTK_Py.visualizations.visualize import Visualizations
 from BPTK_Py.logger.logger import log
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 
 
-###########################
-### Class widgetFactory ###
-###########################
+#############################
+### Class widgetDecorator ###
+#############################
 
 ## This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders
 ## Later maybe even other interactive projects
 ## This is the core of the interactive plotting module
-class widgetFactory():
+class widgetDecorator():
     def __init__(self, bptk):
         self.bptk = bptk
         log("[INFO] widgetFactory created")
