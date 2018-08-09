@@ -6,6 +6,7 @@ from BPTK_Py.simulator.model_simulator import Simulator
 from BPTK_Py.logger.logger import log
 from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
+from BPTK_Py.widgetfactory.widget_factory import widgetFactory
 
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
@@ -20,28 +21,22 @@ class bptk():
     def __init__(self):
         ## Matplotlib configuration
         import BPTK_Py.config.config as config
-        for key,value  in config.configuration["matplotlib_rc_settings"].items():
+        for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory()
 
-
-
-
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
-    def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
+    def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
 
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,scenario_names=scenario_names)
-
-
-
+        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
+                                                                scenario_names=scenario_names)
 
         #### Run the simulation scenarios
-
 
         for key in scenarios.keys():
             scenario = scenarios[key]
@@ -56,10 +51,8 @@ class bptk():
             if "strategy" in scenario.dictionary.keys():
                 strategy = scenario.dictionary["strategy"]
 
-
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {int(k): v for k, v in strategy.items()}
-
 
             simu = Simulator(model=scenario.model, name=scenario.name)
 
@@ -68,10 +61,12 @@ class bptk():
             # Get the strategy's points to change equations at and sort ascending.
             points_to_change_at = sorted(list(strategy.keys()))
 
-
             if len(points_to_change_at) == 0:
-                log("[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
-                scenarios[scenario.name] = self.__run_simulations(scenario_names=[scenario.name], equations=equations,output=output)[scenario.name]
+                log(
+                    "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
+                scenarios[scenario.name] = \
+                self.__run_simulations(scenario_names=[scenario.name], equations=equations, output=output)[
+                    scenario.name]
 
             # Simulation with a strategy
             else:
@@ -82,18 +77,17 @@ class bptk():
                         for equation in scenario.constants.keys():
                             simu.change_equation(name=equation, value=scenario.constants[equation])
 
-
                     # If we are at the start-time, start simulation until the first stop point - 1
                     if i == starttime:
-                        scenario.result  = simu.start(equations=equations, output=output,start=i, until=points_to_change_at[0]-1)
-
+                        scenario.result = simu.start(equations=equations, output=output, start=i,
+                                                     until=points_to_change_at[0] - 1)
 
                     # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
 
                     if i > 0 and not len(points_to_change_at) == 0:
                         if i == points_to_change_at[0]:
 
-                        # Change constant/equation
+                            # Change constant/equation
                             for equation in strategy[points_to_change_at[0]]:
                                 simu.change_equation(name=equation, value=strategy[i][equation])
 
@@ -105,35 +99,33 @@ class bptk():
 
                             # Simulate from i to the next t -1 point where we modify constants
                             else:
-                                scenario.result = simu.start(equations=equations, output=output, start=i, until=points_to_change_at[1]-1)
+                                scenario.result = simu.start(equations=equations, output=output, start=i,
+                                                             until=points_to_change_at[1] - 1)
                                 log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
 
                                 ## Fast-Forward i to the next point in time where we make change
                                 i = points_to_change_at[1]
 
-
                             points_to_change_at.pop(0)
 
                         # Just continue to next point in time...
                         else:
-                            i+= 1
+                            i += 1
 
                     else:
                         # Just continue to next point in time...
                         i += 1
         return scenarios
 
-
     ## Private method that runs a simulation without a strategy for a given scenario
-    def __run_simulations(self, scenario_names, equations=[], output=["frame"],scenario_managers=[]):
+    def __run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=[], scenario_names=scenario_names)
-
+        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
+                                                                scenario_names=scenario_names)
 
         #### Run the simulation scenarios
-
 
         for key in scenarios.keys():
             if key in scenario_names:
@@ -152,7 +144,7 @@ class bptk():
                         if equation in sc.model.equations.keys():
                             equations_to_simulate += [equation]
 
-                ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
+                    ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
 
                     sc.result = simu.start(output=output, equations=equations_to_simulate)
                 else:
@@ -161,7 +153,8 @@ class bptk():
         return scenarios
 
     # This method plots the outputs for one scenario. Just wrapping the "plotScenario" method
-    def plot_outputs_for_scenario(self, scenario_name, equations=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+    def plot_outputs_for_scenario(self, scenario_name, equations=[], kind=config.configuration["kind"],
+                                  alpha=config.configuration["alpha"],
                                   stacked=config.configuration["stacked"],
                                   freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                                   y_label="", series_names=[], strategy=False, return_df=False, scenario_managers=[]):
@@ -170,14 +163,15 @@ class bptk():
                                    stacked=stacked, scenario_managers=scenario_managers,
                                    freq=freq, start_date=start_date, title=title,
                                    visualize_from_period=visualize_from_period,
-                                   x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy, return_df=return_df)
+                                   x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy,
+                                   return_df=return_df)
 
     # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenario" method
-    def plot_scenario_for_output(self, scenario_names, equation, kind=config.configuration["kind"], alpha=config.configuration["alpha"],
+    def plot_scenario_for_output(self, scenario_names, equation, kind=config.configuration["kind"],
+                                 alpha=config.configuration["alpha"],
                                  stacked=config.configuration["stacked"], scenario_managers=[],
                                  freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
                                  y_label="", strategy=False, series_names=[], return_df=False):
-
 
         return self.plot_scenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
                                    stacked=stacked, scenario_managers=scenario_managers,
@@ -187,22 +181,25 @@ class bptk():
                                    return_df=return_df)
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
-    def plot_scenarios(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"], alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+    def plot_scenarios(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
+                       alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                       series_names=[], strategy = False,
+                       series_names=[], strategy=False,
                        return_df=False):
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
 
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
         if len(scenario_names) == 0 or scenario_names[0] == '':
-            scenario_names= list(self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
-
+            scenario_names = list(
+                self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
 
         if not strategy:
-            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,scenario_managers=scenario_managers)
+            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,
+                                                      scenario_managers=scenario_managers)
         else:
-            scenario_objects = self.__run_simulations_with_strategy(scenario_managers=scenario_managers,scenario_names=scenario_names, equations=equations)
+            scenario_objects = self.__run_simulations_with_strategy(scenario_managers=scenario_managers,
+                                                                    scenario_names=scenario_names, equations=equations)
 
         # Visualize Object
         visualize = Visualizations()
@@ -214,7 +211,6 @@ class bptk():
         # Clean up scenarios if we did not find all with the specified scenario managers
         scenario_names = [key for key in scenario_objects.keys()]
 
-
         for scenario_name in scenario_names:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
@@ -223,8 +219,6 @@ class bptk():
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
-
-
         ### Prepare the Plottable DataFrame
         df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
                                              series_names=series_names)
@@ -232,8 +226,10 @@ class bptk():
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:
             ### Get the plot object
-            ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"], title=title,
-                                                 alpha=alpha, color=config.configuration["colors"], lw=config.configuration["linewidth"])
+            ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
+                                                 title=title,
+                                                 alpha=alpha, color=config.configuration["colors"],
+                                                 lw=config.configuration["linewidth"])
 
             ### Set axes labels and set the formats
             if (len(x_label) > 0):
@@ -249,12 +245,26 @@ class bptk():
         if return_df:
             return df
 
+    def plot_with_sliders(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
+                         alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                         freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                         series_names=[], strategy=True,
+                         return_df=False, constants=[]):
+
+        widget_factory = widgetFactory(self)
+        widget_factory.generate_sliders(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
+                         alpha=alpha, stacked=stacked,
+                         freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                         series_names=series_names, strategy=True,
+                         return_df=False, constants=constants)
+
     ## Method for adding strategies during runtime. It allows for adding lambdas as well!
-    def modify_strategy_for_complex_strategy(self,scenarios,extended_strategy):
+    def modify_strategy_for_complex_strategy(self, scenarios, extended_strategy):
         for scenario_name in extended_strategy.keys():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
             scenario = scenarios[scenario_name]
+            self.reset_simulation_model(scenario_manager=scenario.group, scenario=scenario_name)
 
             ## Points in time where the extended strategy makes changes
             points_to_change_at = list(extended_strategy[scenario_name].keys())
@@ -281,9 +291,9 @@ class bptk():
     ## It essentially only kills all the file monitors and makes sure the Python process can die happily
     def destroy(self):
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
-        self.ScenarioManager.destroy()
+        self.scenario_manager_factory.destroy()
 
-
-    def reset_simulation_model(self,scenario_managers=[],scenario=""):
-        scenario = scenarioManager.get_available_scenarios(scenario_managers=scenario_managers, scenario=scenario)
-        scenario.mod.memo = {}
+    def reset_simulation_model(self, scenario_manager="", scenario=""):
+        scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
+        for key in scenario.model.memo.keys():
+            scenario.model.memo[key] = {}

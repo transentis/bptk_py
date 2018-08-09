@@ -1,7 +1,9 @@
+from ipywidgets import Layout
+
+
 ##################################
 ## BPTK_Py Global Configuration ##
 ##################################
-
 
 ### Style settings
 ## matplotlib style setting
@@ -48,6 +50,8 @@ configuration = {
 
     #Relative path to scenario storage
     "scenario_storage": "scenarios/",
+    "slider_style" :  {'description_width': '40%'},
+    "slider_layout" : Layout(width='50%',position="center"),
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],

@@ -108,8 +108,8 @@ class ScenarioManagerFactory():
         self.scenario_managers = {}
         return self.get_scenario_managers()
 
-    def get_scenario(self,scenario_manager, scenario_name):
-        return self.scenario_managers[scenario_manager].scenarios[scenario_name]
+    def get_scenario(self, scenario_manager, scenario):
+        return self.scenario_managers[scenario_manager].scenarios[scenario]
 
 
     def get_scenarios(self,scenario_managers=[],scenario_names=[]):
