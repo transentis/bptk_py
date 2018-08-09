@@ -57,8 +57,6 @@ class widgetDecorator():
             for key, value in kwargs.items():
                 self.constants[key] = value
 
-
-            #dictionary = { key :value for key, value in self.constants}
             extended_strategy = {
                 "MakeYourStartUpGrow_strategy": {
                     1: self.constants
