@@ -2,14 +2,21 @@ from __future__ import print_function
 import BPTK_Py.config.config as config
 from BPTK_Py.visualizations.visualize import Visualizations
 from BPTK_Py.logger.logger import log
-
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 
 
+###########################
+### Class widgetFactory ###
+###########################
+
+## This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders
+## Later maybe even other interactive projects
+## This is the core of the interactive plotting module
 class widgetFactory():
     def __init__(self, bptk):
         self.bptk = bptk
+        log("[INFO] widgetFactory created")
 
     # This method will be passed over to the user and used to modify the graph output
 
@@ -25,6 +32,7 @@ class widgetFactory():
                                                                           scenario_names=scenario_names)
 
         ## Only store data and create sliders and pack them
+        log("[INFO] Creating slider objects for interactive plot of scenarios {}".format(str(scenario_names)))
 
         self.constants = {}
 
@@ -72,6 +80,8 @@ class widgetFactory():
                                           y_label=y_label,
                                           series_names=series_names, strategy=strategy,
                                           return_df=False)
+
+
             return None
 
 

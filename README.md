@@ -132,6 +132,19 @@ In some cases you might want to receive the scenario results as a table instead 
 ## Interactive Plotting
 An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_sliders`` has this functionality. You may define a parameter constants containing a list of tuples of the structure ``("name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the interactive readme.
 
+For interactive plotting to work, you need to install an extension to jupyter lab. If you followed the above guide for initial setup, this should do in the terminal:
+```
+souce bptk_test/bin/activate
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+```
+
+### ATTENTION Mac OS X user
+For now there is a bug, that requires you to use node version 8 to successfully download the extension. If you are using homebrew, issue these commands:
+```
+brew uninstall node yarn
+brew install node@8 # --> might have to set path to link node to node8
+```
+
 ## Strategy simulation
 The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.
 ```
