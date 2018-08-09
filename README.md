@@ -8,7 +8,8 @@ It requires a python-parsed version of the model containing the set of equations
 To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package.
 In order to keep your system clean, you may want to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html). Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
-python3 -m venv bptk_test # This will create a subfolder with a minimal python environment
+pip install virtualenv
+virtualenv bptk_test # This will create a subfolder with a minimal python environment
 # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
 source bptk_test/bin/activate  #  For UNIX/Linux
 bptk_test\Scripts\activate.bat # For Windows
@@ -187,7 +188,7 @@ If you used complex strategies to modify equations, you might want to play aroun
 
 ```
 scenario = bptk.scenario_manager_factory.get_scenario(scenario_name="blabla", scenario_manager="bar")
-scenario.model.memo = {}
+scenario.model.memo[equation_name] = {}
 
 ```
 

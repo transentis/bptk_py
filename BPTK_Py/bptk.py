@@ -281,7 +281,7 @@ class bptk():
     ## It essentially only kills all the file monitors and makes sure the Python process can die happily
     def destroy(self):
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
-        self.ScenarioManager.destroy()
+        self.scenario_manager_factory.destroy()
 
 
     def reset_simulation_model(self,scenario_managers=[],scenario=""):
