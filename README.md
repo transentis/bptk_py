@@ -129,6 +129,9 @@ The second method lets you plot one equation for multiple scenarios and uses the
 ### Receive Data - not plot
 In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
 
+## Interactive Plotting
+An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_sliders`` has this functionality. You may define a parameter constants containing a list of tuples of the structure ``("name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the interactive readme.
+
 ## Strategy simulation
 The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.
 ```
