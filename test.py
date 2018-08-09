@@ -27,25 +27,25 @@ bptk.scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2"
 scenarios = bptk.scenario_manager_factory.get_scenarios(
     scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"], scenario_managers=["ScenarioManager2"])
 
-from BPTK_Py.widgetmanager.widget_manager import widgetGenerator
+from BPTK_Py.widgetmanager.widget_manager import widgetFactory
 
-widget_gen = widgetGenerator(bptk)
+widget_gen = widgetFactory(bptk)
 
 config.configuration["log_modes"]= [""]
 
-widget_gen.generate_widget_data(scenario_managers=["ScenarioManager1"],
+widget_gen.generate_widget(scenario_managers=["ScenarioManager1"],
 
-                                scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"],
-                                kind="line",
-                                equations=["cash.cash"],
-                                stacked=False,
-                                strategy=True,
-                                freq="D",
-                                start_date="1/11/2017",
-                                title="Modified Lambda method as a \n Line Graph vs no modification",
-                                x_label="Time",
-                                y_label="Number",
-                                constant= "cash.cash", interval=(0,100)
-                                )
+                           scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"],
+                           kind="line",
+                           equations=["cash.cash"],
+                           stacked=False,
+                           strategy=True,
+                           freq="D",
+                           start_date="1/11/2017",
+                           title="Modified Lambda method as a \n Line Graph vs no modification",
+                           x_label="Time",
+                           y_label="Number",
+                           constant= "cash.cash", interval=(0,100)
+                           )
 
 bptk.destroy()

@@ -15,7 +15,7 @@ setup(name='BPTK_Py',
       packages=['BPTK_Py', 'BPTK_Py.scenariomanager', "BPTK_Py.logger", "BPTK_Py.visualizations", "BPTK_Py.simulator",
                 "BPTK_Py.config", "BPTK_Py.modelmonitor","BPTK_Py.widgetmanager"],
       install_requires=[
-          'pandas', 'matplotlib'
+          'pandas', 'matplotlib','ipywidgets'
       ],
       include_package_data=True,
       classifiers=(
