@@ -6,7 +6,7 @@ from BPTK_Py.modelmonitor.model_monitor import modelMonitor
 import glob
 import os
 import json
-from json import JSONDecodeError
+from  json import JSONDecodeError
 import sys
 
 
