@@ -60,7 +60,10 @@ class simulationScenario():
             log("[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(str(e)))
 
         # Dictionary of the constants the scenario modifies in the beginning of the simulation
-        self.constants =  dictionary["constants"]
+        if "constants" in dictionary.keys():
+            self.constants =  dictionary["constants"]
+        else:
+            self.constants = {}
 
         self.name = name
 

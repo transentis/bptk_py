@@ -38,6 +38,7 @@ class Visualizations():
         i = 0
         columns = list(plot_df.columns)
         new_columns = {}
+
         for name in series_names:
             try:
                 if len(name) > 0:
