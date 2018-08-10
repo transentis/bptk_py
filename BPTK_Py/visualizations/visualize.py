@@ -1,5 +1,6 @@
 import pandas as pd
 import BPTK_Py.config.config as config
+from BPTK_Py.logger.logger import log
 
 class Visualizations():
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
@@ -38,10 +39,12 @@ class Visualizations():
         columns = list(plot_df.columns)
         new_columns = {}
         for name in series_names:
-            if len(name) > 0:
-                new_columns[columns[i]] = name
-            i += 1
-
+            try:
+                if len(name) > 0:
+                    new_columns[columns[i]] = name
+                i += 1
+            except:
+                log("[WARN] User gave more series names than scenarios. This is usually not a problem.")
         plot_df.rename(columns=new_columns, inplace=True)
 
 

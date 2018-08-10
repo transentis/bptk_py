@@ -18,8 +18,8 @@ class modelMonitor():
     ## Init.
     # model_file: path to itmx model
     # dest: path to final python file
-    def __init__(self, model_file, dest):
-
+    def __init__(self, model_file, dest,update_func):
+        self.update_func=update_func
         self.model_file = model_file
         if os.name == "nt":
             model_file = model_file.replace("/","\\")
@@ -60,10 +60,15 @@ class modelMonitor():
                 # File has changed, so parse model again
                 exit_status = os.system(self.execute_script)
 
+
+
                 ## Check if everything went well, i.e. exit status of the script = 0
                 if exit_status != 0:
                     log("[ERROR] Problem calling the script for model conversion itmx --> python. Exit status: {}".format(str(exit_status)))
-                log("[INFO] Model Monitor for {}: model updated!".format(str(self.model_file)))
+
+                ## Refresh all scenarios with the given model file
+                self.update_func(self.model_file)
+                log("[INFO] Model Monitor for {}: model updated and relaoded scenarios!".format(str(self.model_file)))
 
                 # Store new timestamp as cached timestamp
                 self._cached_stamp = stamp

@@ -94,7 +94,7 @@ class ScenarioManagerFactory():
             return self.scenario_managers
 
     def reset_scenario(self,scenario_manager,scenario_name):
-        log("[INFO] Reloading scenario {}".format(scenario_manager))
+        log("[INFO] Reloading scenario {} from {}".format(scenario_name,scenario_manager))
 
         scenario_filename = self.get_scenario_managers()[scenario_manager].scenarios[scenario_name].filename
 
@@ -155,7 +155,7 @@ class ScenarioManagerFactory():
     def __add_monitor(self, source, model):
         if not source in self.scenario_monitors.keys():
             self.scenario_monitors[source] = modelMonitor(source, str(
-                model) + ".py")
+                model) + ".py",update_func=self.refresh_scenarios_for_filename)
 
     def destroy(self):
         keys = self.scenario_monitors.keys()
@@ -168,3 +168,12 @@ class ScenarioManagerFactory():
     def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json", dictionary={}):
         with open(filename, 'w',encoding="utf-8") as outfile:
             json.dump(dictionary,outfile,indent=4)
+
+    def refresh_scenarios_for_filename(self,filename):
+        # Obtain all scenarios
+        scenarios = self.get_scenarios()
+
+        # Call reset_scenario for all scenarios that use the updated model
+        for scenario in scenarios.values():
+            if scenario.filename ==filename:
+                self.reset_scenario(scenario_name=scenario.name,scenario_manager=scenario.group)
