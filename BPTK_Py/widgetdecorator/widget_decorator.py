@@ -49,7 +49,6 @@ class widgetDecorator():
             sliders[name] = slider
             self.constants[name] = start
 
-        # @interact(a=sliders[0],b=sliders[1])
 
         # Actual method for building the slider objects and plotting.
         @interact(**sliders)
@@ -57,16 +56,18 @@ class widgetDecorator():
             for key, value in kwargs.items():
                 self.constants[key] = value
 
-            extended_strategy = {
-                "MakeYourStartUpGrow_strategy": {
-                    1: self.constants
-                }
-            }
-            self.bptk.modify_strategy_for_complex_strategy(scenarios=self.scenarios, extended_strategy=extended_strategy)
-            for scenario in self.scenarios.values():
-                for equation in scenario.model.memo.keys():
+            extended_strategy = {}
 
-                    scenario.model.memo[equation] = {}
+            for scenario_name in scenario_names:
+                extended_strategy[scenario_name] = {self.scenarios[scenario_name].model.starttime :  self.constants}
+
+
+            self.bptk.modify_strategy_for_complex_strategy(scenarios=self.scenarios, extended_strategy=extended_strategy)
+
+            #for scenario in self.scenarios.values():
+             #   for equation in scenario.model.memo.keys():
+
+              #      scenario.model.memo[equation] = {}
 
 
             ax = self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
@@ -75,8 +76,8 @@ class widgetDecorator():
                                           freq=freq, start_date=start_date, title=title,
                                           visualize_from_period=visualize_from_period, x_label=x_label,
                                           y_label=y_label,
-                                          series_names=series_names, strategy=strategy,
-                                          return_df=False)
+                                          series_names=series_names, strategy=True,
+                                          return_df=return_df)
 
 
             return None

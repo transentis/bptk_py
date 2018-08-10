@@ -27,25 +27,25 @@ bptk.scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2"
 scenarios = bptk.scenario_manager_factory.get_scenarios(
     scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"], scenario_managers=["ScenarioManager2"])
 
-from BPTK_Py.widgetdecorator.widget_manager import widgetFactory
+from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
 
-widget_gen = widgetFactory(bptk)
+widget_gen = widgetDecorator(bptk)
 
 config.configuration["log_modes"]= [""]
 
-widget_gen.generate_widget(scenario_managers=["ScenarioManager1"],
+bptk.plot_with_sliders(scenario_managers=["ScenarioManager1"],
 
-                           scenario_names=["MakeYourStartUpGrow_strategy", "MakeYourStartUpGrow"],
-                           kind="line",
-                           equations=["cash.cash"],
-                           stacked=False,
-                           strategy=True,
-                           freq="D",
-                           start_date="1/11/2017",
-                           title="Modified Lambda method as a \n Line Graph vs no modification",
-                           x_label="Time",
-                           y_label="Number",
-                           constant= "cash.cash", interval=(0,100)
-                           )
+                                scenario_names=["MakeYourStartUpGrow_strategy"],
+                                kind="line",
+                                equations=["cash.cash"],
+                                stacked=False,
+                                strategy=True,
+                                freq="D",
+                                start_date="1/11/2017",
+                                title="Interactive Plotting",
+                                x_label="Date",
+                                y_label="€",
+                                constants=[("cost.paymentTransactionCost",0.0, 1.0),("customers.marketingBudget",0,1000000)]
+                                )
 
 bptk.destroy()
