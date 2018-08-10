@@ -6,7 +6,7 @@ from BPTK_Py.modelmonitor.model_monitor import modelMonitor
 import glob
 import os
 import json
-from  json import JSONDecodeError
+
 import sys
 
 
@@ -21,11 +21,7 @@ class ScenarioManagerFactory():
     def __readScenario(self, filename=""):
         if len(filename) > 0:
             json_data = open(filename, encoding="utf-8").read()
-            try:
-                json_dict = dict(json.loads(json_data))
-            except JSONDecodeError as e:
-                log("[ERROR] Problem reading the JSON file {}. Skipping the file. Error message: {}".format(str(filename),str(e)))
-                return None
+            json_dict = dict(json.loads(json_data))
 
 
             scenarios = {}
