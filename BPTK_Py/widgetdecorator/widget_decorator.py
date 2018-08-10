@@ -43,9 +43,9 @@ class widgetDecorator():
             end = val[2]
 
             if type(start) == float:
-                slider = widgets.FloatSlider(min=start, max=end, value=start,description=name,style=config.configuration["slider_style"],layout=config.configuration["slider_layout"])
+                slider = widgets.FloatSlider(min=start, max=end, value=(end-start)/2,description=name,style=config.configuration["slider_style"],layout=config.configuration["slider_layout"])
             else:
-                slider = widgets.IntSlider(min=start, max=end, step=1, value=start, description=name,style=config.configuration["slider_style"],layout=config.configuration["slider_layout"])
+                slider = widgets.IntSlider(min=start, max=end, step=1, value=(end-start)/2, description=name,style=config.configuration["slider_style"],layout=config.configuration["slider_layout"])
             sliders[name] = slider
             self.constants[name] = start
 
@@ -63,11 +63,6 @@ class widgetDecorator():
 
 
             self.bptk.modify_strategy_for_complex_strategy(scenarios=self.scenarios, extended_strategy=extended_strategy)
-
-            #for scenario in self.scenarios.values():
-             #   for equation in scenario.model.memo.keys():
-
-              #      scenario.model.memo[equation] = {}
 
 
             ax = self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,

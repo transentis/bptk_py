@@ -7,10 +7,7 @@ class Visualizations():
         scenario_names = list(scenarios.keys())
 
         ## Generate df to plot
-        series_list = []
         plot_df = pd.DataFrame()
-
-
 
         if len(scenarios.keys()) > 1: # If we see more than one scenario, we will attach the scenario name to each Series name.
             for scenario in scenarios.keys():
