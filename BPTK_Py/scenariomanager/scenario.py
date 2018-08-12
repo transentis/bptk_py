@@ -29,6 +29,7 @@ class simulationScenario():
         ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
         if not os.path.isfile(model_name + ".py"):
 
+            ## Handle Windows
             if os.name == "nt":
                 source_tmp = source.replace("/", "\\")
                 model_name_tmp = model_name.replace("/", "\\")
@@ -37,20 +38,18 @@ class simulationScenario():
                                  config.configuration[
                                      "sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp + ".py"
 
-            else:
+            else: # POSIX-compliant systems (Unix, Linux...)
                 path = config.configuration["bptk_Py_module_path"]
                 execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration[
                     "sd_py_compiler_root"] + " " + source + " " + model_name + ".py"
 
-            os.system(execute_script)
-
-
+            os.system(execute_script)  # <-- Actual call for sd compiler
 
 
 
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"
-            package_link = model_name.replace("/", ".")
+            package_link = model_name.replace("/", ".") .replace("\\",".") # The last change is for windows path notation
 
             ## ACTUAL IMPORT OF MODEUL
             mod = importlib.import_module(package_link)

@@ -107,7 +107,7 @@ class Simulator():
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until,start):
 
-        ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results starting at the start
+        ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in range(start,until+1):
             result = self.mod.memoize(equation,i)
 
@@ -130,9 +130,12 @@ class Simulator():
 
     # Method that changes an equation. It can change constants by just receiving int/float values and creates lambda functions or it can replace lambda functions with lambda functions
     def change_equation(self, name, value):
+        # Store numeric values
         if  type(value) is int or type(value) is float :
             self.mod.equations[name] = lambda t : value
             log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
+
+        ## Store new lambda methods
         elif name in self.mod.equations.keys():
             self.mod.equations[name] = value
             log("[INFO] Changed equation {}".format(name))

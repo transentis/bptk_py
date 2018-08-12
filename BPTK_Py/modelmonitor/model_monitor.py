@@ -35,7 +35,7 @@ class modelMonitor():
         # Initial last modification timestamp
         self._cached_stamp = os.stat(self.model_file).st_mtime
 
-        # Loading the thread
+        # Starting the thread
         t = Thread(target=self.__monitor, args=())
         t.start()
 
@@ -59,8 +59,6 @@ class modelMonitor():
 
                 # File has changed, so parse model again
                 exit_status = os.system(self.execute_script)
-
-
 
                 ## Check if everything went well, i.e. exit status of the script = 0
                 if exit_status != 0:

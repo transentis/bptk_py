@@ -282,24 +282,28 @@ class bptk():
                 points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
 
 
-            # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant until first change of strategy.
+            # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant so it will work until the first point in the strategy
             first_t = points_to_change_at[0]
-            for name, equation in extended_strategy[scenario_name][first_t].items():
-                if not first_t in points_to_change_at_original_strategy:
-                    scenario.dictionary["strategy"][str(scenario.model.starttime)] = {}
 
-                # We will only overwrite if the lambda is not already in the dict (subsequent runs of this method..)
-                if not name in scenario.dictionary["constants"].keys():
-                    scenario.dictionary["constants"][name] = scenario.model.equations[name]
+            if not first_t in points_to_change_at_original_strategy:
+                scenario.dictionary["strategy"][str(scenario.model.starttime)] = {}
+
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
-                if int(t) in points_to_change_at_original_strategy:
-                    scenario.dictionary["strategy"][str(t)][name] = equation
+                if int(t) not  in points_to_change_at_original_strategy:
+                    scenario.dictionary["strategy"][str(t)] = {}
 
                 for name, equation in extended_strategy[scenario_name][t].items():
                     scenario.dictionary["strategy"][str(t)] = {}
                     scenario.dictionary["strategy"][str(t)][name] = equation
+
+                    # Backup all original lambdas of modified equations as "constants" for the simulation model
+                    # --> whenever we inject another lambda at a point in time, we will use the original value until
+                    # the first occurence of the modified strategy
+                    if t == first_t and not name in scenario.dictionary["constants"].keys():
+                        scenario.dictionary["constants"][name] = scenario.model.equations[name]
+
         log("[INFO] Added extended strategy for scenarios")
 
     ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
