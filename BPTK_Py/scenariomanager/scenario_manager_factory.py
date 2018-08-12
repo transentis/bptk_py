@@ -7,10 +7,6 @@ import glob
 import os
 import json
 
-import sys
-
-
-
 class ScenarioManagerFactory():
     def __init__(self):
         self.scenario_managers = {}
@@ -21,8 +17,11 @@ class ScenarioManagerFactory():
     def __readScenario(self, filename=""):
         if len(filename) > 0:
             json_data = open(filename, encoding="utf-8").read()
-            json_dict = dict(json.loads(json_data))
-
+            try:
+                json_dict = dict(json.loads(json_data))
+            except ValueError as e:
+                log("[ERROR] Problem reading {}. Error message: {}".format(filename,str(e)))
+                return None
 
             scenarios = {}
             for group_name in json_dict.keys():
@@ -34,7 +33,6 @@ class ScenarioManagerFactory():
                 source = ""
                 if "source" in json_dict[group_name].keys():
                     source = json_dict[group_name]["source"]
-                ## Replace string keys as int
 
                 for scenario_name in scen_dict.keys():
                     sce = simulationScenario(group=group, model_name=model_name,
@@ -57,44 +55,35 @@ class ScenarioManagerFactory():
             scenarios = {}
             groups = {}
             for infile in glob.glob(os.path.join(path, '*.json')):
-                if len(scenarios.keys()) > 0:
-                    scenarios_new = self.__readScenario(infile)
-                    for key in scenarios_new.keys():
-                        scenarios[key] = scenarios_new[key]
-                else:
-                    scenarios = self.__readScenario(infile)
 
-                # If the scenario contains a model and we do not already have a monitor for the scenario, start a new one and store it
-                for name, scenario in scenarios.items():
+                scenarios_new = self.__readScenario(infile)
+                if not scenarios_new is None:
+                    for name, scenario in scenarios_new.items():
+                        scenarios[name] = scenarios_new[name]
 
-                    if not scenario.source is None and not scenario.source in self.scenario_monitors.keys():
-                        self.__add_monitor(scenario.source, scenario.model_name)
-                        log("[INFO] Successfully loaded scenario {} from {}".format(scenario.name, str(infile)))
+                    # If the scenario contains a source model and we do not already have a monitor for the scenario, start a new one and store it
+                        if not scenario.source is None and not scenario.source in self.scenario_monitors.keys():
+                            self.__add_monitor(scenario.source, scenario.model_name)
 
 
+                        # b) Store scenarios in groups (aka ScenarioManagers)
+                        if scenario.group not in groups.keys():
+                            groups[scenario.group] = {}
 
-            # b) Create ScenarioManagers for each group that I ever observed
-
-            for key, scenario in scenarios.items():
-
-                if scenario.group not in groups.keys():
-                    groups[scenario.group] = {}
-
-                groups[scenario.group][scenario.name] = scenario
+                        groups[scenario.group][scenario.name] = scenario
+                    log("[INFO] Successfully loaded scenario {} from {}".format(name, str(infile)))
 
             # c) Add Scenarios to ScenarioManagers
             self.scenario_managers = {}
             for group, scenarios in groups.items():
                 self.scenario_managers[group] = scenarioManager(scenarios,name=group)
 
-                # INstantiate new scenario managers and add the scenarios
-        # b) Return self.scenarioManagers
             log("[INFO] Successfully loaded all scenarios!")
 
         if len(scenario_managers_to_filter)>0:
-            return_value = {k:v for k,v in self.scenario_managers.items() if k in scenario_managers_to_filter}
+            scenario_managers = {k:v for k,v in self.scenario_managers.items() if k in scenario_managers_to_filter}
 
-            return return_value
+            return scenario_managers
         else:
             return self.scenario_managers
 
@@ -138,8 +127,6 @@ class ScenarioManagerFactory():
                     filtered_scenarios[key] = scenarios[key]
             scenarios = filtered_scenarios
         return scenarios
-
-
 
 
     def add_scenario_during_runtime(self, scenario, scenario_manager, source, model):

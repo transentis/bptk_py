@@ -194,6 +194,8 @@ class bptk():
             scenario_names = list(
                 self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
 
+
+        # Obtain simulation results
         if not strategy:
             scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,
                                                       scenario_managers=scenario_managers)
@@ -205,12 +207,12 @@ class bptk():
         visualize = Visualizations()
         dict_equations = {}
 
-        # for equation in equations:
-        #   dict_equations[equation] = []
 
-        # Clean up scenarios if we did not find all with the specified scenario managers
+        # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
         scenario_names = [key for key in scenario_objects.keys()]
 
+
+        # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
         for scenario_name in scenario_names:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
@@ -219,7 +221,7 @@ class bptk():
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
-        ### Prepare the Plottable DataFrame
+        ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
         df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
                                              series_names=series_names)
 
@@ -245,14 +247,16 @@ class bptk():
         if return_df:
             return df
 
+
+    ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def plot_with_sliders(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
                          alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                          freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                          series_names=[], strategy=True,
                          return_df=False, constants=[]):
-
-        widget_factory = widgetDecorator(self)
-        widget_factory.generate_sliders(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
+        log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenario_names,str(constants)))
+        widget_decorator = widgetDecorator(self)
+        widget_decorator.generate_sliders(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
                          alpha=alpha, stacked=stacked,
                          freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
                          series_names=series_names, strategy=True,
