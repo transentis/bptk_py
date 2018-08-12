@@ -276,19 +276,30 @@ class bptk():
             # If the scenario does not store an initial strategy in its JSON, create an empty one
             if "strategy" not in scenario.dictionary.keys():
                 scenario.dictionary["strategy"] = {}
-
+                points_to_change_at_original_strategy = []
             ## Points in time where the original strategy makes changes (if any): These are the constant changes from the JSON
-            points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
+            else:
+                points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
+
+
+            # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant until first change of strategy.
+            first_t = points_to_change_at[0]
+            for name, equation in extended_strategy[scenario_name][first_t].items():
+                if not first_t in points_to_change_at_original_strategy:
+                    scenario.dictionary["strategy"][str(scenario.model.starttime)] = {}
+
+                # We will only overwrite if the lambda is not already in the dict (subsequent runs of this method..)
+                if not name in scenario.dictionary["constants"].keys():
+                    scenario.dictionary["constants"][name] = scenario.model.equations[name]
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
                 if int(t) in points_to_change_at_original_strategy:
-                    for name, equation in extended_strategy[scenario_name][t].items():
-                        scenario.dictionary["strategy"][str(t)][name] = equation
-                else:
-                    for name, equation in extended_strategy[scenario_name][t].items():
-                        scenario.dictionary["strategy"][str(t)] = {}
-                        scenario.dictionary["strategy"][str(t)][name] = equation
+                    scenario.dictionary["strategy"][str(t)][name] = equation
+
+                for name, equation in extended_strategy[scenario_name][t].items():
+                    scenario.dictionary["strategy"][str(t)] = {}
+                    scenario.dictionary["strategy"][str(t)][name] = equation
         log("[INFO] Added extended strategy for scenarios")
 
     ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
