@@ -316,3 +316,9 @@ class bptk():
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         for key in scenario.model.memo.keys():
             scenario.model.memo[key] = {}
+
+    def reset_scenario(self,scenario_manager,scenario_name):
+        self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager,scenario_name=scenario_name)
+
+    def reset_all_scenarios(self):
+        return self.scenario_manager_factory.reset_all_scenarios()
