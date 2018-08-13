@@ -1,13 +1,10 @@
 ### IMPORTS
-from BPTK_Py.scenariomanager.scenario_manager import scenarioManager
-
 from BPTK_Py.simulator.model_simulator import Simulator
-
 from BPTK_Py.logger.logger import log
 from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
+from BPTK_Py.modelchecker.model_checker import modelChecker
 from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
-
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 
@@ -322,3 +319,6 @@ class bptk():
 
     def reset_all_scenarios(self):
         return self.scenario_manager_factory.reset_all_scenarios()
+
+    def model_check(self,data,check,message):
+        return modelChecker().model_check(data=data,check=check,message=message)
