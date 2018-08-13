@@ -21,6 +21,8 @@ class widgetDecorator():
 
 
 
+
+
     def generate_sliders(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
                          alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                          freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
@@ -53,19 +55,27 @@ class widgetDecorator():
         # Actual method for building the slider objects and plotting.
         @interact(**sliders)
         def compute_new_plot(**kwargs):
-            for key, value in kwargs.items():
-                self.constants[key] = value
+
+            for equation, value in kwargs.items():
+                self.constants[equation] = value
+
 
             extended_strategy = {}
 
+
             for scenario_name in scenario_names:
-                extended_strategy[scenario_name] = {self.scenarios[scenario_name].model.starttime :  self.constants}
+                extended_strategy[scenario_name] = {}
+                extended_strategy[scenario_name][str(self.scenarios[scenario_name].model.starttime)] = {}
+                for constant, value in self.constants.items():
+                    extended_strategy[scenario_name][str(self.scenarios[scenario_name].model.starttime)][constant] = lambda t : value
+
+
 
 
             self.bptk.modify_strategy_for_complex_strategy(scenarios=self.scenarios, extended_strategy=extended_strategy)
 
 
-            ax = self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+            self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
                                           scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                           stacked=stacked,
                                           freq=freq, start_date=start_date, title=title,
@@ -75,7 +85,7 @@ class widgetDecorator():
                                           return_df=return_df)
 
 
-            return None
+            return  self.constants
 
 
 

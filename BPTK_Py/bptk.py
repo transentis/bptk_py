@@ -1,3 +1,12 @@
+#      _                   _ _
+#  _____| |__ ___ _ __  _ __(_| |___ _ _
+# (_-/ _` / _/ _ | '  \| '_ | | / -_| '_|
+# /__\__,_\__\___|_|_|_| .__|_|_\___|_|
+#                      |_|
+# Copyright (c) 2013-2018 transentis management & consulting. All rights reserved.
+#
+
+
 ### IMPORTS
 from BPTK_Py.simulator.model_simulator import Simulator
 from BPTK_Py.logger.logger import log
@@ -7,12 +16,17 @@ from BPTK_Py.modelchecker.model_checker import modelChecker
 from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
-
+from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 plt.interactive(True)
+###
 
 
-## DICT THAT STORES ALL MY SCENARIOS LATER!
-##
+##################
+### CLASS BPTK ###
+##################
+
+
+### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
 
     def __init__(self):
@@ -22,132 +36,21 @@ class bptk():
             plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory()
+        self.scenario_manager_factory.get_scenario_managers()
+        self.visualizer = Visualizations(self.scenario_manager_factory,bptk=self)
 
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
-    def __run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+    def run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenario_names=scenario_names,
+                                                                                equations=equations, output=output,
+                                                                                scenario_managers=scenario_managers)
 
-        log("[INFO] Attempting to load scenarios from scenarios folder.")
-
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                scenario_names=scenario_names)
-
-        #### Run the simulation scenarios
-
-        for key in scenarios.keys():
-            scenario = scenarios[key]
-            starttime = scenario.model.starttime
-            stoptime = scenario.model.stoptime
-
-            if len(equations) == 0:
-                log("[ERROR] No equation to simulate given. Simulation will fail!")
-
-            ## Read strategy from scenario
-            strategy = {}
-            if "strategy" in scenario.dictionary.keys():
-                strategy = scenario.dictionary["strategy"]
-
-            ## Cast all keys to int (standard JSON does not allow int keys)
-            strategy = {int(k): v for k, v in strategy.items()}
-
-            simu = Simulator(model=scenario.model, name=scenario.name)
-
-            i = 0
-
-            # Get the strategy's points to change equations at and sort ascending.
-            points_to_change_at = sorted(list(strategy.keys()))
-
-            if len(points_to_change_at) == 0:
-                log(
-                    "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
-                scenarios[scenario.name] = \
-                self.__run_simulations(scenario_names=[scenario.name], equations=equations, output=output)[
-                    scenario.name]
-
-            # Simulation with a strategy
-            else:
-                while i <= stoptime:
-
-                    # If we are at point 0, initialize constants
-                    if i == 0:
-                        for equation in scenario.constants.keys():
-                            simu.change_equation(name=equation, value=scenario.constants[equation])
-
-                    # If we are at the start-time, start simulation until the first stop point - 1
-                    if i == starttime:
-                        scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                     until=points_to_change_at[0] - 1)
-
-                    # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
-
-                    if i > 0 and not len(points_to_change_at) == 0:
-                        if i == points_to_change_at[0]:
-
-                            # Change constant/equation
-                            for equation in strategy[points_to_change_at[0]]:
-                                simu.change_equation(name=equation, value=strategy[i][equation])
-
-                            # If we are at the stoptime or reached the last modification, just simulate until stoptime
-                            if i == stoptime or len(points_to_change_at) == 1:
-                                scenario.result = simu.start(equations=equations, output=output, start=i)
-                                log("[INFO] Simulating from {} to {}".format(str(i), str(stoptime)))
-                                i = i + 1
-
-                            # Simulate from i to the next t -1 point where we modify constants
-                            else:
-                                scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                             until=points_to_change_at[1] - 1)
-                                log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
-
-                                ## Fast-Forward i to the next point in time where we make change
-                                i = points_to_change_at[1]
-
-                            points_to_change_at.pop(0)
-
-                        # Just continue to next point in time...
-                        else:
-                            i += 1
-
-                    else:
-                        # Just continue to next point in time...
-                        i += 1
-        return scenarios
 
     ## Private method that runs a simulation without a strategy for a given scenario
-    def __run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
-        ## Load scenarios
-
-        log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                scenario_names=scenario_names)
-
-        #### Run the simulation scenarios
-
-        for key in scenarios.keys():
-            if key in scenario_names:
-                sc = scenarios[key]
-                simu = Simulator(model=sc.model, name=sc.name)
-
-                for const in sc.constants.keys():
-                    simu.change_equation(name=const, value=sc.constants[const])
-
-                # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
-                if len(equations) > 0:
-                    # Find equations that I can actually simulate in the specific model of the scenario!
-                    equations_to_simulate = []
-                    for equation in equations:
-
-                        if equation in sc.model.equations.keys():
-                            equations_to_simulate += [equation]
-
-                    ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
-
-                    sc.result = simu.start(output=output, equations=equations_to_simulate)
-                else:
-                    log("[ERROR] No equations to simulate given!")
-
-        return scenarios
+    def run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenario_names=scenario_names,equations=equations,output=output,scenario_managers=scenario_managers)
 
     # This method plots the outputs for one scenario. Just wrapping the "plotScenario" method
     def plot_outputs_for_scenario(self, scenario_name, equations=[], kind=config.configuration["kind"],
@@ -183,66 +86,11 @@ class bptk():
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                        series_names=[], strategy=False,
                        return_df=False):
-
-        # Run the simulations for the scenario and the specified equations (or all if no equation is given)
-
-        # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
-        if len(scenario_names) == 0 or scenario_names[0] == '':
-            scenario_names = list(
-                self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
-
-
-        # Obtain simulation results
-        if not strategy:
-            scenario_objects = self.__run_simulations(scenario_names=scenario_names, equations=equations,
-                                                      scenario_managers=scenario_managers)
-        else:
-            scenario_objects = self.__run_simulations_with_strategy(scenario_managers=scenario_managers,
-                                                                    scenario_names=scenario_names, equations=equations)
-
-        # Visualize Object
-        visualize = Visualizations()
-        dict_equations = {}
-
-
-        # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
-        scenario_names = [key for key in scenario_objects.keys()]
-
-
-        # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
-        for scenario_name in scenario_names:
-            sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
-            for equation in equations:
-                if equation not in dict_equations.keys():
-                    dict_equations[equation] = []
-                if equation in sc.model.equations.keys():
-                    dict_equations[equation] += [scenario_name]
-
-        ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
-        df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
-                                             series_names=series_names)
-
-        ## If user did not set return_df=True, plot the simulation results (default behavior)
-        if not return_df:
-            ### Get the plot object
-            ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
-                                                 title=title,
-                                                 alpha=alpha, color=config.configuration["colors"],
-                                                 lw=config.configuration["linewidth"])
-
-            ### Set axes labels and set the formats
-            if (len(x_label) > 0):
-                ax.set_xlabel(x_label)
-
-            # Set the y-axis label
-            if (len(y_label) > 0):
-                ax.set_ylabel(y_label)
-
-            visualize.update_plot_formats(ax)
-
-        ### If user wanted a dataframe instead, here it is!
-        if return_df:
-            return df
+        return self.visualizer.plot_scenarios(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
+                       alpha=alpha, stacked=stacked,
+                       freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                       series_names=series_names, strategy=strategy,
+                       return_df=return_df)
 
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders

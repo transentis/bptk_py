@@ -151,9 +151,9 @@ class ScenarioManagerFactory():
                 model) + ".py", update_func=self.refresh_scenarios_for_filename)
 
     def destroy(self):
-        keys = self.scenario_monitors.keys()
-        for scenario in keys:
-            self.scenario_monitors[scenario].kill()
+        values = self.scenario_monitors.keys()
+        for scenario in values:
+            scenario.kill()
 
         self.scenario_monitors = {}
 
