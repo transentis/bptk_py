@@ -85,7 +85,6 @@ class widgetDecorator():
                                           return_df=return_df)
 
 
-            return  self.constants
-
+            return None
 
 
