@@ -139,7 +139,7 @@ class Simulator():
     def change_equation(self, name, value):
         # Store numeric values
         if  type(value) is int or type(value) is float :
-            self.mod.equations[name] = lambda t : value
+            self.mod.equations[name] = lambda t : eval(value)
             log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
 
         ## Store new lambda methods
