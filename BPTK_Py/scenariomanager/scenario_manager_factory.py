@@ -1,3 +1,17 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+#| |                                | | (_)           /########`-
+#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2018 transentis management & consulting. All rights reserved.
+#
+
+
+
+## IMPORTS
 from BPTK_Py.scenariomanager.scenario import simulationScenario
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager import scenarioManager
@@ -6,8 +20,13 @@ from BPTK_Py.modelmonitor.model_monitor import modelMonitor
 import glob
 import os
 import json
+##
 
+####################################
+### Class ScenarioManagerFactory ###
+####################################
 
+## This class manages all scenario of all scenario managers and exposes methods to look them up, read from filesystem and flush them
 class ScenarioManagerFactory():
     def __init__(self):
         self.scenario_managers = {}

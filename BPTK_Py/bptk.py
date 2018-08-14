@@ -1,9 +1,12 @@
-#      _                   _ _
-#  _____| |__ ___ _ __  _ __(_| |___ _ _
-# (_-/ _` / _/ _ | '  \| '_ | | / -_| '_|
-# /__\__,_\__\___|_|_|_| .__|_|_\___|_|
-#                      |_|
-# Copyright (c) 2013-2018 transentis management & consulting. All rights reserved.
+#                                                       /`-
+# _                                  _   _             /####`-
+#| |                                | | (_)           /########`-
+#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2018 transentis management & consulting. All rights reserved.
 #
 
 
@@ -68,7 +71,7 @@ class bptk():
                                    x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy,
                                    return_df=return_df)
 
-    # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenario" method
+    # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenarios" method
     def plot_scenario_for_output(self, scenario_names, equation, kind=config.configuration["kind"],
                                  alpha=config.configuration["alpha"],
                                  stacked=config.configuration["stacked"], scenario_managers=[],
