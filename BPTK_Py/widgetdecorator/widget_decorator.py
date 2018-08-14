@@ -14,8 +14,10 @@ from __future__ import print_function
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 from ipywidgets import interact, interactive, fixed, interact_manual
+import nbinteract as nbi
 import ipywidgets as py_widgets
-ää
+
+##
 
 #############################
 ### Class widgetDecorator ###
@@ -35,7 +37,7 @@ class widgetDecorator():
                           alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                           series_names=[], strategy=True,
-                          return_df=False, constants=[("slider","cash.cash", 0, 10), ("checkbox","earnings.earnings", 0, 10)]):
+                          return_df=False, constants=[]):
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                           scenario_names=scenario_names)

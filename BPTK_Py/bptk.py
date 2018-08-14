@@ -57,33 +57,6 @@ class bptk():
     def run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
         return simulationWrapper(self.scenario_manager_factory).run_simulations(scenario_names=scenario_names,equations=equations,output=output,scenario_managers=scenario_managers)
 
-    # This method plots the outputs for one scenario. Just wrapping the "plotScenario" method
-    def plot_outputs_for_scenario(self, scenario_name, equations=[], kind=config.configuration["kind"],
-                                  alpha=config.configuration["alpha"],
-                                  stacked=config.configuration["stacked"],
-                                  freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                                  y_label="", series_names=[], strategy=False, return_df=False, scenario_managers=[]):
-
-        return self.plot_scenarios(scenario_names=[scenario_name], equations=equations, kind=kind, alpha=alpha,
-                                   stacked=stacked, scenario_managers=scenario_managers,
-                                   freq=freq, start_date=start_date, title=title,
-                                   visualize_from_period=visualize_from_period,
-                                   x_label=x_label, y_label=y_label, series_names=series_names, strategy=strategy,
-                                   return_df=return_df)
-
-    # This method plots the outputs for multiple scenarios and one equation. Just wrapping the "plotScenarios" method
-    def plot_scenario_for_output(self, scenario_names, equation, kind=config.configuration["kind"],
-                                 alpha=config.configuration["alpha"],
-                                 stacked=config.configuration["stacked"], scenario_managers=[],
-                                 freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="",
-                                 y_label="", strategy=False, series_names=[], return_df=False):
-
-        return self.plot_scenarios(scenario_names=scenario_names, equations=[equation], kind=kind, alpha=alpha,
-                                   stacked=stacked, scenario_managers=scenario_managers,
-                                   freq=freq, start_date=start_date, title=title,
-                                   visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                                   series_names=series_names, strategy=strategy,
-                                   return_df=return_df)
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def plot_scenarios(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
@@ -106,7 +79,8 @@ class bptk():
                           return_df=False, constants=[]):
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenario_names,str(constants)))
         widget_decorator = widgetDecorator(self)
-        widget_decorator.plot_with_widgets(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
+
+        return widget_decorator.plot_with_widgets(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
                                            alpha=alpha, stacked=stacked,
                                            freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
                                            series_names=series_names, strategy=True,

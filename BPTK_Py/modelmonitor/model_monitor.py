@@ -31,9 +31,10 @@ class modelMonitor():
     ## Init.
     # model_file: path to itmx model
     # dest: path to final python file
-    def __init__(self, model_file, dest,update_func):
+    def __init__(self, model_file, dest,update_func,itmx=True):
         self.update_func=update_func
         self.model_file = model_file
+        self.itmx = itmx
         if os.name == "nt":
             model_file = model_file.replace("/","\\")
             dest = dest.replace("/","\\")
@@ -70,14 +71,15 @@ class modelMonitor():
                 log("[INFO] Model Monitor for {}: Observed a change to the model. Calling the parser".format(str(self.model_file)))
                 self._cached_stamp = stamp
 
-                # File has changed, so parse model again
-                exit_status = os.system(self.execute_script)
+                if self.itmx: # If we monitor an itmx file, call the sd-compiler to parse it to python
+                    # File has changed, so parse model again
+                    exit_status = os.system(self.execute_script)
 
-                ## Check if everything went well, i.e. exit status of the script = 0
-                if exit_status != 0:
-                    log("[ERROR] Problem calling the script for model conversion itmx --> python. Exit status: {}".format(str(exit_status)))
+                    ## Check if everything went well, i.e. exit status of the script = 0
+                    if exit_status != 0:
+                        log("[ERROR] Problem calling the script for model conversion itmx --> python. Exit status: {}".format(str(exit_status)))
 
-                ## Refresh all scenarios with the given model file
+                    ## Refresh all scenarios with the given model file
                 self.update_func(self.model_file)
                 log("[INFO] Model Monitor for {}: model updated and relaoded scenarios!".format(str(self.model_file)))
 
