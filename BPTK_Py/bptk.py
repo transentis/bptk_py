@@ -115,20 +115,18 @@ class bptk():
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
-                if int(t) not  in points_to_change_at_original_strategy:
+                if str(t) not in scenario.dictionary["strategy"].keys():
                     scenario.dictionary["strategy"][str(t)] = {}
 
                 for name, equation in extended_strategy[scenario_name][t].items():
-                    scenario.dictionary["strategy"][str(t)] = {}
                     scenario.dictionary["strategy"][str(t)][name] = equation
 
                     # Backup all original lambdas of modified equations as "constants" for the simulation model
                     # --> whenever we inject another lambda at a point in time, we will use the original value until
                     # the first occurence of the modified strategy
-                    if not first_t == scenario.model.starttime:
-                        if t == first_t and not name in scenario.dictionary["constants"].keys():
-                            scenario.dictionary["constants"][name] = scenario.model.equations[name]
-
+                    if t == first_t and not name in scenario.dictionary["constants"].keys():
+                        scenario.dictionary["constants"][name] = scenario.model.equations[name]
+            print(scenario.dictionary["strategy"])
         log("[INFO] Added extended strategy for scenarios")
 
     ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...

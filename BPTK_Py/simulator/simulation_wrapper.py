@@ -89,6 +89,7 @@ class simulationWrapper():
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {int(k): v for k, v in strategy.items()}
 
+
             simu = Simulator(model=scenario.model, name=scenario.name)
 
             i = 0
