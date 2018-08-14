@@ -113,7 +113,7 @@ class bptk():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
             scenario = scenarios[scenario_name]
-            self.reset_simulation_model(scenario_manager=scenario.group, scenario=scenario_name)
+            self.reset_simulation_model(scenario_manager=scenario.group, scenario_name=scenario_name)
 
             ## Points in time where the extended strategy makes changes
             points_to_change_at = list(extended_strategy[scenario_name].keys())
@@ -158,10 +158,10 @@ class bptk():
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
 
-    def reset_simulation_model(self, scenario_manager="", scenario=""):
-        scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
-        for key in scenario.model.memo.keys():
-            scenario.model.memo[key] = {}
+    def reset_simulation_model(self, scenario_manager="", scenario_name=""):
+        scenario_name = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario_name)
+        for key in scenario_name.model.memo.keys():
+            scenario_name.model.memo[key] = {}
 
     def reset_scenario(self,scenario_manager,scenario_name):
         self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager,scenario_name=scenario_name)
