@@ -8,7 +8,6 @@
 
 
 ### IMPORTS
-from BPTK_Py.simulator.model_simulator import Simulator
 from BPTK_Py.logger.logger import log
 from BPTK_Py.visualizations.visualize import Visualizations
 import matplotlib.pyplot as plt
@@ -17,6 +16,7 @@ from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
 import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
+import pkg_resources
 plt.interactive(True)
 ###
 
@@ -38,6 +38,8 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = Visualizations(self.scenario_manager_factory,bptk=self)
+
+        self.__version__ = pkg_resources.get_distribution("BPTK_Py").version
 
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
@@ -94,18 +96,18 @@ class bptk():
 
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
-    def plot_with_sliders(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
-                         alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                         freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                         series_names=[], strategy=True,
-                         return_df=False, constants=[]):
+    def plot_with_widgets(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
+                          alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                          freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                          series_names=[], strategy=True,
+                          return_df=False, constants=[]):
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenario_names,str(constants)))
         widget_decorator = widgetDecorator(self)
-        widget_decorator.generate_sliders(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
-                         alpha=alpha, stacked=stacked,
-                         freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                         series_names=series_names, strategy=True,
-                         return_df=False, constants=constants)
+        widget_decorator.plot_with_widgets(scenario_names=scenario_names, equations=equations, scenario_managers=scenario_managers, kind=kind,
+                                           alpha=alpha, stacked=stacked,
+                                           freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                           series_names=series_names, strategy=True,
+                                           return_df=False, constants=constants)
 
     ## Method for adding strategies during runtime. It allows for adding lambdas as well!
     def modify_strategy_for_complex_strategy(self, scenarios, extended_strategy):
@@ -171,3 +173,5 @@ class bptk():
 
     def model_check(self,data,check,message):
         return modelChecker().model_check(data=data,check=check,message=message)
+
+

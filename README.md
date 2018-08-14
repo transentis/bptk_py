@@ -130,7 +130,12 @@ The second method lets you plot one equation for multiple scenarios and uses the
 In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
 
 ## Interactive Plotting
-An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_sliders`` has this functionality. You may define a parameter constants containing a list of tuples of the structure ``("name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the interactive readme.
+An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. It comes with a field "constants" that contains a list of widget definitions. Each widget is defined using a tuple.
+The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the following plot.
+
+Currently, we support two types of widgets to control the process:
+* **sliders**: Sliders allow you to select a value in an interval. Use "slider" as ``widget_type``. A slider requires ``start_value and maximum_value`` as described above. Example: ``("slider",'initialOpenTasks',100.0,1000.0)``
+* **checkbox**: If you want a checkbox, use "checkbox" as ``widget_type``. You do not have to supply ``start_value / maximum_value``. Example: ``("checkbox","initialStaff")``
 
 For interactive plotting to work, you need to install an extension to jupyter lab. If you followed the above guide for initial setup, this should do in the terminal:
 ```
@@ -138,7 +143,8 @@ souce bptk_test/bin/activate
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
 
-### ATTENTION Mac OS X user
+
+#### Attention Mac OS X user
 For now there is a bug, that requires you to use node version 8 to successfully download the extension. If you are using homebrew, issue these commands:
 ```
 brew uninstall node yarn
