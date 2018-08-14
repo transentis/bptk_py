@@ -138,9 +138,9 @@ class Simulator():
     # Method that changes an equation. It can change constants by just receiving int/float values and creates lambda functions or it can replace lambda functions with lambda functions
     def change_equation(self, name, value):
         # Store numeric values
-        if  type(value) is int or type(value) is float :
-            self.mod.equations[name] = lambda t : eval(value)
-            log("[INFO] {}: Changed constant {} to {}".format(self.name,name,value))
+        if  not callable(value):
+            self.mod.equations[name] = lambda t : eval(str(value))
+            log("[INFO] {}: Changed constant {} to {}".format(self.name,name,str(value)))
 
         ## Store new lambda methods
         elif name in self.mod.equations.keys():

@@ -43,27 +43,34 @@ class ScenarioManagerFactory():
                 log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
                 return None
 
-            scenarios = {}
-            for group_name in json_dict.keys():
 
-                group = group_name
-                model_name = json_dict[group_name]["model"]
+            for group_name in json_dict.keys():
+                if group_name not in self.scenario_managers.keys():
+                    self.scenario_managers[group_name] = scenarioManager(scenarios={},name=group_name)
+
+                manager = self.scenario_managers[group_name]
+
+                manager.model_file = json_dict[group_name]["model"]
+
                 scen_dict = json_dict[group_name]["scenarios"]
 
                 source = ""
                 if "source" in json_dict[group_name].keys():
-                    source = json_dict[group_name]["source"]
+                    manager.source = json_dict[group_name]["source"]
+                    if not manager.source in self.scenario_monitors.keys():
+                        self.__add_monitor(manager.source, manager.model_file)
+
+                manager.instantiate_model()
+
 
                 for scenario_name in scen_dict.keys():
-                    sce = simulationScenario(group=group, model_name=model_name,
-                                             dictionary=scen_dict[scenario_name], name=scenario_name, source=source,
-                                             filename=filename)
-                    if not scenario_name in scenarios.keys():
-                        scenarios[scenario_name] = sce
-                    else:
-                        scenarios[scenario_name + "_" + sce.group] = sce
+                    sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=manager.model,group=group_name)
+                    if not scenario_name in manager.scenarios.keys():
+                        manager.scenarios[scenario_name] = sce
+                    #else:
+                       # scenarios[scenario_name + "_" + sce.group] = sce
 
-            return scenarios
+            return self.scenario_managers
         else:
             print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
 
@@ -72,31 +79,9 @@ class ScenarioManagerFactory():
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
-
-            scenarios = {}
-            groups = {}
             for infile in glob.glob(os.path.join(path, '*.json')):
+                self.__readScenario(filename=infile)
 
-                scenarios_new = self.__readScenario(infile)
-                if not scenarios_new is None:
-                    for name, scenario in scenarios_new.items():
-                        scenarios[name] = scenarios_new[name]
-
-                        # If the scenario contains a source model and we do not already have a monitor for the scenario, start a new one and store it
-                        if not scenario.source is None and not scenario.source in self.scenario_monitors.keys():
-                            self.__add_monitor(scenario.source, scenario.model_name)
-
-                        # b) Store scenarios in groups (aka ScenarioManagers)
-                        if scenario.group not in groups.keys():
-                            groups[scenario.group] = {}
-
-                        groups[scenario.group][scenario.name] = scenario
-                    log("[INFO] Successfully loaded scenario {} from {}".format(name, str(infile)))
-
-            # c) Add Scenarios to ScenarioManagers
-            self.scenario_managers = {}
-            for group, scenarios in groups.items():
-                self.scenario_managers[group] = scenarioManager(scenarios, name=group)
 
             log("[INFO] Successfully loaded all scenarios!")
 
