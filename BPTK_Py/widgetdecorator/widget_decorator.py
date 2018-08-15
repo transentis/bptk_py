@@ -14,7 +14,7 @@ from __future__ import print_function
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 from ipywidgets import interact, interactive, fixed, interact_manual
-import nbinteract as nbi
+
 import ipywidgets as py_widgets
 
 ##
