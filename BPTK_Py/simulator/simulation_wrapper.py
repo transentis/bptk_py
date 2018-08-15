@@ -79,11 +79,11 @@ class simulationWrapper():
 
 
 
-    def run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+    def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         Method to run simulations with strategies
 
-        :param scenario_names: names of scenarios to simulate
+        :param scenarios: names of scenarios to simulate
         :param equations: equations to simulate
         :param output: output type, default as a dataFrame
         :param scenario_managers: scenario managers as a list of names of scenario managers
@@ -93,7 +93,7 @@ class simulationWrapper():
         log("[INFO] Attempting to load scenarios from scenarios folder.")
 
         scenarios_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                scenario_names=scenario_names)
+                                                                        scenario_names=scenarios)
 
         #### Run the simulation scenarios
 

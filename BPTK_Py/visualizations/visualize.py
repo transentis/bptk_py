@@ -106,7 +106,7 @@ class Visualizations():
                                                          scenario_managers=scenario_managers)
         else:
             scenario_objects = self.bptk.run_simulations_with_strategy(scenario_managers=scenario_managers,
-                                                                    scenario_names=scenario_names, equations=equations)
+                                                                       scenarios=scenario_names, equations=equations)
         if len(scenario_objects.keys()) == 0:
             log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(str(scenario_managers),str(scenario_names)))
             return None

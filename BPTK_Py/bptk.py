@@ -49,9 +49,9 @@ class bptk():
     ## A strategy modifies constants in given points of time.
     ##
     def run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
-        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenario_names=scenario_names,
-                                                                                equations=equations, output=output,
-                                                                                scenario_managers=scenario_managers)
+        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenario_names,
+                                                                                              equations=equations, output=output,
+                                                                                              scenario_managers=scenario_managers)
 
 
     ## Private method that runs a simulation without a strategy for a given scenario
