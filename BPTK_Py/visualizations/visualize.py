@@ -13,6 +13,7 @@
 import pandas as pd
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
+import statistics
 ##
 
 
@@ -81,6 +82,10 @@ class Visualizations():
         return plot_df
 
     def update_plot_formats(self,ax):
+        ylabels_mean = statistics.mean(ax.get_yticks())
+
+        if ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
+            ylabels = [format(label, ',,0f') for label in ax.get_yticks()]
 
         ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
         ax.set_yticklabels(ylabels)

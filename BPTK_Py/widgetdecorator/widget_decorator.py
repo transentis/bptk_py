@@ -36,7 +36,7 @@ class widgetDecorator():
     def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                           alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                          series_names=[], strategy=True,
+                          series_names=[], strategy=False,
                           return_df=False, constants=[]):
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
@@ -96,7 +96,7 @@ class widgetDecorator():
                                          freq=freq, start_date=start_date, title=title,
                                          visualize_from_period=visualize_from_period, x_label=x_label,
                                          y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
+                                         series_names=series_names, strategy=False,
                                          return_df=return_df)
 
                 return None
@@ -122,7 +122,7 @@ class widgetDecorator():
                                          freq=freq, start_date=start_date, title=title,
                                          visualize_from_period=visualize_from_period, x_label=x_label,
                                          y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
+                                         series_names=series_names, strategy=False,
                                          return_df=return_df)
 
 
@@ -151,7 +151,7 @@ class widgetDecorator():
                                          freq=freq, start_date=start_date, title=title,
                                          visualize_from_period=visualize_from_period, x_label=x_label,
                                          y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
+                                         series_names=series_names, strategy=False,
                                          return_df=return_df)
 
                 return None
@@ -185,7 +185,7 @@ class widgetDecorator():
                                          freq=freq, start_date=start_date, title=title,
                                          visualize_from_period=visualize_from_period, x_label=x_label,
                                          y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
+                                         series_names=series_names, strategy=False,
                                          return_df=return_df)
 
                 return None
@@ -217,11 +217,11 @@ class widgetDecorator():
 
                 self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked,
+                                         stacked=stacked,strategy=False,
                                          freq=freq, start_date=start_date, title=title,
                                          visualize_from_period=visualize_from_period, x_label=x_label,
                                          y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
+                                         series_names=series_names,
                                          return_df=return_df)
 
                 return None
