@@ -48,8 +48,8 @@ class bptk():
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
     ##
-    def run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
-        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenario_names,
+    def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                               equations=equations, output=output,
                                                                                               scenario_managers=scenario_managers)
 
@@ -81,7 +81,7 @@ class bptk():
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenarios, str(constants)))
         widget_decorator = widgetDecorator(self)
 
-        return widget_decorator.plot_with_widgets(scenario_names=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
+        return widget_decorator.plot_with_widgets(scenarios=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
                                                   alpha=alpha, stacked=stacked,
                                                   freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
                                                   series_names=series_names, strategy=True,
@@ -142,7 +142,7 @@ class bptk():
             scenario.model.memo[key] = {}
 
     def reset_scenario(self, scenario_manager, scenario):
-        self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager, scenario_name=scenario)
+        self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager, scenario=scenario)
 
     def reset_all_scenarios(self):
         return self.scenario_manager_factory.reset_all_scenarios()

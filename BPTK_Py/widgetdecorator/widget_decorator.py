@@ -33,17 +33,17 @@ class widgetDecorator():
 
     # This method will be passed over to the user and used to modify the graph output
 
-    def plot_with_widgets(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
+    def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                           alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                           series_names=[], strategy=True,
                           return_df=False, constants=[]):
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                          scenario_names=scenario_names)
+                                                                          scenarios=scenarios)
 
         ## Only store data and create widgets and pack them
-        log("[INFO] Creating widget objects for interactive plot of scenarios {}".format(str(scenario_names)))
+        log("[INFO] Creating widget objects for interactive plot of scenarios {}".format(str(scenarios)))
 
         # Generate the widget objects
         widgets = {}
@@ -90,7 +90,7 @@ class widgetDecorator():
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -116,7 +116,7 @@ class widgetDecorator():
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -145,7 +145,7 @@ class widgetDecorator():
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -179,7 +179,7 @@ class widgetDecorator():
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -215,7 +215,7 @@ class widgetDecorator():
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,

@@ -112,14 +112,14 @@ class ScenarioManagerFactory():
             return self.scenario_managers
 
 
-    def reset_scenario(self, scenario_manager, scenario_name):
+    def reset_scenario(self, scenario_manager, scenario):
         """
         Reloads exactly one scenario. For lookup, requires scenario manager's name and the scenario's name
         :param scenario_manager: name of scenario manager
-        :param scenario_name: name of scenario
+        :param scenario: name of scenario
         :return: scenario
         """
-        log("[INFO] Reloading scenario {} from {}".format(scenario_name, scenario_manager))
+        log("[INFO] Reloading scenario {} from {}".format(scenario, scenario_manager))
 
 
 
@@ -129,10 +129,10 @@ class ScenarioManagerFactory():
         scenarios_from_file = self.__readScenario(filename=scenario_filename)
 
         if not scenarios_from_file is None:
-            scenario  = manager.scenarios[scenario_name]
-            self.scenario_managers[scenario_manager].scenarios[scenario_name] = scenario
+            scenario_object  = manager.scenarios[scenario]
+            self.scenario_managers[scenario_manager].scenarios[scenario] = scenario_object
 
-            log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager, scenario_name))
+            log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager, scenario))
 
     def reset_all_scenarios(self):
         """
@@ -152,33 +152,33 @@ class ScenarioManagerFactory():
         """
         return self.scenario_managers[scenario_manager].scenarios[scenario]
 
-    def get_scenarios(self, scenario_managers=[], scenario_names=[]):
+    def get_scenarios(self, scenario_managers=[], scenarios=[]):
         """
         Get an arbitrary amount of scenario objects, depending on the parameters
         :param scenario_managers:  Names of the scenario_managers to lookup
-        :param scenario_names: Names of the scenarios to lookup
+        :param scenarios: Names of the scenarios to lookup
         :return:
         """
 
         managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
 
-        scenarios = {}
+        scenarios_objects = {}
         for manager_name, manager in managers.items():
             for scenario_name, scenario in manager.scenarios.items():
-                if scenario_name in scenarios.keys():
-                    scenarios[scenario_name + "_" + manager_name] = scenario
-                    if scenario_name in scenario_names:
-                        scenario_names += [scenario_name + "_" + manager_name]
+                if scenario_name in scenarios_objects.keys():
+                    scenarios_objects[scenario_name + "_" + manager_name] = scenario
+                    if scenario_name in scenarios:
+                        scenarios += [scenario_name + "_" + manager_name]
                 else:
-                    scenarios[scenario_name] = scenario
+                    scenarios_objects[scenario_name] = scenario
 
-        if len(scenario_names) > 0:
+        if len(scenarios) > 0:
             filtered_scenarios = {}
-            for key in scenario_names:
-                if key in scenarios.keys():
-                    filtered_scenarios[key] = scenarios[key]
-            scenarios = filtered_scenarios
-        return scenarios
+            for key in scenarios:
+                if key in scenarios_objects.keys():
+                    filtered_scenarios[key] = scenarios_objects[key]
+            scenarios_objects = filtered_scenarios
+        return scenarios_objects
 
     def add_scenario_during_runtime(self, scenario, scenario_manager, source="", model=None):
         """
@@ -246,6 +246,6 @@ class ScenarioManagerFactory():
             if manager.source == filename:
                 for scenario_name in manager.scenarios.keys():
                     log("[INFO] Resetting scenario {}".format(scenario_name))
-                    self.reset_scenario(scenario_name=scenario_name, scenario_manager=manager_name)
+                    self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
