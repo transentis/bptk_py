@@ -86,7 +86,7 @@ class Visualizations():
         ax.set_yticklabels(ylabels)
 
 
-    def plot_scenarios(self, scenario_names, equations, scenario_managers=[], kind=config.configuration["kind"],
+    def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                        series_names=[], strategy=False,
@@ -95,20 +95,20 @@ class Visualizations():
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
 
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
-        if len(scenario_names) == 0 or scenario_names[0] == '':
-            scenario_names = list(
+        if len(scenarios) == 0 or scenarios[0] == '':
+            scenarios = list(
                 self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
 
 
         # Obtain simulation results
         if not strategy:
-            scenario_objects = self.bptk.run_simulations(scenarios=scenario_names, equations=equations,
+            scenario_objects = self.bptk.run_simulations(scenarios=scenarios, equations=equations,
                                                          scenario_managers=scenario_managers)
         else:
             scenario_objects = self.bptk.run_simulations_with_strategy(scenario_managers=scenario_managers,
-                                                                       scenarios=scenario_names, equations=equations)
+                                                                       scenarios=scenarios, equations=equations)
         if len(scenario_objects.keys()) == 0:
-            log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(str(scenario_managers),str(scenario_names)))
+            log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(str(scenario_managers), str(scenarios)))
             return None
 
         # Visualize Object
@@ -117,11 +117,11 @@ class Visualizations():
 
 
         # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
-        scenario_names = [key for key in scenario_objects.keys()]
+        scenarios = [key for key in scenario_objects.keys()]
 
 
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
-        for scenario_name in scenario_names:
+        for scenario_name in scenarios:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
                 if equation not in dict_equations.keys():

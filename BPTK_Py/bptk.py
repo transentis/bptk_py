@@ -65,7 +65,7 @@ class bptk():
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
-        return self.visualizer.plot_scenarios(scenario_names=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
+        return self.visualizer.plot_scenarios(scenarios=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
                                               alpha=alpha, stacked=stacked,
                                               freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
                                               series_names=series_names, strategy=strategy,

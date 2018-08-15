@@ -131,11 +131,10 @@ The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/upd
 **Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 
 ## Plotting API
-The ipython example notebook contains examples for the plotting API calls. For now, there are two methods analysts can use:
+The ipython example notebook contains examples for the plotting API calls. The main method is th ``plot_scenarios`` method.
 ```
-bptk.plot_outputs_for_scenario(scenario_name,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
+bptk.plot_scenarios(scenarios,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
 
-bptk.plot_scenario_for_output(scenario_names,scenario_managers=[], equation, kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False):
 ```
 
 
