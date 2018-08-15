@@ -125,7 +125,7 @@ class widgetDecorator():
                                          series_names=series_names, strategy=strategy,
                                          return_df=return_df)
 
-                return None
+
 
         if len(widgets) == 3:
             @interact(widget1=widget_list[0], widget2=widget_list[1], widget3=widget_list[2])

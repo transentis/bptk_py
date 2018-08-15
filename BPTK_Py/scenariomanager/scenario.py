@@ -48,6 +48,11 @@ class simulationScenario():
         else:
             self.strategy = {}
 
+        if "points" in dictionary.keys():
+            self.points = dictionary["points"]
+        else:
+            self.points = {}
+
         self.name = name
 
         self.result = None  # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserver the pointer

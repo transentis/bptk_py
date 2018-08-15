@@ -88,10 +88,38 @@ The repo contains the **Scenario Manager** ipython notebook in the top level. Yo
 If you changed a JSON scenario file during runtime and wish to reload the scenario(s), use the following method:
 
 ```
-scenarioManager = bptk.ScenarioManager
-scenarioManager.scenarios.pop("NAME_OF_SCENARIO") 
+bptk.reset_scenario(scenario_manager="NAMEOFSCENARIOMANAGER",scenario_name="NAMEOFSCENARIO")
 ```
 
+### Modifying points of graphical functions
+You may have defined graphical functions within stela Architect but a scenario may change these if you want. Internally, a graphical function is nothing else but a set of points and values. Hence, you may easily modify these points using the scenario JSON file. All you ened is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function with their respective x and y values as list: `` [x,y] ``.
+Let us modify the previous scenario example and add some points:
+
+```
+{
+"ScenarioManager1": {
+    "model": "simulation_models/model",
+    "source": "simulation_models/make_your_startup_grow.itmx",
+    "scenarios": {
+        "MakeYourStartUpGrow_2": {
+            "constants": {
+                "cost.paymentTransactionCost": 0.5,
+                "cost.productDevelopmentWage": 10000
+                }
+                "points":{
+                    'capabilities.learningCurve':
+                    [
+                        [0,1], [1,2], [2,3], [3,4]
+                    ]
+                    }
+            }
+        }
+    }
+}
+
+```
+
+Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation requires the y-value for decimal x values.
 
 ## Monitoring of itmx source models
 Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)

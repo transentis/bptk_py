@@ -148,6 +148,11 @@ class Simulator():
             log("[INFO] Changed equation {}".format(name))
             #log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
 
+    def change_points(self,name,value):
+        if name in self.mod.points.keys():
+            log("[WARN] Overwriting existing set of points for {}".format(str(name)))
+
+        self.mod.points[name] = value
 
 
 

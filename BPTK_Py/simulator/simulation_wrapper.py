@@ -44,6 +44,8 @@ class simulationWrapper():
 
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
+                for name,points in sc.points.items():
+                    simu.change_points(name=name,value=points)
 
                 # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
                 if len(equations) > 0:
