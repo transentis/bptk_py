@@ -1,9 +1,9 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis management & consulting. All rights reserved.
@@ -21,7 +21,10 @@ from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFact
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
 import pkg_resources
+
 plt.interactive(True)
+
+
 ###
 
 
@@ -34,14 +37,17 @@ plt.interactive(True)
 class bptk():
 
     def __init__(self):
-        ## Matplotlib configuration
+        """
+        Init
+        """
+
         import BPTK_Py.config.config as config
         for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
-        self.visualizer = Visualizations(self.scenario_manager_factory,bptk=self)
+        self.visualizer = Visualizations(self.scenario_manager_factory, bptk=self)
 
         self.__version__ = pkg_resources.get_distribution("BPTK_Py").version
 
@@ -49,14 +55,32 @@ class bptk():
     ## A strategy modifies constants in given points of time.
     ##
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+        """
+        method to run raw simulations (if you want to omit plotting). Simulates with the strategies of the scenarios
+        :param scenarios: names of scenarios to simulate
+        :param equations: names of equations to simulate
+        :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
+        :param scenario_managers: names of scenario managers to select scenarios from
+        :return: dict of simulationScenario
+        """
         return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
-                                                                                              equations=equations, output=output,
+                                                                                              equations=equations,
+                                                                                              output=output,
                                                                                               scenario_managers=scenario_managers)
-
 
     ## Private method that runs a simulation without a strategy for a given scenario
     def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios, equations=equations, output=output, scenario_managers=scenario_managers)
+        """
+        method to run raw simulations (if you want to omit plotting)
+        :param scenarios: names of scenarios to simulate
+        :param equations: names of equations to simulate
+        :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
+        :param scenario_managers: names of scenario managers to select scenarios from
+        :return: dict of simulationScenario
+        """
+        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
+                                                                                equations=equations, output=output,
+                                                                                scenario_managers=scenario_managers)
 
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
@@ -65,12 +89,34 @@ class bptk():
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
-        return self.visualizer.plot_scenarios(scenarios=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
+
+        """
+         Generic method for plotting scenarios
+         :param scenarios: names of scenarios to plot
+         :param equations:  names of equations to plot
+         :param scenario_managers: names of scenario managers to plot
+         :param kind: type of graph to plot
+         :param alpha:  transparency 0 < x <= 1
+         :param stacked: if yes, use stacked (only with kind="bar")
+         :param freq: frequency of time series
+         :param start_date: start date for time series
+         :param title: title of plot
+         :param visualize_from_period: visualize from specific period onwards
+         :param x_label: label for x axis
+         :param y_label: label for y axis
+         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+         :param strategy: set True if you want to use the scenarios' strategies
+         :param return_df: set True if you want to receive a dataFrame instead of the plot
+         :return: dataFrame with simulation results if return_df=True
+         """
+        return self.visualizer.plot_scenarios(scenarios=scenarios, equations=equations,
+                                              scenario_managers=scenario_managers, kind=kind,
                                               alpha=alpha, stacked=stacked,
-                                              freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                              freq=freq, start_date=start_date, title=title,
+                                              visualize_from_period=visualize_from_period, x_label=x_label,
+                                              y_label=y_label,
                                               series_names=series_names, strategy=strategy,
                                               return_df=return_df)
-
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
@@ -78,17 +124,48 @@ class bptk():
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                           series_names={}, strategy=False,
                           return_df=False, constants=[]):
-        log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenarios, str(constants)))
+        """
+        Generic method for plotting with interactive widgets
+        :param scenarios: names of scenarios to plot
+        :param equations:  names of equations to plot
+        :param scenario_managers: names of scenario managers to plot
+        :param kind: type of graph to plot
+        :param alpha:  transparency 0 < x <= 1
+        :param stacked: if yes, use stacked (only with kind="bar")
+        :param freq: frequency of time series
+        :param start_date: start date for time series
+        :param title: title of plot
+        :param visualize_from_period: visualize from specific period onwards
+        :param x_label: label for x axis
+        :param y_label: label for y axis
+        :param series_names: names of series to modify
+        :param strategy: set True if you want to use the scenarios' strategies
+        :param return_df: set True if you want to receive a dataFrame instead of the plot
+        :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
+        :return: dataFrame with simulation results if return_df=True
+        """
+        log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
+            scenarios, str(constants)))
         widget_decorator = widgetDecorator(self)
 
-        return widget_decorator.plot_with_widgets(scenarios=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
+        return widget_decorator.plot_with_widgets(scenarios=scenarios, equations=equations,
+                                                  scenario_managers=scenario_managers, kind=kind,
                                                   alpha=alpha, stacked=stacked,
-                                                  freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
+                                                  freq=freq, start_date=start_date, title=title,
+                                                  visualize_from_period=visualize_from_period, x_label=x_label,
+                                                  y_label=y_label,
                                                   series_names=series_names, strategy=strategy,
                                                   return_df=False, constants=constants)
 
     ## Method for adding strategies during runtime. It allows for adding lambdas as well!
     def modify_strategy_for_complex_strategy(self, scenarios, extended_strategy):
+        """
+        Modifies a strategy during runtime. Experimental feature for now.
+        :param scenarios: names of scenarios to modify the strategies for
+        :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
+        :return: None
+        """
+
         for scenario_name in extended_strategy.keys():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
@@ -106,13 +183,11 @@ class bptk():
             else:
                 points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
 
-
             # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant so it will work until the first point in the strategy
             first_t = points_to_change_at[0]
 
             if not first_t in points_to_change_at_original_strategy:
                 scenario.dictionary["strategy"][str(scenario.model.starttime)] = {}
-
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
@@ -127,30 +202,61 @@ class bptk():
                     # the first occurence of the modified strategy
                     if t == first_t and not name in scenario.dictionary["constants"].keys():
                         scenario.dictionary["constants"][name] = scenario.model.equations[name]
-            print(scenario.dictionary["strategy"])
         log("[INFO] Added extended strategy for scenarios")
 
-    ## When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
-    ## It essentially only kills all the file monitors and makes sure the Python process can die happily
+
     def destroy(self):
+        """
+        When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
+        It essentially only kills all the file monitors and makes sure the Python process can die happily
+        :return: None
+        """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
 
     def reset_simulation_model(self, scenario_manager="", scenario=""):
+        """
+        Resets only the memo (equation results) of a scenario, does not re-read from storage
+        :param scenario_manager: name of scenario manager for lookup
+        :param scenario: name of scenario
+        :return: None
+        """
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         for key in scenario.model.memo.keys():
             scenario.model.memo[key] = {}
 
     def reset_scenario(self, scenario_manager, scenario):
+        """
+        Reload scenario from storage
+        :param scenario_manager: name of scenario manager for lookup
+        :param scenario: name of scenario
+        :return: None
+        """
         self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager, scenario=scenario)
 
     def reset_all_scenarios(self):
+        """
+        Reload all scenarios from storage
+        :return: None
+        """
         return self.scenario_manager_factory.reset_all_scenarios()
 
-    def model_check(self,data,check,message):
-        return modelChecker().model_check(data=data,check=check,message=message)
+    def model_check(self, data, check, message):
+        """
+        Model checker
+        :param data: dataframe series or any data
+        :param check: lambda function of structure : lambda data : BOOLEAN CHECK
+        :param message: Error message if test failed
+        :return: None
+        """
+        return modelChecker().model_check(data=data, check=check, message=message)
 
-    def add_scenario(self,dictionary):
+    def add_scenario(self, dictionary):
+        """
+        Add scenario during runtime
+        :param dictionary: dictionary that contains all data required for the scenario. Check the readme!
+        :return: None
+        """
 
         for scenario_manager_name in dictionary.keys():
             source = ""
@@ -160,8 +266,9 @@ class bptk():
             scenarios = [k for k in dictionary[scenario_manager_name].keys() if not k == "source" and not k == "model"]
 
             for scenario_name in scenarios:
-                scenario = simulationScenario(model=None, name=scenario_name, group=scenario_manager_name, dictionary=dictionary[scenario_manager_name][scenario_name])
+                scenario = simulationScenario(model=None, name=scenario_name, group=scenario_manager_name,
+                                              dictionary=dictionary[scenario_manager_name][scenario_name])
 
-                self.scenario_manager_factory.add_scenario_during_runtime(scenario=scenario,scenario_manager=scenario_manager_name,source=source,model=model_file)
-
-
+                self.scenario_manager_factory.add_scenario_during_runtime(scenario=scenario,
+                                                                          scenario_manager=scenario_manager_name,
+                                                                          source=source, model=model_file)

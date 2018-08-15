@@ -25,12 +25,26 @@ import statistics
 class Visualizations():
 
     def __init__(self,scenario_manager_factory,bptk):
+        """
+
+        :param scenario_manager_factory: the scenario manager factory of bptk
+        :param bptk: A live bptk object
+        """
         self.scenario_manager_factory = scenario_manager_factory
         self.bptk = bptk
 
 
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
     def generate_plottable_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names={}):
+        """
+        Generates a dataFrame that we may plot. Basically use it to modify the time series
+        :param scenarios: names of scenarios
+        :param equations:  names of equations
+        :param start_date: start date of the timeseries
+        :param freq: frequency of time series, e.g. "D" for daily data
+        :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+        :return:
+        """
         scenario_names = list(scenarios.keys())
 
         ## Generate df to plot
@@ -98,6 +112,25 @@ class Visualizations():
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                        series_names=[], strategy=False,
                        return_df=False):
+        """
+         Generic method for plotting scenarios
+         :param scenarios: names of scenarios to plot
+         :param equations:  names of equations to plot
+         :param scenario_managers: names of scenario managers to plot
+         :param kind: type of graph to plot
+         :param alpha:  transparency 0 < x <= 1
+         :param stacked: if yes, use stacked (only with kind="bar")
+         :param freq: frequency of time series
+         :param start_date: start date for time series
+         :param title: title of plot
+         :param visualize_from_period: visualize from specific period onwards
+         :param x_label: label for x axis
+         :param y_label: label for y axis
+         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+         :param strategy: set True if you want to use the scenarios' strategies
+         :param return_df: set True if you want to receive a dataFrame instead of the plot
+         :return: None
+         """
 
         # Run the simulations for the scenario and the specified equations (or all if no equation is given)
 

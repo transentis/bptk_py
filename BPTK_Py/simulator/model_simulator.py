@@ -27,11 +27,7 @@ now = datetime.datetime.now()
 ### SIMULATOR CLASS ##
 ######################
 
-## Pretty simple simulator
-## Will just run the given simulation model from start to the model's stoptime
-## Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant
-## and continue running from 501 to 1000. You can then collect the whole results in a DataFrame using the output variable and adding "frame"
-## Output as a DataFrame to external classes
+
 class Simulator():
     """
     Pretty simple simulator.
@@ -75,7 +71,7 @@ class Simulator():
         :param dt:  dt from stela model
         :param output:  list. possible values: "csv" / "frame"
         :param equations: equations to simulate
-        :return:
+        :return: dataFrame of results if "frame" in output
         """
 
         # Take Values from model if not given
@@ -131,7 +127,7 @@ class Simulator():
         :param start: the model's start time (usually t=1)
         :param until: the model's stop time
         :param equations: equation(s) to simulate
-        :return:
+        :return: None
         """
 
         for equation in equations: # Start one thread for each equation
@@ -141,6 +137,13 @@ class Simulator():
 
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until,start):
+        """
+        This method runs as a thread and simulates
+        :param equation: equation to simulate
+        :param until: stoptime
+        :param start: starttime
+        :return:
+        """
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in range(start,until+1):
@@ -174,7 +177,7 @@ class Simulator():
         Modify an equation
         :param name: name of the equation to modify
         :param value: either a lambda method or a numerical value (int/float)
-        :return:
+        :return: None
         """
         # Store numeric values
         if  not callable(value):

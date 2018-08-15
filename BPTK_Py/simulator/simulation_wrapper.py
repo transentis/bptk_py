@@ -40,7 +40,7 @@ class simulationWrapper():
         :param equations: equations to simulate
         :param output: output type, default as a dataFrame
         :param scenario_managers: scenario managers as a list of names of scenario managers
-        :return:
+        :return: dict of simulationScenario
         """
         ## Load scenarios
 
@@ -87,7 +87,7 @@ class simulationWrapper():
         :param equations: equations to simulate
         :param output: output type, default as a dataFrame
         :param scenario_managers: scenario managers as a list of names of scenario managers
-        :return:
+        :return: dict of simulationScenario
         """
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")

@@ -23,21 +23,50 @@ import ipywidgets as py_widgets
 ### Class widgetDecorator ###
 #############################
 
-## This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders
-## Later maybe even other interactive projects
-## This is the core of the interactive plotting module
+
 class widgetDecorator():
+    """
+    This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders
+    Later maybe even other interactive projects
+    This is the core of the interactive plotting module
+
+    """
     def __init__(self, bptk):
+        """
+
+        :param bptk: A live instance of bptk
+        """
         self.bptk = bptk
-        log("[INFO] widgetFactory created")
+        log("[INFO] widgetDecorator created")
 
     # This method will be passed over to the user and used to modify the graph output
+
 
     def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                           alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
                           series_names=[], strategy=False,
                           return_df=False, constants=[]):
+        """
+        Generic method for plotting with interactive widgets
+        :param scenarios: names of scenarios to plot
+        :param equations:  names of equations to plot
+        :param scenario_managers: names of scenario managers to plot
+        :param kind: type of graph to plot
+        :param alpha:  transparency 0 < x <= 1
+        :param stacked: if yes, use stacked (only with kind="bar")
+        :param freq: frequency of time series
+        :param start_date: start date for time series
+        :param title: title of plot
+        :param visualize_from_period: visualize from specific period onwards
+        :param x_label: label for x axis
+        :param y_label: label for y axis
+        :param series_names: names of series to modify
+        :param strategy: set True if you want to use the scenarios' strategies
+        :param return_df: set True if you want to receive a dataFrame instead of the plot
+        :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
+        :return: None
+        """
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                           scenarios=scenarios)

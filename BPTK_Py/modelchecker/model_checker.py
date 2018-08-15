@@ -20,7 +20,14 @@ class modelChecker():
 
 
     def model_check(self, data, check, message="None"):
-        """param check is a lambda method with one param: lambda data : CHECK A CONDITION"""
+        """
+        Model checker
+        :param data: dataframe series or any data
+        :param check: lambda function of structure : lambda data : BOOLEAN CHECK
+        :param message: Error message if test failed
+        :return: None
+        """
+
         try:
             assert check(data), message
             print("[SUCCESS] Model check successful!")
