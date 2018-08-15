@@ -29,7 +29,7 @@ class Visualizations():
 
 
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def generate_plottable_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names=[]):
+    def generate_plottable_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names={}):
         scenario_names = list(scenarios.keys())
 
         ## Generate df to plot
@@ -68,7 +68,7 @@ class Visualizations():
                 if series_names_key in column:
                     new_columns[column] = column.replace(series_names_key, series_names[series_names_key])
 
-   
+
         plot_df.rename(columns=new_columns, inplace=True)
 
 
