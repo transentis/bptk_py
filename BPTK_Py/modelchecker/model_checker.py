@@ -23,7 +23,7 @@ class modelChecker():
         """param check is a lambda method with one param: lambda data : CHECK A CONDITION"""
         try:
             assert check(data), message
-            return 0  ## 0 = Success
+            print("[SUCCESS] Model check successful!")
+
         except AssertionError as e:
             print("[ERROR] Model Checking failed with {}".format(e))
-            return 1  ## 1 = Error
