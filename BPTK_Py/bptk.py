@@ -55,8 +55,8 @@ class bptk():
 
 
     ## Private method that runs a simulation without a strategy for a given scenario
-    def run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
-        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenario_names=scenario_names,equations=equations,output=output,scenario_managers=scenario_managers)
+    def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios, equations=equations, output=output, scenario_managers=scenario_managers)
 
 
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.

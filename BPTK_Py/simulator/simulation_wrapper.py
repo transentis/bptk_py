@@ -33,10 +33,10 @@ class simulationWrapper():
 
 
 
-    def run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+    def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         Method to run the simulations
-        :param scenario_names: names of scenarios to simulate
+        :param scenarios: names of scenarios to simulate
         :param equations: equations to simulate
         :param output: output type, default as a dataFrame
         :param scenario_managers: scenario managers as a list of names of scenario managers
@@ -45,15 +45,15 @@ class simulationWrapper():
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                scenario_names=scenario_names)
+        scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
+                                                                       scenario_names=scenarios)
 
 
         #### Run the simulation scenarios
 
-        for key in scenarios.keys():
-            if key in scenario_names:
-                sc = scenarios[key]
+        for key in scenario_objects.keys():
+            if key in scenarios:
+                sc = scenario_objects[key]
                 simu = Simulator(model=sc.model, name=sc.name)
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
@@ -75,7 +75,7 @@ class simulationWrapper():
                 else:
                     log("[ERROR] No equations to simulate given!")
 
-        return scenarios
+        return scenario_objects
 
 
 
@@ -92,13 +92,13 @@ class simulationWrapper():
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
 
-        scenarios = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
+        scenarios_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                 scenario_names=scenario_names)
 
         #### Run the simulation scenarios
 
-        for key in scenarios.keys():
-            scenario = scenarios[key]
+        for key in scenarios_objects.keys():
+            scenario = scenarios_objects[key]
             starttime = scenario.model.starttime
             stoptime = scenario.model.stoptime
 
@@ -124,8 +124,8 @@ class simulationWrapper():
             if len(points_to_change_at) == 0:
                 log(
                     "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
-                scenarios[scenario.name] = \
-                self.run_simulations(scenario_names=[scenario.name], equations=equations, output=output)[
+                scenarios_objects[scenario.name] = \
+                self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
                     scenario.name]
 
             # Simulation with a strategy
@@ -177,4 +177,4 @@ class simulationWrapper():
                     else:
                         # Just continue to next point in time...
                         i += 1
-        return scenarios
+        return scenarios_objects

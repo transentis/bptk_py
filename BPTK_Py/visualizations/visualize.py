@@ -102,8 +102,8 @@ class Visualizations():
 
         # Obtain simulation results
         if not strategy:
-            scenario_objects = self.bptk.run_simulations(scenario_names=scenario_names, equations=equations,
-                                                      scenario_managers=scenario_managers)
+            scenario_objects = self.bptk.run_simulations(scenarios=scenario_names, equations=equations,
+                                                         scenario_managers=scenario_managers)
         else:
             scenario_objects = self.bptk.run_simulations_with_strategy(scenario_managers=scenario_managers,
                                                                     scenario_names=scenario_names, equations=equations)
