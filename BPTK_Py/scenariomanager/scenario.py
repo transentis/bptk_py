@@ -11,27 +11,33 @@
 
 
 ####### IMPORTS
-import importlib
-from BPTK_Py.logger.logger import log
-import os
-import BPTK_Py.config.config as config
+
 #######
 
 ###############################
 ## ClASS SIMULATION_SCENARIO ##
 ###############################
 
-### This class stores the settings for each scenario
+
 class simulationScenario():
+    """
+    This class stores the settings for each scenario
+    """
 
     def __init__(self,dictionary,  name, model,group):
+        """
+        :param dictionary: scenario dictionary from the source JSON file
+        :param name: name of the scenario
+        :param model: simulation_model object
+        :param group: name of scenario manager
+        """
         ## THE GROUP IS WHAT WE CALL A "SCENARIO MANAGER"
 
 
         #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
-        self.model = model
         self.group = group
+        self.model = model
 
         ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
 

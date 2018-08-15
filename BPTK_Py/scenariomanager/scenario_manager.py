@@ -15,8 +15,6 @@ import os
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 import importlib
-
-
 ###
 
 
@@ -24,11 +22,23 @@ import importlib
 ## ClASS scenarioManager ##
 ###########################
 
-### This class reads and writes scenarios and starts the file monitors for each scenario's model
-class scenarioManager():
 
-    ### Setup required object variables
+class scenarioManager():
+    """
+    This class reads and writes scenarios and starts the file monitors for each scenario's model
+    """
+
+
     def __init__(self, scenarios={}, name="", model=None, filename="", source="", model_file=""):
+        """
+
+        :param scenarios: dict {scenario_name : scenario_object ...}. All scenarios this manager is responsible for
+        :param name: name of this scenario manager
+        :param model: simulation_model object
+        :param filename: source filename (the JSON file parsed for this scenario manager)
+        :param source: itmx source file (stela model)
+        :param model_file: python file containing the simulation model
+        """
 
         ### scenarios stores all available scenarios
         self.scenarios = scenarios
@@ -39,12 +49,25 @@ class scenarioManager():
         self.filename = filename
 
     def get_scenario_names(self):
+        """
+
+        :return: Names of scenarios the manager manages
+        """
         return list(self.scenarios.keys())
 
     def add_scenario(self, scenario):
+        """
+        Adds a scenario to the managers self.scenarios
+        :param scenario: scenario object
+        :return: None
+        """
         self.scenarios[scenario.name] = scenario
 
     def instantiate_model(self):
+        """
+        This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
+        :return: None
+        """
         if not os.path.isfile(self.model_file + ".py"):
 
             ## Handle Windows
@@ -75,7 +98,8 @@ class scenarioManager():
             mod = importlib.reload(mod)
 
             ## INSTANTIATE THE MODEL OBJECT.
-            self.model = mod.simulation_model()
+            for scenario in self.scenarios.values():
+                scenario.model = mod.simulation_model()
 
         except Exception as e:
             log(

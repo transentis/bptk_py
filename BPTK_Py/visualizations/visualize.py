@@ -126,6 +126,7 @@ class Visualizations():
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
+
         ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
         df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
                                              series_names=series_names)

@@ -41,7 +41,6 @@ class simulationWrapper():
             if key in scenario_names:
                 sc = scenarios[key]
                 simu = Simulator(model=sc.model, name=sc.name)
-
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
                 for name,points in sc.points.items():

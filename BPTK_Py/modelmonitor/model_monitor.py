@@ -24,14 +24,21 @@ import BPTK_Py.config.config as config
 ## ClASS MODELMONITOR ##
 ########################
 
-### Simple monitoring script for itmx files. Still under development.
-### Monitors itmx files and invokes parser when a change is detected
-class modelMonitor():
 
-    ## Init.
-    # model_file: path to itmx model
-    # dest: path to final python file
+class modelMonitor():
+    """
+    Simple monitoring script for itmx files.
+    Monitors itmx files and invokes parser when a change is detected
+    """
+
     def __init__(self, model_file, dest,update_func,itmx=True):
+        """
+
+        :param model_file: path to itmx model
+        :param dest: destination file .py
+        :param update_func: a function that the monitor calls upon an update to the model_file
+        :param itmx: Default true. If not True, we do not monitor an itmx file. Hence, also usable for other files
+        """
         self.update_func=update_func
         self.model_file = model_file
         self.itmx = itmx
@@ -55,12 +62,19 @@ class modelMonitor():
 
 
 
-    ### Kill method. Thread will die after calling this
     def kill(self):
+        """
+        Kill method. Thread will die after calling this
+        :return: None
+        """
         self.running = False
 
-    # Actual method that monitors the source file for changes
+
     def __monitor(self):
+        """
+        Actual method that monitors the source file for changes
+        :return: None
+        """
         while self.running:
             ## Get last modification timestamp and compare to cached one
             stamp = os.stat(self.model_file).st_mtime
