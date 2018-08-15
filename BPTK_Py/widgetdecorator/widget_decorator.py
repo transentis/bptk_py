@@ -65,11 +65,11 @@ class widgetDecorator():
 
                     widget = py_widgets.FloatSlider(min=start, max=end, value=(end - start) / 2, description=name,
                                                  style=config.configuration["slider_style"],
-                                                 layout=config.configuration["slider_layout"])
+                                                 layout=config.configuration["slider_layout"],continuous_update=False)
                 else:
                     widget = py_widgets.IntSlider(min=start, max=end, step=1, value=(end - start) / 2, description=name,
                                            style=config.configuration["slider_style"],
-                                           layout=config.configuration["slider_layout"])
+                                           layout=config.configuration["slider_layout"],continuous_update=False)
             widgets[name] = widget
 
         # Actual method for building the widget objects and plotting.
