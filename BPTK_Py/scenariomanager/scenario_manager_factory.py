@@ -247,11 +247,7 @@ class ScenarioManagerFactory():
         for manager_name, manager in managers.items():
             if manager.source == filename:
                 for scenario_name in manager.scenarios.keys():
-                    log("[ERROR] HERE IA M, THIS IS ME")
+                    log("[INFO] Resetting scenario {}".format(scenario_name))
                     self.reset_scenario(scenario_name=scenario_name, scenario_manager=manager_name)
 
-        log("[ERROR] Reset scenarios for all scenarios that require {}".format(filename))
-        # Call reset_scenario for all scenarios that use the updated model
-        #for scenario in scenarios.values():
-         #   if scenario.filename == filename:
-          #      self.reset_scenario(scenario_name=scenario.name, scenario_manager=scenario.group)
+        log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))

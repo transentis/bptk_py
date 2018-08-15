@@ -33,6 +33,9 @@ now = datetime.datetime.now()
 ## and continue running from 501 to 1000. You can then collect the whole results in a DataFrame using the output variable and adding "frame"
 ## Output as a DataFrame to external classes
 class Simulator():
+    """
+    
+    """
     def __init__(self,model=None,name="Simulation"):
         self.mod=model # The simulation model.
 
