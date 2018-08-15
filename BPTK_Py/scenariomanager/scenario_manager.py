@@ -62,6 +62,9 @@ class scenarioManager():
         :return: None
         """
         self.scenarios[scenario.name] = scenario
+        self.instantiate_model()
+
+
 
     def instantiate_model(self):
         """
@@ -99,7 +102,8 @@ class scenarioManager():
 
             ## INSTANTIATE THE MODEL OBJECT.
             for scenario in self.scenarios.values():
-                scenario.model = mod.simulation_model()
+                if scenario.model == None:
+                    scenario.model = mod.simulation_model()
 
         except Exception as e:
             log(

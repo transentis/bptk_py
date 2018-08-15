@@ -310,35 +310,38 @@ It is possible to add scenarios during runtime. For convenience, here is some ex
 First define the details for the scenario manager and then set up the name of the scenario, the strategy and the constants. The strategy may as well be one of the complex ones as described above. But be careful to define everything correctly.
 
 ```
-from BPTK_Py.scenariomanager.scenario import simulationScenario
-
 scenario_manager = {
-name : "ScenarioManager3",
-model : "simulation_models/model",
-source : "simulation_models/make_your_startup_grow.itmx"
-}
+    "name" : "ScenarioManager_temp",
+    "model" : "simulation_models/sd_simple_project",
+    "source" : "simulation_models/sd_simple_project.itmx"
+    }
 
 
-name = "TESTME"
+name = "scenario_160"
 strategy = {
-    "10": {
-        "cost.paymentTransactionCost": 0.4,
-        "customers.marketingBudget": 10000
+    "20": {
+        "deadline" : 2000
         } 
 }
-
-## Constants to modify directly before simulation start
 constants = {
-    "cost.paymentTransactionCost": 0.75,
-    "cost.productDevelopmentWage": 8700
+    "deadline" : 160,
+    "effortPerTask" : 0.1
 }
 
 
-dictionary = {"name" : name, "constants" : constants, "strategy" : strategy}
+dictionary ={ scenario_manager["name"]:  
+{
+    "model": scenario_manager["model"],
+    "source": scenario_manager["source"],
+    name:{
+        "constants" : constants, 
+        "strategy" : strategy
+        } 
+    } 
+}
 
-scenario = simulation_scenario(group=scenario_manager["name"],dictionary=dictionary,model=scenario_manager["model"])
 
-bptk.scenario_manager_factory.add_scenario_during_runtime(scenario,scenario_manager=scenario_manager["name"],source=scenario_manager["source"],model=scenario_manager["model"])
+bptk.add_scenario(dictionary=dictionary)
 ```
 
 When you successfully registered the new scenario, you can easily plot it as you are used to!

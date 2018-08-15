@@ -88,9 +88,9 @@ class widgetDecorator():
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario_name=name)
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -114,9 +114,9 @@ class widgetDecorator():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario_name=name)
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -143,9 +143,9 @@ class widgetDecorator():
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
                     scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario_name=name)
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -177,9 +177,9 @@ class widgetDecorator():
                     scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
                     scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario_name=name)
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,
@@ -213,9 +213,9 @@ class widgetDecorator():
                     scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
                     scenario_obj.model.equations[widget_names[4]] = lambda t: widget5
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario_name=name)
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                self.bptk.plot_scenarios(scenario_names=scenario_names, equations=equations,
+                self.bptk.plot_scenarios(scenarios=scenario_names, equations=equations,
                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
                                          stacked=stacked,
                                          freq=freq, start_date=start_date, title=title,

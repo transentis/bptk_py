@@ -62,14 +62,19 @@ class Visualizations():
         # Usually this shold follow the order of the equations!
         series_names_keys = series_names.keys()
 
-        new_columns = {}
-        for column in plot_df.columns:
-            for series_names_key in series_names_keys:
-                if series_names_key in column:
-                    new_columns[column] = column.replace(series_names_key, series_names[series_names_key])
+        if len(series_names) > 0:
+            new_columns = {}
+            for column in plot_df.columns:
+                for series_names_key in series_names_keys:
+                    if series_names_key in column:
+                        new_column = column.replace(series_names_key, series_names[series_names_key])
+                        if len(equations) == 1:
+                            new_column = new_column.replace(equation[0], "")
+                        new_columns[column] = new_column
 
 
-        plot_df.rename(columns=new_columns, inplace=True)
+
+            plot_df.rename(columns=new_columns, inplace=True)
 
 
 

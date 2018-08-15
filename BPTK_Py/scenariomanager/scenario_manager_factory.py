@@ -190,14 +190,12 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = scenarioManager({}, name=scenario_manager)
+            self.scenario_managers[scenario_manager] = scenarioManager({scenario.name :scenario}, name=scenario_manager,model_file=model)
+            self.scenario_managers[scenario_manager].instantiate_model()
 
-        manager = self.get_scenario_managers()[scenario_manager]
-
-        if scenario.name in manager.scenarios.keys():
-            log("[ERROR] Scenario with name {} already exists! I will not overwrite.".format(scenario.name))
         else:
-            manager.scenarios[scenario.name] = scenario
+            log("[WARN] Scenario Manager already existing. Not overwriting the model!")
+            self.scenario_managers[scenario_manager].add_scenario(scenario)
 
         if len(source) > 0:
             self.__add_monitor(source, model)
