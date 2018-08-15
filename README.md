@@ -345,6 +345,31 @@ bptk.add_scenario(dictionary=dictionary)
 
 When you successfully registered the new scenario, you can easily plot it as you are used to!
 
+## Model Checking
+To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.
+The function is supposed to only return True or False and receives a data parameter. For example ``lambda data : sum(data)/len(data) < 0`` tests if the average of the data is below 0. We can get the raw output data instead of the plot if we use the parameter ``return_df=True``. This returns a dataFrame object. The following example generates this dataframe and uses the model checker to test if the ``productivity`` series' mean is below 0. Otherwise it will return the specified message.
+
+```
+df =bptk.plot_scenarios(
+    scenario_managers=["smSimpleProjectManagement"],
+    scenarios=["scenario120"],
+    kind="line",
+    equations=["productivity"],
+    stacked=False, 
+    strategy=True,
+    freq="D", 
+    start_date="1/11/2017",
+    title="Added scenario during runtime",
+    x_label="Time",
+    y_label="Number",
+    return_df=True
+    )
+
+check_function = lambda data : sum(data)/len(data) < 0
+
+bptk.model_check(df["productivity"],check_function,message="Productivity is not <0")
+```
+
 
 
 ## Look-and-Feel
@@ -353,8 +378,9 @@ BPTK Py uses transentis' color and font style for the plots. You might not own o
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst. It also applies the example for the extended strategies.
 
-## TODO:
-* Agent based modelling
+## Limitations
+* For now, the simulator may only simulate using the Euler method
+
 
 
 
