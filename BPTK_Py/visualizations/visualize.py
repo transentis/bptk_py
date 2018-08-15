@@ -85,9 +85,11 @@ class Visualizations():
         ylabels_mean = statistics.mean(ax.get_yticks())
 
         if ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
-            ylabels = [format(label, ',,0f') for label in ax.get_yticks()]
+            ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
 
-        ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
+        else:
+            ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
+
         ax.set_yticklabels(ylabels)
 
 
