@@ -19,15 +19,29 @@ from BPTK_Py.logger.logger import log
 ### Class simulationWrapper ###
 ###############################
 
-## Wraps away methods for simulation running
 class simulationWrapper():
+    """
+    This class contains methods for running simulations and wraps them away from bptk.py
+    """
 
     def __init__(self,scenario_manager_factory):
+        """
+
+        :param scenario_manager_factory: scenario manager factory of bptk
+        """
         self.scenario_manager_factory = scenario_manager_factory
 
 
 
     def run_simulations(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+        """
+        Method to run the simulations
+        :param scenario_names: names of scenarios to simulate
+        :param equations: equations to simulate
+        :param output: output type, default as a dataFrame
+        :param scenario_managers: scenario managers as a list of names of scenario managers
+        :return:
+        """
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
@@ -66,6 +80,15 @@ class simulationWrapper():
 
 
     def run_simulations_with_strategy(self, scenario_names, equations=[], output=["frame"], scenario_managers=[]):
+        """
+        Method to run simulations with strategies
+
+        :param scenario_names: names of scenarios to simulate
+        :param equations: equations to simulate
+        :param output: output type, default as a dataFrame
+        :param scenario_managers: scenario managers as a list of names of scenario managers
+        :return:
+        """
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
 
@@ -113,6 +136,8 @@ class simulationWrapper():
                     if i == 0:
                         for equation in scenario.constants.keys():
                             simu.change_equation(name=equation, value=scenario.constants[equation])
+                        for name, points in scenario.points.items():
+                            simu.change_points(name=name, value=points)
 
                     # If we are at the start-time, start simulation until the first stop point - 1
                     if i == starttime:

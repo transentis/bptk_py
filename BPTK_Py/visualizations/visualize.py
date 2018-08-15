@@ -60,17 +60,15 @@ class Visualizations():
 
         # Process series name overrides as specified by user. Will traverse the series as they are in the DF
         # Usually this shold follow the order of the equations!
-        i = 0
-        columns = list(plot_df.columns)
-        new_columns = {}
+        series_names_keys = series_names.keys()
 
-        for name in series_names:
-            try:
-                if len(name) > 0:
-                    new_columns[columns[i]] = name
-                i += 1
-            except:
-                log("[WARN] User gave more series names than scenarios. This is usually not a problem.")
+        new_columns = {}
+        for column in plot_df.columns:
+            for series_names_key in series_names_keys:
+                if series_names_key in column:
+                    new_columns[column] = column.replace(series_names_key, series_names[series_names_key])
+
+   
         plot_df.rename(columns=new_columns, inplace=True)
 
 

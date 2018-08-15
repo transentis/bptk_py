@@ -34,9 +34,17 @@ now = datetime.datetime.now()
 ## Output as a DataFrame to external classes
 class Simulator():
     """
-    
+    Pretty simple simulator.
+    Will just run the given simulation model from start to the model's stoptime.
+    Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant and continue running from 501 to 1000.
+    You can then collect the whole results in a DataFrame using the output variable and adding "frame".Output as a DataFrame to external classes
     """
     def __init__(self,model=None,name="Simulation"):
+        """
+
+        :param model: the model object
+        :param name: Name of the scenario
+        """
         self.mod=model # The simulation model.
 
         self.until = self.mod.stoptime
@@ -60,6 +68,16 @@ class Simulator():
 
     # start and until parameters only settable for debugging purposes. Do rather configure all these in your model config!
     def start(self,start=None,until=None,dt=None,output=["csv","frame"],equations=[]):
+        """
+
+        :param start:  start time of simulation (usually t=1)
+        :param until:  stpo time
+        :param dt:  dt from stela model
+        :param output:  list. possible values: "csv" / "frame"
+        :param equations: equations to simulate
+        :return:
+        """
+
         # Take Values from model if not given
         if start == None: start = self.starttime
         if until == None: until = self.until
@@ -106,8 +124,15 @@ class Simulator():
                 return self.result_frame
 
 
-    ## Private method that coordinates the equation simulation
+
     def __simulate_equations(self,start=0,until=0, equations=[]):
+        """
+        Private method that coordinates the equation simulation
+        :param start: the model's start time (usually t=1)
+        :param until: the model's stop time
+        :param equations: equation(s) to simulate
+        :return:
+        """
 
         for equation in equations: # Start one thread for each equation
             t = Thread(target=self.__simulate, args=(equation,until,start))
@@ -132,14 +157,25 @@ class Simulator():
             self.finished_simulations_count += 1
         log("[INFO] Finished simulation of stock {} for t={} to {}".format(str(equation),str(start),str(until)))
 
-    ## If user decided to get csv results
+
     def __write_results_to_csv(self,df):
+        """
+        Write dataFrame to csv if user specified to receive csv results
+        :param df: dataFrame
+        :return:  None
+        """
         datestring = str(datetime.datetime.now().day) + "_" + str(datetime.datetime.now().month) +"_" + str(datetime.datetime.now().year)
         filename = "results/results_{}_{}.csv".format(self.name,datestring)
         df.to_csv(filename)
 
     # Method that changes an equation. It can change constants by just receiving int/float values and creates lambda functions or it can replace lambda functions with lambda functions
     def change_equation(self, name, value):
+        """
+        Modify an equation
+        :param name: name of the equation to modify
+        :param value: either a lambda method or a numerical value (int/float)
+        :return:
+        """
         # Store numeric values
         if  not callable(value):
             self.mod.equations[name] = lambda t : eval(str(value))
@@ -152,6 +188,12 @@ class Simulator():
             #log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
 
     def change_points(self,name,value):
+        """
+        Change points of a graphical function of the simulation model
+        :param name: Name of the graphical function
+        :param value: List of points. Each point is stored as a list with exactly two values [x,y]. Example value: [ [0,1],[1,2]...  ]
+        :return: None
+        """
         if name in self.mod.points.keys():
             log("[WARN] Overwriting existing set of points for {}".format(str(name)))
 
