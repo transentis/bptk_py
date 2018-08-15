@@ -76,7 +76,7 @@ class bptk():
     def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                           alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                           freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                          series_names={}, strategy=True,
+                          series_names={}, strategy=False,
                           return_df=False, constants=[]):
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(scenarios, str(constants)))
         widget_decorator = widgetDecorator(self)
@@ -84,7 +84,7 @@ class bptk():
         return widget_decorator.plot_with_widgets(scenarios=scenarios, equations=equations, scenario_managers=scenario_managers, kind=kind,
                                                   alpha=alpha, stacked=stacked,
                                                   freq=freq, start_date=start_date, title=title, visualize_from_period=visualize_from_period, x_label=x_label, y_label=y_label,
-                                                  series_names=series_names, strategy=True,
+                                                  series_names=series_names, strategy=strategy,
                                                   return_df=False, constants=constants)
 
     ## Method for adding strategies during runtime. It allows for adding lambdas as well!

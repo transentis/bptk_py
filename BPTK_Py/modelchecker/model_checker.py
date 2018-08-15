@@ -19,11 +19,11 @@ class modelChecker():
     """simple model checking class"""
 
 
-def model_check(self, data, check, message="None"):
-    """param check is a lambda method with one param: lambda data : CHECK A CONDITION"""
-    try:
-        assert check(data), message
-        return 0  ## 0 = Success
-    except AssertionError as e:
-        print("[ERROR] Model Checking failed with {}".format(e))
-        return 1  ## 1 = Error
+    def model_check(self, data, check, message="None"):
+        """param check is a lambda method with one param: lambda data : CHECK A CONDITION"""
+        try:
+            assert check(data), message
+            return 0  ## 0 = Success
+        except AssertionError as e:
+            print("[ERROR] Model Checking failed with {}".format(e))
+            return 1  ## 1 = Error

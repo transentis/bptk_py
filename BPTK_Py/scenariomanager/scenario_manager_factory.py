@@ -165,6 +165,7 @@ class ScenarioManagerFactory():
         scenarios_objects = {}
         for manager_name, manager in managers.items():
             for scenario_name, scenario in manager.scenarios.items():
+
                 if scenario_name in scenarios_objects.keys():
                     scenarios_objects[scenario_name + "_" + manager_name] = scenario
                     if scenario_name in scenarios:

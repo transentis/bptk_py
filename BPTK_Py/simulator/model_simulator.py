@@ -84,7 +84,7 @@ class Simulator():
 
         if len(equations) == 0:
 
-            log("[ERROR] {}: No equation to simulate for given model! Check your scenario config of method parameters!".format(self.name))
+            log("[WARN] {}: No equation to simulate for given model! Check your scenario config of method parameters!".format(self.name))
             return None
 
 
