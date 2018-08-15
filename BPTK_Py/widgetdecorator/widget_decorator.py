@@ -115,7 +115,10 @@ class widgetDecorator():
 
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
+                    scenario_obj.constants[widget_names[0]] = widget1
+
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
+                    scenario_obj.constants[widget_names[1]] = widget2
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
@@ -143,8 +146,13 @@ class widgetDecorator():
 
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
+                    scenario_obj.constants[widget_names[0]] = widget1
+
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
+                    scenario_obj.constants[widget_names[1]] = widget2
+
                     scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
+                    scenario_obj.constants[widget_names[2]] = widget3
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
@@ -176,9 +184,16 @@ class widgetDecorator():
 
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
+                    scenario_obj.constants[widget_names[0]] = widget1
+
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
+                    scenario_obj.constants[widget_names[1]] = widget2
+
                     scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
+                    scenario_obj.constants[widget_names[2]] = widget3
+
                     scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
+                    scenario_obj.constants[widget_names[3]] = widget4
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
@@ -211,10 +226,19 @@ class widgetDecorator():
 
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
+                    scenario_obj.constants[widget_names[0]] = widget1
+
                     scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
+                    scenario_obj.constants[widget_names[1]] = widget2
+
                     scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
+                    scenario_obj.constants[widget_names[2]] = widget3
+
                     scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
+                    scenario_obj.constants[widget_names[3]] = widget4
+
                     scenario_obj.model.equations[widget_names[4]] = lambda t: widget5
+                    scenario_obj.constants[widget_names[4]] = widget5
 
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
