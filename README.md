@@ -38,6 +38,46 @@ bptk = bptk()
 ```
 Now you are ready to play around with the APIs!
 
+## Plotting API
+After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework.
+For interactive examples, you may always refer to the example notebook. The main method for plotting and simulating is the ``plot_scenarios`` method.
+```
+bptk.plot_scenarios(scenarios,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
+
+```
+The first plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations / scenario_managers``).
+The second method lets you plot one equation for multiple scenarios and uses the same parameter set.
+
+* ``kind``: Kind of plot (area, line, bar, ...)
+* ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
+* ``freq``: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
+* ``start_date``: Date from which plot starts
+* ``title``: Plot title
+* ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
+* ``x_label and y_label``: set the label names for the axis.
+* ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
+* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
+
+**The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
+
+### Receive Data - not plot
+In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
+
+## Interactive Plotting
+An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. It comes with a field "constants" that contains a list of widget definitions. Each widget is defined using a tuple.
+The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the following plot.
+
+Currently, we support two types of widgets to control the process:
+* **sliders**: Sliders allow you to select a value in an interval. Use "slider" as ``widget_type``. A slider requires ``start_value and maximum_value`` as described above. Example: ``("slider",'initialOpenTasks',100.0,1000.0)``
+* **checkbox**: If you want a checkbox, use "checkbox" as ``widget_type``. You do not have to supply ``start_value / maximum_value``. Example: ``("checkbox","initialStaff")``
+
+For interactive plotting to work, you need to install an extension to jupyter lab. If you followed the above guide for initial setup, this should do in the terminal:
+```
+souce bptk_test/bin/activate
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+```
+
+
 ## Override the configuration
 The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. It also stores the style settings for the plots. If you wish to override these settings, you can do so:
 ```
@@ -130,47 +170,6 @@ The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/upd
 
 **Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 
-## Plotting API
-The ipython example notebook contains examples for the plotting API calls. The main method is th ``plot_scenarios`` method.
-```
-bptk.plot_scenarios(scenarios,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
-
-```
-
-
-The first plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations / scenario_managers``).
-The second method lets you plot one equation for multiple scenarios and uses the same parameter set.
-
-* ``kind``: Kind of plot (area, line, bar, ...)
-* ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
-* ``freq``: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
-* ``start_date``: Date from which plot starts
-* ``title``: Plot title
-* ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
-* ``x_label and y_label``: set the label names for the axis.
-* ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
-* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
-
-**The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
-
-### Receive Data - not plot
-In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
-
-## Interactive Plotting
-An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. It comes with a field "constants" that contains a list of widget definitions. Each widget is defined using a tuple.
-The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually. See a working example in the following plot.
-
-Currently, we support two types of widgets to control the process:
-* **sliders**: Sliders allow you to select a value in an interval. Use "slider" as ``widget_type``. A slider requires ``start_value and maximum_value`` as described above. Example: ``("slider",'initialOpenTasks',100.0,1000.0)``
-* **checkbox**: If you want a checkbox, use "checkbox" as ``widget_type``. You do not have to supply ``start_value / maximum_value``. Example: ``("checkbox","initialStaff")``
-
-For interactive plotting to work, you need to install an extension to jupyter lab. If you followed the above guide for initial setup, this should do in the terminal:
-```
-souce bptk_test/bin/activate
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-```
-
-
 #### Attention Mac OS X user
 For now there is a bug, that requires you to use node version 8 to successfully download the extension. If you are using homebrew, issue these commands:
 ```
@@ -232,15 +231,11 @@ scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2",scen
 bptk.scenario_manager_factory.reset_all_scenarios()
 
 ```
-## Only reset simulation results
-If you used complex strategies to modify equations, you might want to play around with other strategies for the same scenario. You will observe that sometimes changes do not seem to have an effect. This is due to the fact that ``bptk`` will not store the old lambda function. It runs the simulation until ``t-1``, inserts the new function and continues until the next change (or the model's stoptime). If you want to re-run the scenario with another modified strategy, just flush the ``ScenarioManager``'s ``scenario model`` object before using the plotting methods using the following method:
-
-```
-scenario = bptk.scenario_manager_factory.get_scenario(scenario_name="blabla", scenario_manager="bar")
-scenario.model.memo[equation_name] = {}
-
-```
-
+## Resetting the simulation
+After a while of simulating, modifying strategies and constants and generating beautiful plots, you may realize that you want to go back and reset the simulation. For this purpose, you have three methods available:
+* ``reset_scenario(scenario_manager, scenario)``: This deletes a specific scenario from memory and reloads it from file. Requires the scenario manager's name and the scenario name.
+* ``reset_all_scenarios()``: Reset all scenarios and re-read from file
+* ``reset_simulation_model(scenario_manager, scenario="")``: For runtime optimizations, the simulator will cache the simulation results. In some rare cases, this cache may not be flushed upon scenario modification. Hence, this method resets the simulation model's cache.
 
 ## Advanced: Extended Strategies
 Extended strategies give the user a lot of power over the simulation but are rather complex. The goal of such strategies is to replace certain equations of the model with custom lambda functions during runtime at specific times in the simulation. This is for advanced use only and currently considered unstable.

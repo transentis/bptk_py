@@ -73,15 +73,14 @@ class ScenarioManagerFactory():
                     if not manager.source in self.scenario_monitors.keys():
                         self.__add_monitor(manager.source, manager.model_file)
 
-
-
-
                 for scenario_name in scen_dict.keys():
                     sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=None,group=group_name)
+
+                    ## Only add scenarios that the scenario manager did not observe yet
                     if not scenario_name in manager.scenarios.keys():
+
                         manager.scenarios[scenario_name] = sce
-                    #else:
-                       # scenarios[scenario_name + "_" + sce.group] = sce
+
                 manager.instantiate_model()
             return self.scenario_managers
         else:
@@ -117,22 +116,19 @@ class ScenarioManagerFactory():
         Reloads exactly one scenario. For lookup, requires scenario manager's name and the scenario's name
         :param scenario_manager: name of scenario manager
         :param scenario: name of scenario
-        :return: scenario
+        :return: None
         """
         log("[INFO] Reloading scenario {} from {}".format(scenario, scenario_manager))
 
-
-
         manager = self.get_scenario_managers()[scenario_manager]
         scenario_filename = manager.filename
+        manager.scenarios.pop(scenario)
 
-        scenarios_from_file = self.__readScenario(filename=scenario_filename)
+        scenario_managers = self.__readScenario(filename=scenario_filename)
 
-        if not scenarios_from_file is None:
-            scenario_object  = manager.scenarios[scenario]
-            self.scenario_managers[scenario_manager].scenarios[scenario] = scenario_object
 
-            log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager, scenario))
+
+        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager, scenario))
 
     def reset_all_scenarios(self):
         """
