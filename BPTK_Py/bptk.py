@@ -45,6 +45,7 @@ class bptk():
         for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 
+
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = Visualizations(self.scenario_manager_factory, bptk=self)

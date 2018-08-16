@@ -15,6 +15,7 @@ import os
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 import importlib
+import datetime
 ###
 
 
@@ -71,7 +72,18 @@ class scenarioManager():
         This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
         :return: None
         """
-        if not os.path.isfile(self.model_file + ".py"):
+        if os.path.isfile(self.model_file + ".py"):
+            last_stamp_model = datetime.datetime.fromtimestamp(os.stat(self.model_file + ".py").st_mtime)
+            last_stamp_source = datetime.datetime.fromtimestamp(os.stat(self.source).st_mtime)
+
+            delta = last_stamp_source - last_stamp_model
+
+        else:
+            now = datetime.datetime.now()
+            delta = now - now
+
+
+        if not os.path.isfile(self.model_file + ".py") or delta.seconds > 100 or delta.days >= 1:
 
             ## Handle Windows
             if os.name == "nt":
@@ -104,10 +116,9 @@ class scenarioManager():
             for scenario in self.scenarios.values():
                 if scenario.model == None:
                     scenario.model = mod.simulation_model()
+                scenario.setup_constants()
 
         except Exception as e:
             log(
-                "[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(
-                    str(e)))
-            self.model = None
+                "[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(str(e)))
             raise
