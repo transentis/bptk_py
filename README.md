@@ -58,7 +58,20 @@ Now you are ready to play around with the APIs!
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework.
 For interactive examples, you may always refer to the example notebook. The main method for plotting and simulating is the ``plot_scenarios`` method.
 ```
-bptk.plot_scenarios(scenarios,scenario_managers=[], equations=[], kind=config.kind, alpha=config.alpha, stacked=config.stacked, freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",series_names=["names","name2"],return_df=False)
+bptk.plot_scenarios(
+    scenarios,
+    scenario_managers=[], 
+    equations=[], 
+    kind=config.kind, 
+    alpha=config.alpha, 
+    stacked=config.stacked, 
+    freq="D", 
+    start_date="1/1/2018", 
+    title="", 
+    visualize_from_period=0, 
+    x_label="", 
+    y_label="",
+    series_names={"series_to_rename":"rename_to"},return_df=False)
 
 ```
 The first plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations / scenario_managers``).
@@ -71,13 +84,13 @@ The second method lets you plot one equation for multiple scenarios and uses the
 * ``title``: Plot title
 * ``visualize_from_period``: First index field to visualize from (in case we want to cut off the first x periods)
 * ``x_label and y_label``: set the label names for the axis.
-* ``series_names``: This optional parameter allows you to override the series names (in the order of the equations). Use Python's list notation: ``[ ]``. Without this parameter, BPTK will just use the equation and scenario names. If you have 3 equations and only specify one value in the list, will only modify the name of the first series. You may also use an empty string in the list to change the name of the second (or third..) series: ``[ "", "nameToChangeTo" ]`` 
 * ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
-
+* ``series_names``: The equation names are not the kind of names we want to show the customer. So let's use the ``series_names`` parameter to rename them. Supply the equations to rename and their destination names. Use Python's dict notation: ``{ equation_name : rename_to }``. The dictionary serves as a set of replacement rules. To correctly rename the series, you have to understand how the framework sets the names of series to avoid ambiguity in series names. If you use more than one scenario manager for plotting, bptk_py will use the following series naming schema: ``"scenarioManager"_"scenario"_"equation"``. If you want to replace this, use ``series_names={"scenarioManager_scenario_equation": "new name"}``. You may as well define a rule that replaces the name of each scenario Manager with a whitespace. The number of rules is not limited.
 **The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
 
 ### Receive Data - not plot
 In some cases you might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
+
 
 ## Interactive Plotting
 An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. It comes with a field "constants" that contains a list of widget definitions. Each widget is defined using a tuple.
