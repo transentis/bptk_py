@@ -1,7 +1,7 @@
 # Business Prototyping Toolkit for Python
 Welcome to the Business Prototyping Toolkit for Python!
 
-BPTK_Py is the implementation of a simulation and plotting engine for [Stela Architect](https://www.iseesystems.com/store/products/stella-architect.aspx) System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. You even may as well reuse the simulation results within python!
+BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. You even may as well reuse the simulation results within python!
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
 ## Requirements and Installation
@@ -10,14 +10,13 @@ Now you can start working with the package.
 In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/), a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 pip install virtualenv
-virtualenv bptk_test #
-# Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
+virtualenv bptk_test 
 
+# Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
 source bptk_test/bin/activate  #  For UNIX/Linux
 bptk_test\Scripts\activate.bat # For Windows
 
-cd /path/to/BPTK_Py_repo
-pip install .  # Install the package
+pip install BPTK_Py
 
 ## If you want Jupyter Lab as well: (HIGHLY RECOMMENDED)
 pip install jupyterlab
@@ -27,6 +26,7 @@ If you executed the last line as well, you already have a functioning version of
 
 ### Package dependencies
 If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+So far, we tested the framework with Python 3.4, 3.6 and 3.7. It should be working fine with other Python 3.x versions.
 
 Package name | What we use it for | Last tested version
 --- | --- | ---
@@ -141,7 +141,7 @@ One JSON file may contain more than one scenario manager and hence a key is requ
             "MakeYourStartUpGrow_2": {
             "constants": {
                 "cost.paymentTransactionCost": 0.5,
-                "cost.productDevelopmentWage": 10000
+                "cost.productDevelopmentWage": "5/10"
                 }
             }
         }
@@ -149,10 +149,14 @@ One JSON file may contain more than one scenario manager and hence a key is requ
 }
 
 ```
-We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. The ``model`` parameter contains the relative path to the (python) simulation model The scenarios follow in the ``scenarios`` tag.
-For each scenario, you have to supply a unique name as well. JSON does not support integer keys. When you use the same name multiple times, the simulator will only retain the latest one
-The ``constants`` list stores the overrides for the constants. . Please omit the ``.py`` file ending.  You should consider using the ``source`` field in the scenario manager tag. For each source file, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
-The repo contains the **Scenario Manager** ipython notebook in the top level. You may use it to check for available scenarios and write your own ones. (For now the tool is very basic, extensions to come soon)
+We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
+The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
+The ``model`` parameter contains the relative path to the (python) simulation model. The actual scenarios follow in the ``scenarios`` tag.
+For each scenario, you have to supply a unique name as well. JSON does not support integer keys. The ``constants`` list stores the overrides for the constants. 
+You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to `0.5`` by the framework.
+
+You should consider using the ``source`` field in the scenario manager tag. It specifies the path to the original model file of 3rd party applications. For now, the framework supports .itmx/.stmx files from Stell Architect. For each source file, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
+
 
 ### Changing scenario files during runtime
 If you changed a JSON scenario file during runtime and wish to reload the scenario(s), use the following method:
@@ -191,8 +195,9 @@ Let us modify the previous scenario example and add some points:
 
 Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation requires the y-value for decimal x values.
 
-## Monitoring of itmx source models
-Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the node.js transpiler: [https://bitbucket.org/transentis/sd-compiler](https://bitbucket.org/transentis/sd-compiler)
+## Monitoring of Stella Architect itmx source models
+For now, we are able to translate Stella Architect Models to python using transentis' [sd-compiler](https://bitbucket.org/transentis/sd-compiler).
+Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file if the scenario specifies a ``source`` field. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the transpiler.
 
 For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
 
@@ -205,6 +210,31 @@ For now there is a bug, that requires you to use node version 8 to successfully 
 ```
 brew uninstall node yarn
 brew install node@8 # --> might have to set path to link node to node8
+```
+
+## Model Checking
+To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.
+The function is supposed to only return True or False and receives a data parameter. For example ``lambda data : sum(data)/len(data) < 0`` tests if the average of the data is below 0. We can get the raw output data instead of the plot if we use the parameter ``return_df=True``. This returns a dataFrame object. The following example generates this dataframe and uses the model checker to test if the ``productivity`` series' mean is below 0. Otherwise it will return the specified message.
+
+```
+df =bptk.plot_scenarios(
+    scenario_managers=["smSimpleProjectManagement"],
+    scenarios=["scenario120"],
+    kind="line",
+    equations=["productivity"],
+    stacked=False, 
+    strategy=True,
+    freq="D", 
+    start_date="1/11/2017",
+    title="Added scenario during runtime",
+    x_label="Time",
+    y_label="Number",
+    return_df=True
+)
+
+check_function = lambda data : sum(data)/len(data) < 0
+
+bptk.model_check(df["productivity"],check_function,message="Productivity is not <0")
 ```
 
 ## Strategy simulation
@@ -326,6 +356,7 @@ extended_strategy= {
 The models we use are very complex and generate large "tail-recursions" when running in a naive fashion. Most results depend on the results of previous simulation periods. This is why we use "memoization". The model's memo stores previous results for each equation. So e.g. when an equation requires a the result of itself from the previous period t-1, the model will first check if this result is available in the memo rather than re-computing it. When you now modify an equation in timestep 20, the simulator will run the simulation upto t=19, modify the lambda function and continue the simulation. This means, the model keeps all of its results upto t=19 in its memo. This is the desired behavior and does not require you to add any additional complex code. However, this requires you to always use the model's ``memoize(equation_name, t-dt)`` function call and not directly access the ``equations`` object of the model. The following are wrong and correct examples but omitting the outer dictionary structure.
 
 **Right:**  ``"cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.memoize("cashFlow.cashFlowYtd",t-1)``
+
 **Wrong:**  ``"cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.equations["cashFlow.cashFlowYtd"](t-1)``
 
 ## Create Scenarios during Runtime
@@ -370,32 +401,6 @@ bptk.add_scenario(dictionary=dictionary)
 
 When you successfully registered the new scenario, you can easily plot it as you are used to!
 
-## Model Checking
-To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.
-The function is supposed to only return True or False and receives a data parameter. For example ``lambda data : sum(data)/len(data) < 0`` tests if the average of the data is below 0. We can get the raw output data instead of the plot if we use the parameter ``return_df=True``. This returns a dataFrame object. The following example generates this dataframe and uses the model checker to test if the ``productivity`` series' mean is below 0. Otherwise it will return the specified message.
-
-```
-df =bptk.plot_scenarios(
-    scenario_managers=["smSimpleProjectManagement"],
-    scenarios=["scenario120"],
-    kind="line",
-    equations=["productivity"],
-    stacked=False, 
-    strategy=True,
-    freq="D", 
-    start_date="1/11/2017",
-    title="Added scenario during runtime",
-    x_label="Time",
-    y_label="Number",
-    return_df=True
-    )
-
-check_function = lambda data : sum(data)/len(data) < 0
-
-bptk.model_check(df["productivity"],check_function,message="Productivity is not <0")
-```
-
-
 
 ## Look-and-Feel
 BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
@@ -409,5 +414,156 @@ The notebook comes with a set of scenarios and simulation models and supports yo
 * The SD model transpiler supports all builtin functions apart from RANDOM with seed
 
 
+# Creating Own Simulation models
+Instead of reading Stella Architect models, you may define your own simulation model. A simulation model is a self-contained python script. This means, it can be executed as its own file without any dependencies. Well, only for some methods you may require some python packages, but feel free to rewrite them if you want to omit them.
+
+Here is a stub of a simulation model python file:
 
 
+```buildoutcfg
+
+import statistics
+import math
+import random
+import numpy as np
+from scipy.interpolate import interp1d
+
+# linear interpolation between a set of points
+def LERP(x,points):
+    x_vals = np.array([ x[0] for x in points])
+    y_vals = np.array([x[1] for x in points])
+
+    if x<= x_vals[0]:
+        return y_vals[0]
+
+    if x >= x_vals[len(x_vals)-1]:
+        return y_vals[len(x_vals)-1]
+
+    f = interp1d(x_vals, y_vals)
+    return float(f(x))
+
+
+class simulation_model():
+  def memoize(self, equation, arg):
+    mymemo = self.memo[equation]
+    if arg in mymemo.keys():
+      return mymemo[arg]
+    else:
+      result = self.equations[equation](arg)
+      mymemo[arg] = result
+
+    return result
+
+  def __init__(self):
+    # Simulation Buildins
+    self.dt = 0.25
+    self.starttime = 1
+    self.stoptime = 120
+    self.equations = {
+  	# Stocks 
+  		
+    # flows 
+
+    # gf 
+        
+    #constants
+
+    }
+
+    self.points = {
+  	 }
+
+    self.dimensions = {
+  		'Dim_Name_1': {
+  			'labels': [  ],
+  			'variables': [  ]
+  		},
+  	 }
+
+    self.stocks = []
+    self.flows = []
+    self.converters = []
+    self.gf = []
+    self.constants= []
+    self.events = [
+    	]
+
+    self.memo = {}
+    for key in list(self.equations.keys()):
+      self.memo[key] = {}  # DICT OF DICTS!
+
+  def specs(self):
+    return self.starttime, self.stoptime, self.dt, 'Days', 'Euler'
+
+  def setDT(self,v):
+    self.dt = v
+
+  def setStarttime(self,v):
+    self.starttime = v
+
+  def setStoptime(self,v):
+    self.stoptime = v
+
+```
+
+The imports are quite convenient to give you access to methods for different functions such as mathematical and scientific functions using ```math and scipy``` as well as statistical functions. Feel free to remove imports or add imports. 
+This is no convention. Just make sure that you import all packages the model requires to function properly. As said before, the model should be self-contained.
+
+The ``LERP`` methods is required for interpolation of graphical functions. For simplicity, we use ``interpol1d`` from the scipy package. Feel free to replace it. 
+Then you see that we start a class ``simulation_model``. For the framework to recognize the model, **do only use** this class name. 
+
+
+The ``__init__`` configures the model properties such as the start time, stop time, dt and the equations. ``equations`` is a python ``dict`` that stores all equations.
+ An equation has a key and is a ``lambda`` function of the following format:
+ ```
+    "name_of_equations" : lambda t : do something
+ ```
+ 
+ 
+ Even constants have to be a lambda. For each t it just returns the same value. This means, a valid constant looks like this : `` "constant_name" : lambda t : 10000 ``.
+ 
+ An equation usually refers to past values. This is why the most important method is the ``memoize`` method. It uses the concept of memoization to cache simulation results for each equation and point in time to avoid endless recursion.
+For each equation, it fills a dictionary inside the ``self.memo``. To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
+To ease the understanding of the concepts used, refer to this simple example with two equations:
+
+```
+def __init__(self):
+    ....
+    # Setup all other things
+    
+    self.equations = {
+        "equation_1" : lambda t : self.memoize("costant",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
+        
+        "constant_1" : lambda t : 10000
+    }
+        
+```
+
+The ``constant_1`` equation always returns 10,000. ``equation_1`` returns 10,000 if the given t is below or equal the 
+model's start time or otherwise recurse by calling the memoize method for itself and ``t-self.dt`` and add 100 to that result.
+The memoize method either returns its cached value for t-dt or call the equation if the cache for t-dt is not built yet.
+
+For storing graphical functions, we make use of the dict ``self.points``. It stores lists of (x,y) values you may use in your equations for linear interpolation 
+by calling the ``LERP`` function for arbitrary x values. In this way, you avoid defining very complex functions in equations. The x values may even be the result of other equations.
+
+Example set of points:
+```
+self.points = {
+  		'productivity': [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1.03400735294118],[1.25,1.119],
+  		    [1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ],
+  	 }
+```
+
+
+The lists ``stocks,flows,converters,constants`` follow the naming schema of Stella Architect model elements. The lists store the names of constants, stocks and so on. 
+  The simulator ignores those fields as of now in order to give programmers
+absolute freedom in defining their models without having to follow Stella's schema. For readability, you may use similar lists to support users in understanding your model components.
+
+**ATTENTION:** Please always do use the following lines to initialize the simulation model's memo as shown in the example:
+```
+for key in list(self.equations.keys()):
+      self.memo[key] = {}
+``` 
+
+This code initializes the model's memo for each equation with an empty dictionary.
+You are now able to define your own simulation model quickly. If something is missing, please do contact us!

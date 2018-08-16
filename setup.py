@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='BPTK_Py',
-      version='0.3.1',
-      description='A python simulation engine for Stela system dynamics models',
+      version='0.3.0',
+      description='A python simulation engine for System Dynamics models',
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='https://bitbucket.org/transentis/bptk_py/',
