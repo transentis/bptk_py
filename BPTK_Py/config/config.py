@@ -44,6 +44,7 @@ transentis_colors = {
 import BPTK_Py
 import os
 
+sd_py_compiler_root = str(os.path.dirname(BPTK_Py.__file__)) + "/sd-compiler"
 
 configuration = {
     # Path to sd-compiler git root! Amend for your own needs

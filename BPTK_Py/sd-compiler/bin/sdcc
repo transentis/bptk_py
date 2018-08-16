@@ -1,0 +1,10 @@
+#!/bin/sh
+# node $(dirname $(readlink $0))/../dist/sdcc.js $@
+
+MYPATH=$(readlink $0)
+DIR=$(dirname $MYPATH)
+
+echo "$MYPATH"
+echo "$DIR"
+
+node ../dist/sdcc.js $@
