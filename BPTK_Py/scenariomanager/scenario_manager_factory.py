@@ -157,17 +157,23 @@ class ScenarioManagerFactory():
         """
 
         managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
-
         scenarios_objects = {}
-        for manager_name, manager in managers.items():
-            for scenario_name, scenario in manager.scenarios.items():
+        if len(scenario_managers)  >1 :
 
-                if scenario_name in scenarios_objects.keys():
-                    scenarios_objects[scenario_name + "_" + manager_name] = scenario
+            for manager_name, manager in managers.items():
+                for scenario_name, scenario in manager.scenarios.items():
+
+                    scenarios_objects[manager_name +"_" + scenario_name] = scenario
                     if scenario_name in scenarios:
-                        scenarios += [scenario_name + "_" + manager_name]
-                else:
-                    scenarios_objects[scenario_name] = scenario
+                        scenarios += [manager_name +"_" + scenario_name]
+
+        else:
+            for manager_name, manager in managers.items():
+                for scenario_name, scenario in manager.scenarios.items():
+
+                    scenarios_objects[scenario_name]= scenario
+                    if scenario_name in scenarios:
+                        scenarios += [scenario_name]
 
         if len(scenarios) > 0:
             filtered_scenarios = {}

@@ -45,7 +45,6 @@ class Visualizations():
         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
         :return:
         """
-        scenario_names = list(scenarios.keys())
 
         ## Generate df to plot
         plot_df = pd.DataFrame()
@@ -55,11 +54,9 @@ class Visualizations():
                 df = scenarios[scenario].result
 
                 for equation in equations.keys():
-                    if scenarios[scenario].name in equations[equation]:
-
-                        series = df[equation]
-                        series.name = scenario + "_" + equation
-                        plot_df[series.name] = series
+                    series = df[equation]
+                    series.name = scenario + "_" + equation
+                    plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
             df = scenario.result
@@ -98,7 +95,10 @@ class Visualizations():
     def update_plot_formats(self,ax):
         ylabels_mean = statistics.mean(ax.get_yticks())
 
-        if ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
+        if ylabels_mean <= 2.0 and ylabels_mean >= -2.0:
+            ylabels = [format(label, ',.2f') for label in ax.get_yticks()]
+
+        elif ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
             ylabels = [format(label, ',.1f') for label in ax.get_yticks()]
 
         else:
@@ -110,7 +110,7 @@ class Visualizations():
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
-                       series_names=[], strategy=False,
+                       series_names={}, strategy=False,
                        return_df=False):
         """
          Generic method for plotting scenarios
