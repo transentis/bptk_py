@@ -1,12 +1,12 @@
 # Business Prototyping Toolkit for Python
 Welcome to the Business Prototyping Toolkit for Python!
 
-BPTK_Py is the implementation of a simulation and plotting engine for Stela System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab.
+BPTK_Py is the implementation of a simulation and plotting engine for [Stela Architect](https://www.iseesystems.com/store/products/stella-architect.aspx) System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. You even may as well reuse the simulation results within python!
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
 ## Installation
 To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package.
-In order to keep your system clean, you may want to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html). Following steps are required to set up the venv and and install BPTK_Py into it:
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/). Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 pip install virtualenv
 virtualenv bptk_test # This will create a subfolder with a minimal python environment
@@ -375,6 +375,7 @@ Check out the iPython notebook *Interactive Readme* in the top level of the repo
 
 ## Limitations
 * For now, the simulator may only simulate using the Euler method
+* The SD model transpiler supports all builtin functions apart from RANDOM with seed
 
 
 
