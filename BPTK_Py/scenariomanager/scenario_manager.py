@@ -7,7 +7,7 @@
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
-#
+# MIT License
 
 
 ### IMPORTS
@@ -116,7 +116,7 @@ class scenarioManager():
             for scenario in self.scenarios.values():
                 if scenario.model == None:
                     scenario.model = mod.simulation_model()
-                scenario.setup_constants()
+                    #scenario.setup_constants()
 
         except Exception as e:
             log(

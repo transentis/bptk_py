@@ -7,7 +7,7 @@
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
-#
+# MIT License
 
 
 
@@ -67,7 +67,7 @@ class ScenarioManagerFactory():
 
                 scen_dict = json_dict[group_name]["scenarios"]
 
-                source = ""
+
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
                     if not manager.source in self.scenario_monitors.keys():
@@ -157,17 +157,23 @@ class ScenarioManagerFactory():
         """
 
         managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
-
         scenarios_objects = {}
-        for manager_name, manager in managers.items():
-            for scenario_name, scenario in manager.scenarios.items():
+        if len(scenario_managers)  >1 :
 
-                if scenario_name in scenarios_objects.keys():
-                    scenarios_objects[scenario_name + "_" + manager_name] = scenario
+            for manager_name, manager in managers.items():
+                for scenario_name, scenario in manager.scenarios.items():
+
+                    scenarios_objects[manager_name +"_" + scenario_name] = scenario
                     if scenario_name in scenarios:
-                        scenarios += [scenario_name + "_" + manager_name]
-                else:
-                    scenarios_objects[scenario_name] = scenario
+                        scenarios += [manager_name +"_" + scenario_name]
+
+        else:
+            for manager_name, manager in managers.items():
+                for scenario_name, scenario in manager.scenarios.items():
+
+                    scenarios_objects[scenario_name]= scenario
+                    if scenario_name in scenarios:
+                        scenarios += [scenario_name]
 
         if len(scenarios) > 0:
             filtered_scenarios = {}
