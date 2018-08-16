@@ -67,7 +67,7 @@ class ScenarioManagerFactory():
 
                 scen_dict = json_dict[group_name]["scenarios"]
 
-                source = ""
+
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
                     if not manager.source in self.scenario_monitors.keys():

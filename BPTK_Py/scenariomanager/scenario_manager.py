@@ -116,7 +116,7 @@ class scenarioManager():
             for scenario in self.scenarios.values():
                 if scenario.model == None:
                     scenario.model = mod.simulation_model()
-                scenario.setup_constants()
+                    #scenario.setup_constants()
 
         except Exception as e:
             log(
