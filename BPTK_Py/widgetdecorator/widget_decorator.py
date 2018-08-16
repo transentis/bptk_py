@@ -7,7 +7,7 @@
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
-#
+# MIT License
 
 ## IMPORTS
 from __future__ import print_function
@@ -119,7 +119,7 @@ class widgetDecorator():
                 for name, scenario_obj in self.scenarios.items():
                     scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
                     scenario_obj.constants[widget_names[0]] = widget1
-                    
+
                     self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
                 self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,

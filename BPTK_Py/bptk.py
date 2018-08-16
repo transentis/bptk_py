@@ -7,7 +7,7 @@
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
-#
+# MIT License
 
 
 ### IMPORTS
@@ -20,7 +20,7 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
-import pkg_resources
+
 
 plt.interactive(True)
 
@@ -50,7 +50,6 @@ class bptk():
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = Visualizations(self.scenario_manager_factory, bptk=self)
 
-        self.__version__ = pkg_resources.get_distribution("BPTK_Py").version
 
     #### Run a Simulation with a strategy
     ## A strategy modifies constants in given points of time.
