@@ -4,23 +4,39 @@ Welcome to the Business Prototyping Toolkit for Python!
 BPTK_Py is the implementation of a simulation and plotting engine for [Stela Architect](https://www.iseesystems.com/store/products/stella-architect.aspx) System Dynamics models.  It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. You even may as well reuse the simulation results within python!
 It requires a python-parsed version of the model containing the set of equations. We employ [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler)  for this. An example model is available in [simulation_models/](simulation_models/)
 
-## Installation
-To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .`` . Pip will install the package and make it available system-wide. Now you can start working with the package.
-In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/). Following steps are required to set up the venv and and install BPTK_Py into it:
+## Requirements and Installation
+To install the package, cd to the directory of the package (the git repo's root) and type ``pip install .``. Pip will install the package and make it available system-wide. It downloads its dependencies automatically. 
+Now you can start working with the package.
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/), a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 pip install virtualenv
-virtualenv bptk_test # This will create a subfolder with a minimal python environment
+virtualenv bptk_test #
 # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
+
 source bptk_test/bin/activate  #  For UNIX/Linux
 bptk_test\Scripts\activate.bat # For Windows
+
 cd /path/to/BPTK_Py_repo
 pip install .  # Install the package
 
 ## If you want Jupyter Lab as well: (HIGHLY RECOMMENDED)
 pip install jupyterlab
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
-Pip will make sure to download all required dependencies and now you are ready to play around with BPTK_Py! 
 If you executed the last line as well, you already have a functioning version of jupyter lab and can start working interactively using jupyter notebooks. Just type ``jupyter lab`` to get started.
+
+### Package dependencies
+If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+
+Package name | What we use it for | Last tested version
+--- | --- | ---
+pandas |DataFrames and internal results storage | 0.23.4
+matplotlib |Plotting environment | 2.2.2
+ipywidgets |Widget environment for notebooks | 7.4.0
+scipy |Linear interpolation for graphical functions  | 1.1.0
+numpy |Linear interpolation and required by pandas | 1.15.0
+jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.1
+
 
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
@@ -371,7 +387,8 @@ bptk.model_check(df["productivity"],check_function,message="Productivity is not 
 BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
 
 ## Interactive Readme
-Check out the iPython notebook *Interactive Readme* in the top level of the repo for an interactive approach to learning how to use the framework as an analyst. It also applies the example for the extended strategies.
+Check out the iPython notebook *Interactive Readme* for an interactive approach to learning how to use the framework as an analyst. 
+The notebook comes with a set of scenarios and simulation models and supports you in getting started with the framework. It applies each of the described concepts and shows you how to play around with simulations.
 
 ## Limitations
 * For now, the simulator may only simulate using the Euler method
