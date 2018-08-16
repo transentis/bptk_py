@@ -72,7 +72,7 @@ class scenarioManager():
         This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
         :return: None
         """
-        if os.path.isfile(self.model_file + ".py"):
+        if os.path.isfile(self.model_file + ".py") and not self.source == "":
             last_stamp_model = datetime.datetime.fromtimestamp(os.stat(self.model_file + ".py").st_mtime)
             last_stamp_source = datetime.datetime.fromtimestamp(os.stat(self.source).st_mtime)
 
