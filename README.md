@@ -319,7 +319,9 @@ After a while of simulating, modifying strategies and constants and generating b
 * ``reset_simulation_model(scenario_manager, scenario="")``: For runtime optimizations, the simulator will cache the simulation results. In some rare cases, this cache may not be flushed upon scenario modification. Hence, this method resets the simulation model's cache.
 
 ## Advanced: Extended Strategies
-Extended strategies give the user a lot of power over the simulation but are rather complex. The goal of such strategies is to replace certain equations of the model with custom lambda functions during runtime at specific times in the simulation. This is for advanced use only and currently considered unstable.
+Extended strategies give the user a lot of power over the simulation but are rather complex. 
+An extended strategy replaces certain equations of the model using lambda expressions. For now, you may only insert strategies during runtime.
+This feature is for advanced use only and currently considered unstable.
 
 First we need to obtain the scenarios and their corresponding simulation models and replace the given equations with the new lambda. 
 An extended strategy is just another dictionary. In general, it looks like this:
