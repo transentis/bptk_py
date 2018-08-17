@@ -153,7 +153,6 @@ class widgetDecorator():
 
             widgets[name] = widget
 
-        # Actual method for building the widget objects and plotting.
 
 
         @interact(**widgets)
@@ -166,16 +165,16 @@ class widgetDecorator():
                     visualize_to_period = widget[1] - 1
 
                 elif type(widget) == bool:
-                    val = 1 if widget == True else 0
+                    widget_val = 1 if widget == True else 0
 
                     for name, scenario_obj in self.scenarios.items():
-                        scenario_obj.model.equations[widget_name] = lambda t: val
-                        scenario_obj.constants[widget_name] = val
+                        scenario_obj.model.equations[widget_name] = lambda t: widget_val
+                        scenario_obj.constants[widget_name] = widget_val
                 else:
-                    val = widget
+                    widget_val = widget
                     for name, scenario_obj in self.scenarios.items():
-                        scenario_obj.model.equations[widget_name] = lambda t: val
-                        scenario_obj.constants[widget_name] = val
+                        scenario_obj.model.equations[widget_name] = lambda t: widget_val
+                        scenario_obj.constants[widget_name] = widget_val
 
                         self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
