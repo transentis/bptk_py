@@ -41,7 +41,6 @@ class scenarioManager():
         :param model_file: python file containing the simulation model
         """
 
-        ### scenarios stores all available scenarios
         self.scenarios = scenarios
         self.name = name
         self.model = model
@@ -124,9 +123,6 @@ class scenarioManager():
                 os.chdir(current_dir)
 
 
-
-
-            #os.system(execute_script)  # <-- Actual call for sd compiler
 
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"

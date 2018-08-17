@@ -30,19 +30,11 @@ class simulationScenario():
         :param model: simulation_model object
         :param group: name of scenario manager
         """
-        ## THE GROUP IS WHAT WE CALL A "SCENARIO MANAGER"
 
-
-        #### IMPORT MODEL FROM FILE
         self.dictionary = dictionary
         self.group = group
         self.model = model
 
-        ## IF THE LINKED MODEL FILE IS NOT EXISTENT YET, CREATE IT USING THE SD-COMPILER ##
-
-
-
-        # Dictionary of the constants the scenario modifies in the beginning of the simulation
         if "constants" in dictionary.keys():
             self.constants = dictionary["constants"]
         else:
@@ -62,9 +54,10 @@ class simulationScenario():
 
         self.result = None  # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserver the pointer
 
+
     def setup_constants(self):
         """
-        Sets up the constants of the simulation model upon initialization
+        Sets up the constants of the simulation model upon scenario manager initialization
         :return: None
         """
 

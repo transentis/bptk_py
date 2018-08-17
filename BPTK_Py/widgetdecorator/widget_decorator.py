@@ -149,242 +149,46 @@ class widgetDecorator():
                                                   description=name,
                                                   style=config.configuration["slider_style"],
                                                   layout=config.configuration["slider_layout"], continuous_update=False)
+
+
             widgets[name] = widget
 
         # Actual method for building the widget objects and plotting.
 
-        widget_names = list(widgets.keys())
-        widget_list = list(widgets.values())
 
-        if len(widgets) == 1:
+        @interact(**widgets)
+        def compute_new_plot(**kwargs):
 
-            @interact(widget1=widget_list[0])
-            def compute_new_plot(widget1):
+            for widget_name, widget in kwargs.items():
 
-                if type(widget1) == bool:
-                    widget1 = 1 if widget1 == True else 0
+                if type(widget) == tuple:
+                    visualize_from_period = widget[0] - 1
+                    visualize_to_period = widget[1] - 1
 
-                if type(widget1) == tuple:
-                    visualize_from_period = widget1[0] - 1
-                    visualize_to_period = widget1[1] - 1
+                elif type(widget) == bool:
+                    val = 1 if widget == True else 0
 
-                for name, scenario_obj in self.scenarios.items():
-                    scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
-                    scenario_obj.constants[widget_names[0]] = widget1
+                    for name, scenario_obj in self.scenarios.items():
+                        scenario_obj.model.equations[widget_name] = lambda t: val
+                        scenario_obj.constants[widget_name] = val
+                else:
+                    val = widget
+                    for name, scenario_obj in self.scenarios.items():
+                        scenario_obj.model.equations[widget_name] = lambda t: val
+                        scenario_obj.constants[widget_name] = val
 
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
+                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-                df=self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                         scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked,
-                                         freq=freq, start_date=start_date, title=title,
-                                         visualize_from_period=visualize_from_period,
-                                         visualize_to_period=visualize_to_period, x_label=x_label,
-                                         y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
-                                         return_df=return_df)
-                if return_df:
-                    return df
+            ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
+                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
+                                          stacked=stacked,
+                                          freq=freq, start_date=start_date, title=title,
+                                          visualize_from_period=visualize_from_period,
+                                          visualize_to_period=visualize_to_period, x_label=x_label,
+                                          y_label=y_label,
+                                          series_names=series_names, strategy=strategy,
+                                          return_df=return_df)
 
+            return ax
 
-        if len(widgets) == 2:
-            @interact(widget1=widget_list[0], widget2=widget_list[1])
-            def compute_new_plot(widget1, widget2):
-
-                if type(widget1) == bool:
-                    widget1 = 1 if widget1 == True else 0
-                if type(widget2) == bool:
-                    widget2 = 1 if widget2 == True else 0
-
-                if type(widget1) == tuple:
-                    visualize_from_period = widget1[0] - 1
-                    visualize_to_period = widget1[1] - 1
-                if type(widget2) == tuple:
-                    visualize_from_period = widget2[0] - 1
-                    visualize_to_period = widget2[1] - 1
-
-                for name, scenario_obj in self.scenarios.items():
-                    scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
-                    scenario_obj.constants[widget_names[0]] = widget1
-
-                    scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
-                    scenario_obj.constants[widget_names[1]] = widget2
-
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
-
-                df = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                         scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked,
-                                         freq=freq, start_date=start_date, title=title,
-                                         visualize_from_period=visualize_from_period,
-                                         visualize_to_period=visualize_to_period, x_label=x_label,
-                                         y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
-                                         return_df=return_df)
-                if return_df:
-                    return df
-
-
-        if len(widgets) == 3:
-            @interact(widget1=widget_list[0], widget2=widget_list[1], widget3=widget_list[2])
-            def compute_new_plot(widget1, widget2, widget3):
-
-                if type(widget1) == bool:
-                    widget1 = 1 if widget1 == True else 0
-                if type(widget2) == bool:
-                    widget2 = 1 if widget2 == True else 0
-                if type(widget3) == bool:
-                    widget3 = 1 if widget3 == True else 0
-
-                if type(widget1) == tuple:
-                    visualize_from_period = widget1[0] - 1
-                    visualize_to_period = widget1[1] - 1
-                if type(widget2) == tuple:
-                    visualize_from_period = widget2[0] - 1
-                    visualize_to_period = widget2[1] - 1
-                if type(widget3) == tuple:
-                    visualize_from_period = widget3[0] - 1
-                    visualize_to_period = widget3[1] - 1
-
-                for name, scenario_obj in self.scenarios.items():
-                    scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
-                    scenario_obj.constants[widget_names[0]] = widget1
-
-                    scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
-                    scenario_obj.constants[widget_names[1]] = widget2
-
-                    scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
-                    scenario_obj.constants[widget_names[2]] = widget3
-
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
-
-                df=self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                         scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked,
-                                         freq=freq, start_date=start_date, title=title,
-                                         visualize_from_period=visualize_from_period, x_label=x_label,
-                                         y_label=y_label,
-                                         series_names=series_names, strategy=strategy,
-                                         visualize_to_period=visualize_to_period,
-                                         return_df=return_df)
-                if return_df:
-                    return df
-
-                return None
-
-        if len(widgets) == 4:
-            @interact(widget1=widget_list[0], widget2=widget_list[1], widget3=widget_list[2], widget4=widget_list[3])
-            def compute_new_plot(widget1, widget2, widget3, widget4):
-
-                if type(widget1) == bool:
-                    widget1 = 1 if widget1 == True else 0
-                if type(widget2) == bool:
-                    widget2 = 1 if widget2 == True else 0
-                if type(widget3) == bool:
-                    widget3 = 1 if widget3 == True else 0
-                if type(widget4) == bool:
-                    widget4 = 1 if widget4 == True else 0
-
-                if type(widget1) == tuple:
-                    visualize_from_period = widget1[0] - 1
-                    visualize_to_period = widget1[1] - 1
-                if type(widget2) == tuple:
-                    visualize_from_period = widget2[0] - 1
-                    visualize_to_period = widget2[1] - 1
-                if type(widget3) == tuple:
-                    visualize_from_period = widget3[0] - 1
-                    visualize_to_period = widget3[1] - 1
-                if type(widget4) == tuple:
-                    visualize_from_period = widget4[0] - 1
-                    visualize_to_period = widget4[1] - 1
-
-                for name, scenario_obj in self.scenarios.items():
-                    scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
-                    scenario_obj.constants[widget_names[0]] = widget1
-
-                    scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
-                    scenario_obj.constants[widget_names[1]] = widget2
-
-                    scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
-                    scenario_obj.constants[widget_names[2]] = widget3
-
-                    scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
-                    scenario_obj.constants[widget_names[3]] = widget4
-
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
-
-                df =self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                         scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked,
-                                         freq=freq, start_date=start_date, title=title,
-                                         visualize_from_period=visualize_from_period, x_label=x_label,
-                                         y_label=y_label,
-                                         series_names=series_names, strategy=False,
-                                         visualize_to_period=visualize_to_period,
-                                         return_df=return_df)
-
-                if return_df:
-                    return df
-
-        if len(widgets) == 5:
-            @interact(widget1=widget_list[0], widget2=widget_list[1], widget3=widget_list[2], widget4=widget_list[3],
-                      widget5=widget_list[4])
-            def compute_new_plot(widget1, widget2, widget3, widget4, widget5):
-
-                if type(widget1) == bool:
-                    widget1 = 1 if widget1 == True else 0
-                if type(widget2) == bool:
-                    widget2 = 1 if widget2 == True else 0
-                if type(widget3) == bool:
-                    widget3 = 1 if widget3 == True else 0
-                if type(widget4) == bool:
-                    widget4 = 1 if widget4 == True else 0
-                if type(widget5) == bool:
-                    widget5 = 1 if widget5 == True else 0
-
-                if type(widget1) == tuple:
-                    visualize_from_period = widget1[0] - 1
-                    visualize_to_period = widget1[1] - 1
-                if type(widget2) == tuple:
-                    visualize_from_period = widget2[0] - 1
-                    visualize_to_period = widget2[1] - 1
-                if type(widget3) == tuple:
-                    visualize_from_period = widget3[0] - 1
-                    visualize_to_period = widget3[1] - 1
-                if type(widget4) == tuple:
-                    visualize_from_period = widget4[0] - 1
-                    visualize_to_period = widget4[1] - 1
-                if type(widget5) == tuple:
-                    visualize_from_period = widget5[0] - 1
-                    visualize_to_period = widget5[1] - 1
-
-                for name, scenario_obj in self.scenarios.items():
-                    scenario_obj.model.equations[widget_names[0]] = lambda t: widget1
-                    scenario_obj.constants[widget_names[0]] = widget1
-
-                    scenario_obj.model.equations[widget_names[1]] = lambda t: widget2
-                    scenario_obj.constants[widget_names[1]] = widget2
-
-                    scenario_obj.model.equations[widget_names[2]] = lambda t: widget3
-                    scenario_obj.constants[widget_names[2]] = widget3
-
-                    scenario_obj.model.equations[widget_names[3]] = lambda t: widget4
-                    scenario_obj.constants[widget_names[3]] = widget4
-
-                    scenario_obj.model.equations[widget_names[4]] = lambda t: widget5
-                    scenario_obj.constants[widget_names[4]] = widget5
-
-                    self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
-
-                df = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                         scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                         stacked=stacked, strategy=False,
-                                         freq=freq, start_date=start_date, title=title,
-                                         visualize_from_period=visualize_from_period, x_label=x_label,
-                                         visualize_to_period=visualize_to_period,
-                                         y_label=y_label,
-                                         series_names=series_names,
-                                         return_df=return_df)
-
-                if return_df:
-                    return df
+        #return interact(compute_new_plot,**widgets)
