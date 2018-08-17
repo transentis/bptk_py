@@ -72,34 +72,61 @@ class scenarioManager():
         This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
         :return: None
         """
+
+        if not os.path.isdir(config.configuration["sd_py_compiler_root"]+"/node_modules"):
+            print("[INFO] Stella Architect compiler dependencies missing. Attempting npm install")
+            current_dir = os.getcwd()
+            cwd_folder = str(config.configuration["sd_py_compiler_root"])
+            os.chdir(cwd_folder)
+            x =os.system("npm install")
+            os.chdir(current_dir)
+            if x == 0:
+                print("[SUCCESS] Done downloading dependencies. Continuing initialization.")
+            else:
+                print("[ERROR] Problem downloading the dependencies")
+
+
         if os.path.isfile(self.model_file + ".py") and not self.source == "":
-            last_stamp_model = datetime.datetime.fromtimestamp(os.stat(self.model_file + ".py").st_mtime)
-            last_stamp_source = datetime.datetime.fromtimestamp(os.stat(self.source).st_mtime)
+            last_stamp_model = os.stat(self.model_file + ".py").st_mtime
+            last_stamp_source = os.stat(self.source).st_mtime
 
             delta = last_stamp_source - last_stamp_model
 
         else:
-            now = datetime.datetime.now()
-            delta = now - now
+            last_stamp_source = 0
+            last_stamp_model = 0
 
 
-        if not os.path.isfile(self.model_file + ".py") or delta.seconds > 100 or delta.days >= 1:
+        if not os.path.isfile(self.model_file + ".py") or last_stamp_source > last_stamp_model:
 
             ## Handle Windows
             if os.name == "nt":
                 source_tmp = self.source.replace("/", "\\")
                 model_name_tmp = self.model_file.replace("/", "\\")
-                execute_script = config.configuration[
-                                     "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + \
+                execute_script = "\"" + config.configuration[
+                                     "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat\” " + "\"" + \
                                  config.configuration[
-                                     "sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp + ".py"
+                                     "sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp + ".py \""
+
+                os.system(execute_script)
 
             else:  # POSIX-compliant systems (Unix, Linux...)
-                path = config.configuration["bptk_Py_module_path"]
-                execute_script = "sh " + path + "/shell_scripts/update_model.sh " + config.configuration[
-                    "sd_py_compiler_root"] + " " + self.source + " " + self.model_file + ".py"
 
-            os.system(execute_script)  # <-- Actual call for sd compiler
+
+                current_dir = str(os.getcwd())
+                execute_script = "node -r babel-register src/cli.js -i " + current_dir + "/" + self.source + " -t py -c > " + current_dir + "/" + self.model_file + ".py"
+                os.chdir(config.configuration["sd_py_compiler_root"])
+
+                exit_status = os.system(execute_script)
+
+                # Go back to working dir
+                os.chdir(current_dir)
+                #exit_status = os.system(execute_script)
+
+                # Go back to working dir
+                os.chdir(current_dir)
+
+            #os.system(execute_script)  # <-- Actual call for sd compiler
 
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"
@@ -116,7 +143,7 @@ class scenarioManager():
             for scenario in self.scenarios.values():
                 if scenario.model == None:
                     scenario.model = mod.simulation_model()
-                    #scenario.setup_constants()
+                    scenario.setup_constants()
 
         except Exception as e:
             log(

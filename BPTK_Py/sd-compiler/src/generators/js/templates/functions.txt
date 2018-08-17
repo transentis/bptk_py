@@ -1,0 +1,20 @@
+// linear interpolation between a set points
+function LERP ( x, points ) {
+	const first = 0
+	const last = points.length - 1
+	const getX = i => points[i][0]
+	const getY = i => points[i][1]
+	const getOffset = x => {
+		for ( let i = 0; i < last; i += 1 )
+			if ( x < getX(i) ) return i-1
+		return last-1
+	}
+	if ( x <= getX(first) ) return getY(first)
+	if ( x >= getX(last) ) return getY(last)
+	const n = getOffset( x )
+	const x0 = getX(n)
+	const y0 = getY(n)
+	const x1 = getX(n+1)
+	const y1 = getY(n+1)
+	return (y1-y0)*(x-x0)/(x1-x0)+y0
+}

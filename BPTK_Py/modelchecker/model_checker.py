@@ -33,4 +33,4 @@ class modelChecker():
             print("[SUCCESS] Model check successful!")
 
         except AssertionError as e:
-            print("[ERROR] Model Checking failed with {}".format(e))
+            print("[ERROR] Model Checking failed with message: \"{}\"".format(e))

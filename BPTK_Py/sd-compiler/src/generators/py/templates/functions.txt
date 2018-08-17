@@ -1,0 +1,20 @@
+
+import statistics
+import math
+import random
+import numpy as np
+from scipy.interpolate import interp1d
+
+# linear interpolation between a set of points
+def LERP(x,points):
+    x_vals = np.array([ x[0] for x in points])
+    y_vals = np.array([x[1] for x in points])
+
+    if x<= x_vals[0]:
+        return y_vals[0]
+
+    if x >= x_vals[len(x_vals)-1]:
+        return y_vals[len(x_vals)-1]
+
+    f = interp1d(x_vals, y_vals)
+    return float(f(x))

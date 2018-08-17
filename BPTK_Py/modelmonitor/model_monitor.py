@@ -42,12 +42,14 @@ class modelMonitor():
         self.update_func=update_func
         self.model_file = model_file
         self.itmx = itmx
+        self.dest = dest
         if os.name == "nt":
             model_file = model_file.replace("/","\\")
             dest = dest.replace("/","\\")
-            self.execute_script = config.configuration["bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
+            self.execute_script ="\”" + config.configuration["bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat\” \”" + config.configuration["sd_py_compiler_root"] + "\” \”"  +  model_file + "\” \"" + dest + "\""
         else:
-            self.execute_script = "sh " + config.configuration["bptk_Py_module_path"] + "/shell_scripts/update_model.sh " + config.configuration["sd_py_compiler_root"] + " "  +  model_file + " " + dest
+            current_dir = str(os.getcwd())
+            self.execute_script = "node -r babel-register src/cli.js -i " + current_dir + "/" + model_file + " -t py -c > " + current_dir + "/" + dest +".py"
         log("[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
 
         # As long as this is True, I will keep monitoring. Otherwise the thread will terminate
@@ -77,6 +79,7 @@ class modelMonitor():
         """
         while self.running:
             ## Get last modification timestamp and compare to cached one
+
             stamp = os.stat(self.model_file).st_mtime
 
             ## Check if changed
@@ -87,7 +90,14 @@ class modelMonitor():
 
                 if self.itmx: # If we monitor an itmx file, call the sd-compiler to parse it to python
                     # File has changed, so parse model again
+                    # Store current directory and chdir to sd compiler dir
+                    current_dir = str(os.getcwd())
+                    os.chdir(config.configuration["sd_py_compiler_root"])
+
                     exit_status = os.system(self.execute_script)
+
+                    # Go back to working dir
+                    os.chdir(current_dir)
 
                     ## Check if everything went well, i.e. exit status of the script = 0
                     if exit_status != 0:

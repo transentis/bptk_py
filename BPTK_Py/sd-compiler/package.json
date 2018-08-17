@@ -1,0 +1,51 @@
+{
+  "name": "@transentis/sd-compiler",
+  "version": "1.4.1",
+  "author": "transentis management consulting GmbH",
+  "license": "ISC",
+  "bin": {
+    "sdcc": "bin/cli.js"
+  },
+  "publishConfig": {
+    "registry": "https://registry.transentis-labs.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/transentis/sd-compiler.git"
+  },
+  "dependencies": {
+    "handlebars": "4.0.11",
+    "lodash": "~4.17.10",
+    "minimist": "^1.2.0",
+    "optimist": "~0.6.1",
+    "pegjs": "~0.10.0",
+    "uglify-js": "^3.4.6",
+    "xml2js": "~0.4.19",
+    "uglify-es": "3.3.9"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  },
+  "scripts": {
+    "build": "webpack --config ./webpack.config.js --progress --profile",
+    "test": "mocha --ui bdd --reporter spec --bail test --compilers js:babel-register"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.5",
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
+    "mocha": "^5.2.0",
+    "raw-loader": "^0.5.1",
+    "should": "13.2.3",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0"
+  },
+  "description": "The compiler project is the heart of our whole business prototyping infrastructre. Simulation models can be transformed into a target language (e.g. *Wolfram Language*, *Javascript*, etc.) and will be consumed by the projects.",
+  "homepage": "https://bitbucket.org/transentis/sd-compiler#readme",
+  "main": "webpack.config.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": []
+}
