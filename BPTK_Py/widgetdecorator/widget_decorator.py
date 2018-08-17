@@ -154,10 +154,12 @@ class widgetDecorator():
             widgets[name] = widget
 
 
-
+        param_visualize_from = visualize_from_period
+        param_visualize_to = visualize_to_period
         @interact(**widgets)
         def compute_new_plot(**kwargs):
-
+            visualize_from_period = param_visualize_from
+            visualize_to_period = param_visualize_to
             for widget_name, widget in kwargs.items():
 
                 if type(widget) == tuple:

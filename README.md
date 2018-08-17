@@ -2,10 +2,11 @@
 Welcome to the Business Prototyping Toolkit for Python!
 
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate Stela System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. 
+It gives you the power to simulate System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. 
 
-It requires a python simulation model following the conventios given in the end of this Readme. 
-Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python versions of Stella Architect models.
+It requires a python simulation model following the conventions given in the end of this Readme. 
+Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python 
+versions of simulation models from other engines (such as Stella Architect).
 
 ## Requirements and Installation
 To install the package, just run `` pip install BPTK_Py ``.
@@ -26,7 +27,8 @@ pip install BPTK_Py
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
-If you executed the last line as well, you already have a functioning version of jupyter lab and can start working interactively using jupyter notebooks. Just type ``jupyter lab`` to get started.
+If you executed the last line as well, you already have a functioning version of jupyter lab and can start working 
+interactively using jupyter notebooks. Just type ``jupyter lab`` to get started.
 
 ### Package dependencies
 If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
@@ -170,8 +172,12 @@ for key, value in config.configuration.items():
 ```
 
 ## Scenarios
-Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. It may override model constants and define strategies. The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
-You write scenarios in JSON format. We group simulation scenarios by "scenario Managers". One scenario manager encapsulates one simulation model and has a name. Scenarios run this simulation model and modify constants.
+Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. 
+It may override model constants and define execution strategies. 
+The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
+You write scenarios in JSON format. Please store the scenarios in the ``scenarios`` subfolder of your current working directory so ``BPTK_Py`` is able to find it. 
+If you wish to use another folder, feel free to change ``config.configuration["scenario_storage"]`` to a folder of your choice.
+We group simulation scenarios by "scenario Managers". One scenario manager encapsulates one simulation model and has a name. Scenarios run this simulation model and modify constants.
 One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. A simple example may look like this:
 
 ```
@@ -198,11 +204,15 @@ One JSON file may contain more than one scenario manager and hence a key is requ
 ```
 We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
 The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
-The ``model`` parameter contains the relative path to the (python) simulation model. The actual scenarios follow in the ``scenarios`` tag.
+The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. The actual scenarios follow in the ``scenarios`` tag.
 For each scenario, you have to supply a unique name as well. JSON does not support integer keys. The ``constants`` list stores the overrides for the constants. 
 You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to `0.5`` by the framework.
 
-You should consider using the ``source`` field in the scenario manager tag. It specifies the path to the original model file of 3rd party applications. For now, the framework supports .itmx/.stmx files from Stell Architect. For each source file, a file monitor will run in background to check for changes in the source model. The file monitor will automatically update the python model file whenever a change to the source model is detected! (See next section for more details)
+You should consider using the ``source`` field in the scenario manager tag. It specifies the (relative) path to the original model file of 3rd party applications. 
+For now, the framework supports automatic conversion of .itmx/.stmx files from Stella Architect. 
+For each source file, a file monitor will run in background to check for changes in the source model. 
+The file monitor will automatically update the python model file whenever a change to the source model is detected! 
+(See next section for more details)
 
 
 ### Changing scenario files during runtime
@@ -242,9 +252,9 @@ Let us modify the previous scenario example and add some points:
 
 Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation requires the y-value for decimal x values.
 
-## Monitoring of Stella Architect itmx source models
+## Monitoring of 3rd party source models
 For now, we are able to translate Stella Architect Models to python using transentis' [sd-compiler](https://bitbucket.org/transentis/sd-compiler).
-Whenever you instantiate a *bptk* object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file if the scenario specifies a ``source`` field. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the transpiler.
+Whenever you instantiate a `bptk`` object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file if the scenario specifies a ``source`` field. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the transpiler.
 
 For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
 
@@ -442,13 +452,15 @@ The notebook comes with a set of scenarios and simulation models and supports yo
 
 
 # Creating Own Simulation models
-Instead of reading Stella Architect models, you may define your own simulation model. A simulation model is a self-contained python script. This means, it can be executed as its own file without any dependencies. Well, only for some methods you may require some python packages, but feel free to rewrite them if you want to omit them.
+Instead of reading 3rd party simulation models, you may define your own simulation model. 
+A simulation model is a self-contained python script. 
+This means, it can be executed as its own file without any dependencies. 
+Well, only for some methods you may require some python packages, but feel free to rewrite if you want to omit these.
 
 Here is a stub of a simulation model python file:
 
 
-```buildoutcfg
-
+```python
 import statistics
 import math
 import random
@@ -506,14 +518,6 @@ class simulation_model():
   			'variables': [  ]
   		},
   	 }
-
-    self.stocks = []
-    self.flows = []
-    self.converters = []
-    self.gf = []
-    self.constants= []
-    self.events = [
-    	]
 
     self.memo = {}
     for key in list(self.equations.keys()):
@@ -581,10 +585,6 @@ self.points = {
   	 }
 ```
 
-
-The lists ``stocks,flows,converters,constants`` follow the naming schema of Stella Architect model elements. The lists store the names of constants, stocks and so on. 
-  The simulator ignores those fields as of now in order to give programmers
-absolute freedom in defining their models without having to follow Stella's schema. For readability, you may use similar lists to support users in understanding your model components.
 
 **ATTENTION:** Please always do use the following lines to initialize the simulation model's memo as shown in the example:
 ```
