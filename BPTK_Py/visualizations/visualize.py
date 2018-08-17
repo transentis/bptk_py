@@ -57,7 +57,6 @@ class Visualizations():
                     series = df[equation]
 
                     series.name = scenario + "_" + equation
-                    
                     plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
@@ -82,11 +81,7 @@ class Visualizations():
                 for series_names_key in series_names_keys:
                     if series_names_key in column:
                         new_column = column.replace(series_names_key, series_names[series_names_key])
-                        if len(equations) == 1:
-                            new_column = new_column.replace(equation[0], "")
                         new_columns[column] = new_column
-
-
 
             plot_df.rename(columns=new_columns, inplace=True)
 
