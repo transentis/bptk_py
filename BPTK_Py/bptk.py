@@ -157,10 +157,10 @@ class bptk():
                                                   series_names=series_names, strategy=strategy,
                                                   return_df=False, constants=constants)
 
-    ## Method for adding strategies during runtime. It allows for adding lambdas as well!
-    def modify_strategy_for_complex_strategy(self, scenarios, extended_strategy):
+
+    def modify_strategy(self, scenarios, extended_strategy):
         """
-        Modifies a strategy during runtime. Experimental feature for now.
+        Modifies a strategy during runtime. Experimental feature for now. You may even add lambdas to strategy
         :param scenarios: names of scenarios to modify the strategies for
         :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
         :return: None

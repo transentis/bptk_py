@@ -211,7 +211,7 @@ bptk.reset_scenario(scenario_manager="NAMEOFSCENARIOMANAGER",scenario_name="NAME
 ```
 
 ### Modifying points of graphical functions
-You may have defined graphical functions within stela Architect but a scenario may change these if you want. Internally, a graphical function is nothing else but a set of points and values. Hence, you may easily modify these points using the scenario JSON file. All you ened is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function with their respective x and y values as list: `` [x,y] ``.
+You may have defined graphical functions within stela Architect but a scenario may change these if you want. Internally, a graphical function is nothing else but a set of points and values. Hence, you may easily modify these points using the scenario JSON file. All you need is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function with their respective x and y values as list: `` [x,y] ``.
 Let us modify the previous scenario example and add some points:
 
 ```
@@ -312,30 +312,6 @@ This strategy modifies the constants ``cost.paymentTransactionCost`` and ``custo
 
 **Note:** If you set the ``strategy=True`` but there is not strategy defined in the scenario, the simulator will just issue a Warning in the logfile and execute the simulation(s) without a strategy. 
 
-## Advanced background: Scenario Managers and the factory
-As you observed, the simulator uses scenario managers to decouple scenarios from each other and group them. For this purpose, a ``scenarioManagerFactory`` is part of the package. It organizes the scenarios and scenario managers. Each scenario manager has a name and stores all scenarios that belong to it. The factory makes sure everything is organized correctly during runtime. If you want to receive all available scenario managers, issue this code:
-```
-scenario_managers = bptk.scenario_manager_factory.scenario_managers
-```
-
-This is a dictionary (name : object) of all available scenario managers. The scenario managers store a dictionary for all the scenarios, with the scenario names as keys. You may manually browse through the objects or just use the API methods as described above and use the names of the scenario managers. The factory will correctly identify the right scenarios. To obtain a scenario object or a list of all scenarios (for a specific scenario) manager manually, issue this code:
-```
-scenarios = bptk.scenario_manager_factory.get_scenarios(scenario_managers=[],scenario_names=[])
-```
-As you see, the parameters are lists. It is possible to filter by both. It will output duplicates (using the scenario managers' name as a suffix for each match) or nothing if it does not find any match. You see that complex queries are possible.
-
-Upon modifications of scenarios (JSON file) or to flush the simulation results, you may use the following code to reset:
-
-```
-scenario_manager_factory = bptk.scenario_manager_factory
-
-## Reload one specific scenario:
-scenario_manager_factory.reset_scenario(scenario_manager="ScenarioManager2",scenario_name="MakeYourStartUpGrow-x")
-
-## Reset all scenarios (Returns the new scenario managers)
-bptk.scenario_manager_factory.reset_all_scenarios()
-
-```
 ## Resetting the simulation
 After a while of simulating, modifying strategies and constants and generating beautiful plots, you may realize that you want to go back and reset the simulation. For this purpose, you have three methods available:
 * ``reset_scenario(scenario_manager, scenario)``: This deletes a specific scenario from memory and reloads it from file. Requires the scenario manager's name and the scenario name.
@@ -376,12 +352,12 @@ bptk.plotScenarioForOutput(
     strategy=True
 )
 ```
-The method  ``modify_strategy_for_complex_strategy`` requires the scenarios object as the lambdas reference to the objects inside them and the extended strategy. It will then just modify each scenario's strategy. 
+The method  ``modify_strategy`` requires the scenarios object as the lambdas reference to the objects inside them and the extended strategy. It will then just modify each scenario's strategy. 
 You see that you can use the well-described method for plotting the scenario(s) with the modified strategies. Just do not forget to set the parameter ``strategy=True``.  This is due to the power of the pointers. There is no additional method for plotting required as the plotting methods use the same ``scenarios`` objects as stored within the ``scenarioManager``.
 
 Of course you may as well use this approach to only modify constants. If you intend to modify an initial constant, just enter it for t=0.
 
-### Complex strategy for an interval
+### Extended strategy only for an interval
 If you want to set another lambda function only for an interval and reset to the old one, this is easily possible. Check the following strategy. It will replace the "cash.cash" function between t=20 to 50 and then restore the one from the model:
 ```
 extended_strategy= {
