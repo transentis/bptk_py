@@ -1,7 +1,10 @@
 from setuptools import setup
+from setuptools.command.install import install
+import atexit
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
 
 setup(name='BPTK_Py',
       version='0.3.0',
@@ -23,4 +26,6 @@ setup(name='BPTK_Py',
           'License :: OSI Approved :: MIT License',
           "Operating System :: OS Independent",
       ),
+
+
       zip_safe=False)

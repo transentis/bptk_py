@@ -41,18 +41,25 @@ jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 ```
-# Set the path to the sd-compiler repo root:
-
-import BPTK_Py.config.config as config
-config.configuration["sd_py_compiler_root"] = "~/Code/sd-compiler/"  ## <--- Please change this path to the git repo of the sd_compiler package!
-
-## For Windows PC's, please use \\ for seperating folders and add additional \" to add quotation marks inside the string:
-config.configuration["sd_py_compilter_root"] = "\"C:\\Users\\Henrique Beck\\Code\\sd-compiler\""
 from BPTK_Py.bptk import bptk 
 
 bptk = bptk()
+
+# To Show all available scenarios and -managers:
+print("Available Scenario Managers and Scenarios:")
+print()
+managers = bptk.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=[])
+
+for key, manager in managers.items():
+    print("")
+    print("*** {} ***".format(key))
+
+    for name in manager.get_scenario_names():
+        print("\t {}".format(name))
 ```
+On first run, the compiler may have to download some additional dependencies for model compilation. Please be patient for some seconds. This will only occur on first-time run.
 Now you are ready to play around with the APIs!
+
 
 ## Plotting API
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework.
@@ -411,7 +418,8 @@ The notebook comes with a set of scenarios and simulation models and supports yo
 
 ## Limitations
 * For now, the simulator may only simulate using the Euler method
-* The SD model transpiler supports all builtin functions apart from RANDOM with seed
+* The SD model transpiler supports the following builtin functions:
+    * size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step
 
 
 # Creating Own Simulation models

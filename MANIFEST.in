@@ -1,1 +1,2 @@
 recursive-include BPTK_Py/shell_scripts *
+recursive-include BPTK_Py/sd-compiler *

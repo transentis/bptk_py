@@ -68,11 +68,6 @@ class ScenarioManagerFactory():
                 scen_dict = json_dict[group_name]["scenarios"]
 
 
-                if "source" in json_dict[group_name].keys():
-                    manager.source = json_dict[group_name]["source"]
-                    if not manager.source in self.scenario_monitors.keys():
-                        self.__add_monitor(manager.source, manager.model_file)
-
                 for scenario_name in scen_dict.keys():
                     sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=None,group=group_name)
 
@@ -81,7 +76,12 @@ class ScenarioManagerFactory():
 
                         manager.scenarios[scenario_name] = sce
 
-                manager.instantiate_model()
+                if "source" in json_dict[group_name].keys():
+                    manager.source = json_dict[group_name]["source"]
+                    manager.instantiate_model()
+                    if not manager.source in self.scenario_monitors.keys():
+                        self.__add_monitor(manager.source, manager.model_file)
+
             return self.scenario_managers
         else:
             print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
