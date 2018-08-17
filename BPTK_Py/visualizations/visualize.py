@@ -130,6 +130,7 @@ class visualizer():
          :param start_date: start date for time series
          :param title: title of plot
          :param visualize_from_period: visualize from specific period onwards
+         :param visualize_to_period; visualize until a specific period
          :param x_label: label for x axis
          :param y_label: label for y axis
          :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}

@@ -61,6 +61,7 @@ class widgetDecorator():
         :param start_date: start date for time series
         :param title: title of plot
         :param visualize_from_period: visualize from specific period onwards
+        :param visualize_to_period; visualize until a specific period
         :param x_label: label for x axis
         :param y_label: label for y axis
         :param series_names: names of series to modify
@@ -99,25 +100,34 @@ class widgetDecorator():
                 start = 0
                 end = 0
 
-                #### Find highest stoptime values
-                managers = self.bptk.scenario_manager_factory.scenario_managers
-                scenario_objects= []
-                for manager in managers.values():
-                    scenario_objects += list(manager.scenarios.values())
+                if visualize_from_period > 0:
+
+                    start = visualize_from_period-1
+
+                if visualize_to_period > 0:
+                    end = visualize_to_period
+
+                else:
+                    #### Find highest stoptime values
+                    managers = self.bptk.scenario_manager_factory.scenario_managers
+                    scenario_objects= []
+                    for manager in managers.values():
+                        scenario_objects += list(manager.scenarios.values())
 
 
-                for scenario in scenario_objects:
-                     if scenario.model.stoptime > end:
-                         end =scenario.model.stoptime
+                    for scenario in scenario_objects:
+                         if scenario.model.stoptime > end:
+                             end =scenario.model.stoptime
 
-                ### Search done
+                    ### Search done
+
 
 
                 dates = [i for i in range(start + 1, end + 1)]
                 options = dates
                 widget = py_widgets.SelectionRangeSlider(
                     options=options,
-                    index=(0, end-1),
+                    index=(0, end-start-1),
                     description='Period:',
                     disabled=False,
                     continuous_update=False,
