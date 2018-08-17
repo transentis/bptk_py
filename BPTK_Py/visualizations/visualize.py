@@ -21,8 +21,11 @@ import statistics
 ### Class Visualizations ###
 ############################
 
-## A simple class to configure the plot properties given by the user
-class Visualizations():
+
+class visualizer():
+    """
+    This class wraps away the visualization part for plots. Implements the plot_scenarios method and creates the dataFrame for plotting
+    """
 
     def __init__(self,scenario_manager_factory,bptk):
         """
@@ -35,9 +38,9 @@ class Visualizations():
 
 
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def generate_plottable_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names={}):
+    def generate_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names={}):
         """
-        Generates a dataFrame that we may plot. Basically use it to modify the time series
+        Generates a dataFrame from simulation results. Generate series names and time series
         :param scenarios: names of scenarios
         :param equations:  names of equations
         :param start_date: start date of the timeseries
@@ -46,7 +49,7 @@ class Visualizations():
         :return:
         """
 
-        ## Generate df to plot
+        ## Generate empty df to plot
         plot_df = pd.DataFrame()
 
         if len(scenarios.keys()) > 1: # If we see more than one scenario, we will attach the scenario name to each Series name.
@@ -90,8 +93,14 @@ class Visualizations():
         return plot_df
 
     def update_plot_formats(self,ax):
+        """
+        Configure the plot formats for the labels. Generates the formatting for y labels
+        :param ax:
+        :return:
+        """
         ylabels_mean = statistics.mean(ax.get_yticks())
 
+        # Override the format based on the mean values
         if ylabels_mean <= 2.0 and ylabels_mean >= -2.0:
             ylabels = [format(label, ',.2f') for label in ax.get_yticks()]
 
@@ -168,8 +177,8 @@ class Visualizations():
 
 
         ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
-        df = visualize.generate_plottable_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
-                                             series_names=series_names)
+        df = visualize.generate_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
+                                   series_names=series_names)
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:

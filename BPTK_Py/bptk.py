@@ -12,7 +12,7 @@
 
 ### IMPORTS
 from BPTK_Py.logger.logger import log
-from BPTK_Py.visualizations.visualize import Visualizations
+from BPTK_Py.visualizations.visualize import visualizer
 import matplotlib.pyplot as plt
 from BPTK_Py.modelchecker.model_checker import modelChecker
 from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
@@ -48,7 +48,7 @@ class bptk():
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
-        self.visualizer = Visualizations(self.scenario_manager_factory, bptk=self)
+        self.visualizer = visualizer(self.scenario_manager_factory, bptk=self)
 
 
     #### Run a Simulation with a strategy
