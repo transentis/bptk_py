@@ -188,7 +188,7 @@ class Simulator():
         elif name in self.mod.equations.keys():
             self.mod.equations[name] = value
             log("[INFO] Changed equation {}".format(name))
-            #log("[WARN] {}: Attempted to change a constant ({}) that does not exist in the simulation model! Ignoring! Please check your config for errors!".format(self.name,name))
+
 
     def change_points(self,name,value):
         """

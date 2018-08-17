@@ -86,7 +86,7 @@ class bptk():
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
 
@@ -109,11 +109,12 @@ class bptk():
          :param return_df: set True if you want to receive a dataFrame instead of the plot
          :return: dataFrame with simulation results if return_df=True
          """
+
         return self.visualizer.plot_scenarios(scenarios=scenarios, equations=equations,
                                               scenario_managers=scenario_managers, kind=kind,
                                               alpha=alpha, stacked=stacked,
                                               freq=freq, start_date=start_date, title=title,
-                                              visualize_from_period=visualize_from_period, x_label=x_label,
+                                              visualize_from_period=visualize_from_period,visualize_to_period=visualize_to_period, x_label=x_label,
                                               y_label=y_label,
                                               series_names=series_names, strategy=strategy,
                                               return_df=return_df)
@@ -155,7 +156,7 @@ class bptk():
                                                   visualize_from_period=visualize_from_period, x_label=x_label,
                                                   y_label=y_label,
                                                   series_names=series_names, strategy=strategy,
-                                                  return_df=False, constants=constants)
+                                                  return_df=return_df, constants=constants)
 
 
     def modify_strategy(self, scenarios, extended_strategy):

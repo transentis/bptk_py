@@ -115,7 +115,7 @@ class visualizer():
 
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, x_label="", y_label="",
+                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
         """
@@ -177,17 +177,29 @@ class visualizer():
 
 
         ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
+
         df = visualize.generate_df(scenario_objects, dict_equations, start_date=start_date, freq=freq,
                                    series_names=series_names)
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:
             ### Get the plot object
-            ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
+            if visualize_to_period == 0:
+                ax = df[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
                                                  title=title,
                                                  alpha=alpha, color=config.configuration["colors"],
                                                  lw=config.configuration["linewidth"])
 
+            elif visualize_from_period == visualize_to_period:
+                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period+1),str(visualize_to_period+1)))
+                return None
+
+            else:
+                ax = df[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
+                                                     figsize=config.configuration["figsize"],
+                                                     title=title,
+                                                     alpha=alpha, color=config.configuration["colors"],
+                                                     lw=config.configuration["linewidth"])
             ### Set axes labels and set the formats
             if (len(x_label) > 0):
                 ax.set_xlabel(x_label)
@@ -200,4 +212,11 @@ class visualizer():
 
         ### If user wanted a dataframe instead, here it is!
         if return_df:
-            return df
+            if visualize_to_period == 0:
+                return df[visualize_from_period:]
+            elif visualize_from_period == visualize_to_period:
+                print("[INFO] No data for period t={} to t={}".format(str(visualize_from_period + 1),
+                                                                              str(visualize_to_period + 1)))
+                return None
+            else:
+                return df[visualize_from_period:visualize_to_period]

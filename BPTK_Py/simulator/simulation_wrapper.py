@@ -29,6 +29,7 @@ class simulationWrapper():
 
         :param scenario_manager_factory: scenario manager factory of bptk
         """
+
         self.scenario_manager_factory = scenario_manager_factory
 
 
@@ -128,7 +129,7 @@ class simulationWrapper():
                 self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
                     scenario.name]
 
-            # Simulation with a strategy
+            # Simulation with a strategy. Iterate the points of the simulation
             else:
                 while i <= stoptime:
 
