@@ -107,8 +107,6 @@ The second method lets you plot one equation for multiple scenarios and uses the
 **The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
 
 The following lines of code show how to easily use the API to generate the example graph below:
-<details>
-<summary>Click to toggle the code</summary>
 
 ```python
 from BPTK_Py.bptk import bptk
@@ -126,7 +124,7 @@ bptk.plot_scenarios(
     series_names={"openTasks":"open  Tasks","closedTasks" : "Closed Tasks"}
 )
 ```
-</details>
+
 ![png](README/output_0_0.png)
 
 
