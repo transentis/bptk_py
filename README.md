@@ -40,14 +40,18 @@ jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.
 
 ## Initialization in Python
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
+
+**Required lines**
 ```
 from BPTK_Py.bptk import bptk 
 
 bptk = bptk()
 
+```
+**Optional lines**
+```
 # To Show all available scenarios and -managers:
-print("Available Scenario Managers and Scenarios:")
-print()
+print("Available Scenario Managers and Scenarios:\n")
 managers = bptk.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=[])
 
 for key, manager in managers.items():
@@ -59,7 +63,6 @@ for key, manager in managers.items():
 ```
 On first run, the compiler may have to download some additional dependencies for model compilation. Please be patient for some seconds. This will only occur on first-time run.
 Now you are ready to play around with the APIs!
-
 
 ## Plotting API
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework.
@@ -410,7 +413,8 @@ When you successfully registered the new scenario, you can easily plot it as you
 
 
 ## Look-and-Feel
-BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
+BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. 
+In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
 
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* for an interactive approach to learning how to use the framework as an analyst. 

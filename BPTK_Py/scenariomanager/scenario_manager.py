@@ -114,17 +114,17 @@ class scenarioManager():
 
 
                 current_dir = str(os.getcwd())
-                execute_script = "node -r babel-register src/cli.js -i " + current_dir + "/" + self.source + " -t py -c > " + current_dir + "/" + self.model_file + ".py"
+
+                # To deal with whitespaces in names, always add "\"" to add double quotes to string
                 os.chdir(config.configuration["sd_py_compiler_root"])
-
-                exit_status = os.system(execute_script)
-
-                # Go back to working dir
-                os.chdir(current_dir)
-                #exit_status = os.system(execute_script)
+                execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + self.source + "\" -t py -c > \"" + current_dir + "/" + self.model_file + ".py\""
+                os.system(execute_script)
 
                 # Go back to working dir
                 os.chdir(current_dir)
+
+
+
 
             #os.system(execute_script)  # <-- Actual call for sd compiler
 

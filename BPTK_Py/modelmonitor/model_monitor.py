@@ -49,7 +49,7 @@ class modelMonitor():
             self.execute_script ="\”" + config.configuration["bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat\” \”" + config.configuration["sd_py_compiler_root"] + "\” \”"  +  model_file + "\” \"" + dest + "\""
         else:
             current_dir = str(os.getcwd())
-            self.execute_script = "node -r babel-register src/cli.js -i " + current_dir + "/" + model_file + " -t py -c > " + current_dir + "/" + dest +".py"
+            self.execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + model_file + "\" -t py -c > \"" + current_dir + "/" + dest +".py\""
         log("[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(model_file, dest))
 
         # As long as this is True, I will keep monitoring. Otherwise the thread will terminate

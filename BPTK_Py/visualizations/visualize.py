@@ -55,7 +55,9 @@ class Visualizations():
 
                 for equation in equations.keys():
                     series = df[equation]
+
                     series.name = scenario + "_" + equation
+                    
                     plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
