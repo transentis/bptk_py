@@ -114,6 +114,7 @@ class simulationWrapper():
             strategy = {int(k): v for k, v in strategy.items()}
 
 
+
             simu = Simulator(model=scenario.model, name=scenario.name)
 
             i = 0
@@ -141,7 +142,11 @@ class simulationWrapper():
 
                     # If we are at the start-time, start simulation until the first stop point - 1
                     if i == starttime:
-                        scenario.result = simu.start(equations=equations, output=output, start=i,
+                        if i == 0:
+                            scenario.result = simu.start(equations=equations, output=output, start=i,
+                                                         until=points_to_change_at[0])
+                        else:
+                            scenario.result = simu.start(equations=equations, output=output, start=i,
                                                      until=points_to_change_at[0] - 1)
 
                     # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t

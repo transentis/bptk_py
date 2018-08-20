@@ -86,7 +86,7 @@ class bptk():
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="", title="1/1/2018", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
+                       freq="D", start_date="", title="", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
 
@@ -123,7 +123,7 @@ class bptk():
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                  freq="D", start_date="", title="1/1/2018", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
+                  freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
                   series_names={}, strategy=False,
                   return_df=False, constants=[]):
         """
@@ -181,16 +181,12 @@ class bptk():
             # If the scenario does not store an initial strategy in its JSON, create an empty one
             if "strategy" not in scenario.dictionary.keys():
                 scenario.dictionary["strategy"] = {}
-                points_to_change_at_original_strategy = []
             ## Points in time where the original strategy makes changes (if any): These are the constant changes from the JSON
-            else:
-                points_to_change_at_original_strategy = [int(x) for x in scenario.dictionary["strategy"].keys()]
+
 
             # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant so it will work until the first point in the strategy
             first_t = points_to_change_at[0]
 
-            if not first_t in points_to_change_at_original_strategy:
-                scenario.dictionary["strategy"][str(scenario.model.starttime)] = {}
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
