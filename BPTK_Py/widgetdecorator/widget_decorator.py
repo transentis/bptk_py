@@ -167,7 +167,7 @@ class widgetDecorator():
 
                 if type(widget) == tuple:
                     visualize_from_period = widget[0]
-                    visualize_to_period = widget[1]
+                    visualize_to_period = widget[1]+1
 
                 elif type(widget) == bool:
                     widget_val = 1 if widget == True else 0

@@ -197,7 +197,10 @@ class visualizer():
                 return None
 
             else:
-                ax = df[visualize_from_period:visualize_to_period+1].plot(kind=kind, stacked=stacked,
+                if visualize_to_period +1 > len(df):
+                    visualize_to_period = len(df)
+
+                ax = df[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
                                                      figsize=config.configuration["figsize"],
                                                      title=title,
                                                      alpha=alpha, color=config.configuration["colors"],
