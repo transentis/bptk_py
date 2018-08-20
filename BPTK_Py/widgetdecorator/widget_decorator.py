@@ -74,8 +74,6 @@ class widgetDecorator():
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                           scenarios=scenarios)
 
-        widget_constants = [val[1] for val in constants]
-
         ## Only store data and create widgets and pack them
         log("[INFO] Creating widget objects for interactive plot of scenarios {}".format(str(scenarios)))
 
@@ -119,11 +117,11 @@ class widgetDecorator():
 
                     ### Search done
 
-                dates = [i for i in range(start + 1, end + 1)]
+                dates = [i for i in range(start, end + 1)]
                 options = dates
                 widget = py_widgets.SelectionRangeSlider(
                     options=options,
-                    index=(start+1, end - start - 1),
+                    index=(start, end - start ),
                     description='Period:',
                     disabled=False,
                     continuous_update=False,
@@ -168,8 +166,8 @@ class widgetDecorator():
             for widget_name, widget in kwargs.items():
 
                 if type(widget) == tuple:
-                    visualize_from_period = widget[0] - 1
-                    visualize_to_period = widget[1] - 1
+                    visualize_from_period = widget[0]
+                    visualize_to_period = widget[1]
 
                 elif type(widget) == bool:
                     widget_val = 1 if widget == True else 0

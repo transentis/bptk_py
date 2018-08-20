@@ -193,11 +193,11 @@ class visualizer():
                                                  lw=config.configuration["linewidth"])
 
             elif visualize_from_period == visualize_to_period:
-                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period+1),str(visualize_to_period+1)))
+                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),str(visualize_to_period)))
                 return None
 
             else:
-                ax = df[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
+                ax = df[visualize_from_period:visualize_to_period+1].plot(kind=kind, stacked=stacked,
                                                      figsize=config.configuration["figsize"],
                                                      title=title,
                                                      alpha=alpha, color=config.configuration["colors"],
