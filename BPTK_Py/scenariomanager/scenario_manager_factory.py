@@ -57,6 +57,11 @@ class ScenarioManagerFactory():
 
 
             for group_name in json_dict.keys():
+                base_constants = {}
+                if "base_constants" in json_dict[group_name].keys():
+                    base_constants = json_dict[group_name]["base_constants"]
+
+
                 if group_name not in self.scenario_managers.keys():
                     self.scenario_managers[group_name] = scenarioManager(scenarios={},name=group_name)
 
@@ -68,7 +73,19 @@ class ScenarioManagerFactory():
                 scen_dict = json_dict[group_name]["scenarios"]
 
 
+
                 for scenario_name in scen_dict.keys():
+                    scenario_dict = scen_dict[scenario_name]
+
+                    if len(base_constants.keys()) > 0 :
+                        if not "constants" in scenario_dict.keys():
+                            scenario_dict["constants"] = {}
+
+                        for const,value in base_constants.items():
+                            if not const in scenario_dict["constants"].keys():
+                                scenario_dict["constants"][const] = value
+
+
                     sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=None,group=group_name)
 
                     ## Only add scenarios that the scenario manager did not observe yet
@@ -93,6 +110,7 @@ class ScenarioManagerFactory():
         :param scenario_managers_to_filter: only look for certain scenario managers
         :return: self.scenario_managers
         """
+
         self.path = path
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:

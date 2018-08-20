@@ -180,33 +180,52 @@ If you wish to use another folder, feel free to change ``config.configuration["s
 We group simulation scenarios by "scenario Managers". One scenario manager encapsulates one simulation model and has a name. Scenarios run this simulation model and modify constants.
 One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. A simple example may look like this:
 
-```
-{
-    "ScenarioManager1": {
-        "model": "simulation_models/model",
-        "source": "simulation_models/make_your_startup_grow.itmx",
-        "scenarios": {
-            "MakeYourStartUpGrow": {
-                "constants": {
-                "cost.paymentTransactionCost": 0.0
-                }
-            },
-            "MakeYourStartUpGrow_2": {
-            "constants": {
-                "cost.paymentTransactionCost": 0.5,
-                "cost.productDevelopmentWage": "5/10"
-                }
-            }
+```JSON
+{  
+    "smSimpleProjectManagement":{
+    "source":"simulation_models/sd_simple_project.itmx",
+    "model":"simulation_models/sd_simple_project",
+    "base_constants": {
+          "deadline": 100,
+          "effortPerTask": 1,
+          "initialOpenTasks": 80,
+          "initialStaff": 1
+    },
+    "scenarios": {
+        "base": {
+        },
+        "scenario100": {
+        "constants": {
+          "initialOpenTasks": 100
         }
+      },
+      "scenario80": {
+        "constants": {
+        }
+      },
+      "scenario120": {
+        "constants": {
+          "initialOpenTasks": 120
+        },
+        "strategy": {
+          "20": {
+            "deadline": 120
+          }
+        }
+      }
     }
+  }
 }
-
 ```
 We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
 The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
-The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. The actual scenarios follow in the ``scenarios`` tag.
-For each scenario, you have to supply a unique name as well. JSON does not support integer keys. The ``constants`` list stores the overrides for the constants. 
-You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to `0.5`` by the framework.
+The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. 
+
+Then the key ``base_constants`` may follow. It defines the initial state for all models, regardless the state in the model source file. Here you can set all constants to a desired state. Each scenario will store the same values for the given constants. For example, in this example we set "initialOpenTasks" to 80.
+The actual scenarios follow in the ``scenarios`` tag.
+For each scenario, you have to supply a unique name as well. JSON does not support integer keys. The ``constants`` list stores the overrides constants. The idea of this field is that you override certain base constants given before. The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. The other values like "deadline" will be the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
+You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to ``0.5`` by the framework.
+
 
 You should consider using the ``source`` field in the scenario manager tag. It specifies the (relative) path to the original model file of 3rd party applications. 
 For now, the framework supports automatic conversion of .itmx/.stmx files from Stella Architect. 

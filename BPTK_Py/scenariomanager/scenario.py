@@ -31,14 +31,18 @@ class simulationScenario():
         :param group: name of scenario manager
         """
 
+
         self.dictionary = dictionary
         self.group = group
         self.model = model
 
+
         if "constants" in dictionary.keys():
+            # Overwrite base constants (if any)
             self.constants = dictionary["constants"]
         else:
             self.constants = {}
+
 
         if "strategy" in dictionary.keys():
             self.strategy = dictionary["strategy"]

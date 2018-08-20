@@ -89,8 +89,6 @@ class scenarioManager():
             last_stamp_model = os.stat(self.model_file + ".py").st_mtime
             last_stamp_source = os.stat(self.source).st_mtime
 
-            delta = last_stamp_source - last_stamp_model
-
         else:
             last_stamp_source = 0
             last_stamp_model = 0
