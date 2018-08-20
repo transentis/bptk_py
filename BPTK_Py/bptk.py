@@ -86,7 +86,7 @@ class bptk():
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
+                       freq="D", start_date="", title="1/1/2018", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
 
@@ -121,11 +121,11 @@ class bptk():
                                               return_df=return_df)
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
-    def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
-                          alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                          freq="D", start_date="1/1/2018", title="", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
-                          series_names={}, strategy=False,
-                          return_df=False, constants=[]):
+    def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
+                  alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                  freq="D", start_date="", title="1/1/2018", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
+                  series_names={}, strategy=False,
+                  return_df=False, constants=[]):
         """
         Generic method for plotting with interactive widgets
         :param scenarios: names of scenarios to plot
@@ -151,14 +151,14 @@ class bptk():
             scenarios, str(constants)))
         widget_decorator = widgetDecorator(self)
 
-        return widget_decorator.plot_with_widgets(scenarios=scenarios, equations=equations,
-                                                  scenario_managers=scenario_managers, kind=kind,
-                                                  alpha=alpha, stacked=stacked,
-                                                  freq=freq, start_date=start_date, title=title,
-                                                  visualize_from_period=visualize_from_period,visualize_to_period=visualize_to_period, x_label=x_label,
-                                                  y_label=y_label,
-                                                  series_names=series_names, strategy=strategy,
-                                                  return_df=return_df, constants=constants)
+        return widget_decorator.dashboard(scenarios=scenarios, equations=equations,
+                                          scenario_managers=scenario_managers, kind=kind,
+                                          alpha=alpha, stacked=stacked,
+                                          freq=freq, start_date=start_date, title=title,
+                                          visualize_from_period=visualize_from_period, visualize_to_period=visualize_to_period, x_label=x_label,
+                                          y_label=y_label,
+                                          series_names=series_names, strategy=strategy,
+                                          return_df=return_df, constants=constants)
 
 
     def modify_strategy(self, scenarios, extended_strategy):

@@ -71,7 +71,9 @@ class visualizer():
                     series.name = equation
                     plot_df[series.name] = series
 
-        plot_df.index= pd.date_range(start_date, periods=len(plot_df),freq=freq)
+        # Create timeseries if start_date is given
+        if not start_date == "":
+            plot_df.index= pd.date_range(start_date, periods=len(plot_df),freq=freq)
 
 
         # Process series name overrides as specified by user. Will traverse the series as they are in the DF
@@ -115,7 +117,7 @@ class visualizer():
 
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="1/1/2018", title="", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
+                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
         """
@@ -139,7 +141,6 @@ class visualizer():
          :return: None
          """
 
-        # Run the simulations for the scenario and the specified equations (or all if no equation is given)
 
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
         if len(scenarios) == 0 or scenarios[0] == '':

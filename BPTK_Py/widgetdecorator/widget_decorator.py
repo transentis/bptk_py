@@ -43,12 +43,12 @@ class widgetDecorator():
 
     # This method will be passed over to the user and used to modify the graph output
 
-    def plot_with_widgets(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
-                          alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                          freq="D", start_date="1/1/2018", title="", visualize_from_period=0, visualize_to_period=0,
-                          x_label="", y_label="",
-                          series_names=[], strategy=False,
-                          return_df=False, constants=[]):
+    def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
+                  alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                  freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0,
+                  x_label="", y_label="",
+                  series_names=[], strategy=False,
+                  return_df=False, constants=[]):
         """
         Generic method for plotting with interactive widgets
         :param scenarios: names of scenarios to plot
@@ -101,8 +101,7 @@ class widgetDecorator():
                 end = 0
 
                 if visualize_from_period > 0:
-
-                    start = visualize_from_period-1
+                    start = visualize_from_period - 1
 
                 if visualize_to_period > 0:
                     end = visualize_to_period
@@ -110,24 +109,21 @@ class widgetDecorator():
                 else:
                     #### Find highest stoptime values
                     managers = self.bptk.scenario_manager_factory.scenario_managers
-                    scenario_objects= []
+                    scenario_objects = []
                     for manager in managers.values():
                         scenario_objects += list(manager.scenarios.values())
 
-
                     for scenario in scenario_objects:
-                         if scenario.model.stoptime > end:
-                             end =scenario.model.stoptime
+                        if scenario.model.stoptime > end:
+                            end = scenario.model.stoptime
 
                     ### Search done
-
-
 
                 dates = [i for i in range(start + 1, end + 1)]
                 options = dates
                 widget = py_widgets.SelectionRangeSlider(
                     options=options,
-                    index=(0, end-start-1),
+                    index=(start+1, end - start - 1),
                     description='Period:',
                     disabled=False,
                     continuous_update=False,
@@ -160,12 +156,11 @@ class widgetDecorator():
                                                   style=config.configuration["slider_style"],
                                                   layout=config.configuration["slider_layout"], continuous_update=False)
 
-
             widgets[name] = widget
-
 
         param_visualize_from = visualize_from_period
         param_visualize_to = visualize_to_period
+
         @interact(**widgets)
         def compute_new_plot(**kwargs):
             visualize_from_period = param_visualize_from
@@ -202,4 +197,4 @@ class widgetDecorator():
 
             return ax
 
-        #return interact(compute_new_plot,**widgets)
+        # return interact(compute_new_plot,**widgets)

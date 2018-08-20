@@ -107,6 +107,8 @@ class modelMonitor():
                 self.update_func(self.model_file)
                 log("[INFO] Model Monitor for {}: model updated and relaoded scenarios!".format(str(self.model_file)))
 
+
+
                 # Store new timestamp as cached timestamp
                 self._cached_stamp = stamp
             time.sleep(1)

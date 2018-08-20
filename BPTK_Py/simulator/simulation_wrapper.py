@@ -70,11 +70,10 @@ class simulationWrapper():
                         if equation in sc.model.equations.keys():
                             equations_to_simulate += [equation]
 
-                    ### HERE WE NEED TO PREPARE FOR SCENARIOS THAT CHANGE
-
                     sc.result = simu.start(output=output, equations=equations_to_simulate)
                 else:
                     log("[ERROR] No equations to simulate given!")
+                    return None
 
         return scenario_objects
 

@@ -212,7 +212,7 @@ class ScenarioManagerFactory():
         """
         if not source in self.scenario_monitors.keys():
             self.scenario_monitors[source] = modelMonitor(source, str(
-                model) + ".py", update_func=self.refresh_scenarios_for_filename)
+                model), update_func=self.refresh_scenarios_for_filename)
 
     def destroy(self):
         """
