@@ -96,29 +96,13 @@ class scenarioManager():
 
         if not os.path.isfile(self.model_file + ".py") or last_stamp_source > last_stamp_model:
 
-            ## Handle Windows
-            if os.name == "nt":
-                source_tmp = self.source.replace("/", "\\")
-                model_name_tmp = self.model_file.replace("/", "\\")
-                execute_script = "\"" + config.configuration[
-                                     "bptk_Py_module_path"] + "\\shell_scripts\\update_model.bat\” " + "\"" + \
-                                 config.configuration[
-                                     "sd_py_compiler_root"] + " " + source_tmp + " " + model_name_tmp + ".py \""
+            current_dir = str(os.getcwd())
+            os.chdir(config.configuration["sd_py_compiler_root"])
+            execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + self.source + "\" -t py -c > \"" + current_dir + "/" + self.model_file + ".py\""
+            os.system(execute_script)
 
-                os.system(execute_script)
-
-            else:  # POSIX-compliant systems (Unix, Linux...)
-
-
-                current_dir = str(os.getcwd())
-
-                # To deal with whitespaces in names, always add "\"" to add double quotes to string
-                os.chdir(config.configuration["sd_py_compiler_root"])
-                execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + self.source + "\" -t py -c > \"" + current_dir + "/" + self.model_file + ".py\""
-                os.system(execute_script)
-
-                # Go back to working dir
-                os.chdir(current_dir)
+            # Go back to working dir
+            os.chdir(current_dir)
 
 
 

@@ -20,11 +20,7 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
-
-
 plt.interactive(True)
-
-
 ###
 
 
@@ -51,9 +47,6 @@ class bptk():
         self.visualizer = visualizer(self.scenario_manager_factory, bptk=self)
 
 
-    #### Run a Simulation with a strategy
-    ## A strategy modifies constants in given points of time.
-    ##
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         method to run raw simulations (if you want to omit plotting). Simulates with the strategies of the scenarios

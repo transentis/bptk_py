@@ -8,33 +8,44 @@ It requires a python simulation model following the conventions given in the end
 Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python 
 versions of simulation models from other engines (such as Stella Architect).
 
-## Requirements and Installation
-To install the package, just run `` pip install BPTK_Py ``.
+## Installation
+Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
+
+First, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.4 and 3.5.
+Second, you need [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
+
+Now we have the main requirements. The following piece of installation requires you to use the terminal. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. Linux users may use their preferred terminal application.
+To install the package, just type `` pip install BPTK_Py ``. Pip is a package manager that keeps Python packages up-to-date.
 Pip will install the package and make it available system-wide. It downloads its dependencies automatically. 
 Now you can start working with the package.
+
+
 In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/), a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 pip install virtualenv
 virtualenv bptk_test 
 
 # Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"
-source bptk_test/bin/activate  #  For UNIX/Linux
+source bptk_test/bin/activate  #  For UNIX/Linux/Mac OS X
 bptk_test\Scripts\activate.bat # For Windows
 
 pip install BPTK_Py
+```
 
-## If you want Jupyter Lab as well: (HIGHLY RECOMMENDED)
+You may want to use Jupyter Lab to work interactively on the simulations - just as we do.
+```
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
-If you executed the last line as well, you already have a functioning version of jupyter lab and can start working 
-interactively using jupyter notebooks. Just type ``jupyter lab`` to get started.
+Now you have a functioning version of jupyter lab and can start working 
+interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
 
 ### Package dependencies
-If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. 
+If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
 So far, we tested the framework with Python 3.4, 3.6 and 3.7. It should be working fine with other Python 3.x versions.
 
-Package name | What we use it for | Last tested version
+Package name | What we use it for | Latest tested version
 --- | --- | ---
 pandas |DataFrames and internal results storage | 0.23.4
 matplotlib |Plotting environment | 2.2.2
