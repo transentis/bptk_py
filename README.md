@@ -6,7 +6,9 @@ It gives you the power to simulate System Dynamics Models within python - and cr
 
 It requires a python simulation model following the conventions given in the end of this Readme. 
 Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python 
-versions of simulation models from other engines (such as Stella Architect).
+versions of simulation models from other engines. Currently it is compatible with the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile) which is an open XML protocol for sharing interoperable system dynamics models and simulations.
+For instance, [Stella Architect](http://www.iseesystems.com) stores system dynamics models in this format. 
+The XMILE standard is governed by the OASIS standards consortium - our framework currently only supports the XMILE standard, we may create a compiler for other formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)) in the future.
 
 ## Installation
 Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
@@ -142,24 +144,41 @@ bptk.plot_scenarios(
 
 ![png](README/output_0_0.png)
 
-### Architecture or how do we plot?
+### Receive the results data
+You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
+The tutorial contains some example code how to easily manipulate simulation results and gain new insights using the DataFrames.
+
+### Architecture - or how do we plot?
 
 ![plotting architecture](README/simulation_flow_drawio.png)
 
 The image shows the internal architecture and components involved in plotting a simulation. As you see, 5 components are directly involved in the plotting. 
 
-In the beginning, the user issues a "plotScenario(..)" call with the known parameters (please see how to exactly use the API in the next steps). The ``bptk`` object simply forwards this request to the ``Visualizer``. We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do* things. The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9). The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability. Hence, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag. It comes with neat features like generating timeseries data from your simulation results.
+In the beginning, the user issues a "plotScenario(..)" call with the known parameters (please see how to exactly use the API in the next steps). 
+The ``bptk`` object simply forwards this request to the ``Visualizer``. 
+We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do* things. 
+The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9). 
+The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability. 
+Hence, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. 
+However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag. 
+It comes with neat features like generating timeseries data from your simulation results.
 
-The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4). The scenarioManagerFactory also instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, it returns these to the simulationWrapper (step 5). Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). Finally, the Visualizer generates the time series data, the plots and formats them (step 9). The output goes back to ``bptk`` and the user gets to see a plot - or a dataFrame if she used the ``return_df`` flag - step 10.
+The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. 
+Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4). 
+The scenarioManagerFactory also instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
+In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, it returns these to the simulationWrapper (step 5). 
+Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). 
+The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). 
+Finally, the Visualizer generates the time series data, the plots and formats them (step 9). 
+The output goes back to ``bptk`` and the user gets to see a plot - or a dataFrame if she used the ``return_df`` flag - step 10.
 
 You see that this is a very simple architecture and due to the decoupling of functionality and components, easy to extend.
 
-### Receive the results data
-You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
-
 
 ## Interactive Plotting
-An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. It comes with a field "constants" that contains a list of widget definitions. Each widget is defined using a tuple.
+An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. 
+It comes with a field "constants" that contains a list of widget definitions. 
+Each widget is defined using a tuple.
 The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually.
 
 Currently, we support two types of widgets to control the process:
@@ -174,8 +193,13 @@ souce bptk_test/bin/activate
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
 
+The plotting API works almost the same way as for ``plot_scenarios``. 
+The only difference is that we use a ``widgetDecorator`` class to build the widgets and modify the specified constants and time ranges. 
+It calls the ``plot_scenarios(...)`` method on every widget change.
+
 ## Override the configuration
-The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. It also stores the style settings for the plots. If you wish to override these settings, you can do so:
+The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. 
+It also stores the style settings for the plots. If you wish to override these settings, you can do so:
 ```
 import BPTK_Py.config.config as config
 
@@ -189,12 +213,12 @@ for key, value in config.configuration.items():
 ```
 
 ## Scenarios
-Scenarios are the heart of each simulation. A scenario defines which simulation model to use, optionally point to a source model and has a name. 
-It may override model constants and define execution strategies. 
+Scenarios are the heart of each simulation. A scenario defines which simulation model to use, has a name and might point to a source file that contains a 3rd party software's simulation model. 
+A scenario may override constants and define execution strategies.
 The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
 You write scenarios in JSON format. Please store the scenarios in the ``scenarios`` subfolder of your current working directory so ``BPTK_Py`` is able to find it. 
 If you wish to use another folder, feel free to change ``config.configuration["scenario_storage"]`` to a folder of your choice.
-We group simulation scenarios by "scenario Managers". One scenario manager encapsulates one simulation model and has a name. Scenarios run this simulation model and modify constants.
+We group simulation scenarios by "scenario Managers". One scenario manager stores one simulation model and has a name. Scenarios run this simulation model and modify constants/points and define strategies.
 One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. A simple example may look like this:
 
 ```JSON
@@ -234,7 +258,8 @@ One JSON file may contain more than one scenario manager and hence a key is requ
   }
 }
 ```
-We start with the name of the scenario manager's name which stores all the scenarios. If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
+We start with the name of the scenario manager's name which stores all the scenarios. 
+If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
 The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
 The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. 
 

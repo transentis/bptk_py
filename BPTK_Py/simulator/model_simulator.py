@@ -200,7 +200,10 @@ class Simulator():
         if name in self.mod.points.keys():
             log("[WARN] Overwriting existing set of points for {}".format(str(name)))
 
-        self.mod.points[name] = value
+        if type(value) == list:
+            self.mod.points[name] = value
+        else:
+            self.mod.points[name] = eval(str(value))
 
 
 

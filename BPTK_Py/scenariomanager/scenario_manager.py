@@ -133,6 +133,7 @@ class scenarioManager():
                     if scenario.model == None:
                         scenario.model = mod.simulation_model()
                         scenario.setup_constants()
+                        scenario.setup_points()
             else:
                 log("[ERROR] Scenario manager: The python model for scenario manager \"{}\" does not exist: \"{}\". Will not be able to run simulations for this scenario manager!".format(str(self.name),str(self.model_file)+".py"))
                 self.scenarios = {}

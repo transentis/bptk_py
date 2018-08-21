@@ -71,10 +71,10 @@ class simulationScenario():
                 try:
                     if type(value) == str:
                         self.model.equations[constant] = eval("lambda t : " + value)
-                        log("[INFO] {}: Changed constant {} to {}".format(self.name, constant, str(value)))
+                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.group,self.name, constant, str(value)))
                     elif type(value) == int or type(value) == float:
                         self.model.equations[constant] = eval("lambda t: " + str(value))
-                        log("[INFO] {}: Changed constant {} to {}".format(self.name, constant, str(value)))
+                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.group,self.name, constant, str(value)))
                     else:
                         log("[ERROR] Invalid type for constant {}: {}".format(constant,str(value)))
 
@@ -83,3 +83,28 @@ class simulationScenario():
 
         else:
             log("[ERROR] Attempted to initialize constants of a model before the model is available for Scenario {}".format(self.name))
+
+    def setup_points(self):
+        """
+        Sets up the points of the simulation model upon scenario manager initialization
+        :return: None
+        """
+
+        if self.model is not None:
+
+            for name, value in self.points.items():
+                try:
+                    if type(value) == str:
+                        self.model.points[name] = eval(value)
+                        log("[INFO] {}, {}: Changed points {} to {}".format(self.group,self.name, name, str(value)))
+                    elif type(value) == list:
+                        self.model.points[name] = eval(str(value))
+                        log("[INFO] {}, {}: Changed points {} to {}".format(self.group,self.name, name, str(value)))
+                    else:
+                        log("[ERROR] Invalid type for points {}: {}".format(name,str(value)))
+
+                except ValueError as e:
+                    log("[ERROR] Attempted to evaluate an expression that I cannot evaluate. Error message: {}".format(str(e)))
+
+        else:
+            log("[ERROR] Attempted to initialize points of a model before the model is available for Scenario {}".format(self.name))
