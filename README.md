@@ -629,7 +629,7 @@ class simulation_model():
 The imports are quite convenient to give you access to methods for different functions such as mathematical and scientific functions using ```math and scipy``` as well as statistical functions. Feel free to remove imports or add imports. 
 This is no convention. Just make sure that you import all packages the model requires to function properly. As said before, the model should be self-contained.
 
-The ``LERP`` methods is required for interpolation of graphical functions. For simplicity, we use ``interpol1d`` from the scipy package. Feel free to replace it. 
+The ``LERP`` method is required for interpolation of graphical functions. For simplicity, we use ``interpol1d`` from the scipy package. Feel free to replace it. 
 Then you see that we start a class ``simulation_model``. For the framework to recognize the model, **do only use** this class name. 
 
 
@@ -642,8 +642,11 @@ The ``__init__`` configures the model properties such as the start time, stop ti
  
  Even constants have to be a lambda. For each t it just returns the same value. This means, a valid constant looks like this : `` "constant_name" : lambda t : 10000 ``.
  
- An equation usually refers to past values. This is why the most important method is the ``memoize`` method. It uses the concept of memoization to cache simulation results for each equation and point in time to avoid endless recursion.
-For each equation, it fills a dictionary inside the ``self.memo``. To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
+ An equation usually refers to past values. 
+ This is why the most important method is the ``memoize`` method. 
+ It uses the concept of memoization to cache simulation results for each equation and point in time to avoid endless recursion.
+For each equation, it fills a dictionary inside the ``self.memo``. 
+To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
 To ease the understanding of the concepts used, refer to this simple example with two equations:
 
 ```
@@ -652,7 +655,7 @@ def __init__(self):
     # Setup all other things
     
     self.equations = {
-        "equation_1" : lambda t : self.memoize("costant",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
+        "equation_1" : lambda t : self.memoize("costant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
         
         "constant_1" : lambda t : 10000
     }
@@ -661,10 +664,11 @@ def __init__(self):
 
 The ``constant_1`` equation always returns 10,000. ``equation_1`` returns 10,000 if the given t is below or equal the 
 model's start time or otherwise recurse by calling the memoize method for itself and ``t-self.dt`` and add 100 to that result.
-The memoize method either returns its cached value for t-dt or call the equation if the cache for t-dt is not built yet.
+The memoize method either returns its cached value for t-dt or calls the equation if the cache for t-dt is not built yet.
 
-For storing graphical functions, we make use of the dict ``self.points``. It stores lists of (x,y) values you may use in your equations for linear interpolation 
-by calling the ``LERP`` function for arbitrary x values. In this way, you avoid defining very complex functions in equations. The x values may even be the result of other equations.
+For storing graphical functions, we make use of the dict ``self.points``. 
+It stores lists of ``(x,y)`` values you may use in your equations for linear interpolation by calling the ``LERP`` function for arbitrary x values. 
+In this way, you avoid defining very complex functions in equations. The x values may even be the result of other equations.
 
 Example set of points:
 ```
