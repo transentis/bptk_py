@@ -169,22 +169,23 @@ The tutorial contains some example code how to easily manipulate simulation resu
 The image shows the internal architecture and components involved in plotting a simulation. 
 As you see, 5 components are directly involved in the plotting. 
 
-In the beginning, the user issues a "plotScenario(..)" call with the known parameters (please see how to exactly use the API in the next steps). 
+In the beginning, the user issues a "plotScenario(..)" call with the known parameters. 
 The ``bptk`` object simply forwards this request to the ``Visualizer``. 
-We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do* things. 
-The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9). 
+We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do things*. 
+The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data it retrieves (step 9). 
 The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability. 
-Hence, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. 
-However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag. 
+This means, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. 
+However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag if desired. 
 It comes with neat features like generating timeseries data from your simulation results.
 
 The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. 
-Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4). 
+Hence, the simulator has to retrieve the actual data that the ``scenarioManagerFactory`` reads from the JSON files (step 4). 
 On the right side we denoted the hierarchy of the ``scenarioManager`` and ``simulationScenario``. 
 The factory is at the top level and loads the JSON files and creates the scenario Managers. 
+The scenario Manager instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
+In a sense, the factory is the manager of the scenarioManagers, which group the actual scenarios. It stores methods for looking up scenario managers and modifying them.
+After looking up the scenarios, the factory returns these to the simulationWrapper (step 5). 
 
-The scenario Manager  instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
-In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, the factory returns these to the simulationWrapper (step 5). 
 Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). 
 The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). 
 Finally, the Visualizer generates the time series data, the plots and formats them (step 9). 
