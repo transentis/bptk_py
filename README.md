@@ -61,14 +61,14 @@ jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 
 **Required lines**
-```
+```python
 from BPTK_Py.bptk import bptk 
 
 bptk = bptk()
 
 ```
 **Optional lines**
-```
+```python
 # To Show all available scenarios and -managers:
 print("Available Scenario Managers and Scenarios:\n")
 managers = bptk.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=[])
@@ -93,7 +93,7 @@ This is why there is only two functions that are doing everything for you:
 
 You may use the API to generate plots from your simulation models almost instantly. 
 You can control all major settings for the simulation and the later plot layout using a large set of parameters:
-```
+```python
 bptk.plot_scenarios(
     scenarios,
     scenario_managers=[], 
@@ -201,7 +201,7 @@ Currently, we support two types of widgets to control the process:
 
 If you are using jupyter notebook, interactive plotting should work if you installed ``ipywidgets`` (should be installed as dependency). 
 But if you are using jupyter lab, please install the required extension. This should do in the terminal:
-```
+```commandline
 souce bptk_test/bin/activate
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
@@ -213,7 +213,7 @@ It calls the ``plot_scenarios(...)`` method on every widget change.
 #### Attention Mac OS X user
 There is a bug in the underlying NPM framework that requires you to use node version 8 to successfully download the extension. 
 If you are using homebrew, issue these commands: (otherwise download node 8 from [https://nodejs.org/en/](https://nodejs.org/en/))
-```
+```commandline
 brew install node@8
 
 #before calling the code above prepend node@8 to the path:
@@ -227,7 +227,7 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ## Override the configuration
 The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. 
 It also stores the style settings for the plots. If you wish to override these settings, you can do so:
-```
+```python
 import BPTK_Py.config.config as config
 
 # Override setting "config_key":
@@ -316,7 +316,7 @@ The file monitor will automatically update the python model file whenever a chan
 ### Changing scenario files during runtime
 If you changed a JSON scenario file during runtime and wish to reload the scenario(s), use the following method:
 
-```
+```python
 bptk.reset_scenario(scenario_manager="NAMEOFSCENARIOMANAGER",scenario_name="NAMEOFSCENARIO")
 ```
 For now this is not automated as you may have modified the scenario during in ``bptk`` and an automatic overwriting might lead to 
@@ -362,7 +362,7 @@ The thread runs within the Notebook kernel and will die when you shutdown the no
 To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.
 The function is supposed to only return True or False and receives a data parameter. For example ``lambda data : sum(data)/len(data) < 0`` tests if the average of the data is below 0. We can get the raw output data instead of the plot if we use the parameter ``return_df=True``. This returns a dataFrame object. The following example generates this dataframe and uses the model checker to test if the ``productivity`` series' mean is below 0. Otherwise it will return the specified message.
 
-```
+```python
 df =bptk.plot_scenarios(
     scenario_managers=["smSimpleProjectManagement"],
     scenarios=["scenario120"],
@@ -389,7 +389,7 @@ A strategy defines which constants to change at which point in time of the simul
 
 For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. 
 Note that the base constants and scenario constants are valid until the first modification by the strategy.
-```
+```json
 "strategy": {
     "1": {
         "cost.paymentTransactionCost": 0.4,
@@ -431,7 +431,7 @@ This feature is for advanced use only and currently considered unstable.
 
 First we need to obtain the scenarios and their corresponding simulation models and replace the given equations with the new lambda. 
 An extended strategy is just another dictionary. In general, it looks like this:
-```
+```python
 scenarios = bptk.ScenarioManager.getAvailableScenarios()
 
 extended_strategy= {
@@ -452,7 +452,7 @@ We will overwrite the specific equations with the given lambda function(s) in th
 The above strategy plays a around with the equations ``cashFlow.cashFlowYtd`` and ``cash.cash``. Look at ``cash.cash``. It will return 80,000 if at starttime of the model. Otherwise, it return the value of t-1 + 80,000 and generate a linear function. Instead of ``t-1`, we might even use the model's ``dt``: ``scenarios["MakeYourStartUpGrow_strategy"].model.dt`` instead of -1. But this would make the code line too complex. Make sure to use dt however, if you intend to work in productive mode!
 
 After defining the strategy, you have to store the lambdas in the function. ``bptk`` comes with a method for this. The code is as follows:
-```
+```python
 bptk.modify_strategy_for_complex_strategy(scenarios=scenarios,extended_strategy=extended_strategy)`
 
 bptk.plotScenarioForOutput(
@@ -467,7 +467,7 @@ Of course you may as well use this approach to only modify constants. If you int
 
 ### Extended strategy only for an interval
 If you want to set another lambda function only for an interval and reset to the old one, this is easily possible. Check the following strategy. It will replace the "cash.cash" function between t=20 to 50 and then restore the one from the model:
-```
+```python
 extended_strategy= {
     "MakeYourStartUpGrow_strategy" : {
         20 : { 
@@ -493,7 +493,7 @@ It is possible to add scenarios during runtime. For convenience, here is some ex
 
 First define the details for the scenario manager and then set up the name of the scenario, the strategy and the constants. The strategy may as well be one of the complex ones as described above. But be careful to define everything correctly.
 
-```
+```python
 scenario_manager = {
     "name" : "ScenarioManager_temp",
     "model" : "simulation_models/sd_simple_project",
@@ -640,8 +640,10 @@ Then you see that we start a class ``simulation_model``. For the framework to re
 
 The ``__init__`` configures the model properties such as the start time, stop time, dt and the equations. ``equations`` is a python ``dict`` that stores all equations.
  An equation has a key and is a ``lambda`` function of the following format:
- ```
-    "name_of_equations" : lambda t : do something
+ ```python
+ {
+    "name_of_equations" : lambda t : dosomething
+ }
  ```
  
  
@@ -654,9 +656,9 @@ For each equation, it fills a dictionary inside the ``self.memo``.
 To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
 To ease the understanding of the concepts used, refer to this simple example with two equations:
 
-```
+```python
 def __init__(self):
-    ....
+    #....
     # Setup all other things
     
     self.equations = {
@@ -676,7 +678,7 @@ It stores lists of ``(x,y)`` values you may use in your equations for linear int
 In this way, you avoid defining very complex functions in equations. The x values may even be the result of other equations.
 
 Example set of points:
-```
+```python
 self.points = {
   		'productivity': [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1.03400735294118],[1.25,1.119],
   		    [1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ],
@@ -685,7 +687,7 @@ self.points = {
 
 
 **ATTENTION:** Please always do use the following lines to initialize the simulation model's memo as shown in the example:
-```
+```python
 for key in list(self.equations.keys()):
       self.memo[key] = {}
 ``` 
