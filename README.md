@@ -150,8 +150,10 @@ bptk.plot_scenarios(
 ![png](README/output_0_0.png)
 
 ### Receive the results data
-You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
-The tutorial contains some example code how to easily manipulate simulation results and gain new insights using the DataFrames.
+You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. 
+The default value is ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, ``BPTK_Py`` returns a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). 
+You can use the powerful API of Pandas to analyze, crunch and join the result data of multiple scenarios and equations for gaining deeper insights into the simulation results.
+The tutorial contains some example code how to easily manipulate simulation results and generate new data.
 
 ### Architecture - or how do we plot?
 
@@ -185,13 +187,16 @@ You see that this is a very simple architecture and due to the decoupling of fun
 
 ## Interactive Plotting
 An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. 
-It comes with a field "constants" that contains a list of widget definitions. 
+It comes with a field ``constants`` that contains a list of widget definitions. 
 Each widget is defined using a tuple.
-The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. This allows you to see the results of the simulations instantly without having to re-run the simulation manually.
+The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. 
+This allows you to see the results of the simulations instantly without having to re-run the simulation manually.
 
 Currently, we support two types of widgets to control the process:
 * **sliders**: Sliders allow you to select a value in an interval. Use "slider" as ``widget_type``. A slider requires ``start_value and maximum_value`` as described above. Example: ``("slider",'initialOpenTasks',100.0,1000.0)``
+
 * **checkbox**: If you want a checkbox, use "checkbox" as ``widget_type``. You do not have to supply ``start_value / maximum_value``. Example: ``("checkbox","initialStaff")``
+
 * **timerange**: This will give you a slider in which you can select time ranges within the graph to "zoom in/out" of certain parts of the graph. It gives you the power to further look into certain simulation periods. It is enough to just add the keyword "timerange" as ``widget_type``.
 
 If you are using jupyter notebook, interactive plotting should work if you installed ``ipywidgets`` (should be installed as dependency). 
