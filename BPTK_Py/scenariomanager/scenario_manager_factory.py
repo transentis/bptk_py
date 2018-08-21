@@ -53,12 +53,13 @@ class ScenarioManagerFactory():
         def merge_two_dicts(x, y):
             """
             Little helper method to merge dict x into y. If a key exists in x and y, x will win!
+            Note: It is inplace! I return a copy z. This way, the original x and y dicts stay untouched and available for your own use
             :param x:
             :param y:
             :return: Merged dict of x and y
             """
-            z = y.copy()  # start with x's keys and values
-            z.update(x)  # modifies z with y's keys and values & returns None
+            z = y.copy()  # start with y's keys and values
+            z.update(x)  # modifies z with x's keys and values & returns None
             return z
 
         if len(filename) > 0:
