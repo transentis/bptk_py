@@ -13,16 +13,26 @@ The XMILE standard is governed by the OASIS standards consortium - our framework
 ## Installation
 Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
 
-First, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
-Second, you need [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
+1. Obvisouly, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
+2. Install [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
 
-Now we have the main requirements. The following piece of installation requires you to use the terminal. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. Linux users may use their preferred terminal application.
-To install the package, just type `` pip install BPTK_Py ``. Pip is a package manager that keeps Python packages up-to-date.
-Pip will install the package and make it available system-wide. It downloads all dependencies for the package automatically.
-Now you can start working with the package.
+After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
+This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. 
+Linux users may use their preferred terminal emulator.
+To install the package, just type ``pip install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
+Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
+After Pip finished successfully, you are ready for working with the framework. 
 
+Additionally, you may want to use Jupyter Lab to work interactively on the simulations - just as we do.
+```
+pip install jupyterlab
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+```
+Now you have a functioning version of jupyter lab and can start working 
+interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
 
-In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/), a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. Following steps are required to set up the venv and and install BPTK_Py into it:
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead, a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+Following steps are required to set up the venv and and install BPTK_Py into it:
 ```
 pip install virtualenv
 virtualenv bptk_test 
@@ -32,15 +42,9 @@ source bptk_test/bin/activate  #  For UNIX/Linux/Mac OS X
 bptk_test\Scripts\activate.bat # For Windows
 
 pip install BPTK_Py
-```
-
-You may want to use Jupyter Lab to work interactively on the simulations - just as we do.
-```
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
-Now you have a functioning version of jupyter lab and can start working 
-interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
 
 ### Package dependencies
 If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. 
@@ -85,9 +89,11 @@ This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
 ## Plotting API
-After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user.
-BPTK_Py aims at making simulation and result plotting as simple as possible. 
-This is why there is only two functions that are doing everything for you: 
+After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. 
+An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user. 
+It is the interface between the complex simulations and the user.
+``BPTK_Py`` aims at making simulation and result plotting as simple as possible. 
+This is why there are only two functions that are doing everything for you: 
 * the ``plot_scenarios`` method for static plots (described here)
 * the ``dashboard`` method for interactive dashboards. All parameters ``plot_scenarios`` are valid for this one as well. For the special parameters of interactive plotting, see [Interactive Plotting](##Interactive Plotting).
 
@@ -110,10 +116,12 @@ bptk.plot_scenarios(
     series_names={"series_to_rename":"rename_to"},return_df=False)
 
 ```
-The first plots one or multiple equations for an arbitrary amount of scenarios. The scenario names are specified in the scenario JSON file. 
+The method plots one or multiple equations for an arbitrary amount of scenarios. The scenario names are specified in the scenario JSON file. 
 The other parameters are optional. Always use Python's list notations for the plural parameters (``scenarios / equations / scenario_managers``).
-The second method lets you plot one equation for multiple scenarios and uses the same parameter set.
 
+* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
+* ``scenarios``: Select the scenario(s) to plot. Only ``scenarios`` and ``equations`` are mandatory.
+* ``equations``: Select the simulation's equation(s) to plot. If no equation is specified, the simulator has nothing to simulate.
 * ``kind``: Kind of plot (area, line, bar, ...)
 * ``alpha``: The alpha defines the opacity. Float 0.0 < alpha <= 1.0.
 * ``freq``: Here we define the interval of the dates that we convert the ticks to. "D" means daily, "H" hourly, "M" monthly, "Y" annually and so on.
@@ -122,7 +130,6 @@ The second method lets you plot one equation for multiple scenarios and uses the
 * ``visualize_from_period``: First t to visualize from (in case we want to cut off the first x periods)
 * ```visualize_to_period```: Last t to visualize (to cut off later periods)
 * ``x_label and y_label``: set the label names for the axis.
-* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
 * ``series_names``: The equation names are not the kind of names we want to show the customer. You may use the ``series_names`` parameter to rename them. Supply the equations to rename and their destination names. Use Python's dict notation: ``{ equation_name : rename_to }``. The dictionary serves as a set of replacement rules. To correctly rename the series, you have to understand how the framework sets the names of series to avoid ambiguity in series names. If you use more than one scenario manager for plotting, bptk_py applies the following series naming schema: ``"scenarioManager"_"scenario"_"equation"``. If you want to replace this, use ``series_names={"scenarioManager_scenario_equation": "new name"}``. You may as well define a rule that replaces the name of each scenario Manager with a whitespace. The number of rules is not limited.
 
 
