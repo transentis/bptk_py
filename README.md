@@ -106,6 +106,18 @@ scipy |Linear interpolation for graphical functions  | 1.1.0
 numpy |Linear interpolation and required by pandas | 1.15.0
 jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.1
 
+## Limitations
+
+Currently the BPTK_Py framework is geared towards our own need and has a number of limitations - we are happy to extend the framewor. Please let us know what you need so that we can prioritize our activities.
+
+Here are the known limitations:
+
+* Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
+* The SD model transpiler only supports stocks, flows/biflows and converters. The other modeling elements provided by Stella (such as ovens and conveyors) are not supported.
+
+* The SD model transpiler currently only supports the following builtin functions: ``size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step``
+
+
 
 ## Using the Framework in Python
 
@@ -595,12 +607,6 @@ In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Ove
 ## Interactive Readme
 Check out the iPython notebook *Interactive Readme* for an interactive approach to learning how to use the framework as an analyst. 
 The notebook comes with a set of scenarios and simulation models and supports you in getting started with the framework. It applies each of the described concepts and shows you how to play around with simulations.
-
-## Limitations
-* For now, the simulator may only simulate using the Euler method
-* The SD model transpiler supports the following builtin functions:
-    * size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step
-
 
 # Creating Own Simulation models
 Instead of reading 3rd party simulation models, you may define your own simulation model. 
