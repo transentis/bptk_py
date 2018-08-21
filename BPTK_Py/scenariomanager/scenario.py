@@ -69,8 +69,15 @@ class simulationScenario():
 
             for constant, value in self.constants.items():
                 try:
-                    self.model.equations[constant] = lambda t : eval(str(value))
-                    log("[INFO] {}: Changed constant {} to {}".format(self.name,constant,str(value)))
+                    if type(value) == str:
+                        self.model.equations[constant] = eval("lambda t : " + value)
+                        log("[INFO] {}: Changed constant {} to {}".format(self.name, constant, str(value)))
+                    elif type(value) == int or type(value) == float:
+                        self.model.equations[constant] = eval("lambda t: " + str(value))
+                        log("[INFO] {}: Changed constant {} to {}".format(self.name, constant, str(value)))
+                    else:
+                        log("[ERROR] Invalid type for constant {}: {}".format(constant,str(value)))
+
                 except ValueError as e:
                     log("[ERROR] Attempted to evaluate an expression that I cannot evaluate. Error message: {}".format(str(e)))
 
