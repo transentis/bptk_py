@@ -85,11 +85,15 @@ class scenarioManager():
                 print("[ERROR] Problem downloading the dependencies")
 
 
+        # Check if the source file changed in the meantime (newer version saved outside Jupyter/Bptk)
         if os.path.isfile(self.model_file + ".py") and not self.source == "":
             last_stamp_model = os.stat(self.model_file + ".py").st_mtime
             last_stamp_source = 0
+
             if not os.path.isfile(self.source):
                 log("[ERROR] Source model file not found: \"{}\"".format(str(self.source)))
+                self.source = ""
+
 
             else:
                 last_stamp_source = os.stat(self.source).st_mtime
@@ -131,8 +135,9 @@ class scenarioManager():
                         scenario.setup_constants()
             else:
                 log("[ERROR] Scenario manager: The python model for scenario manager \"{}\" does not exist: \"{}\". Will not be able to run simulations for this scenario manager!".format(str(self.name),str(self.model_file)+".py"))
+                self.scenarios = {}
 
         except Exception as e:
             log(
                 "[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(str(e)))
-            raise
+            self.scenarios = {}

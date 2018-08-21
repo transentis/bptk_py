@@ -82,10 +82,11 @@ On first run, the compiler may have to download some additional dependencies for
 Now you are ready to play around with the APIs!
 
 ## Plotting API
-After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework.
-For interactive examples, you may always refer to the example notebook. The main method for plotting and simulating is the ``plot_scenarios`` method.
+After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user.
+BPTK_Py aims at making simulation and result plotting as simple as possible. This is why there is only one function that is
+doing everything for you: the ``plot_scenarios`` method.
 
-You may use it to generate plots from your simulation models almost instantly. You can control all major settings for
+You may use it to generate plots from your simulation models almost instantly. You can control all major settings for the simulation and the later plot layout:
 ```
 bptk.plot_scenarios(
     scenarios,
@@ -141,12 +142,17 @@ bptk.plot_scenarios(
 
 ![png](README/output_0_0.png)
 
+### Architecture or how do we plot?
 
-```
-CODE!
-```
+![plotting architecture](README/simulation_flow_drawio.png)
 
+The image shows the internal architecture and components involved in plotting a simulation. As you see, 5 components are directly involved in the plotting. 
 
+In the beginning, the user issues a "plotScenario(..)" call with the known parameters (please see how to exactly use the API in the next steps). The ``bptk`` object simply forwards this request to the ``Visualizer``. We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do* things. The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9). The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability. Hence, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag. It comes with neat features like generating timeseries data from your simulation results.
+
+The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4). The scenarioManagerFactory also instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, it returns these to the simulationWrapper (step 5). Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). Finally, the Visualizer generates the time series data, the plots and formats them (step 9). The output goes back to ``bptk`` and the user gets to see a plot - or a dataFrame if she used the ``return_df`` flag - step 10.
+
+You see that this is a very simple architecture and due to the decoupling of functionality and components, easy to extend.
 
 ### Receive the results data
 You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. In default, this is set to ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, you will receive a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). You can use the powerful API of Pandas to analyze, crunch data and join the results of multiple scenarios and equations for gaining deeper insights into the simulation results.
@@ -183,7 +189,7 @@ for key, value in config.configuration.items():
 ```
 
 ## Scenarios
-Scenarios are the heart of each simulation. A scenario defines which simulation model to use, the source model and has a name. 
+Scenarios are the heart of each simulation. A scenario defines which simulation model to use, optionally point to a source model and has a name. 
 It may override model constants and define execution strategies. 
 The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
 You write scenarios in JSON format. Please store the scenarios in the ``scenarios`` subfolder of your current working directory so ``BPTK_Py`` is able to find it. 
@@ -251,10 +257,16 @@ If you changed a JSON scenario file during runtime and wish to reload the scenar
 ```
 bptk.reset_scenario(scenario_manager="NAMEOFSCENARIOMANAGER",scenario_name="NAMEOFSCENARIO")
 ```
+For now this is not automated as you may have modified the scenario during in ``bptk`` and an automatic overwriting might lead to 
+unexpected results.
 
 ### Modifying points of graphical functions
-You may have defined graphical functions within stela Architect but a scenario may change these if you want. Internally, a graphical function is nothing else but a set of points and values. Hence, you may easily modify these points using the scenario JSON file. All you need is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function with their respective x and y values as list: `` [x,y] ``.
-Let us modify the previous scenario example and add some points:
+You may have defined graphical functions within Stella Architect but a scenario may change these if you want. 
+Internally, a graphical function is nothing else but a set of points and values. 
+Hence, you may easily modify these points using the scenario JSON file. 
+All you need is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function 
+with their respective x and y values as list: `` [x,y] ``.
+The following lines show how to set a new graphical function:
 
 ```
 {
@@ -280,7 +292,8 @@ Let us modify the previous scenario example and add some points:
 
 ```
 
-Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation requires the y-value for decimal x values.
+Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation 
+requires the y-value for decimal x values.
 
 ## Monitoring of 3rd party source models
 For now, we are able to translate Stella Architect Models to python using transentis' [sd-compiler](https://bitbucket.org/transentis/sd-compiler).
@@ -288,7 +301,8 @@ Whenever you instantiate a `bptk`` object and plot at least one scenario, one th
 
 For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
 
-The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
+The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). 
+It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
 
 **Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 

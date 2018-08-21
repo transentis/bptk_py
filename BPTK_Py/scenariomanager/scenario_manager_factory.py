@@ -55,7 +55,7 @@ class ScenarioManagerFactory():
                 log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
                 return None
 
-
+            # ScenarioManager ->
             for group_name in json_dict.keys():
                 base_constants = {}
                 if "base_constants" in json_dict[group_name].keys():
@@ -70,26 +70,31 @@ class ScenarioManagerFactory():
 
                 manager.model_file = json_dict[group_name]["model"]
 
+
+                # ScenarioManager -> "scenarios" ->
                 scen_dict = json_dict[group_name]["scenarios"]
 
 
-
+                # Create simulation scenarios from structure
                 for scenario_name in scen_dict.keys():
-                    scenario_dict = scen_dict[scenario_name]
-
-                    if len(base_constants.keys()) > 0 :
-                        if not "constants" in scenario_dict.keys():
-                            scenario_dict["constants"] = {}
-
-                        for const,value in base_constants.items():
-                            if not const in scenario_dict["constants"].keys():
-                                scenario_dict["constants"][const] = value
-
-
-                    sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=None,group=group_name)
-
-                    ## Only add scenarios that the scenario manager did not observe yet
+                    ## Only add scenarios that the scenario manager did not observe yet --> avoid changing running models
+                    ## If you need to reload a scenario pop it first from
                     if not scenario_name in manager.scenarios.keys():
+                        scenario_dict = scen_dict[scenario_name]
+
+                        # ScenarioManager -> "scenarios" -> scenario_name -> "constants"
+                        if len(base_constants.keys()) > 0 :
+                            if not "constants" in scenario_dict.keys():
+                                scenario_dict["constants"] = {}
+
+                            for const,value in base_constants.items():
+                                if not const in scenario_dict["constants"].keys():
+                                    scenario_dict["constants"][const] = value
+
+
+                        sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name,model=None,group=group_name)
+
+
 
                         manager.scenarios[scenario_name] = sce
 

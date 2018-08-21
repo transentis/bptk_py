@@ -37,6 +37,7 @@ class bptk():
         Init
         """
 
+        # Setup matplotlib
         import BPTK_Py.config.config as config
         for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
