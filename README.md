@@ -13,12 +13,12 @@ The XMILE standard is governed by the OASIS standards consortium - our framework
 ## Installation
 Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
 
-First, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.4 and 3.5.
+First, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 Second, you need [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
 
 Now we have the main requirements. The following piece of installation requires you to use the terminal. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. Linux users may use their preferred terminal application.
 To install the package, just type `` pip install BPTK_Py ``. Pip is a package manager that keeps Python packages up-to-date.
-Pip will install the package and make it available system-wide. It downloads its dependencies automatically. 
+Pip will install the package and make it available system-wide. It downloads all dependencies for the package automatically.
 Now you can start working with the package.
 
 
@@ -80,13 +80,14 @@ for key, manager in managers.items():
     for name in manager.get_scenario_names():
         print("\t {}".format(name))
 ```
-On first run, the compiler may have to download some additional dependencies for model compilation. Please be patient for some seconds. This will only occur on first-time run.
+On first run, the framework may have to download some additional dependencies for model compilation. Please be patient for some seconds. 
+This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
 ## Plotting API
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user.
-BPTK_Py aims at making simulation and result plotting as simple as possible. This is why there is only one function that is
-doing everything for you: the ``plot_scenarios`` method.
+BPTK_Py aims at making simulation and result plotting as simple as possible. 
+This is why there is only one function that is doing everything for you: the ``plot_scenarios`` method.
 
 You may use it to generate plots from your simulation models almost instantly. You can control all major settings for the simulation and the later plot layout:
 ```
@@ -197,6 +198,20 @@ The plotting API works almost the same way as for ``plot_scenarios``.
 The only difference is that we use a ``widgetDecorator`` class to build the widgets and modify the specified constants and time ranges. 
 It calls the ``plot_scenarios(...)`` method on every widget change.
 
+#### Attention Mac OS X user
+There is a bug in the underlying NPM framework that requires you to use node version 8 to successfully download the extension. 
+If you are using homebrew, issue these commands: (otherwise download node 8 from [https://nodejs.org/en/](https://nodejs.org/en/))
+```
+brew install node@8
+
+#before calling the code above prepend node@8 to the path:
+
+source venv/bin/activate
+export PATH='/usr/local/opt/node@8/bin':$PATH
+ 
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+```
+
 ## Override the configuration
 The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. 
 It also stores the style settings for the plots. If you wish to override these settings, you can do so:
@@ -215,11 +230,15 @@ for key, value in config.configuration.items():
 ## Scenarios
 Scenarios are the heart of each simulation. A scenario defines which simulation model to use, has a name and might point to a source file that contains a 3rd party software's simulation model. 
 A scenario may override constants and define execution strategies.
-The latter change constants in different steps of the simulation. See the "strategy simulation" section for details.
+The latter change constants in different steps of the simulation. 
+See the "strategy simulation" section for details.
 You write scenarios in JSON format. Please store the scenarios in the ``scenarios`` subfolder of your current working directory so ``BPTK_Py`` is able to find it. 
 If you wish to use another folder, feel free to change ``config.configuration["scenario_storage"]`` to a folder of your choice.
-We group simulation scenarios by "scenario Managers". One scenario manager stores one simulation model and has a name. Scenarios run this simulation model and modify constants/points and define strategies.
-One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. A simple example may look like this:
+
+We group simulation scenarios by "scenario Managers". One scenario manager stores one simulation model and has a name. 
+Scenarios run this simulation model and modify constants/points and define strategies.
+One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. 
+A simple example may look like this:
 
 ```JSON
 {  
@@ -263,9 +282,14 @@ If you use the same name for a scenario manager in another file, this will be de
 The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
 The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. 
 
-Then the key ``base_constants`` may follow. It defines the initial state for all models, regardless the state in the model source file. Here you can set all constants to a desired state. Each scenario will store the same values for the given constants. For example, in this example we set "initialOpenTasks" to 80.
+Then the key ``base_constants`` may follow. It defines the initial state for all models, regardless the state in the model source file. 
+Here you can set all constants to a desired state. 
+Each scenario stores the same values for the given constants. For example, in this example we set "initialOpenTasks" to 80.
 The actual scenarios follow in the ``scenarios`` tag.
-For each scenario, you have to supply a unique name as well. JSON does not support integer keys. The ``constants`` list stores the overrides constants. The idea of this field is that you override certain base constants given before. The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. The other values like "deadline" will be the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
+For each scenario, you have to supply a unique name as well. JSON does not support integer keys. 
+The ``constants`` list stores the overrides constants. 
+We use this field is that you override certain base constants given before. 
+The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. The other values like "deadline" will be the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
 You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to ``0.5`` by the framework.
 
 
@@ -329,14 +353,8 @@ For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the
 The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). 
 It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
 
-**Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
-
-#### Attention Mac OS X user
-For now there is a bug, that requires you to use node version 8 to successfully download the extension. If you are using homebrew, issue these commands:
-```
-brew uninstall node yarn
-brew install node@8 # --> might have to set path to link node to node8
-```
+**Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. 
+The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 
 ## Model Checking
 To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.

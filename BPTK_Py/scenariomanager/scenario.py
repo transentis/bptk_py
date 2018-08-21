@@ -56,7 +56,7 @@ class simulationScenario():
 
         self.name = name
 
-        self.result = None  # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserver the pointer
+        self.result = None  # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserve the pointer
 
 
     def setup_constants(self):
@@ -98,7 +98,7 @@ class simulationScenario():
                         self.model.points[name] = eval(value)
                         log("[INFO] {}, {}: Changed points {} to {}".format(self.group,self.name, name, str(value)))
                     elif type(value) == list:
-                        self.model.points[name] = eval(str(value))
+                        self.model.points[name] = value
                         log("[INFO] {}, {}: Changed points {} to {}".format(self.group,self.name, name, str(value)))
                     else:
                         log("[ERROR] Invalid type for points {}: {}".format(name,str(value)))

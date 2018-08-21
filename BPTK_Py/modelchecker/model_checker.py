@@ -19,7 +19,6 @@ class modelChecker():
     """simple model checking class. Can check assertions using lambda methods
     """
 
-
     def model_check(self, data, check, message="None"):
         """
         Model checker
