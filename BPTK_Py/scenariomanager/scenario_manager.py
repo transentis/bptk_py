@@ -87,7 +87,12 @@ class scenarioManager():
 
         if os.path.isfile(self.model_file + ".py") and not self.source == "":
             last_stamp_model = os.stat(self.model_file + ".py").st_mtime
-            last_stamp_source = os.stat(self.source).st_mtime
+            last_stamp_source = 0
+            if not os.path.isfile(self.source):
+                log("[ERROR] Source model file not found: \"{}\"".format(str(self.source)))
+
+            else:
+                last_stamp_source = os.stat(self.source).st_mtime
 
         else:
             last_stamp_source = 0
