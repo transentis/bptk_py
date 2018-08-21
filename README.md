@@ -87,9 +87,12 @@ Now you are ready to play around with the APIs!
 ## Plotting API
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user.
 BPTK_Py aims at making simulation and result plotting as simple as possible. 
-This is why there is only one function that is doing everything for you: the ``plot_scenarios`` method.
+This is why there is only two functions that are doing everything for you: 
+* the ``plot_scenarios`` method for static plots (described here)
+* the ``dashboard`` method for interactive dashboards. All parameters ``plot_scenarios`` are valid for this one as well. For the special parameters of interactive plotting, see [Interactive Plotting](##Interactive Plotting).
 
-You may use it to generate plots from your simulation models almost instantly. You can control all major settings for the simulation and the later plot layout:
+You may use the API to generate plots from your simulation models almost instantly. 
+You can control all major settings for the simulation and the later plot layout using a large set of parameters:
 ```
 bptk.plot_scenarios(
     scenarios,
@@ -107,7 +110,8 @@ bptk.plot_scenarios(
     series_names={"series_to_rename":"rename_to"},return_df=False)
 
 ```
-The first plots one or multiple equations for one scenario ("scenario_name"). The scenario name is the one specified in the scenario JSON file. The other parameters are optional. Always use Python's list notations for the plural parameters (``scenario_names / equations / scenario_managers``).
+The first plots one or multiple equations for an arbitrary amount of scenarios. The scenario names are specified in the scenario JSON file. 
+The other parameters are optional. Always use Python's list notations for the plural parameters (``scenarios / equations / scenario_managers``).
 The second method lets you plot one equation for multiple scenarios and uses the same parameter set.
 
 * ``kind``: Kind of plot (area, line, bar, ...)
@@ -153,7 +157,8 @@ The tutorial contains some example code how to easily manipulate simulation resu
 
 ![plotting architecture](README/simulation_flow_drawio.png)
 
-The image shows the internal architecture and components involved in plotting a simulation. As you see, 5 components are directly involved in the plotting. 
+The image shows the internal architecture and components involved in plotting a simulation. 
+As you see, 5 components are directly involved in the plotting. 
 
 In the beginning, the user issues a "plotScenario(..)" call with the known parameters (please see how to exactly use the API in the next steps). 
 The ``bptk`` object simply forwards this request to the ``Visualizer``. 
@@ -166,15 +171,17 @@ It comes with neat features like generating timeseries data from your simulation
 
 The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. 
 Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4). 
-The scenarioManagerFactory also instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
-In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, it returns these to the simulationWrapper (step 5). 
+On the right side we denoted the hierarchy of the ``scenarioManager`` and ``simulationScenario``. 
+The factory is at the top level and loads the JSON files and creates the scenario Managers. 
+
+The scenario Manager  instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
+In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, the factory returns these to the simulationWrapper (step 5). 
 Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). 
 The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). 
 Finally, the Visualizer generates the time series data, the plots and formats them (step 9). 
 The output goes back to ``bptk`` and the user gets to see a plot - or a dataFrame if she used the ``return_df`` flag - step 10.
 
-You see that this is a very simple architecture and due to the decoupling of functionality and components, easy to extend.
-
+You see that this is a very simple architecture and due to the decoupling of functionality and components from the API calls, easy to extend.
 
 ## Interactive Plotting
 An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. 
@@ -285,19 +292,20 @@ The ``model`` parameter contains the (relative) path to the (python) simulation 
 Then the key ``base_constants`` may follow. It defines the initial state for all models, regardless the state in the model source file. 
 Here you can set all constants to a desired state. 
 Each scenario stores the same values for the given constants. For example, in this example we set "initialOpenTasks" to 80.
-The actual scenarios follow in the ``scenarios`` tag.
+In this case, define ``base_constants`` for the scenario manager in exactly one file, not in multiple. 
+In case the base constants stretch over multiple files, ``bptk_py`` attempts to merge them and data loss may occur due to duplicate values for the same constants.
+The actual scenarios follow after the ``scenarios`` tag. If you define scenarios for one scenario manager over multiple files, this is O.K. and increases readability for the user.
 For each scenario, you have to supply a unique name as well. JSON does not support integer keys. 
 The ``constants`` list stores the overrides constants. 
-We use this field is that you override certain base constants given before. 
-The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. The other values like "deadline" will be the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
+The constants override certain base constants given before. 
+The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. 
+The other values such as "deadline" stay the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
 You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to ``0.5`` by the framework.
-
 
 You should consider using the ``source`` field in the scenario manager tag. It specifies the (relative) path to the original model file of 3rd party applications. 
 For now, the framework supports automatic conversion of .itmx/.stmx files from Stella Architect. 
 For each source file, a file monitor will run in background to check for changes in the source model. 
-The file monitor will automatically update the python model file whenever a change to the source model is detected! 
-(See next section for more details)
+The file monitor will automatically update the python model file whenever a change to the source model is detected. 
 
 
 ### Changing scenario files during runtime
@@ -313,47 +321,36 @@ unexpected results.
 You may have defined graphical functions within Stella Architect but a scenario may change these if you want. 
 Internally, a graphical function is nothing else but a set of points and values. 
 Hence, you may easily modify these points using the scenario JSON file. 
-All you need is the name of the graphical function, e.g. ``'capabilities.learningCurve'`` and the set of points for the function 
+All you need is the name of the graphical function, e.g. ``'productivity'`` and the set of points for the function 
 with their respective x and y values as list: `` [x,y] ``.
 The following lines show how to set a new graphical function:
 
-```
-{
-"ScenarioManager1": {
-    "model": "simulation_models/model",
-    "source": "simulation_models/make_your_startup_grow.itmx",
-    "scenarios": {
-        "MakeYourStartUpGrow_2": {
-            "constants": {
-                "cost.paymentTransactionCost": 0.5,
-                "cost.productDevelopmentWage": 10000
-                }
-                "points":{
-                    'capabilities.learningCurve':
-                    [
-                        [0,1], [1,2], [2,3], [3,4]
-                    ]
-                    }
-            }
+```JSON
+...
+"scenarios": {
+      "base": {},
+      "scenario100": {
+        "constants": {
+          "initialOpenTasks": 100
+        },
+        "points" : {
+            "productivity": [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1],[1.25,1.119],[1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ]
         }
-    }
-}
+      }
 
 ```
 
-Now we defined four points for the function. The simulator will make sure to interpolate the values if an equation 
-requires the y-value for decimal x values.
+The simulator makes sure to interpolate the values if an equation requires the y-value for x values not defined in the function.
 
 ## Monitoring of 3rd party source models
 For now, we are able to translate Stella Architect Models to python using transentis' [sd-compiler](https://bitbucket.org/transentis/sd-compiler).
-Whenever you instantiate a `bptk`` object and plot at least one scenario, one thread per ``sourceModel`` will monitor the scource ITMX file if the scenario specifies a ``source`` field. It checks for modifications each second. Whenever a modification is detected, a bash script will be called that executes the transpiler.
+Whenever you instantiate a ``bptk`` object and plot at least one scenario, one thread per ``sourceModel`` monitors the scource ITMX file if the scenario specifies a ``source`` field. 
+It checks for modifications each second. 
+Whenever a modification is detected, a bash script will be called that executes the transpiler.
 
-For this to work, make sure you set the parameter ``sd_py_compiler_root`` to the absolute path of the transpiler's root directory in [BPTK_Py/config/config.py](BPTK_Py/config/config.py), e.g. ``sd_py_compiler_root = "~/Code/sd-compiler/"``
-
-The simple bash script calling the transpiler lies in [BPTK_Py/shell_scripts/update_model.sh](BPTK_Py/shell_scripts/update_model.sh). 
-It takes the transpiler path and the relative path of the simulation models as taken from the scenario config's ``sourceModel`` field and executes the parser once.
-
-**Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. If you don't use it, don't be surprised if your script never terminates ;-). If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. 
+**Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. 
+If you don't use it, don't be surprised if your script never terminates ;-). 
+If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. 
 The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
 
 ## Model Checking
@@ -382,7 +379,11 @@ bptk.model_check(df["productivity"],check_function,message="Productivity is not 
 ```
 
 ## Strategy simulation
-The simulator is also able to simulate various strategies. A strategy defines which constants change at which point in time of the simulation. For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. Note that the ``constants`` field in the strategy will also be parsed at ``t=0`` for initial modifications of the strategies.
+An important feature of ``BPTK_Py`` is the ability to simulate various strategies. 
+A strategy defines which constants to change at which point in time of the simulation. 
+
+For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. 
+Note that the base constants and scenario constants are valid until the first modification by the strategy.
 ```
 "strategy": {
     "1": {
@@ -407,7 +408,8 @@ The simulator is also able to simulate various strategies. A strategy defines wh
     }
 }
 ```
-This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. The full scenario for this strategy is available in [scenarios/make_your_startup_grow_with_strategy.json](scenarios/make_your_startup_grow_with_strategy.json). To apply a strategy for a scenario, use the parameter ``strategy=True``. 
+This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. 
+To apply a strategy for a scenario, use the parameter ``strategy=True`` in the API. 
 
 **Note:** If you set the ``strategy=True`` but there is not strategy defined in the scenario, the simulator will just issue a Warning in the logfile and execute the simulation(s) without a strategy. 
 
