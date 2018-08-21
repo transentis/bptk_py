@@ -1,29 +1,62 @@
 # Business Prototyping Toolkit for Python
-Welcome to the Business Prototyping Toolkit for Python!
+
+__Welcome to the Business Prototyping Toolkit for Python!__
 
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. 
+It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter/Jupyter Lab notebooks. 
 
-It requires a python simulation model following the conventions given in the end of this Readme. 
-Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python 
-versions of simulation models from other engines. Currently it is compatible with the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile) which is an open XML protocol for sharing interoperable system dynamics models and simulations.
-For instance, [Stella Architect](http://www.iseesystems.com) stores system dynamics models in this format. 
-The XMILE standard is governed by the OASIS standards consortium - our framework currently only supports the XMILE standard, we may create a compiler for other formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)) in the future.
+It requires a Python simulation model following the conventions given in the end of this Readme.
+ 
+Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
 
-## Installation
-Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
+Currently sdcc only supports models created using the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile), which is an open XML protocol for sharing interoperable system dynamics models and simulations. The XMILW standard is governed by the OASIS standards consortium.
 
-1. Obvisouly, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
-2. Install [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
+[Stella](http://www.iseesystems.com) is a visual modeling environment that stores system dynamics models in the XMILE format.
+ 
+In future we may extend the sdcc transpiler to support other model formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)).
+
+## Installing the BPTK_PY framework
+
+
+
+Like every piece of software, BPTK_Py has to be installed correctly, including its dependencies. 
+
+Assuming you are starting from scratch, you need to perform the following steps
+
+1. Install Python
+2. Install Node
+3. Install BPTK_Py
+4. Install JupyterLab (optional)
+5. Setup a virtual environment (optional)
+6. Download our BPTK_Py tutorial (optional)
+
+### Install Python
+
+First of all, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
+
+### Install Node
+
+Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
+
+
+### Install BPTK_Py
 
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
+
 This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. 
+
 Linux users may use their preferred terminal emulator.
+
 To install the package, just type ``pip install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
+
 Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
+
 After Pip finished successfully, you are ready for working with the framework. 
 
+### Install JupyterLab
+
 Additionally, you may want to use Jupyter Lab to work interactively on the simulations - just as we do.
+
 ```
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
@@ -31,8 +64,15 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 Now you have a functioning version of jupyter lab and can start working 
 interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
 
-In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead, a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead of installing Python system-wide.
+
+### Setup a virtual environment
+
+Virtual environemnts install a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+
+
 Following steps are required to set up the venv and and install BPTK_Py into it:
+
 ```
 pip install virtualenv
 virtualenv bptk_test 
@@ -46,9 +86,15 @@ pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
 
-### Package dependencies
+### Download our BPTK_Py tutorial.
+
+Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. You can download the tutorial from our [website](http://www.transentis.com).
+ 
+## Package dependencies
 If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. 
+
 If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+
 So far, we tested the framework with Python 3.4, 3.6 and 3.7. It should be working fine with other Python 3.x versions.
 
 Package name | What we use it for | Latest tested version
@@ -61,7 +107,10 @@ numpy |Linear interpolation and required by pandas | 1.15.0
 jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.1
 
 
-## Initialization in Python
+## Using the Framework in Python
+
+### Initializing the Framework in Your Python Code
+
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 
 **Required lines**
@@ -88,7 +137,7 @@ On first run, the framework may have to download some additional dependencies fo
 This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
-## Plotting API
+### Plotting API
 After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. 
 An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user. 
 It is the interface between the complex simulations and the user.
@@ -224,7 +273,7 @@ If you are using homebrew, issue these commands: (otherwise download node 8 from
 ```commandline
 brew install node@8
 
-#before calling the code above prepend node@8 to the path:
+#before calling the code above prepend node@8 to the path - this way you can use multiple versions of node side by side
 
 source venv/bin/activate
 export PATH='/usr/local/opt/node@8/bin':$PATH
