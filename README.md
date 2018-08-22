@@ -21,10 +21,7 @@ In future we may extend the sdcc transpiler to support other model formats (such
 * Simulation of System Dynamics simulation models
 * Creating interactive plots from simulation results
 * Retrieve simulation results as [Pandas DataFrame](https://github.com/pandas-dev/pandas) timeseries data
-* Automatic conversion of XMILE models to Python
-
-# License
-[MIT](LICENSE) 
+* Automatic conversion of XMILE models to Python 
 
 # Getting Help
 BPTK_Py has initially been developed by transentis Labs Gmbh. 
@@ -376,5 +373,15 @@ You are now able to define your own simulation model quickly. If something is mi
 # Links
 [1] https://pip.pypa.io/en/stable/installing/
 
+# License
+Copyright (c) 2018 transentis labs GmbH <support@transentis.com>
 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
