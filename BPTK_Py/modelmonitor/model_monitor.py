@@ -96,16 +96,19 @@ class modelMonitor():
                     current_dir = str(os.getcwd())
                     os.chdir(config.configuration["sd_py_compiler_root"])
 
-                    exit_status = os.system(self.execute_script)
+
+                    output = os.popen(self.execute_script).read()
 
                     # Go back to working dir
                     os.chdir(current_dir)
 
 
                     ## Check if everything went well, i.e. exit status of the script = 0
-                    if exit_status != 0:
-                        log("[ERROR] Problem calling the script for model conversion itmx --> python. Exit status: {}. Monitoring for the file will end!".format(str(exit_status)))
-                        break
+                    if "error" in str(output).lower():
+                        log("[ERROR] Tried to convert {} but to {} but got error: {}".format(str(self.source), str(
+                            self.model_file) + ".py", str(output)))
+                        self.running = False
+                        return None
 
 
                     ## Refresh all scenarios with the given model file

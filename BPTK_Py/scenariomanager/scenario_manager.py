@@ -78,6 +78,7 @@ class scenarioManager():
             current_dir = os.getcwd()
             cwd_folder = str(config.configuration["sd_py_compiler_root"])
             os.chdir(cwd_folder)
+
             x =os.system("npm install")
             os.chdir(current_dir)
             if x == 0:
@@ -109,10 +110,17 @@ class scenarioManager():
                 current_dir = str(os.getcwd())
                 os.chdir(config.configuration["sd_py_compiler_root"])
                 execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + self.source + "\" -t py -c > \"" + current_dir + "/" + self.model_file + ".py\""
-                os.system(execute_script)
+                output = os.popen(execute_script).read()
 
                 # Go back to working dir
                 os.chdir(current_dir)
+
+                if "error" in str(output).lower():
+                    log("[ERROR] Tried to convert {} but to {} but got error: {}".format(str(self.source),str(self.model_file)+".py",str(output)))
+                    return None
+
+
+
 
 
 

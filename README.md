@@ -1,6 +1,8 @@
 # Business Prototyping Toolkit for Python
 Welcome to the Business Prototyping Toolkit for Python!
 
+
+## What is it?
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
 It gives you the power to simulate System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. 
 
@@ -9,6 +11,21 @@ Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/trans
 versions of simulation models from other engines. Currently it is compatible with the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile) which is an open XML protocol for sharing interoperable system dynamics models and simulations.
 For instance, [Stella Architect](http://www.iseesystems.com) stores system dynamics models in this format. 
 The XMILE standard is governed by the OASIS standards consortium - our framework currently only supports the XMILE standard, we may create a compiler for other formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)) in the future.
+
+## Main Features
+* Simulation of System Dynamics simulation models
+* Creating interactive plots from simulation results
+* Retrieve simulation results as [Pandas DataFrame](https://github.com/pandas-dev/pandas) timeseries data
+* Automatic conversion of XMILE models to Python
+
+# License
+[MIT](LICENSE) 
+
+# Getting Help
+BPTK_Py has initially been developed by transentis Labs Gmbh. 
+For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
+
+We built a tutorial to help you getting familiar with the framework and getting most out of it: [LINK TO TUROIAL?]()
 
 ## Installation
 Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
@@ -89,7 +106,7 @@ This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
 ## Plotting API
-After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. 
+After initializing BPTK_Py, let us have a short look at the plotting API, the heart of the simulation framework. 
 An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user. 
 It is the interface between the complex simulations and the user.
 ``BPTK_Py`` aims at making simulation and result plotting as simple as possible. 
@@ -156,396 +173,8 @@ bptk.plot_scenarios(
 
 ![png](README/output_0_0.png)
 
-### Receive the results data
-You might want to receive the scenario results as a table instead of seeing a plot only. There is the parameter ``return_df``. 
-The default value is ``False``. When adding it as parameter to the plotting methods, and setting it to ``True``, ``BPTK_Py`` returns a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/). 
-You can use the powerful API of Pandas to analyze, crunch and join the result data of multiple scenarios and equations for gaining deeper insights into the simulation results.
-The tutorial contains some example code how to easily manipulate simulation results and generate new data.
+This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial.
 
-### Architecture - or how do we plot?
-
-![plotting architecture](README/simulation_flow_drawio.png)
-
-The image shows the internal architecture and components involved in plotting a simulation. 
-As you see, 5 components are directly involved in the plotting. 
-
-In the beginning, the user issues a "plotScenario(..)" call with the known parameters. 
-The ``bptk`` object simply forwards this request to the ``Visualizer``. 
-We decided for this architecture to decouple API calls in ``bptk_py`` from the actual components that *do things*. 
-The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data it retrieves (step 9). 
-The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability. 
-This means, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer. 
-However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag if desired. 
-It comes with neat features like generating timeseries data from your simulation results.
-
-The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names. 
-Hence, the simulator has to retrieve the actual data that the ``scenarioManagerFactory`` reads from the JSON files (step 4). 
-On the right side we denoted the hierarchy of the ``scenarioManager`` and ``simulationScenario``. 
-The factory is at the top level and loads the JSON files and creates the scenario Managers. 
-The scenario Manager instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python. 
-In a sense, the factory is the manager of the scenarioManagers, which group the actual scenarios. It stores methods for looking up scenario managers and modifying them.
-After looking up the scenarios, the factory returns these to the simulationWrapper (step 5). 
-
-Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7). 
-The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability). 
-Finally, the Visualizer generates the time series data, the plots and formats them (step 9). 
-The output goes back to ``bptk`` and the user gets to see a plot - or a dataFrame if she used the ``return_df`` flag - step 10.
-
-You see that this is a very simple architecture and due to the decoupling of functionality and components from the API calls, easy to extend.
-
-## Interactive Plotting
-An important part of modelling is to modify values on-the-fly, interactively with the customer. The API call ``bptk.plot_with_widgets`` has this functionality. 
-It comes with a field ``constants`` that contains a list of widget definitions. 
-Each widget is defined using a tuple.
-The structure is:  ``("widget_type","name.of.constant",start_value,maximum_value)``. 
-This allows you to see the results of the simulations instantly without having to re-run the simulation manually.
-
-Currently, we support two types of widgets to control the process:
-* **sliders**: Sliders allow you to select a value in an interval. Use "slider" as ``widget_type``. A slider requires ``start_value and maximum_value`` as described above. Example: ``("slider",'initialOpenTasks',100.0,1000.0)``
-
-* **checkbox**: If you want a checkbox, use "checkbox" as ``widget_type``. You do not have to supply ``start_value / maximum_value``. Example: ``("checkbox","initialStaff")``
-
-* **timerange**: This will give you a slider in which you can select time ranges within the graph to "zoom in/out" of certain parts of the graph. It gives you the power to further look into certain simulation periods. It is enough to just add the keyword "timerange" as ``widget_type``.
-
-If you are using jupyter notebook, interactive plotting should work if you installed ``ipywidgets`` (should be installed as dependency). 
-But if you are using jupyter lab, please install the required extension. This should do in the terminal:
-```commandline
-souce bptk_test/bin/activate
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-```
-
-The plotting API works almost the same way as for ``plot_scenarios``. 
-The only difference is that we use a ``widgetDecorator`` class to build the widgets and modify the specified constants and time ranges. 
-It calls the ``plot_scenarios(...)`` method on every widget change.
-
-#### Attention Mac OS X user
-There is a bug in the underlying NPM framework that requires you to use node version 8 to successfully download the extension. 
-If you are using homebrew, issue these commands: (otherwise download node 8 from [https://nodejs.org/en/](https://nodejs.org/en/))
-```commandline
-brew install node@8
-
-#before calling the code above prepend node@8 to the path:
-
-source venv/bin/activate
-export PATH='/usr/local/opt/node@8/bin':$PATH
- 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-```
-
-## Override the configuration
-The configuration file contains some standard settings such as relative paths where BPTK_Py looks for scenarios and simulation models. 
-It also stores the style settings for the plots. If you wish to override these settings, you can do so:
-```python
-import BPTK_Py.config.config as config
-
-# Override setting "config_key":
-config.configuration["config_key"] = "VALUE"
-
-# Get available configuration keys:
-for key, value in config.configuration.items():
-    print("{} : {}".format(key,str(value)))
-
-```
-
-## Scenarios
-Scenarios are the heart of each simulation. A scenario defines which simulation model to use, has a name and might point to a source file that contains a 3rd party software's simulation model. 
-A scenario may override constants and define execution strategies.
-The latter change constants in different steps of the simulation. 
-See the "strategy simulation" section for details.
-You write scenarios in JSON format. Please store the scenarios in the ``scenarios`` subfolder of your current working directory so ``BPTK_Py`` is able to find it. 
-If you wish to use another folder, feel free to change ``config.configuration["scenario_storage"]`` to a folder of your choice.
-
-We group simulation scenarios by "scenario Managers". One scenario manager stores one simulation model and has a name. 
-Scenarios run this simulation model and modify constants/points and define strategies.
-One JSON file may contain more than one scenario manager and hence a key is required to distinguish the different scenarios. 
-A simple example may look like this:
-
-```JSON
-{  
-    "smSimpleProjectManagement":{
-    "source":"simulation_models/sd_simple_project.itmx",
-    "model":"simulation_models/sd_simple_project",
-    "base_constants": {
-          "deadline": 100,
-          "effortPerTask": 1,
-          "initialOpenTasks": 80,
-          "initialStaff": 1
-    },
-    "scenarios": {
-        "base": {
-        },
-        "scenario100": {
-        "constants": {
-          "initialOpenTasks": 100
-        }
-      },
-      "scenario80": {
-        "constants": {
-        }
-      },
-      "scenario120": {
-        "constants": {
-          "initialOpenTasks": 120
-        },
-        "strategy": {
-          "20": {
-            "deadline": 120
-          }
-        }
-      }
-    }
-  }
-}
-```
-We start with the name of the scenario manager's name which stores all the scenarios. 
-If you use the same name for a scenario manager in another file, this will be detected and the scenario will be added to the scenario manager. 
-The scenario manager stores the model (source file and python file) as well as all scenarios that belong to it. 
-The ``model`` parameter contains the (relative) path to the (python) simulation model. If using a relative path, keep in mind that ``BPTK_Py`` looks for the file from your current working directory, i.e. the path of your script or jupyter notebook. 
-
-Then the key ``base_constants`` may follow. It defines the initial state for all models, regardless the state in the model source file. 
-Here you can set all constants to a desired state. 
-Each scenario stores the same values for the given constants. For example, in this example we set "initialOpenTasks" to 80.
-In this case, define ``base_constants`` for the scenario manager in exactly one file, not in multiple. 
-In case the base constants stretch over multiple files, ``bptk_py`` attempts to merge them and data loss may occur due to duplicate values for the same constants.
-The actual scenarios follow after the ``scenarios`` tag. If you define scenarios for one scenario manager over multiple files, this is O.K. and increases readability for the user.
-For each scenario, you have to supply a unique name as well. JSON does not support integer keys. 
-The ``constants`` list stores the overrides constants. 
-The constants override certain base constants given before. 
-The scenario "base" sets "initialOpenTasks" to 100. This value is only valid for this specific scenario. 
-The other values such as "deadline" stay the same as the base constants, as there is no overrid. "scenario80" does not override any constants and hence use all base constants. 
-You may either define numerical values such as ``0.5`` or use strings to define expressions such as ``"5/10"``which will be evaluated to ``0.5`` by the framework.
-
-You should consider using the ``source`` field in the scenario manager tag. It specifies the (relative) path to the original model file of 3rd party applications. 
-For now, the framework supports automatic conversion of .itmx/.stmx files from Stella Architect. 
-For each source file, a file monitor will run in background to check for changes in the source model. 
-The file monitor will automatically update the python model file whenever a change to the source model is detected. 
-
-
-### Changing scenario files during runtime
-If you changed a JSON scenario file during runtime and wish to reload the scenario(s), use the following method:
-
-```python
-bptk.reset_scenario(scenario_manager="NAMEOFSCENARIOMANAGER",scenario_name="NAMEOFSCENARIO")
-```
-For now this is not automated as you may have modified the scenario during in ``bptk`` and an automatic overwriting might lead to 
-unexpected results.
-
-### Modifying points of graphical functions
-You may have defined graphical functions within Stella Architect but a scenario may change these if you want. 
-Internally, a graphical function is nothing else but a set of points and values. 
-Hence, you may easily modify these points using the scenario JSON file. 
-All you need is the name of the graphical function, e.g. ``'productivity'`` and the set of points for the function 
-with their respective x and y values as list: `` [x,y] ``.
-The following lines show how to set a new graphical function:
-
-```JSON
-...
-"scenarios": {
-      "base": {},
-      "scenario100": {
-        "constants": {
-          "initialOpenTasks": 100
-        },
-        "points" : {
-            "productivity": [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1],[1.25,1.119],[1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ]
-        }
-      }
-
-```
-
-The simulator makes sure to interpolate the values if an equation requires the y-value for x values not defined in the function.
-
-## Monitoring of 3rd party source models
-For now, we are able to translate Stella Architect Models to python using transentis' [sd-compiler](https://bitbucket.org/transentis/sd-compiler).
-Whenever you instantiate a ``bptk`` object and plot at least one scenario, one thread per ``sourceModel`` monitors the scource ITMX file if the scenario specifies a ``source`` field. 
-It checks for modifications each second. 
-Whenever a modification is detected, a bash script will be called that executes the transpiler.
-
-**Attention:** If you use the BPTK engine within a larger software project, please do not forget to issue ``bptk.destroy()``. This command stops all monitoring threads. 
-If you don't use it, don't be surprised if your script never terminates ;-). 
-If you're using BPTK within a framework such as the infamous [Jupyter Lab](https://jupyter.org/), do not worry. 
-The thread runs within the Notebook kernel and will die when you shutdown the notebook kernel. 
-
-## Model Checking
-To verify the behavior of the simulator and of the simulation model, it is important to check certain assertions. ``bptk_py`` comes with a simple model checker to verify ``lambda`` functions, small functions stored in a variable.
-The function is supposed to only return True or False and receives a data parameter. For example ``lambda data : sum(data)/len(data) < 0`` tests if the average of the data is below 0. We can get the raw output data instead of the plot if we use the parameter ``return_df=True``. This returns a dataFrame object. The following example generates this dataframe and uses the model checker to test if the ``productivity`` series' mean is below 0. Otherwise it will return the specified message.
-
-```python
-df =bptk.plot_scenarios(
-    scenario_managers=["smSimpleProjectManagement"],
-    scenarios=["scenario120"],
-    kind="line",
-    equations=["productivity"],
-    stacked=False, 
-    strategy=True,
-    freq="D", 
-    start_date="1/11/2017",
-    title="Added scenario during runtime",
-    x_label="Time",
-    y_label="Number",
-    return_df=True
-)
-
-check_function = lambda data : sum(data)/len(data) < 0
-
-bptk.model_check(df["productivity"],check_function,message="Productivity is not <0")
-```
-
-## Strategy simulation
-An important feature of ``BPTK_Py`` is the ability to simulate various strategies. 
-A strategy defines which constants to change at which point in time of the simulation. 
-
-For defining a strategy, use the ``strategy`` key in your scenario definition and give (key,value) sets for the constants you'd like to change. 
-Note that the base constants and scenario constants are valid until the first modification by the strategy.
-```json
-"strategy": {
-    "1": {
-        "cost.paymentTransactionCost": 0.4,
-        "customers.marketingBudget": 5000
-    },
-    "2": {
-        "cost.paymentTransactionCost": 0.8,
-        "customers.marketingBudget": 10000
-    },
-    "50": {
-        "cost.paymentTransactionCost": 0.65,
-        "customers.marketingBudget": 0
-    },
-    "76": {
-        "cost.paymentTransactionCost": 0.7,
-        "customers.marketingBudget": 2000
-    },
-    "100": {
-        "cost.paymentTransactionCost": 0.99,
-        "customers.marketingBudget": 99000
-    }
-}
-```
-This strategy modifies the constants ``cost.paymentTransactionCost`` and ``customers.marketingBudget`` at time steps 1, 2, 50 and 76. 
-To apply a strategy for a scenario, use the parameter ``strategy=True`` in the API. 
-
-**Note:** If you set the ``strategy=True`` but there is not strategy defined in the scenario, the simulator will just issue a Warning in the logfile and execute the simulation(s) without a strategy. 
-
-## Resetting the simulation
-After a while of simulating, modifying strategies and constants and generating beautiful plots, you may realize that you want to go back and reset the simulation. For this purpose, you have three methods available:
-* ``reset_scenario(scenario_manager, scenario)``: This deletes a specific scenario from memory and reloads it from file. Requires the scenario manager's name and the scenario name.
-* ``reset_all_scenarios()``: Reset all scenarios and re-read from file
-* ``reset_simulation_model(scenario_manager, scenario="")``: For runtime optimizations, the simulator will cache the simulation results. In some rare cases, this cache may not be flushed upon scenario modification. Hence, this method resets the simulation model's cache.
-
-## Advanced: Extended Strategies
-Extended strategies give the user a lot of power over the simulation but are rather complex. 
-An extended strategy replaces certain equations of the model using lambda expressions. For now, you may only insert strategies during runtime.
-This feature is for advanced use only and currently considered unstable.
-
-First we need to obtain the scenarios and their corresponding simulation models and replace the given equations with the new lambda. 
-An extended strategy is just another dictionary. In general, it looks like this:
-```python
-scenarios = bptk.ScenarioManager.getAvailableScenarios()
-
-extended_strategy= {
-    "MakeYourStartUpGrow_strategy" : {
-        1 : { 
-            "cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.memoize("cashFlow.cashFlowYtd",t-1),
-            "cash.cash" : lambda t : 8000000 if t <= scenarios["MakeYourStartUpGrow_strategy"].model.starttime else scenarios["MakeYourStartUpGrow_strategy"].model.memoize("cash.cash",t-1)+ 80000,
-        },
-        75 : {
-            "cash.cash" : lambda t : 0
-            }
-        }    
-}
-```
-You see that this concept is rather complex and requires understanding of Python. First we have to load all available scenarios into the ``scenarios`` variable. The dictionary contains *pointers* to the specific scenario objects that we loaded from the scenario files. They are stored in the ``ScenarioManager`` object instance of the ``bptk`` object. The lambda functions now have to use these pointers to receive the pointers to the ``model`` object (and therefore the equations) of the simulation model. 
-We will overwrite the specific equations with the given lambda function(s) in the previously-described strategy dictionary of the scenario. It is possible to store lambda functions just like this as strings in JSON **but** the complexity is even higher when it comes to adding it to the model during run-time. As the bptk object uses the same set of scenarios, it will use the same object pointers when we finally issue ``bptk.plotOutputsForScenario(... ,strategy=True)``
-
-The above strategy plays a around with the equations ``cashFlow.cashFlowYtd`` and ``cash.cash``. Look at ``cash.cash``. It will return 80,000 if at starttime of the model. Otherwise, it return the value of t-1 + 80,000 and generate a linear function. Instead of ``t-1`, we might even use the model's ``dt``: ``scenarios["MakeYourStartUpGrow_strategy"].model.dt`` instead of -1. But this would make the code line too complex. Make sure to use dt however, if you intend to work in productive mode!
-
-After defining the strategy, you have to store the lambdas in the function. ``bptk`` comes with a method for this. The code is as follows:
-```python
-bptk.modify_strategy_for_complex_strategy(scenarios=scenarios,extended_strategy=extended_strategy)`
-
-bptk.plotScenarioForOutput(
-    ...,
-    strategy=True
-)
-```
-The method  ``modify_strategy`` requires the scenarios object as the lambdas reference to the objects inside them and the extended strategy. It will then just modify each scenario's strategy. 
-You see that you can use the well-described method for plotting the scenario(s) with the modified strategies. Just do not forget to set the parameter ``strategy=True``.  This is due to the power of the pointers. There is no additional method for plotting required as the plotting methods use the same ``scenarios`` objects as stored within the ``scenarioManager``.
-
-Of course you may as well use this approach to only modify constants. If you intend to modify an initial constant, just enter it for t=0.
-
-### Extended strategy only for an interval
-If you want to set another lambda function only for an interval and reset to the old one, this is easily possible. Check the following strategy. It will replace the "cash.cash" function between t=20 to 50 and then restore the one from the model:
-```python
-extended_strategy= {
-    "MakeYourStartUpGrow_strategy" : {
-        20 : { 
-            "cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.memoize("cashFlow.cashFlowYtd",t-1),
-            "cash.cash" : lambda t : 70000000 if t <= scenarios["MakeYourStartUpGrow_strategy"].model.starttime else 70000000,
-        },
-    50 : {
-        "cash.cash" : scenarios["MakeYourStartUpGrow_strategy"].model.equations["cash.cash"]
-        }
-    }    
-}
-```
-
-### Thoughts on recursion and memoization
-The models we use are very complex and generate large "tail-recursions" when running in a naive fashion. Most results depend on the results of previous simulation periods. This is why we use "memoization". The model's memo stores previous results for each equation. So e.g. when an equation requires a the result of itself from the previous period t-1, the model will first check if this result is available in the memo rather than re-computing it. When you now modify an equation in timestep 20, the simulator will run the simulation upto t=19, modify the lambda function and continue the simulation. This means, the model keeps all of its results upto t=19 in its memo. This is the desired behavior and does not require you to add any additional complex code. However, this requires you to always use the model's ``memoize(equation_name, t-dt)`` function call and not directly access the ``equations`` object of the model. The following are wrong and correct examples but omitting the outer dictionary structure.
-
-**Right:**  ``"cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.memoize("cashFlow.cashFlowYtd",t-1)``
-
-**Wrong:**  ``"cashFlow.cashFlowYtd" : lambda t : 85000 if t<= 1 else scenarios["MakeYourStartUpGrow_strategy"].model.equations["cashFlow.cashFlowYtd"](t-1)``
-
-## Create Scenarios during Runtime
-It is possible to add scenarios during runtime. For convenience, here is some example code you may use as a template to generate your own scenarios during runtime. If you define multiple scenarios for the same ``scenario_manager``, this is no problem. 
-
-First define the details for the scenario manager and then set up the name of the scenario, the strategy and the constants. The strategy may as well be one of the complex ones as described above. But be careful to define everything correctly.
-
-```python
-scenario_manager = {
-    "name" : "ScenarioManager_temp",
-    "model" : "simulation_models/sd_simple_project",
-    "source" : "simulation_models/sd_simple_project.itmx"
-    }
-
-
-name = "scenario_160"
-strategy = {
-    "20": {
-        "deadline" : 2000
-        } 
-}
-constants = {
-    "deadline" : 160,
-    "effortPerTask" : 0.1
-}
-
-
-dictionary ={ scenario_manager["name"]:  
-{
-    "model": scenario_manager["model"],
-    "source": scenario_manager["source"],
-    name:{
-        "constants" : constants, 
-        "strategy" : strategy
-        } 
-    } 
-}
-
-
-bptk.add_scenario(dictionary=dictionary)
-```
-
-When you successfully registered the new scenario, you can easily plot it as you are used to!
-
-
-## Look-and-Feel
-BPTK Py uses transentis' color and font style for the plots. You might not own our font or simply dislike the colors and font sizes. 
-In that case, the plot will fall back to the ~~ugly~~ beautiful DejaVu Sans. Override the style by modifying [BPTK_Py/config/config.py](BPTK_Py/config/config.py).  The main settings for the style are in the dictionary ``matplotlib_rc_settings`
-
-## Interactive Readme
-Check out the iPython notebook *Interactive Readme* for an interactive approach to learning how to use the framework as an analyst. 
-The notebook comes with a set of scenarios and simulation models and supports you in getting started with the framework. It applies each of the described concepts and shows you how to play around with simulations.
 
 ## Limitations
 * For now, the simulator may only simulate using the Euler method
@@ -553,7 +182,7 @@ The notebook comes with a set of scenarios and simulation models and supports yo
     * size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step
 
 
-# Creating Own Simulation models
+# Advanced: Creating Your Own Simulation models
 Instead of reading 3rd party simulation models, you may define your own simulation model. 
 A simulation model is a self-contained python script. 
 This means, it can be executed as its own file without any dependencies. 
@@ -601,15 +230,11 @@ class simulation_model():
     self.starttime = 1
     self.stoptime = 120
     self.equations = {
-  	# Stocks 
-  		
-    # flows 
-
-    # gf 
+        "equation_1" : lambda t : self.memoize("costant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
         
-    #constants
-
+        "constant_1" : lambda t : 10000
     }
+     
 
     self.points = {
   	 }
@@ -650,16 +275,15 @@ The ``__init__`` configures the model properties such as the start time, stop ti
  An equation has a key and is a ``lambda`` function of the following format:
  ```python
  {
-    "name_of_equations" : lambda t : dosomething
+    "name_of_equation" : lambda t : 0 if t <= self.starttime else recurse("some_equation",t-1)
  }
  ```
  
+ Even constants have to be a lambda function. For each t it just returns the same value. This means, a valid constant looks like this : `` "constant_name" : lambda t : 10000 ``.
  
- Even constants have to be a lambda. For each t it just returns the same value. This means, a valid constant looks like this : `` "constant_name" : lambda t : 10000 ``.
- 
- An equation usually refers to past values. 
- This is why the most important method is the ``memoize`` method. 
- It uses the concept of memoization to cache simulation results for each equation and point in time to avoid endless recursion.
+An equation usually refers to past values of the same equation or other equations.
+This is why the most important method is the ``memoize`` method. 
+It uses the concept of memoization to cache simulation results for each equation and point in time to avoid deep recursions for big t's.
 For each equation, it fills a dictionary inside the ``self.memo``. 
 To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
 To ease the understanding of the concepts used, refer to this simple example with two equations:
@@ -702,3 +326,5 @@ for key in list(self.equations.keys()):
 
 This code initializes the model's memo for each equation with an empty dictionary.
 You are now able to define your own simulation model quickly. If something is missing, please do contact us!
+
+

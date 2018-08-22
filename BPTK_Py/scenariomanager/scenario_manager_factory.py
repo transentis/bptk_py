@@ -178,7 +178,7 @@ class ScenarioManagerFactory():
 
         scenario_managers = self.__readScenario(filename=scenario_filename)
 
-        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario_manager, scenario))
+        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
 
     def reset_all_scenarios(self):
         """
@@ -299,7 +299,6 @@ class ScenarioManagerFactory():
         for manager_name, manager in managers.items():
             if manager.source == filename:
                 for scenario_name in manager.scenarios.keys():
-                    log("[INFO] Resetting scenario {}".format(scenario_name))
                     self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
