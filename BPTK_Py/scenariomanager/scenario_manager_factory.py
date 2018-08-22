@@ -92,6 +92,7 @@ class ScenarioManagerFactory():
 
                 base_constants_updated = False
                 base_points_updated = False
+
                 # If we have new base constants
                 if base_constants != manager.base_constants:
                     base_constants_merged = merge_two_dicts(base_constants, manager.base_constants)
@@ -151,13 +152,14 @@ class ScenarioManagerFactory():
 
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
-                    manager.instantiate_model()
+
                     if not manager.source in self.scenario_monitors.keys() and os.path.isfile(manager.source):
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
                         log(
                             "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
+                manager.instantiate_model()
 
             return self.scenario_managers
         else:

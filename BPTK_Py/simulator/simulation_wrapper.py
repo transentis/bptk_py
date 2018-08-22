@@ -1,9 +1,9 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
@@ -13,6 +13,8 @@
 ## IMPORTS
 from BPTK_Py.simulator.model_simulator import Simulator
 from BPTK_Py.logger.logger import log
+
+
 ##
 
 ###############################
@@ -24,15 +26,13 @@ class simulationWrapper():
     This class contains methods for running simulations and wraps them away from bptk.py
     """
 
-    def __init__(self,scenario_manager_factory):
+    def __init__(self, scenario_manager_factory):
         """
 
         :param scenario_manager_factory: scenario manager factory of bptk
         """
 
         self.scenario_manager_factory = scenario_manager_factory
-
-
 
     def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -49,7 +49,6 @@ class simulationWrapper():
         scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                        scenarios=scenarios)
 
-
         #### Run the simulation scenarios
 
         for key in scenario_objects.keys():
@@ -58,8 +57,8 @@ class simulationWrapper():
                 simu = Simulator(model=sc.model, name=sc.name)
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
-                for name,points in sc.points.items():
-                    simu.change_points(name=name,value=points)
+                for name, points in sc.points.items():
+                    simu.change_points(name=name, value=points)
 
                 # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
                 if len(equations) > 0:
@@ -76,8 +75,6 @@ class simulationWrapper():
                     return None
 
         return scenario_objects
-
-
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -113,8 +110,6 @@ class simulationWrapper():
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {int(k): v for k, v in strategy.items()}
 
-
-
             simu = Simulator(model=scenario.model, name=scenario.name)
 
             i = 0
@@ -122,12 +117,13 @@ class simulationWrapper():
             # Get the strategy's points to change equations at and sort ascending.
             points_to_change_at = sorted(list(strategy.keys()))
 
+
             if len(points_to_change_at) == 0:
                 log(
                     "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
                 scenarios_objects[scenario.name] = \
-                self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
-                    scenario.name]
+                    self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
+                        scenario.name]
 
             # Simulation with a strategy. Iterate the points of the simulation
             else:
@@ -147,7 +143,7 @@ class simulationWrapper():
                                                          until=points_to_change_at[0])
                         else:
                             scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                     until=points_to_change_at[0] - 1)
+                                                         until=points_to_change_at[0] - 1)
 
                     # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
 
