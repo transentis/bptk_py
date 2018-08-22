@@ -5,11 +5,11 @@ with open("README.md", "r") as fh:
 
 
 setup(name='BPTK_Py',
-      version='0.3.0',
+      version='0.3.5',
       description='A python simulation engine for System Dynamics models',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      url='https://pypi.org/project/BPTK-Py/',
+      url='https://www.transentis.com/products/business-prototyping-toolkit/',
       author='transentis labs GmbH',
       author_email='support@transentis.com',
       license='MIT',

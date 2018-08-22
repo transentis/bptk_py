@@ -7,7 +7,7 @@ __Welcome to the Business Prototyping Toolkit for Python! (BPTK_Py)__
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
 It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks. 
 
-It requires a Python simulation model following the conventions given in the end of this Readme.
+It requires a Python simulation model following certain conventions.
  
 Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
 
@@ -30,7 +30,7 @@ In future we may extend the sdcc transpiler to support other model formats (such
 BPTK_Py has initially been developed by transentis Labs Gmbh. 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
-Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. You can download the tutorial from our [website](http://www.transentis.com). 
+Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. You can download the tutorial from our [website](https://www.transentis.com/products/business-prototyping-toolkit/). 
 This readme covers the installation process, the main API methods and how to define a simulation model.
 
 ## Installing the BPTK_PY framework
@@ -224,7 +224,7 @@ The other parameters are optional. Always use Python's list notations for the pl
 * ``series_names``: The equation names are not the kind of names we want to show the customer. You may use the ``series_names`` parameter to rename them. Supply the equations to rename and their destination names. Use Python's dict notation: ``{ equation_name : rename_to }``. The dictionary serves as a set of replacement rules. To correctly rename the series, you have to understand how the framework sets the names of series to avoid ambiguity in series names. If you use more than one scenario manager for plotting, bptk_py applies the following series naming schema: ``"scenarioManager"_"scenario"_"equation"``. If you want to replace this, use ``series_names={"scenarioManager_scenario_equation": "new name"}``. You may as well define a rule that replaces the name of each scenario Manager with a whitespace. The number of rules is not limited.
 
 
-This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial and blog posts available at [www.transentis.com](http://www.transentis.com)
+This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial and blog posts available at [https://www.transentis.com/products/business-prototyping-toolkit/](https://www.transentis.com/products/business-prototyping-toolkit/).
 
 # Creating your own Simulation models
 Instead of converting 3rd party simulation models, you may define your own simulation model. 
