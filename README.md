@@ -224,31 +224,7 @@ The other parameters are optional. Always use Python's list notations for the pl
 * ``series_names``: The equation names are not the kind of names we want to show the customer. You may use the ``series_names`` parameter to rename them. Supply the equations to rename and their destination names. Use Python's dict notation: ``{ equation_name : rename_to }``. The dictionary serves as a set of replacement rules. To correctly rename the series, you have to understand how the framework sets the names of series to avoid ambiguity in series names. If you use more than one scenario manager for plotting, bptk_py applies the following series naming schema: ``"scenarioManager"_"scenario"_"equation"``. If you want to replace this, use ``series_names={"scenarioManager_scenario_equation": "new name"}``. You may as well define a rule that replaces the name of each scenario Manager with a whitespace. The number of rules is not limited.
 
 
-**The scenario managers are used to group a set of scenarios. You may either plot one or multiple equations for a scenario manager or one specific scenario (of one scenario manager).**
-
-The following lines of code show how to easily use the API to generate the example graph below:
-
-```python
-from BPTK_Py.bptk import bptk
-bptk = bptk()
-bptk.plot_scenarios(
-    scenario_managers=["smSimpleProjectManagement"],
-    scenarios=["scenario80"],
-    equations=['openTasks',"closedTasks"],
-    title="Example Graph\n",
-    x_label="Time",
-    kind="area",
-    y_label="Some Number",
-    start_date="1/11/2017",
-    freq="D",
-    series_names={"openTasks":"open  Tasks","closedTasks" : "Closed Tasks"}
-)
-```
-
-![png](README/output_0_0.png)
-
-
-This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial available at [www.transentis.com](http://www.transentis.com)
+This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial and blog posts available at [www.transentis.com](http://www.transentis.com)
 
 # Creating your own Simulation models
 Instead of converting 3rd party simulation models, you may define your own simulation model. 
