@@ -67,5 +67,5 @@ configuration = {
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],
-    "log_file": "bptk_py_{}.log"
+    "log_file": "bptk_py.log"
 }
