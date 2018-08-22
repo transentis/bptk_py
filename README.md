@@ -116,7 +116,7 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
  
 ## Package dependencies
-If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. 
+If for any reason, you want to install the requirements manually or need to know why we need the packages, here comes the list. 
 
 If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
 
@@ -169,7 +169,7 @@ for key, manager in managers.items():
     for name in manager.get_scenario_names():
         print("\t {}".format(name))
 ```
-On first run, the framework may have to download some additional dependencies for model compilation. Please be patient for some seconds. 
+On first run, the framework needs to download some additional dependencies for model compilation. Please be patient for some seconds. 
 This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
