@@ -80,7 +80,7 @@ class scenarioManager():
             cwd_folder = str(config.configuration["sd_py_compiler_root"])
             os.chdir(cwd_folder)
 
-            x = os.popen("npm install").read()
+            x = os.system("npm install")
             os.chdir(current_dir)
             if x == 0:
                 print("[SUCCESS] Done downloading dependencies. Continuing initialization.")
