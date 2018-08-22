@@ -1,16 +1,21 @@
 # Business Prototyping Toolkit for Python
-Welcome to the Business Prototyping Toolkit for Python!
+
+__Welcome to the Business Prototyping Toolkit for Python!__
 
 
 ## What is it?
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate System Dynamics Models within python - and create beautiful plots of the simulation results for use in Jupyter notebooks/lab. 
+It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter/Jupyter Lab notebooks. 
 
-It requires a python simulation model following the conventions given in the end of this Readme. 
-Furthermore, it ships with [transentis' sdcc parser](https://bitbucket.org/transentis/sd-compiler) for generating python 
-versions of simulation models from other engines. Currently it is compatible with the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile) which is an open XML protocol for sharing interoperable system dynamics models and simulations.
-For instance, [Stella Architect](http://www.iseesystems.com) stores system dynamics models in this format. 
-The XMILE standard is governed by the OASIS standards consortium - our framework currently only supports the XMILE standard, we may create a compiler for other formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)) in the future.
+It requires a Python simulation model following the conventions given in the end of this Readme.
+ 
+Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
+
+Currently sdcc only supports models created using the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile), which is an open XML protocol for sharing interoperable system dynamics models and simulations. The XMILW standard is governed by the OASIS standards consortium.
+
+[Stella](http://www.iseesystems.com) is a visual modeling environment that stores system dynamics models in the XMILE format.
+ 
+In future we may extend the sdcc transpiler to support other model formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)).
 
 ## Main Features
 * Simulation of System Dynamics simulation models
@@ -25,22 +30,43 @@ The XMILE standard is governed by the OASIS standards consortium - our framework
 BPTK_Py has initially been developed by transentis Labs Gmbh. 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
-We built a tutorial to help you getting familiar with the framework and getting most out of it: [LINK TO TUROIAL?]()
+Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. You can download the tutorial from our [website](http://www.transentis.com). 
+This readme covers the installation process, the main API methods and how to define a simulation model.
 
-## Installation
-Like every piece of software, BPTK-Py has to be installed correctly, including its dependencies. 
+## Installing the BPTK_PY framework
+Like every piece of software, BPTK_Py has to be installed correctly, including its dependencies. 
 
-1. Obvisouly, you need [Python](https://www.python.org/). Download the latest version for your operating system. BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
-2. Install [Node.js](https://nodejs.org/en/) for your operating system. We encourage you to use Node8 due to a known bug with jupyter lab.
+Assuming you are starting from scratch, you need to perform the following steps
 
+1. Install Python
+2. Install Node
+3. Install BPTK_Py
+4. Install JupyterLab (optional)
+5. Setup a virtual environment (optional)
+6. Download our BPTK_Py tutorial (optional)
+
+### Install Python
+First of all, you need [Python](https://www.python.org/). Download the latest version for your operating system. 
+BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
+
+### Install Node
+Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
+
+
+### Install BPTK_Py
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
 This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. 
 Linux users may use their preferred terminal emulator.
+
 To install the package, just type ``pip install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
+
 Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
+
 After Pip finished successfully, you are ready for working with the framework. 
 
+### Install JupyterLab
 Additionally, you may want to use Jupyter Lab to work interactively on the simulations - just as we do.
+
 ```
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
@@ -48,8 +74,14 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 Now you have a functioning version of jupyter lab and can start working 
 interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
 
-In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead, a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead of installing Python system-wide.
+
+### Setup a virtual environment
+
+Virtual environemnts install a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+
 Following steps are required to set up the venv and and install BPTK_Py into it:
+
 ```
 pip install virtualenv
 virtualenv bptk_test 
@@ -63,9 +95,12 @@ pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
 
-### Package dependencies
+ 
+## Package dependencies
 If for any reason, you want to install the requirements manually or want to know why we need the packages, here comes the list. 
+
 If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+
 So far, we tested the framework with Python 3.4, 3.6 and 3.7. It should be working fine with other Python 3.x versions.
 
 Package name | What we use it for | Latest tested version
@@ -77,8 +112,22 @@ scipy |Linear interpolation for graphical functions  | 1.1.0
 numpy |Linear interpolation and required by pandas | 1.15.0
 jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.1
 
+## Limitations
 
-## Initialization in Python
+Currently the BPTK_Py framework is geared towards our own need and has a number of limitations - we are happy to extend the framewor. Please let us know what you need so that we can prioritize our activities.
+
+Here are the known limitations:
+
+* Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
+* The SD model transpiler only supports stocks, flows/biflows and converters. The other modeling elements provided by Stella (such as ovens and conveyors) are not supported.
+* The SD model transpiler currently only supports the following builtin functions: ``size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step``
+
+
+
+## Using the Framework in Python
+
+### Initializing the Framework in Your Python Code
+
 To initialize the framework in your own python script / jupyter notebook and get access to the API methods (see later sections), use these lines:
 
 **Required lines**
@@ -105,14 +154,15 @@ On first run, the framework may have to download some additional dependencies fo
 This will only occur on first-time run.
 Now you are ready to play around with the APIs!
 
-## Plotting API
-After initializing BPTK_Py, let us have a short look at the plotting API, the heart of the simulation framework. 
+
+### Plotting API
+After initializing BPTK_Py, let us dive into the plotting API, the heart of the simulation framework. 
 An API exposes certain functionalities - "methods" or "functions" - for use by the actual application user. 
 It is the interface between the complex simulations and the user.
 ``BPTK_Py`` aims at making simulation and result plotting as simple as possible. 
 This is why there are only two functions that are doing everything for you: 
 * the ``plot_scenarios`` method for static plots (described here)
-* the ``dashboard`` method for interactive dashboards. All parameters ``plot_scenarios`` are valid for this one as well. For the special parameters of interactive plotting, see [Interactive Plotting](##Interactive Plotting).
+* the ``dashboard`` method for interactive dashboards. All parameters for ``plot_scenarios`` are valid for this one as well.
 
 You may use the API to generate plots from your simulation models almost instantly. 
 You can control all major settings for the simulation and the later plot layout using a large set of parameters:
@@ -173,22 +223,16 @@ bptk.plot_scenarios(
 
 ![png](README/output_0_0.png)
 
-This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial.
 
+This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial available at [www.transentis.com](http://www.transentis.com)
 
-## Limitations
-* For now, the simulator may only simulate using the Euler method
-* The SD model transpiler supports the following builtin functions:
-    * size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step
-
-
-# Advanced: Creating Your Own Simulation models
-Instead of reading 3rd party simulation models, you may define your own simulation model. 
+# Creating your own Simulation models
+Instead of converting 3rd party simulation models, you may define your own simulation model. 
 A simulation model is a self-contained python script. 
 This means, it can be executed as its own file without any dependencies. 
 Well, only for some methods you may require some python packages, but feel free to rewrite if you want to omit these.
 
-Here is a stub of a simulation model python file:
+Here is a working example of a simulation model python file:
 
 
 ```python
@@ -230,7 +274,7 @@ class simulation_model():
     self.starttime = 1
     self.stoptime = 120
     self.equations = {
-        "equation_1" : lambda t : self.memoize("costant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
+        "equation_1" : lambda t : self.memoize("constant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
         
         "constant_1" : lambda t : 10000
     }
@@ -264,7 +308,8 @@ class simulation_model():
 
 ```
 
-The imports are quite convenient to give you access to methods for different functions such as mathematical and scientific functions using ```math and scipy``` as well as statistical functions. Feel free to remove imports or add imports. 
+The imports are quite convenient to give you access to methods for different functions such as mathematical and scientific functions using ```math and scipy``` as well as statistical functions. 
+eel free to remove or add imports as required.
 This is no convention. Just make sure that you import all packages the model requires to function properly. As said before, the model should be self-contained.
 
 The ``LERP`` method is required for interpolation of graphical functions. For simplicity, we use ``interpol1d`` from the scipy package. Feel free to replace it. 
@@ -275,7 +320,7 @@ The ``__init__`` configures the model properties such as the start time, stop ti
  An equation has a key and is a ``lambda`` function of the following format:
  ```python
  {
-    "name_of_equation" : lambda t : 0 if t <= self.starttime else recurse("some_equation",t-1)
+    "name_of_equation" : lambda t : 0 if t <= self.starttime else recurse("some_equation",t-self.dt)
  }
  ```
  
@@ -294,7 +339,7 @@ def __init__(self):
     # Setup all other things
     
     self.equations = {
-        "equation_1" : lambda t : self.memoize("costant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
+        "equation_1" : lambda t : self.memoize("constant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
         
         "constant_1" : lambda t : 10000
     }
