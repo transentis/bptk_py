@@ -53,7 +53,7 @@ BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
 
 
-### Python and Node on your favorite Linux Distribution
+#### Python and Node on your favorite Linux Distribution
 If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node:
 
 For Ubuntu using apt:
