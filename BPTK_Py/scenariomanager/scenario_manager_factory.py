@@ -91,6 +91,7 @@ class ScenarioManagerFactory():
                 manager = self.scenario_managers[group_name]
 
                 base_constants_updated = False
+                base_points_updated = False
                 # If we have new base constants
                 if base_constants != manager.base_constants:
                     base_constants_merged = merge_two_dicts(base_constants, manager.base_constants)
