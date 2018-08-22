@@ -73,7 +73,7 @@ After the prerequisites, we have to install ``BPTK_Py`` into our python environm
 This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. 
 Linux users may use their preferred terminal emulator.
 
-To install the package, just type ``pip install BPTK_Py`` or ``pip3 install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
+To install the package, just type ``pip install BPTK-Py`` or ``pip3 install BPTK-Py``. Pip is a package manager that keeps Python packages up-to-date.
 
 Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
 
@@ -115,7 +115,7 @@ virtualenv bptk_test
 source bptk_test/bin/activate  #  For UNIX/Linux/Mac OS X
 bptk_test\Scripts\activate.bat # For Windows
 
-pip install BPTK_Py
+pip install BPTK-Py
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
