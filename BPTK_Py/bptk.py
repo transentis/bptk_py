@@ -20,7 +20,10 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
+
 plt.interactive(True)
+
+
 ###
 
 
@@ -42,11 +45,9 @@ class bptk():
         for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 
-
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(self.scenario_manager_factory, bptk=self)
-
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -76,11 +77,11 @@ class bptk():
                                                                                 equations=equations, output=output,
                                                                                 scenario_managers=scenario_managers)
 
-
     # General ethod that actually plots the scenarios. The other methods just make use of this one and hand over parameters as this one requires.
     def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                       freq="D", start_date="", title="", visualize_from_period=0,visualize_to_period=0, x_label="", y_label="",
+                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
+                       y_label="",
                        series_names={}, strategy=False,
                        return_df=False):
 
@@ -109,7 +110,8 @@ class bptk():
                                               scenario_managers=scenario_managers, kind=kind,
                                               alpha=alpha, stacked=stacked,
                                               freq=freq, start_date=start_date, title=title,
-                                              visualize_from_period=visualize_from_period,visualize_to_period=visualize_to_period, x_label=x_label,
+                                              visualize_from_period=visualize_from_period,
+                                              visualize_to_period=visualize_to_period, x_label=x_label,
                                               y_label=y_label,
                                               series_names=series_names, strategy=strategy,
                                               return_df=return_df)
@@ -117,7 +119,8 @@ class bptk():
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
-                  freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="", y_label="",
+                  freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
+                  y_label="",
                   series_names={}, strategy=False,
                   return_df=False, constants=[]):
         """
@@ -149,11 +152,11 @@ class bptk():
                                           scenario_managers=scenario_managers, kind=kind,
                                           alpha=alpha, stacked=stacked,
                                           freq=freq, start_date=start_date, title=title,
-                                          visualize_from_period=visualize_from_period, visualize_to_period=visualize_to_period, x_label=x_label,
+                                          visualize_from_period=visualize_from_period,
+                                          visualize_to_period=visualize_to_period, x_label=x_label,
                                           y_label=y_label,
                                           series_names=series_names, strategy=strategy,
                                           return_df=return_df, constants=constants)
-
 
     def modify_strategy(self, scenarios, extended_strategy):
         """
@@ -177,10 +180,8 @@ class bptk():
                 scenario.dictionary["strategy"] = {}
             ## Points in time where the original strategy makes changes (if any): These are the constant changes from the JSON
 
-
             # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant so it will work until the first point in the strategy
             first_t = points_to_change_at[0]
-
 
             ## Extend existing strategy by the lambda methods
             for t in points_to_change_at:
@@ -196,7 +197,6 @@ class bptk():
                     if t == first_t and not name in scenario.dictionary["constants"].keys():
                         scenario.dictionary["constants"][name] = scenario.model.equations[name]
         log("[INFO] Added extended strategy for scenarios")
-
 
     def destroy(self):
         """

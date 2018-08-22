@@ -121,7 +121,7 @@ class widgetDecorator():
                 options = dates
                 widget = py_widgets.SelectionRangeSlider(
                     options=options,
-                    index=(start, end - start ),
+                    index=(start, end - start),
                     description='Period:',
                     disabled=False,
                     continuous_update=False,
@@ -161,13 +161,18 @@ class widgetDecorator():
 
         @interact(**widgets)
         def compute_new_plot(**kwargs):
+            """
+            Actual method that we hand over to interact. Evaluates the widget values and creates the plots
+            :param kwargs: widgets dict : {name : value}
+            :return: None
+            """
             visualize_from_period = param_visualize_from
             visualize_to_period = param_visualize_to
             for widget_name, widget in kwargs.items():
 
                 if type(widget) == tuple:
                     visualize_from_period = widget[0]
-                    visualize_to_period = widget[1]+1
+                    visualize_to_period = widget[1] + 1
 
                 elif type(widget) == bool:
                     widget_val = 1 if widget == True else 0
@@ -193,6 +198,6 @@ class widgetDecorator():
                                           series_names=series_names, strategy=strategy,
                                           return_df=return_df)
 
-            return ax
+            #return ax
 
         # return interact(compute_new_plot,**widgets)

@@ -50,7 +50,6 @@ First of all, you need [Python](https://www.python.org/). Download the latest ve
 BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 
 
-
 ### Install Node
 Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
 

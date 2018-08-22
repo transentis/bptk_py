@@ -83,9 +83,9 @@ class ScenarioManagerFactory():
                 else:
                     base_points = {}
 
-
                 if group_name not in self.scenario_managers.keys():
-                    self.scenario_managers[group_name] = scenarioManager(base_points=base_points,base_constants=base_constants, scenarios={},
+                    self.scenario_managers[group_name] = scenarioManager(base_points=base_points,
+                                                                         base_constants=base_constants, scenarios={},
                                                                          name=group_name)
 
                 manager = self.scenario_managers[group_name]
@@ -101,7 +101,7 @@ class ScenarioManagerFactory():
                             str(group_name)))
 
                 if base_points != manager.base_points:
-                    base_points_merged = merge_two_dicts(base_points,manager.base_points)
+                    base_points_merged = merge_two_dicts(base_points, manager.base_points)
                     manager.base_points = base_points_merged
                     base_points_updated = True
                     log(
@@ -125,7 +125,7 @@ class ScenarioManagerFactory():
                     if not scenario_name in manager.scenarios.keys() or base_constants_updated or base_points_updated:
                         scenario_dict = scen_dict[scenario_name]
 
-                        # ScenarioManager -> "scenarios" -> scenario_name -> "constants"
+                        # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
                         if len(manager.base_constants.keys()) > 0:
                             if not "constants" in scenario_dict.keys():
                                 scenario_dict["constants"] = {}
@@ -134,13 +134,14 @@ class ScenarioManagerFactory():
                                 if not const in scenario_dict["constants"].keys():
                                     scenario_dict["constants"][const] = value
 
+                        # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
+                        if len(manager.base_points.keys()) > 0:
                             if not "points" in scenario_dict.keys():
                                 scenario_dict["points"] = {}
 
                             for points, value in manager.base_points.items():
                                 if not points in scenario_dict["points"].keys():
                                     scenario_dict["points"][points] = value
-
 
                         sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
                                                  group=group_name)
@@ -208,7 +209,6 @@ class ScenarioManagerFactory():
         :return: self.scenario_managers
         """
         self.scenario_managers = {}
-        log("[INFO] Successfully reset all scenarios to original state")
         return self.get_scenario_managers()
 
     def get_scenario(self, scenario_manager, scenario):
@@ -265,7 +265,8 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = scenarioManager(scenarios={scenario.name: scenario}, name=scenario_manager,
+            self.scenario_managers[scenario_manager] = scenarioManager(scenarios={scenario.name: scenario},
+                                                                       name=scenario_manager,
                                                                        model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
 
@@ -273,8 +274,6 @@ class ScenarioManagerFactory():
         else:
             log("[WARN] Scenario Manager already existing. Not overwriting the model!")
             self.scenario_managers[scenario_manager].add_scenario(scenario)
-
-
 
         if len(source) > 0:
             self.__add_monitor(source, model)
