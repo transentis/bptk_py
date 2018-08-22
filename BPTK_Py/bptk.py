@@ -262,6 +262,5 @@ class bptk():
                 scenario = simulationScenario(model=None, name=scenario_name, group=scenario_manager_name,
                                               dictionary=dictionary[scenario_manager_name][scenario_name])
 
-                self.scenario_manager_factory.add_scenario_during_runtime(scenario=scenario,
-                                                                          scenario_manager=scenario_manager_name,
-                                                                          source=source, model=model_file)
+                self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
+                                                           source=source, model=model_file)

@@ -255,7 +255,7 @@ class ScenarioManagerFactory():
             scenarios_objects = filtered_scenarios
         return scenarios_objects
 
-    def add_scenario_during_runtime(self, scenario, scenario_manager, source="", model=None):
+    def add_scenario(self, scenario, scenario_manager, source="", model=None):
         """
         Add a scenario object during runtime
         :param scenario: scenario object to add
@@ -265,13 +265,16 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = scenarioManager({scenario.name: scenario}, name=scenario_manager,
+            self.scenario_managers[scenario_manager] = scenarioManager(scenarios={scenario.name: scenario}, name=scenario_manager,
                                                                        model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
+
 
         else:
             log("[WARN] Scenario Manager already existing. Not overwriting the model!")
             self.scenario_managers[scenario_manager].add_scenario(scenario)
+
+
 
         if len(source) > 0:
             self.__add_monitor(source, model)

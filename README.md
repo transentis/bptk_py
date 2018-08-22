@@ -49,9 +49,18 @@ Assuming you are starting from scratch, you need to perform the following steps
 First of all, you need [Python](https://www.python.org/). Download the latest version for your operating system. 
 BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 
+
+
 ### Install Node
 Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
 
+
+If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node:
+
+For ubuntu using apt:
+```commandline
+sudo apt install nodejs python3 python3-pip
+```
 
 ### Install BPTK_Py
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
