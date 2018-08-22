@@ -16,8 +16,6 @@ import time
 from BPTK_Py.logger.logger import log
 import os
 import BPTK_Py.config.config as config
-
-
 #######
 
 ########################

@@ -10,13 +10,15 @@
 # MIT License
 
 from ipywidgets import Layout
+import BPTK_Py
+import os
 
 
 ##################################
 ## BPTK_Py Global Configuration ##
 ##################################
 
-### Style settings
+### Plot Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
     "font.family": "DejaVu Sans",
@@ -41,19 +43,17 @@ transentis_colors = {
 
 }
 
-import BPTK_Py
-import os
+
 
 sd_py_compiler_root = str(os.path.dirname(BPTK_Py.__file__)) + "/sd-compiler"
 
 configuration = {
-    # Path to sd-compiler git root! Amend for your own needs
     "sd_py_compiler_root": sd_py_compiler_root,
     "bptk_Py_module_path" :os.path.dirname(BPTK_Py.__file__),
 
     # Graphic settings
     "matplotlib_rc_settings": matplotlib_rc_settings,
-    "colors": [transentis_colors[color] for color in transentis_colors.keys()],
+    "colors": [color for color in transentis_colors.values()],
     "kind": "area",
     "stacked": False,
     "figsize": matplotlib_rc_settings["figure.figsize"],
@@ -67,5 +67,5 @@ configuration = {
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],
-    "log_file": "bptk_py.log"
+    "log_file": "bptk_py_{}.log"
 }

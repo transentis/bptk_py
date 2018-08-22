@@ -11,8 +11,6 @@
 
 ### IMPORTS
 from BPTK_Py.logger.logger import log
-
-
 ###
 
 ###############################
