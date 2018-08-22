@@ -30,7 +30,7 @@ class scenarioManager():
     """
 
 
-    def __init__(self,base_constants={}, scenarios={}, name="", model=None, filename="", source="", model_file=""):
+    def __init__(self,base_points={},base_constants={}, scenarios={}, name="", model=None, filename="", source="", model_file=""):
         """
 
         :param scenarios: dict {scenario_name : scenario_object ...}. All scenarios this manager is responsible for
@@ -48,6 +48,7 @@ class scenarioManager():
         self.source = source
         self.filename = filename
         self.base_constants = base_constants
+        self.base_points = base_points
 
     def get_scenario_names(self):
         """
