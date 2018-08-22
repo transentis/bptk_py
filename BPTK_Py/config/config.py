@@ -19,7 +19,7 @@ from ipywidgets import Layout
 ### Style settings
 ## matplotlib style setting
 matplotlib_rc_settings = {
-    "font.family": 'AutographScriptEFOP-Lig',
+    "font.family": "DejaVu Sans",
     "axes.titlesize": 35,
     "axes.labelsize": 25,
     "lines.linewidth": 3,

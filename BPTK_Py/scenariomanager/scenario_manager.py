@@ -80,12 +80,12 @@ class scenarioManager():
             cwd_folder = str(config.configuration["sd_py_compiler_root"])
             os.chdir(cwd_folder)
 
-            x = os.system("npm install")
+            x = os.popen("npm install").read()
             os.chdir(current_dir)
             if x == 0:
                 print("[SUCCESS] Done downloading dependencies. Continuing initialization.")
             else:
-                print("[ERROR] Problem downloading the dependencies")
+                print("[ERROR] Problem downloading the dependencies: {}".format(str(x)))
 
         # Check if the source file changed in the meantime (newer version saved outside Jupyter/Bptk)
         if os.path.isfile(self.model_file + ".py") and not self.source == "":

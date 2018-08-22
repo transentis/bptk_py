@@ -1,11 +1,11 @@
-# Business Prototyping Toolkit for Python
+# Business Prototyping Toolkit for Python 
 
-__Welcome to the Business Prototyping Toolkit for Python!__
+__Welcome to the Business Prototyping Toolkit for Python! (BPTK_Py)__
 
 
 ## What is it?
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter/Jupyter Lab notebooks. 
+It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks. 
 
 It requires a Python simulation model following the conventions given in the end of this Readme.
  
@@ -49,28 +49,39 @@ Assuming you are starting from scratch, you need to perform the following steps
 First of all, you need [Python](https://www.python.org/). Download the latest version for your operating system. 
 BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 
-
 ### Install Node
 Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
 
 
+### Python and Node on your favorite Linux Distribution
 If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node:
 
-For ubuntu using apt:
+For Ubuntu using apt:
 ```commandline
+sudo apt update
 sudo apt install nodejs python3 python3-pip
 ```
 
-### Install BPTK_Py
+### Install BPTK_Py using Pip
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
 This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app. 
 Linux users may use their preferred terminal emulator.
 
-To install the package, just type ``pip install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
+To install the package, just type ``pip install BPTK_Py`` or ``pip3 install BPTK_Py``. Pip is a package manager that keeps Python packages up-to-date.
 
 Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
 
 After Pip finished successfully, you are ready for working with the framework. 
+
+If for some reason Pip is not available on your system, first download it. Regardless the operating system, this should do:
+1. Download [get-pip.py](https://bootstrap.pypa.io/get-pip.py). The file may open in your browser tab. Make sure to save it on your hard drive.
+2. Install pip: in a terminal, go to the directory of the downloaded script and issue ``python3 ./get-pip.py`` and wait a minute or two.
+
+Linux/UNIX shorthand: [1]
+```commandline
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py
+```
 
 ### Install JupyterLab
 Additionally, you may want to use Jupyter Lab to work interactively on the simulations - just as we do.
@@ -86,7 +97,7 @@ In order to keep your system clean, you may want to use a [virtual environment](
 
 ### Setup a virtual environment
 
-Virtual environemnts install a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
+A virtual environment is a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages. 
 
 Following steps are required to set up the venv and and install BPTK_Py into it:
 
@@ -381,3 +392,5 @@ This code initializes the model's memo for each equation with an empty dictionar
 You are now able to define your own simulation model quickly. If something is missing, please do contact us!
 
 
+# Links
+[1] https://pip.pypa.io/en/stable/installing/
