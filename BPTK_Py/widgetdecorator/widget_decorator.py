@@ -146,8 +146,8 @@ class widgetDecorator():
                     step = val[4]
                     precision = len(str(step).split(".")[1])
                     num_points = int((end - start) / step)
-                    options = [round(x, precision) for x in list(np.linspace(start, end, num_points))]
-                    value = options[int(len(options)/2)]
+                    options = [round(x, precision) for x in list(np.arange(start, end+step, step))]
+                    value = options[int((len(options)-1)/2) if (len(options)-1)%2 == 0 else int((len(options)-1)/2)+1 ]
 
                     widget = py_widgets.SelectionSlider(options=options,
                                                         value=value,
