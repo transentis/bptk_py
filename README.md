@@ -11,9 +11,10 @@ It requires a Python simulation model following certain conventions.
  
 Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
 
-Currently sdcc only supports models created using the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile), which is an open XML protocol for sharing interoperable system dynamics models and simulations. The XMILW standard is governed by the OASIS standards consortium.
+Currently sdcc only supports models created using the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile), which is an open XML protocol for sharing interoperable system dynamics models and simulations. 
+The XMILE standard is governed by the OASIS standards consortium.
 
-[Stella](http://www.iseesystems.com) is a visual modeling environment that stores system dynamics models in the XMILE format.
+[Stella](http://www.iseesystems.com) is a visual modeling environment that stores system dynamics models in this format.
  
 In future we may extend the sdcc transpiler to support other model formats (such as Vensim® by [Ventana Systems](http://www.vensim.com)).
 
@@ -31,12 +32,12 @@ Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain h
 This readme covers the installation process, the main API methods and how to define a simulation model.
 
 ## Installing the BPTK_PY framework
-Like every piece of software, BPTK_Py has to be installed correctly, including its dependencies. 
+Like every piece of software, BPTK_Py and its dependencies have to be installed correctly. 
 
 Assuming you are starting from scratch, you need to perform the following steps
 
 1. Install Python
-2. Install Node
+2. Install Node and npm
 3. Install BPTK_Py
 4. Install JupyterLab (optional)
 5. Setup a virtual environment (optional)
@@ -47,11 +48,10 @@ First of all, you need [Python](https://www.python.org/). Download the latest ve
 BPTK-Py was tested with Python 3.7, 3.6 and 3.4. 
 
 
-### Install Node
+### Install Node and npm
 Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install [Node.js](https://nodejs.org/en/) for your operating system.
 Make sure you install npm (the node.js package manager) along with node.js. This should be done automatically when downloading and installing from the official site. 
 
-Please follow the guide for your operating system
 
 #### Python and Node on your favorite Linux Distribution
 If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node:
@@ -59,11 +59,11 @@ If you are using a Linux Distribution, you may want to use your preferred packag
 For Ubuntu using apt:
 ```commandline
 sudo apt update
-sudo apt install nodejs python3 python3-pip
+sudo apt install nodejs python3 python3-pip npm
 ```
 
 Other Linux distributions should have similar packages. 
-You may always refer to the official websites of [Python](https://www.python.org/) and [Node.js](https://nodejs.org/en/) for help on installing on your operating system.
+You may always refer to the official websites of [Python](https://www.python.org/) and [Node.js](https://nodejs.org/en/) for help on installing on your specific operating system.
 
 ### Install BPTK_Py using Pip
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
@@ -83,7 +83,7 @@ If for some reason Pip is not available on your system, first download it. Regar
 Linux/UNIX shorthand: [1]
 ```commandline
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python3 get-pip.py
+python3 ./get-pip.py
 ```
 
 ### Install JupyterLab
