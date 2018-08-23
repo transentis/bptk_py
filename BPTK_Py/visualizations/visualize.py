@@ -213,6 +213,10 @@ class visualizer():
             if (len(y_label) > 0):
                 ax.set_ylabel(y_label)
 
+            for ymaj in ax.yaxis.get_majorticklocs():
+                ax.axhline(y=ymaj, ls='-',alpha=0.05,color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+
+
             visualize.update_plot_formats(ax)
 
         ### If user wanted a dataframe instead, here it is!

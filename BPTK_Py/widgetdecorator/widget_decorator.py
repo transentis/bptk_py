@@ -14,8 +14,8 @@ from __future__ import print_function
 import BPTK_Py.config.config as config
 from BPTK_Py.logger.logger import log
 from ipywidgets import interact, interactive, fixed, interact_manual
-from ipywidgets import Layout
 import ipywidgets as py_widgets
+import numpy as np
 
 
 ##
@@ -136,20 +136,42 @@ class widgetDecorator():
                 start = val[2]
                 end = val[3]
 
-                if type(start) == float:
+                if len(val) == 5:
+                    step = val[4]
 
+                else:
+                    step = 1 if type(start) == int and type(end) == int else 0.1
+
+                if type(start) == float and len(val) == 5:
+                    step = val[4]
+                    precision = len(str(step).split(".")[1])
+                    num_points = int((end - start) / step)
+                    options = [round(x, precision) for x in list(np.linspace(start, end, num_points))]
+                    value = options[int(len(options)/2)]
+
+                    widget = py_widgets.SelectionSlider(options=options,
+                                                        value=value,
+                                                        description=name,
+                                                        style=config.configuration["slider_style"],
+                                                        layout=config.configuration["slider_layout"],
+                                                        continuous_update=False)
+
+                elif type(start) == float and len(val) < 5:
+                    step = 0.1
                     widget = py_widgets.FloatSlider(min=start,
                                                     max=end,
                                                     value=(end - start) / 2,
                                                     description=name,
+                                                    step=step,
                                                     style=config.configuration["slider_style"],
                                                     layout=config.configuration["slider_layout"],
                                                     continuous_update=False)
                 else:
+                    step = 1
                     widget = py_widgets.IntSlider(min=start,
                                                   max=end,
-                                                  step=1,
-                                                  value=(end - start) / 2,
+                                                  step=step,
+                                                  value=(end - start - step) / 2,
                                                   description=name,
                                                   style=config.configuration["slider_style"],
                                                   layout=config.configuration["slider_layout"], continuous_update=False)
@@ -198,6 +220,6 @@ class widgetDecorator():
                                           series_names=series_names, strategy=strategy,
                                           return_df=return_df)
 
-            #return ax
+            # return ax
 
         # return interact(compute_new_plot,**widgets)
