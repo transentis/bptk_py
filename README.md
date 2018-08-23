@@ -34,6 +34,8 @@ This readme covers the installation process, the main API methods and how to def
 ## Installing the BPTK_PY framework
 Like every piece of software, BPTK_Py and its dependencies have to be installed correctly. 
 
+If you already have a running Python and Jupyter environment, ``pip install BPTK-Py`` or ``pip3 install BPTK-Py`` will do!
+
 Assuming you are starting from scratch, you need to perform the following steps
 
 1. Install Python
@@ -41,7 +43,7 @@ Assuming you are starting from scratch, you need to perform the following steps
 3. Install BPTK_Py
 4. Install JupyterLab (optional)
 5. Setup a virtual environment (optional)
-6. Download our BPTK_Py tutorial (optional)
+6. Download our [BPTK_Py tutorial](https://www.transentis.com/products/business-prototyping-toolkit/) (optional)
 
 ### Install Python
 First of all, you need [Python](https://www.python.org/). Download the latest version for your operating system. 

@@ -136,16 +136,11 @@ class widgetDecorator():
                 start = val[2]
                 end = val[3]
 
-                if len(val) == 5:
-                    step = val[4]
-
-                else:
-                    step = 1 if type(start) == int and type(end) == int else 0.1
 
                 if type(start) == float and len(val) == 5:
                     step = val[4]
                     precision = len(str(step).split(".")[1])
-                    num_points = int((end - start) / step)
+
                     options = [round(x, precision) for x in list(np.arange(start, end+step, step))]
                     value = options[int((len(options)-1)/2) if (len(options)-1)%2 == 0 else int((len(options)-1)/2)+1 ]
 
