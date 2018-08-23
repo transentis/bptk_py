@@ -82,7 +82,7 @@ If for some reason Pip is not available on your system, first download it. Regar
 1. Download [get-pip.py](https://bootstrap.pypa.io/get-pip.py). The file may open in your browser tab. Make sure to save it on your hard drive.
 2. Install pip: in a terminal, go to the directory of the downloaded script and issue ``python3 ./get-pip.py`` and wait a minute or two.
 
-Linux/UNIX shorthand: [1](#Links)
+Linux/UNIX shorthand: [[1](#Links)]
 ```commandline
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python3 ./get-pip.py
