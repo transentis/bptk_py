@@ -67,6 +67,10 @@ class ScenarioManagerFactory():
             return z
 
         if len(filename) > 0:
+
+            loaded_scenarios = {}
+            previous_scenarios = {}
+
             json_data = open(filename, encoding="utf-8").read()
             try:
                 json_dict = dict(json.loads(json_data))
@@ -347,4 +351,7 @@ class ScenarioManagerFactory():
                     self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
+
+
+
 

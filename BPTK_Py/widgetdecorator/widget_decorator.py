@@ -89,6 +89,9 @@ class widgetDecorator():
                 name = ""
 
                 if widget_type.lower() == "checkbox":
+                    if len(val) < 2:
+                        raise IndexError("Too few arguments for {}".format(widget_type))
+
                     name = val[1]
                     widget = py_widgets.Checkbox(description=name, value=False, disabled=False,
                                                  style=config.configuration["slider_style"],
@@ -133,6 +136,8 @@ class widgetDecorator():
 
 
                 elif widget_type.lower() == "slider":
+                    if len(val) < 4:
+                        raise IndexError("Too few arguments for {}".format(widget_type))
                     name = val[1]
                     start = val[2]
                     end = val[3]
@@ -174,8 +179,12 @@ class widgetDecorator():
 
                 widgets[name] = widget
 
+            except TypeError as e:
+                log(
+                    "[ERROR] Problem creating widget with a TypeError. Please do only use numbers for the widget limits and text in double quotes for names and widget type! Message: \"{}\"".format(
+                        str(e)))
             except IndexError as e:
-                log("[ERROR] Problem creating widget with a ValueError. Did you supply all required fields? Message: \"{}\"".format(str(e), str(type(e))))
+                log("[ERROR] Problem creating widget with a ValueError. Did you supply all required fields? Message: \"{}\"".format(str(e)))
             except Exception as e:
                 log("[ERROR] Problem creating widget: \"{}\". Error type:  {}".format(str(e),str(type(e))))
 
