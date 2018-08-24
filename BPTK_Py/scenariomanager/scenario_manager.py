@@ -51,6 +51,9 @@ class scenarioManager():
         self.filename = filename
         self.base_constants = base_constants
         self.base_points = base_points
+        self.filenames = []
+        if filename != "":
+            self.filenames = [filename]
 
     def get_scenario_names(self):
         """

@@ -393,7 +393,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 - Monitoring of Scenario JSON files:
     - Reload scenarios upon change
     - Parse new scenarios
-    
+    - **Note** that this only works properly if the scenario manager is not spread over multiple files for now!
 
 ## 0.3.5.3
 - horizontal lines in graphs to improve readability

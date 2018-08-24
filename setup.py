@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 
 setup(name='BPTK_Py',
-      version='0.3.5.3',
+      version='0.3.5.4',
       description='A python simulation engine for System Dynamics models',
       long_description=long_description,
       long_description_content_type="text/markdown",

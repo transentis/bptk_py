@@ -51,7 +51,7 @@ class ScenarioManagerFactory():
         """
 
         if filename.lower().endswith(".json") and not filename in self.json_monitors.keys():
-            self.json_monitors[filename] = jsonMonitor(json_file=filename,update_func=self.__readScenario)
+            self.json_monitors[filename] = jsonMonitor(json_file=filename,update_func=self.__refresh_scenarios_for_json)
 
 
         def merge_two_dicts(x, y):
@@ -68,9 +68,6 @@ class ScenarioManagerFactory():
 
         if len(filename) > 0:
 
-            loaded_scenarios = {}
-            previous_scenarios = {}
-
             json_data = open(filename, encoding="utf-8").read()
             try:
                 json_dict = dict(json.loads(json_data))
@@ -81,6 +78,7 @@ class ScenarioManagerFactory():
             # ScenarioManager ->
             for group_name in json_dict.keys():
                 base_constants = {}
+
                 if "base_constants" in json_dict[group_name].keys():
                     base_constants = json_dict[group_name]["base_constants"]
                 else:
@@ -101,17 +99,22 @@ class ScenarioManagerFactory():
                 base_constants_updated = False
                 base_points_updated = False
 
-                # If we have new base constants
-                if base_constants != manager.base_constants:
-                    base_constants_merged = merge_two_dicts(base_constants, manager.base_constants)
+                # Merge points and constants of scenario manager
+                base_constants_merged = merge_two_dicts(base_constants, manager.base_constants)
+                base_points_merged = merge_two_dicts(base_points, manager.base_points)
+
+                # If we have new base constants (merged base constants different to original, VALUE EQUALITY, i.e.: {"foo":80} == {"foo":80}
+                if base_constants_merged != manager.base_constants:
+
                     manager.base_constants = base_constants_merged
                     base_constants_updated = True
                     log(
                         "[WARN] Found updated base constants for the scenario manager {}. Seems like this scenario manager is defined in multiple files. Updating all base constants for all scenarios. Make sure to only define the base_constants field exactly once!".format(
                             str(group_name)))
 
-                if base_points != manager.base_points:
-                    base_points_merged = merge_two_dicts(base_points, manager.base_points)
+
+                if base_points_merged != manager.base_points:
+                    #base_points_merged = merge_two_dicts(base_points, manager.base_points)
                     manager.base_points = base_points_merged
                     base_points_updated = True
                     log(
@@ -121,6 +124,9 @@ class ScenarioManagerFactory():
                 # Make sure we obtain the original base constants from the scenario manager, although we read some already.
 
                 manager.filename = filename
+
+                if filename not in manager.filenames:
+                    manager.filenames += [filename]
 
                 manager.model_file = json_dict[group_name]["model"]
 
@@ -171,6 +177,9 @@ class ScenarioManagerFactory():
                     if not scenario_name in manager.scenarios.keys() or base_constants_updated or base_points_updated:
 
                         manager.scenarios[scenario_name] = sce
+
+                    if base_constants_updated or base_points_updated:
+                        self.__refresh_scenarios_for_json(filename)
 
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
@@ -312,7 +321,7 @@ class ScenarioManagerFactory():
         """
         if not source in self.model_monitors.keys():
             self.model_monitors[source] = modelMonitor(source, str(
-                model), update_func=self.refresh_scenarios_for_filename)
+                model), update_func=self.refresh_scenarios_for_source_model)
 
     def destroy(self):
         """
@@ -336,9 +345,9 @@ class ScenarioManagerFactory():
         with open(filename, 'w', encoding="utf-8") as outfile:
             json.dump(dictionary, outfile, indent=4)
 
-    def refresh_scenarios_for_filename(self, filename):
+    def refresh_scenarios_for_source_model(self, filename):
         """
-        Refreshes all scenarios that
+        Refreshes all scenarios that use the given source file (e.g. itmx)
         :param filename:
         :return:
         """
@@ -351,6 +360,26 @@ class ScenarioManagerFactory():
                     self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
+
+
+
+    def __refresh_scenarios_for_json(self,filename):
+        """
+        Refresh all scenario managers that use this filename as source (JSON!)
+        Also update for scenarios that are spread over multiple files
+        :param filename: JSON file name
+        :return: None
+        """
+        managers = self.get_scenario_managers()
+
+        managers = list(managers.values())
+
+        for manager in managers:
+            if filename in manager.filenames:
+                for json_file in manager.filenames:
+                    self.__readScenario(json_file)
+
+
 
 
 
