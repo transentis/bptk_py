@@ -173,8 +173,11 @@ class widgetDecorator():
                                                       layout=config.configuration["slider_layout"], continuous_update=False)
 
                 widgets[name] = widget
+
+            except IndexError as e:
+                log("[ERROR] Problem creating widget with a ValueError. Did you supply all required fields? Message: \"{}\"".format(str(e), str(type(e))))
             except Exception as e:
-                log("[ERROR] Problem creating widget: \"{}\"  {}".format(str(e),type(e)))
+                log("[ERROR] Problem creating widget: \"{}\". Error type:  {}".format(str(e),str(type(e))))
 
         param_visualize_from = visualize_from_period
         param_visualize_to = visualize_to_period
