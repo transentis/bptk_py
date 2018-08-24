@@ -215,6 +215,7 @@ class widgetDecorator():
                                           series_names=series_names, strategy=strategy,
                                           return_df=return_df)
 
-            # return ax
+            if return_df:
+                return ax
 
         # return interact(compute_new_plot,**widgets)

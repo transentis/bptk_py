@@ -16,6 +16,7 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager import scenarioManager
 from BPTK_Py.logger.logger import log
 from BPTK_Py.modelmonitor.model_monitor import modelMonitor
+from BPTK_Py.modelmonitor.json_monitor import jsonMonitor
 import glob
 import os
 import json
@@ -38,7 +39,8 @@ class ScenarioManagerFactory():
 
         self.scenario_managers = {}
         self.scenarios = {}
-        self.scenario_monitors = {}
+        self.model_monitors = {}
+        self.json_monitors = {}
         self.path = ""
 
     def __readScenario(self, filename=""):
@@ -47,6 +49,10 @@ class ScenarioManagerFactory():
         :param filename: filename of JSON file to parse
         :return:  self.scenario_managers
         """
+
+        if filename.lower().endswith(".json") and not filename in self.json_monitors.keys():
+            self.json_monitors[filename] = jsonMonitor(json_file=filename,update_func=self.__readScenario)
+
 
         def merge_two_dicts(x, y):
             """
@@ -118,46 +124,72 @@ class ScenarioManagerFactory():
                 scen_dict = json_dict[group_name]["scenarios"]
 
                 # Create simulation scenarios from structure
+
+                all_scenario_names = []
                 for scenario_name in scen_dict.keys():
+
+                    all_scenario_names += [scenario_name]
+                    scenario_dict = scen_dict[scenario_name]
+
+
+
+
                     ## Only add scenarios that the scenario manager did not observe yet --> avoid changing running models
                     ## If you need to reload a scenario pop it first.
                     ## Otherwise: If the base constants changed, I will make an update again and reload the scenario
-                    if not scenario_name in manager.scenarios.keys() or base_constants_updated or base_points_updated:
-                        scenario_dict = scen_dict[scenario_name]
 
-                        # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
-                        if len(manager.base_constants.keys()) > 0:
-                            if not "constants" in scenario_dict.keys():
-                                scenario_dict["constants"] = {}
 
-                            for const, value in manager.base_constants.items():
-                                if not const in scenario_dict["constants"].keys():
-                                    scenario_dict["constants"][const] = value
+                    # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
+                    if len(manager.base_constants.keys()) > 0:
+                        if not "constants" in scenario_dict.keys():
+                            scenario_dict["constants"] = {}
+
+                        for const, value in manager.base_constants.items():
+                            if not const in scenario_dict["constants"].keys():
+                                scenario_dict["constants"][const] = value
 
                         # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
-                        if len(manager.base_points.keys()) > 0:
-                            if not "points" in scenario_dict.keys():
-                                scenario_dict["points"] = {}
+                    if len(manager.base_points.keys()) > 0:
+                        if not "points" in scenario_dict.keys():
+                            scenario_dict["points"] = {}
 
-                            for points, value in manager.base_points.items():
-                                if not points in scenario_dict["points"].keys():
-                                    scenario_dict["points"][points] = value
+                        for points, value in manager.base_points.items():
+                            if not points in scenario_dict["points"].keys():
+                                scenario_dict["points"][points] = value
 
-                        sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
+                    if scenario_name in manager.scenarios.keys():
+                        # Check if an update was made to the scenario --> Value equality not given anymore
+                        if not scenario_dict == manager.scenarios[scenario_name].dictionary:
+                            log("[INFO] Scenario {} was updated!".format(scenario_name))
+                            manager.scenarios.pop(scenario_name)
+
+
+                    sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
                                                  group=group_name)
+
+                    if not scenario_name in manager.scenarios.keys() or base_constants_updated or base_points_updated:
 
                         manager.scenarios[scenario_name] = sce
 
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
 
-                    if not manager.source in self.scenario_monitors.keys() and os.path.isfile(manager.source):
+                    if not manager.source in self.model_monitors.keys() and os.path.isfile(manager.source):
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
                         log(
                             "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
                 manager.instantiate_model()
+
+                # Handle deleted scenarios after update
+                current_scenarios = list(manager.scenarios.keys())
+
+                deleted_scenarios = [x for x in current_scenarios if x  not in all_scenario_names]
+
+                for scenario_name in deleted_scenarios:
+                    log("[INFO] Scenario {} was deleted!".format(scenario_name))
+                    manager.scenarios.pop(scenario_name)
 
             return self.scenario_managers
         else:
@@ -200,7 +232,7 @@ class ScenarioManagerFactory():
         scenario_filename = manager.filename
         manager.scenarios.pop(scenario)
 
-        scenario_managers = self.__readScenario(filename=scenario_filename)
+        self.__readScenario(filename=scenario_filename)
 
         log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
 
@@ -286,8 +318,8 @@ class ScenarioManagerFactory():
         :param model:  output file link (without .py)
         :return:  None
         """
-        if not source in self.scenario_monitors.keys():
-            self.scenario_monitors[source] = modelMonitor(source, str(
+        if not source in self.model_monitors.keys():
+            self.model_monitors[source] = modelMonitor(source, str(
                 model), update_func=self.refresh_scenarios_for_filename)
 
     def destroy(self):
@@ -295,11 +327,11 @@ class ScenarioManagerFactory():
         Kill all file monitor threads
         :return:
         """
-        values = self.scenario_monitors.keys()
+        values = self.model_monitors.keys()
         for scenario in values:
             scenario.kill()
 
-        self.scenario_monitors = {}
+        self.model_monitors = {}
 
     def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",
                         dictionary={}):
@@ -327,3 +359,4 @@ class ScenarioManagerFactory():
                     self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
+
