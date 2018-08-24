@@ -128,7 +128,6 @@ class ScenarioManagerFactory():
 
                 for scenario_name in scen_dict.keys():
 
-                    all_scenario_names += [scenario_name]
                     scenario_dict = scen_dict[scenario_name]
 
 

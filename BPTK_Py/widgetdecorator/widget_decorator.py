@@ -80,98 +80,101 @@ class widgetDecorator():
         # Generate the widget objects
         widgets = {}
         for val in constants:
-            if type(val) is tuple:
-                widget_type = val[0]
-            else:
-                widget_type = val
-
-            name = ""
-
-            if widget_type.lower() == "checkbox":
-                name = val[1]
-                widget = py_widgets.Checkbox(description=name, value=False, disabled=False,
-                                             style=config.configuration["slider_style"],
-                                             layout=config.configuration["slider_layout"])
-
-            elif widget_type.lower() == "timerange":
-                name = "timerange"
-                start = 0
-                end = 0
-
-                if visualize_from_period > 0:
-                    start = visualize_from_period - 1
-
-                if visualize_to_period > 0:
-                    end = visualize_to_period
-
+            try:
+                if type(val) is tuple:
+                    widget_type = val[0]
                 else:
-                    #### Find highest stoptime values
-                    managers = self.bptk.scenario_manager_factory.scenario_managers
-                    scenario_objects = []
-                    for manager in managers.values():
-                        scenario_objects += list(manager.scenarios.values())
+                    widget_type = val
 
-                    for scenario in scenario_objects:
-                        if scenario.model.stoptime > end:
-                            end = scenario.model.stoptime
+                name = ""
 
-                    ### Search done
+                if widget_type.lower() == "checkbox":
+                    name = val[1]
+                    widget = py_widgets.Checkbox(description=name, value=False, disabled=False,
+                                                 style=config.configuration["slider_style"],
+                                                 layout=config.configuration["slider_layout"])
 
-                dates = [i for i in range(start, end + 1)]
-                options = dates
-                widget = py_widgets.SelectionRangeSlider(
-                    options=options,
-                    index=(start, end - start),
-                    description='Period:',
-                    disabled=False,
-                    continuous_update=False,
-                    style=config.configuration["slider_style"],
-                    layout=config.configuration["slider_layout"]
-                )
+                elif widget_type.lower() == "timerange":
+                    name = "timerange"
+                    start = 0
+                    end = 0
+
+                    if visualize_from_period > 0:
+                        start = visualize_from_period - 1
+
+                    if visualize_to_period > 0:
+                        end = visualize_to_period
+
+                    else:
+                        #### Find highest stoptime values
+                        managers = self.bptk.scenario_manager_factory.scenario_managers
+                        scenario_objects = []
+                        for manager in managers.values():
+                            scenario_objects += list(manager.scenarios.values())
+
+                        for scenario in scenario_objects:
+                            if scenario.model.stoptime > end:
+                                end = scenario.model.stoptime
+
+                        ### Search done
+
+                    dates = [i for i in range(start, end + 1)]
+                    options = dates
+                    widget = py_widgets.SelectionRangeSlider(
+                        options=options,
+                        index=(start, end - start),
+                        description='Period:',
+                        disabled=False,
+                        continuous_update=False,
+                        style=config.configuration["slider_style"],
+                        layout=config.configuration["slider_layout"]
+                    )
 
 
 
-            elif widget_type.lower() == "slider":
-                name = val[1]
-                start = val[2]
-                end = val[3]
+                elif widget_type.lower() == "slider":
+                    name = val[1]
+                    start = val[2]
+                    end = val[3]
 
 
-                if type(start) == float and len(val) == 5:
-                    step = val[4]
-                    precision = len(str(step).split(".")[1])
+                    if type(start) == float and len(val) == 5:
+                        step = val[4]
+                        precision = len(str(step).split(".")[1])
 
-                    options = [round(x, precision) for x in list(np.arange(start, end+step, step))]
-                    value = options[int((len(options)-1)/2) if (len(options)-1)%2 == 0 else int((len(options)-1)/2)+1 ]
+                        options = [round(x, precision) for x in list(np.arange(start, end+step, step))]
+                        value = options[int((len(options)-1)/2) if (len(options)-1)%2 == 0 else int((len(options)-1)/2)+1 ]
 
-                    widget = py_widgets.SelectionSlider(options=options,
-                                                        value=value,
+                        widget = py_widgets.SelectionSlider(options=options,
+                                                            value=value,
+                                                            description=name,
+                                                            style=config.configuration["slider_style"],
+                                                            layout=config.configuration["slider_layout"],
+                                                            continuous_update=False)
+
+                    elif type(start) == float and len(val) < 5:
+                        step = 0.1
+                        widget = py_widgets.FloatSlider(min=start,
+                                                        max=end,
+                                                        value=(end - start) / 2,
                                                         description=name,
+                                                        step=step,
                                                         style=config.configuration["slider_style"],
                                                         layout=config.configuration["slider_layout"],
                                                         continuous_update=False)
+                    else:
+                        step = 1
+                        widget = py_widgets.IntSlider(min=start,
+                                                      max=end,
+                                                      step=step,
+                                                      value=(end - start - step) / 2,
+                                                      description=name,
+                                                      style=config.configuration["slider_style"],
+                                                      layout=config.configuration["slider_layout"], continuous_update=False)
 
-                elif type(start) == float and len(val) < 5:
-                    step = 0.1
-                    widget = py_widgets.FloatSlider(min=start,
-                                                    max=end,
-                                                    value=(end - start) / 2,
-                                                    description=name,
-                                                    step=step,
-                                                    style=config.configuration["slider_style"],
-                                                    layout=config.configuration["slider_layout"],
-                                                    continuous_update=False)
-                else:
-                    step = 1
-                    widget = py_widgets.IntSlider(min=start,
-                                                  max=end,
-                                                  step=step,
-                                                  value=(end - start - step) / 2,
-                                                  description=name,
-                                                  style=config.configuration["slider_style"],
-                                                  layout=config.configuration["slider_layout"], continuous_update=False)
-
-            widgets[name] = widget
+                widgets[name] = widget
+            except Exception as e:
+                log("[ERROR] Problem creating widget: \"{}\"  {}".format(str(e),type(e)))
 
         param_visualize_from = visualize_from_period
         param_visualize_to = visualize_to_period
