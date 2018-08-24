@@ -187,9 +187,9 @@ class ScenarioManagerFactory():
 
                 deleted_scenarios = [x for x in current_scenarios if x  not in all_scenario_names]
 
-                for scenario_name in deleted_scenarios:
-                    log("[INFO] Scenario {} was deleted!".format(scenario_name))
-                    manager.scenarios.pop(scenario_name)
+                #for scenario_name in deleted_scenarios:
+                 #   log("[INFO] Scenario {} was deleted!".format(scenario_name))
+                  #  manager.scenarios.pop(scenario_name)
 
             return self.scenario_managers
         else:
