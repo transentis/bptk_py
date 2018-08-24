@@ -31,7 +31,7 @@ class scenarioManager():
     This class reads and writes scenarios and starts the file monitors for each scenario's model
     """
 
-    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, filename="", source="",
+    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="",filenames=[],
                  model_file=""):
         """
 
@@ -48,12 +48,10 @@ class scenarioManager():
         self.model = model
         self.model_file = model_file
         self.source = source
-        self.filename = filename
+
         self.base_constants = base_constants
         self.base_points = base_points
-        self.filenames = []
-        if filename != "":
-            self.filenames = [filename]
+        self.filenames = filenames
 
     def get_scenario_names(self):
         """

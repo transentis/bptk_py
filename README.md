@@ -319,7 +319,7 @@ The ``__init__`` configures the model properties such as the start time, stop ti
  An equation has a key and is a ``lambda`` function of the following format:
  ```python
  {
-    "name_of_equation" : lambda t : 0 if t <= self.starttime else recurse("some_equation",t-self.dt)
+    "name_of_equation" : lambda t : 0 if t <= self.starttime else self.memoize("some_equation",t-self.dt)
  }
  ```
  
@@ -394,7 +394,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
     - Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
     - Parse new scenarios
     
- 
+
 
 ## 0.3.5.3
 - horizontal lines in graphs to improve readability

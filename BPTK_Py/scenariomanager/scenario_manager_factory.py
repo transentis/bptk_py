@@ -42,6 +42,7 @@ class ScenarioManagerFactory():
         self.model_monitors = {}
         self.json_monitors = {}
         self.path = ""
+        self.scenario_files=[]
 
     def __readScenario(self, filename=""):
         """
@@ -54,19 +55,7 @@ class ScenarioManagerFactory():
             self.json_monitors[filename] = jsonMonitor(json_file=filename,update_func=self.__refresh_scenarios_for_json)
 
 
-        def merge_two_dicts(x, y):
-            """
-            Little helper method to merge dict x into y. If a key exists in x and y, x will win!
-            Note: It is inplace! I return a copy z. This way, the original x and y dicts stay untouched and available for your own use
-            :param x:
-            :param y:
-            :return: Merged dict of x and y
-            """
-            z = y.copy()  # start with y's keys and values
-            z.update(x)  # modifies z with x's keys and values & returns None
-            return z
-
-        if len(filename) > 0:
+        if len(filename) > 0 and filename.lower().endswith(".json"):
 
             json_data = open(filename, encoding="utf-8").read()
             try:
@@ -77,56 +66,20 @@ class ScenarioManagerFactory():
 
             # ScenarioManager ->
             for group_name in json_dict.keys():
-                base_constants = {}
-
-                if "base_constants" in json_dict[group_name].keys():
-                    base_constants = json_dict[group_name]["base_constants"]
-                else:
-                    base_constants = {}
-
-                if "base_points" in json_dict[group_name].keys():
-                    base_points = json_dict[group_name]["base_points"]
-                else:
-                    base_points = {}
 
                 if group_name not in self.scenario_managers.keys():
-                    self.scenario_managers[group_name] = scenarioManager(base_points=base_points,
-                                                                         base_constants=base_constants, scenarios={},
+                    self.scenario_managers[group_name] = scenarioManager(base_points=None,
+                                                                         base_constants=None, scenarios={},
                                                                          name=group_name)
 
                 manager = self.scenario_managers[group_name]
 
-                base_constants_updated = False
-                base_points_updated = False
-
-                # Merge points and constants of scenario manager
-                base_constants_merged = merge_two_dicts(base_constants, manager.base_constants)
-                base_points_merged = merge_two_dicts(base_points, manager.base_points)
-
-                # If we have new base constants (merged base constants different to original, VALUE EQUALITY, i.e.: {"foo":80} == {"foo":80}
-                if base_constants_merged != manager.base_constants:
-
-                    manager.base_constants = base_constants_merged
-                    base_constants_updated = True
-                    log(
-                        "[WARN] Found updated base constants for the scenario manager {}. Seems like this scenario manager is defined in multiple files. Updating all base constants for all scenarios. Make sure to only define the base_constants field exactly once!".format(
-                            str(group_name)))
-
-
-                if base_points_merged != manager.base_points:
-                    #base_points_merged = merge_two_dicts(base_points, manager.base_points)
-                    manager.base_points = base_points_merged
-                    base_points_updated = True
-                    log(
-                        "[WARN] Found updated base points for the scenario manager {}. Seems like this scenario manager is defined in multiple files. Updating all base points for all scenarios. Make sure to only define the base_points field exactly once!".format(
-                            str(group_name)))
-
-                # Make sure we obtain the original base constants from the scenario manager, although we read some already.
-
-                manager.filename = filename
 
                 if filename not in manager.filenames:
                     manager.filenames += [filename]
+
+                manager.base_constants = self.__get_all_base_constants(group_name, self.scenario_files)
+                manager.base_points = self.__get_all_base_points(group_name, self.scenario_files)
 
                 manager.model_file = json_dict[group_name]["model"]
 
@@ -139,11 +92,6 @@ class ScenarioManagerFactory():
                 for scenario_name in scen_dict.keys():
 
                     scenario_dict = scen_dict[scenario_name]
-
-
-                    ## Only add scenarios that the scenario manager did not observe yet --> avoid changing running models
-                    ## If you need to reload a scenario pop it first.
-                    ## Otherwise: If the base constants changed, I will make an update again and reload the scenario
 
 
                     # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
@@ -174,12 +122,9 @@ class ScenarioManagerFactory():
                     sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
                                                  group=group_name)
 
-                    if not scenario_name in manager.scenarios.keys() or base_constants_updated or base_points_updated:
-
+                    if not scenario_name in manager.scenarios.keys():
                         manager.scenarios[scenario_name] = sce
 
-                    if base_constants_updated or base_points_updated:
-                        self.__refresh_scenarios_for_json(filename)
 
                 if "source" in json_dict[group_name].keys():
                     manager.source = json_dict[group_name]["source"]
@@ -208,6 +153,8 @@ class ScenarioManagerFactory():
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
+            self.scenario_files = glob.glob(os.path.join(path, '*.json'))
+
             for infile in glob.glob(os.path.join(path, '*.json')):
                 self.__readScenario(filename=infile)
 
@@ -230,10 +177,11 @@ class ScenarioManagerFactory():
         log("[INFO] Reloading scenario {} from {}".format(scenario, scenario_manager))
 
         manager = self.get_scenario_managers()[scenario_manager]
-        scenario_filename = manager.filename
+        manager_filenames = manager.filenames
         manager.scenarios.pop(scenario)
 
-        self.__readScenario(filename=scenario_filename)
+        for filename in manager_filenames:
+            self.__readScenario(filename=filename)
 
         log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
 
@@ -378,6 +326,63 @@ class ScenarioManagerFactory():
             if filename in manager.filenames:
                 for json_file in manager.filenames:
                     self.__readScenario(json_file)
+
+    def __get_all_base_constants(self, scenario_manager, filenames):
+        """
+        This method loads all base constants for a given scenario manager. It looks them up in all the files given
+        If a scenario manager spreads over multiple files and you define base constants in different files for the same
+        manager, just don't! You will definitely lose data!!
+        :param scenario_manager:
+        :param filenames:
+        :return: Base constants, merged from multiple files into one dict!
+        """
+        base_constants = {}
+        for filename in filenames:
+            json_data = open(filename, encoding="utf-8").read()
+
+            try:
+                json_dict = dict(json.loads(json_data))
+            except ValueError as e:
+                log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
+                return None
+
+            if scenario_manager in json_dict.keys():
+                scenario_manager_dict = json_dict[scenario_manager]
+
+                if "base_constants" in scenario_manager_dict.keys():
+                    for key, value in scenario_manager_dict["base_constants"].items():
+                        base_constants[key] = value
+
+        return base_constants
+
+
+    def __get_all_base_points(self, scenario_manager, filenames):
+        """
+        This method loads all base points for a given scenario manager. It looks them up in all the files given
+        If a scenario manager spreads over multiple files and you define base constants in different files for the same
+        manager, just don't! You will definitely lose data!!
+        :param scenario_manager:
+        :param filenames:
+        :return: Base constants, merged from multiple files into one dict!
+        """
+        base_points = {}
+        for filename in filenames:
+            json_data = open(filename, encoding="utf-8").read()
+
+            try:
+                json_dict = dict(json.loads(json_data))
+            except ValueError as e:
+                log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
+                return None
+
+            if scenario_manager in json_dict.keys():
+                scenario_manager_dict = json_dict[scenario_manager]
+
+                if "base_points" in scenario_manager_dict.keys():
+                    for key, value in scenario_manager_dict["base_points"].items():
+                        base_points[key] = value
+
+        return base_points
 
 
 
