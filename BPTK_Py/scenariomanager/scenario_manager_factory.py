@@ -125,13 +125,11 @@ class ScenarioManagerFactory():
 
                 # Create simulation scenarios from structure
 
-                all_scenario_names = []
+
                 for scenario_name in scen_dict.keys():
 
                     all_scenario_names += [scenario_name]
                     scenario_dict = scen_dict[scenario_name]
-
-
 
 
                     ## Only add scenarios that the scenario manager did not observe yet --> avoid changing running models
@@ -181,15 +179,6 @@ class ScenarioManagerFactory():
                             "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
                 manager.instantiate_model()
-
-                # Handle deleted scenarios after update
-                current_scenarios = list(manager.scenarios.keys())
-
-                deleted_scenarios = [x for x in current_scenarios if x  not in all_scenario_names]
-
-                #for scenario_name in deleted_scenarios:
-                 #   log("[INFO] Scenario {} was deleted!".format(scenario_name))
-                  #  manager.scenarios.pop(scenario_name)
 
             return self.scenario_managers
         else:
