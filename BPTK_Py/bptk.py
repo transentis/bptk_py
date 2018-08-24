@@ -274,7 +274,7 @@ class bptk():
             scenarios = [k for k in dictionary[scenario_manager_name].keys() if not k == "source" and not k == "model"]
 
             for scenario_name in scenarios:
-                scenario = simulationScenario(model=None, name=scenario_name, group=scenario_manager_name,
+                scenario = simulationScenario(model=None, name=scenario_name, scenario_manager_name=scenario_manager_name,
                                               dictionary=dictionary[scenario_manager_name][scenario_name])
 
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,

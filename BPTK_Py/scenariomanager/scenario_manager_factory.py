@@ -65,30 +65,29 @@ class ScenarioManagerFactory():
                 return None
 
             # ScenarioManager ->
-            for group_name in json_dict.keys():
+            for scenario_manager_name in json_dict.keys():
 
-                if group_name not in self.scenario_managers.keys():
-                    self.scenario_managers[group_name] = scenarioManager(base_points=None,
+                if scenario_manager_name not in self.scenario_managers.keys():
+                    self.scenario_managers[scenario_manager_name] = scenarioManager(base_points=None,
                                                                          base_constants=None, scenarios={},
-                                                                         name=group_name)
+                                                                         name=scenario_manager_name)
 
-                manager = self.scenario_managers[group_name]
+                manager = self.scenario_managers[scenario_manager_name]
 
 
                 if filename not in manager.filenames:
                     manager.filenames += [filename]
 
-                manager.base_constants = self.__get_all_base_constants(group_name, self.scenario_files)
-                manager.base_points = self.__get_all_base_points(group_name, self.scenario_files)
+                # Lookup base constants across all json files with the scenarios/ directory
+                manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
+                manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
 
-                manager.model_file = json_dict[group_name]["model"]
+                manager.model_file = json_dict[scenario_manager_name]["model"]
 
                 # ScenarioManager -> "scenarios" ->
-                scen_dict = json_dict[group_name]["scenarios"]
+                scen_dict = json_dict[scenario_manager_name]["scenarios"]
 
                 # Create simulation scenarios from structure
-
-
                 for scenario_name in scen_dict.keys():
 
                     scenario_dict = scen_dict[scenario_name]
@@ -103,7 +102,7 @@ class ScenarioManagerFactory():
                             if not const in scenario_dict["constants"].keys():
                                 scenario_dict["constants"][const] = value
 
-                        # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
+                    # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
                     if len(manager.base_points.keys()) > 0:
                         if not "points" in scenario_dict.keys():
                             scenario_dict["points"] = {}
@@ -120,14 +119,14 @@ class ScenarioManagerFactory():
 
 
                     sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
-                                                 group=group_name)
+                                             scenario_manager_name=scenario_manager_name)
 
                     if not scenario_name in manager.scenarios.keys():
                         manager.scenarios[scenario_name] = sce
 
 
-                if "source" in json_dict[group_name].keys():
-                    manager.source = json_dict[group_name]["source"]
+                if "source" in json_dict[scenario_manager_name].keys():
+                    manager.source = json_dict[scenario_manager_name]["source"]
 
                     if not manager.source in self.model_monitors.keys() and os.path.isfile(manager.source):
                         self.__add_monitor(manager.source, manager.model_file)

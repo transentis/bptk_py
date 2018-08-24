@@ -23,16 +23,16 @@ class simulationScenario():
     This class stores the settings for each scenario
     """
 
-    def __init__(self, dictionary, name, model, group):
+    def __init__(self, dictionary, name, model, scenario_manager_name):
         """
         :param dictionary: scenario dictionary from the source JSON file
         :param name: name of the scenario
         :param model: simulation_model object
-        :param group: name of scenario manager
+        :param scenario_manager_name: name of scenario manager
         """
 
         self.dictionary = dictionary
-        self.group = group
+        self.group = scenario_manager_name
         self.model = model
 
         if "constants" in dictionary.keys():
