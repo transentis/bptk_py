@@ -47,6 +47,10 @@ class ScenarioManagerFactory():
     def __readScenario(self, filename=""):
         """
         Reads the specified JSON file and generates the scenario_manager and scenario objects
+        Pretty large method that does the following:
+         - read scenarios from file
+         - update the scenario managers in case a new scenario is detected.
+         - If you actually updated a scenario, first you need to pop it from a scenario manager's scenarios dict
         :param filename: filename of JSON file to parse
         :return:  self.scenario_managers
         """

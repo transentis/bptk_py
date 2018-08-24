@@ -84,7 +84,6 @@ class jsonMonitor():
                     self._cached_stamp = stamp
 
                     # File has changed, so parse model again
-                    # Store current directory and chdir to sd compiler dir
 
                     ## Refresh all scenarios with the given model file
                     self.update_func(self.json_file)

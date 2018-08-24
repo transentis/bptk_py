@@ -5,9 +5,9 @@ __Welcome to the Business Prototyping Toolkit for Python! (BPTK_Py)__
 
 ## What is it?
 BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate System Dynamics Models within Python - and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks. 
+It gives you the power to simulate System Dynamics Models within Python and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks - or just export the simulation results for further processing outside the framework.
 
-It requires a Python simulation model following certain conventions.
+The framework requires a Python simulation model following certain conventions.
  
 Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
 
@@ -28,7 +28,8 @@ In future we may extend the sdcc transpiler to support other model formats (such
 BPTK_Py has initially been developed by transentis Labs Gmbh. 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
-Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. You can download the tutorial from our [website](https://www.transentis.com/products/business-prototyping-toolkit/). 
+Our BPTK_Py tutorial contains sample models and Jupyter notebooks that explain how to use our framework. 
+You can download the tutorial from our [website](https://www.transentis.com/products/business-prototyping-toolkit/). 
 This readme covers the installation process, the main API methods and how to define a simulation model.
 
 ## Installing the BPTK_PY framework
@@ -56,7 +57,7 @@ Make sure you install npm (the node.js package manager) along with node.js. This
 
 
 #### Python and Node on your favorite Linux Distribution
-If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node:
+If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node.
 
 For Ubuntu using apt:
 ```commandline
@@ -95,8 +96,8 @@ Additionally, you may want to use Jupyter Lab to work interactively on the simul
 pip install jupyterlab
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 ```
-Now you have a functioning version of jupyter lab and can start working 
-interactively using jupyter notebooks. Just type ``jupyter lab`` in the terminal to get started.
+Now you have a functioning version of jupyter lab and can start working  interactively using jupyter notebooks. 
+Just type ``jupyter lab`` in the terminal to get started.
 
 In order to keep your system clean, you may want to use a [virtual environment](https://docs.python-guide.org/dev/virtualenvs/) instead of installing Python system-wide.
 
@@ -392,7 +393,9 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 ## 0.3.5.4
 - Monitoring of Scenario JSON files:
     - Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
-    - Parse new scenarios
+    - Find added scenarios
+    
+    
     
 
 
