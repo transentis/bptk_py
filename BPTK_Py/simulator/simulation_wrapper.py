@@ -49,6 +49,8 @@ class simulationWrapper():
         scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                        scenarios=scenarios)
 
+
+
         #### Run the simulation scenarios
 
         for key in scenario_objects.keys():

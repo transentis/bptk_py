@@ -52,6 +52,8 @@ class visualizer():
         ## Generate empty df to plot
         plot_df = pd.DataFrame()
 
+
+
         if len(scenarios.keys()) > 1: # If we see more than one scenario, we will attach the scenario name to each Series name.
             for scenario in scenarios.keys():
                 df = scenarios[scenario].result
@@ -66,10 +68,11 @@ class visualizer():
             df = scenario.result
 
             for equation in equations.keys():
-                if scenario.name in equations[equation]:
-                    series = df[equation]
-                    series.name = equation
-                    plot_df[series.name] = series
+                series = df[equation]
+                series.name = equation
+                plot_df[series.name] = series
+
+
 
         # Create timeseries if start_date is given
         if not start_date == "":

@@ -79,7 +79,7 @@ class bptk():
                                                                                 scenario_managers=scenario_managers)
 
 
-    def plot_scenarios(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
+    def plot_scenarios(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
@@ -125,7 +125,7 @@ class bptk():
                                               return_df=return_df)
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
-    def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
+    def dashboard(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                   y_label="",

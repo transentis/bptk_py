@@ -390,6 +390,9 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 # Changelog
 
+## 0.3.5.5
+- Fixed a bug that prevented from plotting properly when giving multiple scenario managers where one of them did not store the given scenario name
+
 ## 0.3.5.4
 - Monitoring of Scenario JSON files:
     - Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
