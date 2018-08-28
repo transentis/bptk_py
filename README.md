@@ -66,7 +66,7 @@ sudo apt install nodejs python3 python3-pip npm
 ```
 
 Other Linux distributions should have similar packages. 
-You may always refer to the official websites of [Python](https://www.python.org/) and [Node.js](https://nodejs.org/en/) for help on installing on your specific operating system.
+You may always refer to the official websites of [Python](https://www.python.org/) and [Node.js](https://nodejs.org/en/) for help on installing the dependencies for your specific operating system.
 
 ### Install BPTK_Py using Pip
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
