@@ -89,7 +89,7 @@ class Simulator():
         log("[INFO] Starting simulation of model {}. starttime={}, stoptime={}".format(self.name,str(start),str(until)))
 
 
-        if not os.path.exists( "./results/"):
+        if not os.path.exists( "./results/") and "csv" in output:
             os.makedirs("./results/")
 
 

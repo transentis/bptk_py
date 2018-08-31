@@ -109,6 +109,14 @@ class simulationWrapper():
             if "strategy" in scenario.dictionary.keys():
                 strategy = scenario.dictionary["strategy"]
 
+            constants = {}
+            if '0' in strategy.keys():
+                constants = strategy.pop('0')
+
+            for constant_key, constant_value in constants.items():
+                scenarios_objects[key].constants[constant_key] = constant_value
+                scenarios_objects[key].dictionary[constant_key] = constant_value
+
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {int(k): v for k, v in strategy.items()}
 

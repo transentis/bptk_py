@@ -390,6 +390,10 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 # Changelog
 
+## 0.3.6
+- Bugfix release. 
+- Now interpreting strategies that modify at '0' as constants values and overwrite the constants
+
 ## 0.3.5.5
 - Fixed a bug that prevented from plotting properly when giving multiple scenario managers where one of them did not store the given scenario name
 
@@ -397,10 +401,8 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 - Monitoring of Scenario JSON files:
     - Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
     - Find added scenarios
+    - Merge base values spread over multiple files
     
-    
-    
-
 
 ## 0.3.5.3
 - horizontal lines in graphs to improve readability
