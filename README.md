@@ -389,10 +389,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
+## 0.3.6.1
+- Bugfix to reduce size off package
 
 ## 0.3.6
-- Bugfix release. 
 - Now interpreting strategies that modify at '0' as constants values and overwrite the constants
+- Use DT of simulation model 
 
 ## 0.3.5.5
 - Fixed a bug that prevented from plotting properly when giving multiple scenario managers where one of them did not store the given scenario name

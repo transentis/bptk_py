@@ -18,6 +18,7 @@ from BPTK_Py.logger.logger import log
 import pandas as pd
 import os
 from sys import exit
+import numpy as np
 #########
 
 
@@ -146,7 +147,7 @@ class Simulator():
         """
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
-        for i in range(start,until+1):
+        for i in np.arange(start,until+1,self.mod.dt):
             result = self.mod.memoize(equation,i)
 
             if not equation in self.results.keys():
