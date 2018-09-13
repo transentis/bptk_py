@@ -154,7 +154,10 @@ class bptk():
         import json
 
 
-        abm_config = json.load(open(scenarios,"r"))
+        json_config = json.load(open(scenarios,"r"))
+        abm_config = json_config[list(json_config.keys())[0]]
+
+
 
         scenarioClass = abm_config["classes"]["scenario"]
         agent_classes = abm_config["classes"]["agents"]
@@ -166,7 +169,7 @@ class bptk():
         mod = importlib.import_module(packageName)
         scenario_class = getattr(mod, className)
 
-        model = Model(className)
+        model = Model(abm_config["name"])
 
 
         class clazzManager():
