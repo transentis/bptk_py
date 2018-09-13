@@ -20,7 +20,10 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
-
+from BPTK_Py.visualizations.abm_visualizer import abmVisualizer
+from BPTK_Py.abm.simultaneousScheduler  import SimultaneousScheduler
+from BPTK_Py.abm.dataCollector import DataCollector
+from BPTK_Py.abm.model import Model
 plt.interactive(True)
 
 
@@ -123,6 +126,117 @@ class bptk():
                                               series_names=series_names,
                                               strategy=strategy,
                                               return_df=return_df)
+
+    def plot_abm(self,
+                 scenarios,
+                 agents,
+                 scenario_managers,
+                 kind=config.configuration["kind"],
+                 alpha=config.configuration["alpha"],
+                 stacked=config.configuration["stacked"],
+                 freq="D",
+                 start_date="",
+                 title="",
+                 visualize_from_period=0,
+                 visualize_to_period=0,
+                 x_label="",
+                 y_label="",
+                 series_names={},
+                 strategy=False,
+                 return_df=False):
+        """
+        TODO
+        :param scenarios:
+        :param scenario_managers:
+        :return:
+        """
+        import importlib
+        import json
+
+
+        abm_config = json.load(open(scenarios,"r"))
+
+        scenarioClass = abm_config["classes"]["scenario"]
+        agent_classes = abm_config["classes"]["agents"]
+
+        split = scenarioClass.split(".")
+        className = split[len(split) - 1]
+        packageName = '.'.join(split[:-1])
+
+        mod = importlib.import_module(packageName)
+        scenario_class = getattr(mod, className)
+
+        model = Model(className)
+
+
+        class clazzManager():
+            def __init__(self, agent):
+                self.agent = agent
+                self.split = self.agent.split(".")
+                self.className = self.split[len(self.split) - 1]
+                self.packageName = '.'.join(self.split[:-1])
+                self.module = importlib.import_module(self.packageName)
+
+                self.class_ = getattr(self.module, self.className)
+
+
+            def getClazz(self):
+                return self.class_
+
+            def getAgentFactory(self):
+                return lambda agent_id, scenario : self.class_(agent_id,scenario)
+
+            def getType(self):
+                return self.getClazz().TYPE
+
+
+
+        clazzManagers = []
+
+        for agent in agent_classes:
+            clazzManagers += [clazzManager(agent=agent)]
+
+
+
+        for i in range(0,len(clazzManagers)):
+            model.register_agent_factory(clazzManagers[i].getClazz().TYPE,clazzManagers[i].getAgentFactory())
+
+
+        scenario = scenario_class(model=model, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
+        scenario.configure(abm_config)
+
+        scenario.run(show_progress_widget=True)
+
+        scenario_objects = []
+        scenario_objects += [scenario]
+
+
+
+        visualizer = abmVisualizer(self.scenario_manager_factory, bptk=self)
+        return visualizer.plot_scenarios(scenarios=scenario_objects,
+                                              agents=agents,
+                                              scenario_managers=scenario_managers,
+                                              kind=kind,
+                                              alpha=alpha,
+                                              stacked=stacked,
+                                              freq=freq,
+                                              start_date=start_date,
+                                              title=title,
+                                              visualize_from_period=visualize_from_period,
+                                              visualize_to_period=visualize_to_period,
+                                              x_label=x_label,
+                                              y_label=y_label,
+                                              series_names=series_names,
+                                              strategy=strategy,
+                                              return_df=return_df)
+
+
+
+
+
+
+
+
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def dashboard(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],

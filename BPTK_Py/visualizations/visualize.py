@@ -37,6 +37,8 @@ class visualizer():
         self.bptk = bptk
 
 
+
+
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
     def generate_df(self, scenarios, equations, start_date="1/1/2018", freq="D", series_names={}):
         """
