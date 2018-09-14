@@ -53,6 +53,8 @@ class scenarioManager():
         self.base_points = base_points
         self.filenames = filenames
 
+        self.type = "sd"
+
     def get_scenario_names(self):
         """
 

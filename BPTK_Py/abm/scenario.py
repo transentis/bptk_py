@@ -21,6 +21,7 @@ class Scenario:
         self.stop_time = 0
         self.step = 1
 
+
         for agent_type in self.model.agent_factories:
             self.agent_type_map[agent_type] = []
 
@@ -90,6 +91,8 @@ class Scenario:
             thread.join()
         else:
             self.scheduler.run(self, None)
+
+
 
     def enqueue_event(self, event):
         self.events.append(event)

@@ -12,7 +12,6 @@
 
 ### IMPORTS
 from BPTK_Py.logger.logger import log
-from BPTK_Py.visualizations.visualize import visualizer
 import matplotlib.pyplot as plt
 from BPTK_Py.modelchecker.model_checker import modelChecker
 from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
@@ -20,7 +19,9 @@ import BPTK_Py.config.config as config
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
 from BPTK_Py.scenariomanager.scenario import simulationScenario
-from BPTK_Py.visualizations.abm_visualizer import abmVisualizer
+from BPTK_Py.simulationrunners.abmsimrunner import abmSimulationRunner
+from BPTK_Py.simulationrunners.sdsimrunner import sdSimulationRunner
+from BPTK_Py.visualizations.visualize import visualizer
 from BPTK_Py.abm.simultaneousScheduler  import SimultaneousScheduler
 from BPTK_Py.abm.dataCollector import DataCollector
 from BPTK_Py.abm.model import Model
@@ -50,7 +51,7 @@ class bptk():
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
-        self.visualizer = visualizer(self.scenario_manager_factory, bptk=self)
+        self.visualizer = visualizer()
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -109,129 +110,50 @@ class bptk():
          :param return_df: set True if you want to receive a dataFrame instead of the plot
          :return: dataFrame with simulation results if return_df=True
          """
+        import pandas as pd
 
-        return self.visualizer.plot_scenarios(scenarios=scenarios,
-                                              equations=equations,
-                                              scenario_managers=scenario_managers,
-                                              kind=kind,
-                                              alpha=alpha,
-                                              stacked=stacked,
-                                              freq=freq,
-                                              start_date=start_date,
-                                              title=title,
-                                              visualize_from_period=visualize_from_period,
-                                              visualize_to_period=visualize_to_period,
-                                              x_label=x_label,
-                                              y_label=y_label,
-                                              series_names=series_names,
-                                              strategy=strategy,
-                                              return_df=return_df)
+        dfs = []
+        for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
-    def plot_abm(self,
-                 scenarios,
-                 agents,
-                 scenario_managers,
-                 kind=config.configuration["kind"],
-                 alpha=config.configuration["alpha"],
-                 stacked=config.configuration["stacked"],
-                 freq="D",
-                 start_date="",
-                 title="",
-                 visualize_from_period=0,
-                 visualize_to_period=0,
-                 x_label="",
-                 y_label="",
-                 series_names={},
-                 strategy=False,
-                 return_df=False):
-        """
-        TODO
-        :param scenarios:
-        :param scenario_managers:
-        :return:
-        """
-        import importlib
-        import json
+            if manager.type == "abm" and manager.name in scenario_managers:
+                runner = abmSimulationRunner(self.scenario_manager_factory,self)
+                dfs+= [runner.run_sim(scenarios=[manager.scenario],
+                                                      agents=equations,
+                                                      scenario_managers=[manager.name],
+
+                                                      strategy=strategy,
+                                                      )]
 
 
-        json_config = json.load(open(scenarios,"r"))
-        abm_config = json_config[list(json_config.keys())[0]]
+            elif manager.name in scenario_managers:
+                runner = sdSimulationRunner(self.scenario_manager_factory, self)
+                dfs += [ runner.run_sim(scenarios=scenarios,
+                                                 equations=equations,
+                                                 scenario_managers=[manager.name],
+
+                                                 strategy=strategy,
+                                                 )]
 
 
 
-        scenarioClass = abm_config["classes"]["scenario"]
-        agent_classes = abm_config["classes"]["agents"]
-
-        split = scenarioClass.split(".")
-        className = split[len(split) - 1]
-        packageName = '.'.join(split[:-1])
-
-        mod = importlib.import_module(packageName)
-        scenario_class = getattr(mod, className)
-
-        model = Model(abm_config["name"])
+        df = dfs.pop(0)
+        for tmp_df in dfs:
+            df = df.join(tmp_df)
 
 
-        class clazzManager():
-            def __init__(self, agent):
-                self.agent = agent
-                self.split = self.agent.split(".")
-                self.className = self.split[len(self.split) - 1]
-                self.packageName = '.'.join(self.split[:-1])
-                self.module = importlib.import_module(self.packageName)
+        return self.visualizer.plot(df=df,
+                                    return_df=return_df,
+                                    visualize_from_period=visualize_from_period,
+                                    visualize_to_period=visualize_to_period,
+                                    stacked=stacked,
+                                    kind=kind,
+                                    title=title,
+                                    alpha=alpha,
+                                    x_label=x_label,
+                                    y_label=y_label,
+                                    start_date=start_date,
+                                    freq=freq)
 
-                self.class_ = getattr(self.module, self.className)
-
-
-            def getClazz(self):
-                return self.class_
-
-            def getAgentFactory(self):
-                return lambda agent_id, scenario : self.class_(agent_id,scenario)
-
-            def getType(self):
-                return self.getClazz().TYPE
-
-
-
-        clazzManagers = []
-
-        for agent in agent_classes:
-            clazzManagers += [clazzManager(agent=agent)]
-
-
-
-        for i in range(0,len(clazzManagers)):
-            model.register_agent_factory(clazzManagers[i].getClazz().TYPE,clazzManagers[i].getAgentFactory())
-
-
-        scenario = scenario_class(model=model, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
-        scenario.configure(abm_config)
-
-        scenario.run(show_progress_widget=True)
-
-        scenario_objects = []
-        scenario_objects += [scenario]
-
-
-
-        visualizer = abmVisualizer(self.scenario_manager_factory, bptk=self)
-        return visualizer.plot_scenarios(scenarios=scenario_objects,
-                                              agents=agents,
-                                              scenario_managers=scenario_managers,
-                                              kind=kind,
-                                              alpha=alpha,
-                                              stacked=stacked,
-                                              freq=freq,
-                                              start_date=start_date,
-                                              title=title,
-                                              visualize_from_period=visualize_from_period,
-                                              visualize_to_period=visualize_to_period,
-                                              x_label=x_label,
-                                              y_label=y_label,
-                                              series_names=series_names,
-                                              strategy=strategy,
-                                              return_df=return_df)
 
 
 

@@ -47,7 +47,7 @@ class simulationWrapper():
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
         scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                       scenarios=scenarios)
+                                                                       scenarios=scenarios,type="sd")
 
 
 
@@ -92,7 +92,7 @@ class simulationWrapper():
         log("[INFO] Attempting to load scenarios from scenarios folder.")
 
         scenarios_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                        scenarios=scenarios)
+                                                                        scenarios=scenarios,type="sd")
 
         #### Run the simulation scenarios
 

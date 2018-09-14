@@ -220,15 +220,15 @@ class widgetDecorator():
 
                         self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-            ax = self.bptk.plot_scenarios(scenarios=scenarios, agents=equations,
-                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                          stacked=stacked,
-                                          freq=freq, start_date=start_date, title=title,
-                                          visualize_from_period=visualize_from_period,
-                                          visualize_to_period=visualize_to_period, x_label=x_label,
-                                          y_label=y_label,
-                                          series_names=series_names, strategy=strategy,
-                                          return_df=return_df)
+            ax = self.bptk.run_sim(scenarios=scenarios, agents=equations,
+                                   scenario_managers=scenario_managers, kind=kind, alpha=alpha,
+                                   stacked=stacked,
+                                   freq=freq, start_date=start_date, title=title,
+                                   visualize_from_period=visualize_from_period,
+                                   visualize_to_period=visualize_to_period, x_label=x_label,
+                                   y_label=y_label,
+                                   series_names=series_names, strategy=strategy,
+                                   return_df=return_df)
 
             if return_df:
                 return ax
