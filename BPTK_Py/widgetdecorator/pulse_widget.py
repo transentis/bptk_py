@@ -12,7 +12,7 @@
 
 ## IMPORTS
 import ipywidgets as widgets
-
+import numpy as np
 #
 
 from IPython.display import clear_output, display
@@ -66,7 +66,9 @@ class pulseWidget():
                                                                               scenarios=scenarios)
 
         constant_lists = self.del_duplicates(
-            self.flatten([scenario_obj.model.constants for scenario_obj in self.scenario_objs.values()]))
+            self.flatten([list(scenario_obj.model.equations.keys()) for scenario_obj in self.scenario_objs.values()]))
+
+
 
         self.variable = widgets.Dropdown(options=constant_lists)
         self.number_initial = widgets.Text(placeholder="initial value")
@@ -112,40 +114,45 @@ class pulseWidget():
         # Error messages for human
         for elem in self.number_items:
             try:
-                val = int(elem.value)
+                val = float(elem.value)
             except ValueError as e:
                 with self.output:
                     print("[Error] No valid numeric value given for {}".format(elem.placeholder))
+
                 error = True
+
+        # Overwrite existing strategy
+        if not self.keep_strategy.value:
+            for manager in self.scenario_managers:
+                for scenario in self.scenarios:
+                    self.bptk.reset_scenario(scenario=scenario, scenario_manager=manager)
+
+            # Get the updated objects!
+            self.scenario_objs= self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=self.scenario_managers,
+                                                                              scenarios=self.scenarios)
 
         # Create strateg(ies)
         if not error:
             strategies = {}
             equation = self.variable.value
 
-            # Overwrite existing strategy
-            if not self.keep_strategy.value:
-                for scenario_obj in self.scenario_objs.values():
-                    scenario_obj.strategy = {}
-                    scenario_obj.dictionary["strategy"] = {}
-
-                for key in scenario_obj.model.memo.keys():
-                    scenario_obj.model.memo[key] = {}
 
             # Create actual strategy
             for scenario in self.scenarios:
                 strategies[scenario] = {}
 
-                first_moment = int(self.number_first_tick.value)
-                pulse_frequency = int(self.number_frequency.value)
+                first_moment = float(self.number_first_tick.value)
+                pulse_frequency = float(self.number_frequency.value)
                 strategies[scenario]['0'] = {}
                 strategies[scenario]['0'][equation] = float(self.number_initial.value)
 
-                for i in range(first_moment, 1000, pulse_frequency):
-                    strategies[scenario][i] = {}
-                    strategies[scenario][i + 1] = {}
-                    strategies[scenario][i][equation] = float(self.number_pulse_value.value)
-                    strategies[scenario][i + 1][equation] = float(self.number_initial.value)
+                for i in np.arange(first_moment, self.scenario_objs[scenario].model.stoptime, pulse_frequency):
+                    t = round(i,2)
+                    dt = self.scenario_objs[scenario].model.dt
+                    strategies[scenario][t] = {}
+                    strategies[scenario][t + dt] = {}
+                    strategies[scenario][t][equation] = float(self.number_pulse_value.value)
+                    strategies[scenario][t + dt][equation] = float(self.number_initial.value)
 
             # Add strategy
             self.bptk.modify_strategy(scenarios=self.scenario_objs, extended_strategy=strategies)

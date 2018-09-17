@@ -13,8 +13,7 @@
 ## IMPORTS
 from .model_simulator import Simulator
 from BPTK_Py import log
-
-
+import numpy as np
 ##
 
 ###############################
@@ -118,7 +117,7 @@ class simulationWrapper():
                 scenarios_objects[key].dictionary[constant_key] = constant_value
 
             ## Cast all keys to int (standard JSON does not allow int keys)
-            strategy = {int(k): v for k, v in strategy.items()}
+            strategy = {float(k): v for k, v in strategy.items()}
 
             simu = Simulator(model=scenario.model, name=scenario.name)
 
@@ -135,20 +134,22 @@ class simulationWrapper():
 
             # Simulation with a strategy. Iterate the points of the simulation. Run one step at a time
             else:
-                for i in range(scenario.model.starttime,scenario.model.stoptime+1):
-                    if i == scenario.model.starttime:
+                for i in np.arange(scenario.model.starttime,scenario.model.stoptime+scenario.model.dt,scenario.model.dt):
+                    t = round(i,2)
+
+                    if t == scenario.model.starttime:
                         for equation in scenario.constants.keys():
                             simu.change_equation(name=equation, value=scenario.constants[equation])
                         for name, points in scenario.points.items():
                             simu.change_points(name=name, value=points)
 
-                    if i in points_to_change_at:
-                        for equation in strategy[i]:
-                            log("[INFO] t={}: Changing value of {} to {}".format(str(i),str(equation),str(strategy[i][equation])))
-                            simu.change_equation(name=equation, value=strategy[i][equation])
+                    if t in points_to_change_at:
+                        for equation in strategy[t]:
+                            log("[INFO] t={}: Changing value of {} to {}".format(str(t),str(equation),str(strategy[t][equation])))
+                            simu.change_equation(name=equation, value=strategy[t][equation])
 
 
-                    scenario.result = simu.start(equations=equations,output=output,start=i,until=i)
+                    scenario.result = simu.start(equations=equations,output=output,start=t,until=t)
 
 
         return scenarios_objects

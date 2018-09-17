@@ -392,10 +392,10 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 ## 0.3.7
 - PULSE functions can now be defined within Jupyter environment. Just use the new ``pulse_function_create(scenarios,scenario_managers)`` method and be surprised.
-- Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. May lose a little performance but increase readability
-- Optimize imports using ```__init__.py``` properly
+- Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. Improves readability tremendously!
+- Optimize imports using ```__init__.py``` properly.
+- Correct handling of decimal ``dt`` values within simulator. 
 
-Background on new functionalities in the interactive readme!
 
 ## 0.3.6.1
 - Bugfix to reduce size of the package

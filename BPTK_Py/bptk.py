@@ -185,6 +185,7 @@ class bptk():
 
         for scenario_name in extended_strategy.keys():
 
+
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
             scenario = scenarios[scenario_name]
             self.reset_simulation_model(scenario_manager=scenario.group, scenario=scenario_name)
@@ -213,6 +214,7 @@ class bptk():
                     # the first occurence of the modified strategy
                     if t == first_t and not name in scenario.dictionary["constants"].keys():
                         scenario.dictionary["constants"][name] = scenario.model.equations[name]
+
         log("[INFO] Added extended strategy for scenarios")
 
     def destroy(self):
