@@ -400,6 +400,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 ## 0.3.6.1
 - Bugfix to reduce size of the package
 
+
 ## 0.3.6
 - Now interpreting strategies that modify at '0' as constants values and overwrite the constants
 - Use DT of simulation model 

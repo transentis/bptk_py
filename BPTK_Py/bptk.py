@@ -11,12 +11,17 @@
 
 
 ### IMPORTS
+
 from BPTK_Py import log
 from BPTK_Py import visualizer
+
+from BPTK_Py.logger.logger import log
+
 import matplotlib.pyplot as plt
 from .modelchecker import modelChecker
 from BPTK_Py import widgetDecorator
 import BPTK_Py.config.config as config
+
 from BPTK_Py import ScenarioManagerFactory
 from BPTK_Py import simulationWrapper
 from BPTK_Py import simulationScenario
@@ -49,7 +54,7 @@ class bptk():
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
-        self.visualizer = visualizer(self.scenario_manager_factory, bptk=self)
+        self.visualizer = visualizer()
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -109,22 +114,57 @@ class bptk():
          :return: dataFrame with simulation results if return_df=True
          """
 
-        return self.visualizer.plot_scenarios(scenarios=scenarios,
-                                              equations=equations,
-                                              scenario_managers=scenario_managers,
-                                              kind=kind,
-                                              alpha=alpha,
-                                              stacked=stacked,
-                                              freq=freq,
-                                              start_date=start_date,
-                                              title=title,
-                                              visualize_from_period=visualize_from_period,
-                                              visualize_to_period=visualize_to_period,
-                                              x_label=x_label,
-                                              y_label=y_label,
-                                              series_names=series_names,
-                                              strategy=strategy,
-                                              return_df=return_df)
+
+        dfs = []
+        for name, manager in self.scenario_manager_factory.scenario_managers.items():
+
+            if manager.type == "abm" and manager.name in scenario_managers:
+                runner = abmSimulationRunner(self.scenario_manager_factory,self)
+                dfs+= [runner.run_sim(scenarios=[manager.scenario],
+                                                      agents=equations,
+                                                      scenario_managers=[manager.name],
+
+                                                      strategy=strategy,
+                                                      )]
+
+
+            elif manager.name in scenario_managers:
+                runner = sdSimulationRunner(self.scenario_manager_factory, self)
+                dfs += [ runner.run_sim(scenarios=scenarios,
+                                                 equations=equations,
+                                                 scenario_managers=[manager.name],
+
+                                                 strategy=strategy,
+                                                 )]
+
+
+
+        df = dfs.pop(0)
+        for tmp_df in dfs:
+            df = df.join(tmp_df)
+
+
+        return self.visualizer.plot(df=df,
+                                    return_df=return_df,
+                                    visualize_from_period=visualize_from_period,
+                                    visualize_to_period=visualize_to_period,
+                                    stacked=stacked,
+                                    kind=kind,
+                                    title=title,
+                                    alpha=alpha,
+                                    x_label=x_label,
+                                    y_label=y_label,
+                                    start_date=start_date,
+                                    freq=freq)
+
+
+
+
+
+
+
+
+
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
     def dashboard(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],

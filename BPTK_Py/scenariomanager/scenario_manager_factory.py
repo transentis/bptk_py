@@ -20,6 +20,7 @@ from BPTK_Py  import jsonMonitor
 import glob
 import os
 import json
+from BPTK_Py.scenariomanager.scenario_manager_abm import scenarioManagerABM
 ##
 
 ####################################
@@ -38,6 +39,7 @@ class ScenarioManagerFactory():
         """
 
         self.scenario_managers = {}
+
         self.scenarios = {}
         self.model_monitors = {}
         self.json_monitors = {}
@@ -71,74 +73,81 @@ class ScenarioManagerFactory():
             # ScenarioManager ->
             for scenario_manager_name in json_dict.keys():
 
-                if scenario_manager_name not in self.scenario_managers.keys():
-                    self.scenario_managers[scenario_manager_name] = scenarioManager(base_points=None,
-                                                                         base_constants=None, scenarios={},
-                                                                         name=scenario_manager_name)
+                if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name]["type"].lower() == "abm":
 
-                manager = self.scenario_managers[scenario_manager_name]
+                    self.scenario_managers[scenario_manager_name] = scenarioManagerABM(json_dict[scenario_manager_name],scenario_manager_name)
+                    self.scenario_managers[scenario_manager_name].instantiate_model()
 
+                else:
+                    if scenario_manager_name not in self.scenario_managers.keys():
 
-                if filename not in manager.filenames:
-                    manager.filenames += [filename]
+                        self.scenario_managers[scenario_manager_name] = scenarioManager(base_points=None,
+                                                                             base_constants=None, scenarios={},
+                                                                             name=scenario_manager_name)
 
-                # Lookup base constants across all json files with the scenarios/ directory
-                manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
-                manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
-
-                manager.model_file = json_dict[scenario_manager_name]["model"]
-
-                # ScenarioManager -> "scenarios" ->
-                scen_dict = json_dict[scenario_manager_name]["scenarios"]
-
-                # Create simulation scenarios from structure
-                for scenario_name in scen_dict.keys():
-
-                    scenario_dict = scen_dict[scenario_name]
+                    manager = self.scenario_managers[scenario_manager_name]
 
 
-                    # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
-                    if len(manager.base_constants.keys()) > 0:
-                        if not "constants" in scenario_dict.keys():
-                            scenario_dict["constants"] = {}
+                    if filename not in manager.filenames:
+                        manager.filenames += [filename]
 
-                        for const, value in manager.base_constants.items():
-                            if not const in scenario_dict["constants"].keys():
-                                scenario_dict["constants"][const] = value
+                    # Lookup base constants across all json files with the scenarios/ directory
+                    manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
+                    manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
 
-                    # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
-                    if len(manager.base_points.keys()) > 0:
-                        if not "points" in scenario_dict.keys():
-                            scenario_dict["points"] = {}
+                    manager.model_file = json_dict[scenario_manager_name]["model"]
 
-                        for points, value in manager.base_points.items():
-                            if not points in scenario_dict["points"].keys():
-                                scenario_dict["points"][points] = value
+                    # ScenarioManager -> "scenarios" ->
+                    scen_dict = json_dict[scenario_manager_name]["scenarios"]
 
-                    if scenario_name in manager.scenarios.keys():
-                        # Check if an update was made to the scenario --> Value equality not given anymore
-                        if not scenario_dict == manager.scenarios[scenario_name].dictionary:
-                            log("[INFO] Scenario {} was updated!".format(scenario_name))
-                            manager.scenarios.pop(scenario_name)
+                    # Create simulation scenarios from structure
+                    for scenario_name in scen_dict.keys():
+
+                        scenario_dict = scen_dict[scenario_name]
 
 
-                    sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
-                                             scenario_manager_name=scenario_manager_name)
+                        # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
+                        if len(manager.base_constants.keys()) > 0:
+                            if not "constants" in scenario_dict.keys():
+                                scenario_dict["constants"] = {}
 
-                    if not scenario_name in manager.scenarios.keys():
-                        manager.scenarios[scenario_name] = sce
+                            for const, value in manager.base_constants.items():
+                                if not const in scenario_dict["constants"].keys():
+                                    scenario_dict["constants"][const] = value
+
+                        # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
+                        if len(manager.base_points.keys()) > 0:
+                            if not "points" in scenario_dict.keys():
+                                scenario_dict["points"] = {}
+
+                            for points, value in manager.base_points.items():
+                                if not points in scenario_dict["points"].keys():
+                                    scenario_dict["points"][points] = value
+
+                        if scenario_name in manager.scenarios.keys():
+                            # Check if an update was made to the scenario --> Value equality not given anymore
+                            if not scenario_dict == manager.scenarios[scenario_name].dictionary:
+                                log("[INFO] Scenario {} was updated!".format(scenario_name))
+                                manager.scenarios.pop(scenario_name)
 
 
-                if "source" in json_dict[scenario_manager_name].keys():
-                    manager.source = json_dict[scenario_manager_name]["source"]
+                        sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
+                                                 scenario_manager_name=scenario_manager_name)
 
-                    if not manager.source in self.model_monitors.keys() and os.path.isfile(manager.source):
-                        self.__add_monitor(manager.source, manager.model_file)
-                    elif not os.path.isfile(manager.source):
-                        log(
-                            "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
-                                str(manager.source)))
-                manager.instantiate_model()
+                        if not scenario_name in manager.scenarios.keys():
+                            manager.scenarios[scenario_name] = sce
+
+
+                    if "source" in json_dict[scenario_manager_name].keys():
+                        manager.source = json_dict[scenario_manager_name]["source"]
+
+                        if not manager.source in self.model_monitors.keys() and os.path.isfile(manager.source):
+                            self.__add_monitor(manager.source, manager.model_file)
+                        elif not os.path.isfile(manager.source):
+                            log(
+                                "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
+                                    str(manager.source)))
+                    manager.instantiate_model()
 
             return self.scenario_managers
         else:
@@ -205,15 +214,28 @@ class ScenarioManagerFactory():
         """
         return self.scenario_managers[scenario_manager].scenarios[scenario]
 
-    def get_scenarios(self, scenario_managers=[], scenarios=[]):
+    def get_scenarios(self, scenario_managers=[], scenarios=[],type=""):
         """
         Get an arbitrary amount of scenario objects, depending on the parameters
         :param scenario_managers:  Names of the scenario_managers to lookup
         :param scenarios: Names of the scenarios to lookup
+        :param type: Type of simulation models to return
         :return:
         """
 
-        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+        scenario_managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+
+        managers = {}
+
+        # Filter by type
+        if type != "":
+            for name, manager in scenario_managers.items():
+                if manager.type == type:
+                    managers[name] = manager
+
+        else:
+            managers = scenario_managers
+
         scenarios_objects = {}
         if len(scenario_managers) > 1:
 
