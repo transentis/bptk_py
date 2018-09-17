@@ -11,17 +11,18 @@
 
 
 ### IMPORTS
-from .logger import log
-from .visualizations import visualizer
+from BPTK_Py import log
+from BPTK_Py import visualizer
 import matplotlib.pyplot as plt
 from .modelchecker import modelChecker
-from .widgetdecorator import widgetDecorator
+from BPTK_Py import widgetDecorator
 import BPTK_Py.config.config as config
-from .scenariomanager import ScenarioManagerFactory
-from .simulator import simulationWrapper
-from .scenariomanager import simulationScenario
+from BPTK_Py import ScenarioManagerFactory
+from BPTK_Py import simulationWrapper
+from BPTK_Py import simulationScenario
 
-from .widgetdecorator import pulseWidget
+from BPTK_Py import pulseWidget
+
 
 plt.interactive(True)
 
@@ -43,7 +44,6 @@ class bptk():
         """
 
         # Setup matplotlib
-        import BPTK_Py.config.config as config
         for key, value in config.configuration["matplotlib_rc_settings"].items():
             plt.rcParams[key] = value
 

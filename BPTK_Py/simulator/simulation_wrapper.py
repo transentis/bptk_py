@@ -11,8 +11,8 @@
 
 
 ## IMPORTS
-from BPTK_Py.simulator import Simulator
-from BPTK_Py.logger import log
+from .model_simulator import Simulator
+from BPTK_Py import log
 
 
 ##

@@ -12,7 +12,7 @@
 ## IMPORTS
 from __future__ import print_function
 import BPTK_Py.config.config as config
-from BPTK_Py.logger import log
+from BPTK_Py import log
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as py_widgets
 import numpy as np

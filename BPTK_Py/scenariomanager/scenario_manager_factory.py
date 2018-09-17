@@ -14,9 +14,9 @@
 from .scenario import simulationScenario
 import BPTK_Py.config.config as config
 from .scenario_manager import scenarioManager
-from BPTK_Py.logger import log
-from BPTK_Py.modelmonitor import modelMonitor
-from BPTK_Py.modelmonitor import jsonMonitor
+from BPTK_Py import log
+from BPTK_Py  import modelMonitor
+from BPTK_Py  import jsonMonitor
 import glob
 import os
 import json

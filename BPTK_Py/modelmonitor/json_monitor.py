@@ -13,7 +13,7 @@
 ####### IMPORTS
 from threading import Thread
 import time
-from BPTK_Py.logger import log
+from BPTK_Py import log
 import os
 import BPTK_Py.config.config as config
 #######
