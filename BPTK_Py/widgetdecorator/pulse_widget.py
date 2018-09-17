@@ -147,7 +147,7 @@ class pulseWidget():
                 strategies[scenario]['0'] = {}
                 strategies[scenario]['0'][equation] = float(self.number_initial.value)
 
-                for i in np.arange(first_moment, self.scenario_objs[scenario].model.stoptime, pulse_frequency):
+                for i in np.arange(first_moment, self.scenario_objs[scenario].model.stoptime+self.scenario_objs[scenario].model.dt, pulse_frequency):
                     t = round(i,2)
                     dt = self.scenario_objs[scenario].model.dt
                     strategies[scenario][t] = {}
