@@ -65,12 +65,13 @@ class pulseWidget():
         self.scenario_objs = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
                                                                               scenarios=scenarios)
 
-        constant_lists = self.del_duplicates(
+        constant_list = self.del_duplicates(
             self.flatten([list(scenario_obj.model.equations.keys()) for scenario_obj in self.scenario_objs.values()]))
 
+        constant_list = sorted(constant_list.copy())
 
 
-        self.variable = widgets.Dropdown(options=constant_lists)
+        self.variable = widgets.Dropdown(options=constant_list)
         self.number_initial = widgets.Text(placeholder="initial value")
         self.number_pulse_value = widgets.Text(placeholder="pulse value")
         self.number_frequency = widgets.Text(placeholder="frequency")
