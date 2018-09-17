@@ -110,7 +110,7 @@ class bptk():
          :param return_df: set True if you want to receive a dataFrame instead of the plot
          :return: dataFrame with simulation results if return_df=True
          """
-        import pandas as pd
+
 
         dfs = []
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
