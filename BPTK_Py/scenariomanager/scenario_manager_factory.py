@@ -11,12 +11,12 @@
 
 
 ## IMPORTS
-from BPTK_Py.scenariomanager.scenario import simulationScenario
+from .scenario import simulationScenario
 import BPTK_Py.config.config as config
-from BPTK_Py.scenariomanager.scenario_manager import scenarioManager
-from BPTK_Py.logger.logger import log
-from BPTK_Py.modelmonitor.model_monitor import modelMonitor
-from BPTK_Py.modelmonitor.json_monitor import jsonMonitor
+from .scenario_manager import scenarioManager
+from BPTK_Py.logger import log
+from BPTK_Py.modelmonitor import modelMonitor
+from BPTK_Py.modelmonitor import jsonMonitor
 import glob
 import os
 import json

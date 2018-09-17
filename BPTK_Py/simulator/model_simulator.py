@@ -14,7 +14,7 @@
 ######### IMPORTS
 from threading import Thread
 import datetime
-from BPTK_Py.logger.logger import log
+from BPTK_Py.logger import log
 import pandas as pd
 import os
 from sys import exit

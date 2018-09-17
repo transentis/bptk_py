@@ -11,8 +11,8 @@
 
 
 ## IMPORTS
-from BPTK_Py.simulator.model_simulator import Simulator
-from BPTK_Py.logger.logger import log
+from BPTK_Py.simulator import Simulator
+from BPTK_Py.logger import log
 
 
 ##
@@ -122,8 +122,6 @@ class simulationWrapper():
 
             simu = Simulator(model=scenario.model, name=scenario.name)
 
-            i = 0
-
             # Get the strategy's points to change equations at and sort ascending.
             points_to_change_at = sorted(list(strategy.keys()))
 
@@ -135,57 +133,22 @@ class simulationWrapper():
                     self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
                         scenario.name]
 
-            # Simulation with a strategy. Iterate the points of the simulation
+            # Simulation with a strategy. Iterate the points of the simulation. Run one step at a time
             else:
-                while i <= stoptime:
-
-                    # If we are at point 0, initialize constants
-                    if i == 0:
+                for i in range(scenario.model.starttime,scenario.model.stoptime+1):
+                    if i == scenario.model.starttime:
                         for equation in scenario.constants.keys():
                             simu.change_equation(name=equation, value=scenario.constants[equation])
                         for name, points in scenario.points.items():
                             simu.change_points(name=name, value=points)
 
-                    # If we are at the start-time, start simulation until the first stop point - 1
-                    if i == starttime:
-                        if i == 0:
-                            scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                         until=points_to_change_at[0])
-                        else:
-                            scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                         until=points_to_change_at[0] - 1)
+                    if i in points_to_change_at:
+                        for equation in strategy[i]:
+                            log("[INFO] t={}: Changing value of {} to {}".format(str(i),str(equation),str(strategy[i][equation])))
+                            simu.change_equation(name=equation, value=strategy[i][equation])
 
-                    # Find out if current point in time is in strategy. If yes, change a const and run simulation until next t
 
-                    if i > 0 and not len(points_to_change_at) == 0:
-                        if i == points_to_change_at[0]:
+                    scenario.result = simu.start(equations=equations,output=output,start=i,until=i)
 
-                            # Change constant/equation
-                            for equation in strategy[points_to_change_at[0]]:
-                                simu.change_equation(name=equation, value=strategy[i][equation])
 
-                            # If we are at the stoptime or reached the last modification, just simulate until stoptime
-                            if i == stoptime or len(points_to_change_at) == 1:
-                                scenario.result = simu.start(equations=equations, output=output, start=i)
-                                log("[INFO] Simulating from {} to {}".format(str(i), str(stoptime)))
-                                i = i + 1
-
-                            # Simulate from i to the next t -1 point where we modify constants
-                            else:
-                                scenario.result = simu.start(equations=equations, output=output, start=i,
-                                                             until=points_to_change_at[1] - 1)
-                                log("[INFO] Simulating from {} to {}".format(str(i), str(points_to_change_at[1])))
-
-                                ## Fast-Forward i to the next point in time where we make change
-                                i = points_to_change_at[1]
-
-                            points_to_change_at.pop(0)
-
-                        # Just continue to next point in time...
-                        else:
-                            i += 1
-
-                    else:
-                        # Just continue to next point in time...
-                        i += 1
         return scenarios_objects

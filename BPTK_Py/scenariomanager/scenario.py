@@ -10,7 +10,7 @@
 # MIT License
 
 ### IMPORTS
-from BPTK_Py.logger.logger import log
+from BPTK_Py.logger import log
 ###
 
 ###############################

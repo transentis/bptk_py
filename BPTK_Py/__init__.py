@@ -1,7 +1,7 @@
 #from .scenario_manager.scenario import simulation_scenario
 
 import pkg_resources
-
+from .bptk import bptk
 
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version

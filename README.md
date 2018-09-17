@@ -389,8 +389,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
+
+## 0.3.7
+- PULSE functions can now be defined within Jupyter environment. Just use the new ``pulse_function_create(scenarios,scenario_managers)`` method and be surprised.
+- Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. May lose a little performance but increase readability
+- Optimize imports using ```__init__.py``` properly
+
+Background on new functionalities in the interactive readme!
+
 ## 0.3.6.1
-- Bugfix to reduce size off package
+- Bugfix to reduce size of the package
 
 ## 0.3.6
 - Now interpreting strategies that modify at '0' as constants values and overwrite the constants

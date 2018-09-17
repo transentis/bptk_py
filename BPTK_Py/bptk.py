@@ -11,15 +11,17 @@
 
 
 ### IMPORTS
-from BPTK_Py.logger.logger import log
-from BPTK_Py.visualizations.visualize import visualizer
+from .logger import log
+from .visualizations import visualizer
 import matplotlib.pyplot as plt
-from BPTK_Py.modelchecker.model_checker import modelChecker
-from BPTK_Py.widgetdecorator.widget_decorator import widgetDecorator
+from .modelchecker import modelChecker
+from .widgetdecorator import widgetDecorator
 import BPTK_Py.config.config as config
-from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
-from BPTK_Py.simulator.simulation_wrapper import simulationWrapper
-from BPTK_Py.scenariomanager.scenario import simulationScenario
+from .scenariomanager import ScenarioManagerFactory
+from .simulator import simulationWrapper
+from .scenariomanager import simulationScenario
+
+from .widgetdecorator import pulseWidget
 
 plt.interactive(True)
 
@@ -258,6 +260,11 @@ class bptk():
         :return: None
         """
         modelChecker().model_check(data=data, check=check, message=message)
+
+
+    def pulse_function_create(self,scenarios,scenario_managers):
+        widget = pulseWidget(scenarios=scenarios,scenario_managers=scenario_managers,bptk=self)
+        widget.show()
 
     def add_scenario(self, dictionary):
         """

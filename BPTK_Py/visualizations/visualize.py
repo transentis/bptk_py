@@ -12,7 +12,7 @@
 ## IMPORTS
 import pandas as pd
 import BPTK_Py.config.config as config
-from BPTK_Py.logger.logger import log
+from BPTK_Py.logger import log
 import statistics
 ##
 
