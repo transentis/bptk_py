@@ -35,6 +35,17 @@ class simulationScenario():
         self.group = scenario_manager_name
         self.model = model
 
+        if model is not None:
+            self.stoptime = model.stoptime
+            self.starttime = model.starttime
+            self.dt = model.dt
+
+        else:
+            self.stoptime = 0
+            self.starttime = 0
+            self.dt = 0
+
+
         if "constants" in dictionary.keys():
             # Overwrite base constants (if any)
             self.constants = dictionary["constants"]

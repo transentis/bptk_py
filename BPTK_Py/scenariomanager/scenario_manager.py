@@ -8,3 +8,10 @@ class scenarioManager():
 
     def __init__(self):
         self.scenarios = {}
+
+    def get_scenario_names(self):
+        """
+
+        :return: Names of scenarios the manager manages
+        """
+        return list(self.scenarios.keys())

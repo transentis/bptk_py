@@ -1,4 +1,17 @@
-import math
+#                                                       /`-
+# _                                  _   _             /####`-
+#| |                                | | (_)           /########`-
+#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2018 transentis labs GmbH
+# MIT License
+
+
+
+## IMPORTS
 import random
 from BPTK_Py import log
 import threading
@@ -6,6 +19,12 @@ from IPython.display import display
 import ipywidgets as widgets
 import numpy as np
 from scipy.interpolate import interp1d
+##
+
+###################
+## ABMODEL CLASS ##
+###################
+
 
 class ABModel:
     """
@@ -13,6 +32,12 @@ class ABModel:
     """
 
     def __init__(self,name,  scheduler, data_collector=None):
+        """
+
+        :param name: Name as string
+        :param scheduler: Implemented instance of scheduler (e.g. simultaneousScheduler)
+        :param data_collector: Instance of DataCollector)
+        """
 
 
         self.properties = {}
@@ -22,9 +47,9 @@ class ABModel:
         self.data_collector = data_collector
         self.scheduler = scheduler
         self.events = []
-        self.start_time = 0
-        self.stop_time = 0
-        self.step = 1
+        self.starttime = 0
+        self.stoptime = 0
+        self.dt = 1
         self.agent_factories = {}
 
         # This is placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
@@ -35,12 +60,22 @@ class ABModel:
             self.agent_type_map[agent_type] = []
 
     def register_agent_factory(self, agent_type, agent_factory):
+        """
+        Register an agent factory
+        :param agent_type: Type of agent to register
+        :param agent_factory: Function (typically lambda, but not limited to). Input: agent_id, model -> Output: Agent of agent_type
+        :return: None
+        """
         log("[INFO] Registering agent factory for {}".format(agent_type))
 
         self.agent_factories[agent_type] = agent_factory
         self.agent_type_map[agent_type] = []
 
     def reset(self):
+        """
+        Reset simulation
+        :return:  None
+        """
 
         for agent_type in self.agent_type_map:
             self.agent_type_map[agent_type] = []
@@ -50,47 +85,89 @@ class ABModel:
         self.properties = {}
         self.agents = []
 
-        self.start_time = 0
-        self.stop_time = 0
-        self.step = 1
+        self.starttime = 0
+        self.stoptime = 0
+        self.dt = 1
 
     def agent_ids(self, agent_type):
+        """
+        Receive agent ids for all agents of agent_type
+        :param agent_type: agent type to get ids for
+        :return: List
+        """
 
         return self.agent_type_map[agent_type]
 
     def agent(self, agent_id):
+        """
+        Receive one agent by ID
+        :param agent_id: ID of agent (int)
+        :return: Agent object
+        """
 
         return self.agents[agent_id]
 
     def create_agents(self, agent_spec):
+        """
+        Create agents
+        :param agent_spec: Specification of Agent (dictionary)
+        :return: None
+        """
         log("[INFO] Creating {} agents of type {}".format(agent_spec["count"], agent_spec["name"]))
 
         for _ in range(agent_spec["count"]):
             self.create_agent(agent_spec["name"])
 
     def create_agent(self, agent_type):
+        """
+        Create one agent
+        :param agent_type: Type of agent
+        :return: None
+        """
         agent = self.agent_factories[agent_type](len(self.agents), self)
         agent.initialize()
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
 
     def set_property(self, property_spec):
+        """
+        Configure a property of the simulaiton
+        :param property_spec: Specification of property (dictionary)
+        :return:
+        """
         self.properties[property_spec["name"]] = property_spec
 
     def get_property(self, name):
+        """
+        Get one property
+        :param name: Name of property
+        :return: Dictionary for property
+        """
         if name not in self.properties:
             log("[ERROR] sim.getProperty: property unknown")
 
         return self.properties[name]
 
-    def run_specs(self, start_time, stop_time, step):
+    def run_specs(self, starttime, stoptime, dt):
+        """
+        Configure
+        :param starttime:
+        :param stoptime:
+        :param dt:
+        :return:
+        """
 
-        log("[INFO] Setting starttime to {}, stoptime to {} and step to {}".format(start_time, stop_time, step))
-        self.start_time = start_time
-        self.stop_time = stop_time
-        self.step = step
+        log("[INFO] Setting starttime to {}, stoptime to {} and step to {}".format(starttime, stoptime, dt))
+        self.starttime = starttime
+        self.stoptime = stoptime
+        self.dt = dt
 
     def run(self, show_progress_widget=False):
+        """
+        Initiate simulation
+        :param show_progress_widget: Boolean: If true, shows a progress widget (only in Jupyter environment!)
+        :return: None
+        """
 
         if show_progress_widget:
             progress_widget = widgets.FloatProgress(
@@ -111,13 +188,28 @@ class ABModel:
             self.scheduler.run(self, None)
 
     def instantiate_model(self):
+        """
+        Instantiate model stub. Implement this method in your model!
+        :return: None
+        """
         print("IMPLEMENT THIS METHOD IN AN INHERITING CLASS!")
 
 
     def enqueue_event(self, event):
+        """
+        Add one event
+        :param event: Event instance
+        :return: None
+        """
         self.events.append(event)
 
     def next_agent(self, agent_type, state):
+        """
+        Get the next agent by type and state
+        :param agent_type: Agent type
+        :param state: State the agent is in
+        :return: Agent object
+        """
 
         for agent in self.agents:
 
@@ -126,6 +218,12 @@ class ABModel:
                 return agent
 
     def random_agents(self, agent_type, num_agents):
+        """
+        Receive a number of random agents
+        :param agent_type: Type of agent
+        :param num_agents:  Number of agents to receive
+        :return: Agent IDs list
+        """
 
         agent_map = self.agent_type_map[agent_type]
 
@@ -141,14 +239,26 @@ class ABModel:
         return agent_ids
 
     def random_events(self, agent_type, num_agents, event_factory):
+        """
+        Distribute a number of random events
+        :param agent_type: Agent types supposed to receive events
+        :param num_agents: Number of random agents
+        :param event_factory: Agent factory that creates the events (function)
+        :return:
+        """
         agent_ids = self.random_agents(agent_type, num_agents)
 
         for agent_id in agent_ids:
             self.enqueue_event(event_factory(agent_id))
 
     def configure(self, config):
+        """
+        Configure the model using a dictionary
+        :param config: Configuration dictionary
+        :return: None
+        """
 
-        self.run_specs(config["runspecs"]["start"], config["runspecs"]["stop"], config["runspecs"]["step"])
+        self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
 
         properties = config["properties"]
 
@@ -161,9 +271,20 @@ class ABModel:
             self.create_agents(agent)
 
     def agent_count(self, agent_type):
+        """
+        Get number of agents
+        :param agent_type: Agent type to get count for
+        :return: Number of agents (int)
+        """
         return len(self.agent_type_map[agent_type])
 
     def agent_count_per_state(self, agent_type, state):
+        """
+        Get number of agents in a specific state
+        :param agent_type: Agent type to get count for
+        :param state: state of agents to get count for
+        :return: Integer
+        """
         agent_count = 0
         agent_ids = self.agent_type_map[agent_type]
 
@@ -174,11 +295,21 @@ class ABModel:
         return agent_count
 
     def statistics(self):
+        """
+        Get statistics from DataCollector
+        :return: None
+        """
         if self.data_collector:
             return self.data_collector.statistics()
 
     @staticmethod
     def get_random_integer(min_value, max_value):
+        """
+        Just compute a random integer within bounds
+        :param min_value: min value for random integer
+        :param max_value: max value for random integer
+        :return: Integer
+        """
         return round(random.random() * (max_value - min_value) + min_value)
 
 

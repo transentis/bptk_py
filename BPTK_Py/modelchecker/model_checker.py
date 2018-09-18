@@ -30,7 +30,7 @@ class modelChecker():
 
         try:
             assert check(data), message
-            print("[SUCCESS] ABMModel check successful!")
+            print("[SUCCESS] Model check successful!")
 
         except AssertionError as e:
-            print("[ERROR] ABMModel Checking failed with message: \"{}\"".format(e))
+            print("[ERROR] Model Checking failed with message: \"{}\"".format(e))

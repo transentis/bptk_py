@@ -13,6 +13,7 @@
 import pandas as pd
 from BPTK_Py import log
 from .simrunner import simulationRunner
+from ..sdsimulator import SDsimulationWrapper
 ##
 
 
@@ -54,7 +55,7 @@ class sdSimulationRunner(simulationRunner):
                     if equation in df.columns:
                         series = df[equation]
 
-                        series.name = scenario.name + "_" + equation
+                        series.name = scenarios[scenario].group +"_" + scenarios[scenario].name + "_" + equation
                         plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
@@ -63,16 +64,12 @@ class sdSimulationRunner(simulationRunner):
             for equation in equations.keys():
                 if equation in df.columns:
                     series = df[equation]
-                    series.name = scenario.name + "_" + equation
+                    series.name = scenario.group +"_" + scenario.name + "_" + equation
                     plot_df[series.name] = series
 
 
         # Process series name overrides as specified by user. Will traverse the series as they are in the DF
         # Usually this shold follow the order of the equations!
-        series_names_keys = series_names.keys()
-
-
-
 
 
         return plot_df
@@ -111,11 +108,15 @@ class sdSimulationRunner(simulationRunner):
 
         # Obtain simulation results
         if not strategy:
-            scenario_objects = self.bptk.run_simulations(scenarios=scenarios, equations=equations,
-                                                         scenario_managers=scenario_managers)
+            scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
+                                                                                                  equations=equations,
+                                                                                                  output=["frame"],
+                                                                                                  scenario_managers=scenario_managers)
         else:
-            scenario_objects = self.bptk.run_simulations_with_strategy(scenario_managers=scenario_managers,
-                                                                       scenarios=scenarios, equations=equations)
+            scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
+                                                                                                                equations=equations,
+                                                                                                                output=["frame"],
+                                                                                                                scenario_managers=scenario_managers)
         if len(scenario_objects.keys()) == 0:
             log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(str(scenario_managers), str(scenarios)))
             return None

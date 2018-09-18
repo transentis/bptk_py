@@ -53,7 +53,7 @@ class abmSimulationRunner(simulationRunner):
         return pd.DataFrame(output).fillna(0)
 
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False,):
+    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False,progressBar=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios:
@@ -75,7 +75,7 @@ class abmSimulationRunner(simulationRunner):
 
 
             if not len(scenario.statistics()) > 0:
-                scenario.run(False)
+                scenario.run(progressBar)
 
             data = scenario.statistics()
 

@@ -9,10 +9,12 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
+
+## IMPORTS
 from ipywidgets import Layout
 import BPTK_Py
 import os
-
+##
 
 ##################################
 ## BPTK_Py Global Configuration ##
@@ -62,8 +64,8 @@ configuration = {
 
     #Relative path to scenario storage
     "scenario_storage": "scenarios/",
-    "slider_style" :  {'description_width': '40%'},
-    "slider_layout" : Layout(width='50%',position="center"),
+    "slider_style" :  {'description_width': '50%'},
+    "slider_layout" : Layout(width='100%',position="left"),
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],

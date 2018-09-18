@@ -32,7 +32,7 @@ class scenarioManagerABM(scenarioManager):
     This class reads ABM models and manages them
     """
 
-    def __init__(self,json_config,name):
+    def __init__(self,json_config,name,filenames=[]):
         """
 
         :param json_config: Configuration as a JSON dict
@@ -43,6 +43,8 @@ class scenarioManagerABM(scenarioManager):
         self.type = "abm"
         self.scenarios = {}
         self.name = name
+        self.filenames = filenames
+
 
     def get_config(self):
         return self.json_config
@@ -53,12 +55,13 @@ class scenarioManagerABM(scenarioManager):
             self.scenarios = {}
             log("[INFO] Resetting the simulation scenarios for {}".format(str(self.name)))
 
+        model = self.json_config["model"]
 
-        for scenarioName, scenarioClass in self.json_config["scenarios"].items():
+        for scenarioName, configuration in self.json_config["scenarios"].items():
 
             if scenarioName not in self.scenarios.keys():
 
-                split = scenarioClass.split(".")
+                split = model.split(".")
                 className = split[len(split) - 1]
                 packageName = '.'.join(split[:-1])
 
@@ -70,7 +73,7 @@ class scenarioManagerABM(scenarioManager):
 
                 scenario.instantiate_model()
 
-                scenario.configure(self.json_config)
+                scenario.configure(self.json_config["scenarios"][scenarioName])
 
                 self.scenarios[scenarioName] = scenario
                 log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))

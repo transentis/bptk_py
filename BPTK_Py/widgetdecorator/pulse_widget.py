@@ -130,7 +130,7 @@ class pulseWidget():
 
             # Get the updated objects!
             self.scenario_objs= self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=self.scenario_managers,
-                                                                              scenarios=self.scenarios)
+                                                                              scenarios=self.scenarios,type="sd")
 
         # Create strateg(ies)
         if not error:
@@ -158,6 +158,7 @@ class pulseWidget():
             # Add strategy
             self.bptk.modify_strategy(scenarios=self.scenario_objs, extended_strategy=strategies)
 
+
             # Reset memo of simulations
             for manager in self.scenario_managers:
                 for scenario in self.scenarios:
@@ -166,7 +167,7 @@ class pulseWidget():
             # print output
             with self.output:
                 print("Pulse function created for variable {}".format(str(equation)))
-                print("scenarios: {}".format(str(self.scenarios).replace("[", "").replace("]", "")))
+                print("scenarios: {}".format(str(self.del_duplicates(self.scenarios)).replace("[", "").replace("]", "")))
                 print("scenario managers:".format(str(self.scenario_managers)))
 
                 if self.keep_strategy.value:

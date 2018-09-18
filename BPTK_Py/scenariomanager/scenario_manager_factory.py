@@ -13,7 +13,7 @@
 ## IMPORTS
 from .scenario import simulationScenario
 import BPTK_Py.config.config as config
-from .scenario_managerSD import scenarioManagerSD
+from .scenario_manager_sd import scenarioManagerSD
 from BPTK_Py import log
 from BPTK_Py  import modelMonitor
 from BPTK_Py  import jsonMonitor
@@ -73,14 +73,15 @@ class ScenarioManagerFactory():
             # ScenarioManager ->
             for scenario_manager_name in json_dict.keys():
 
+                # HANDLE ABM SCENARIOS
                 if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name]["type"].lower() == "abm":
 
 
-                    self.scenario_managers[scenario_manager_name] = scenarioManagerABM(json_dict[scenario_manager_name],scenario_manager_name)
+                    self.scenario_managers[scenario_manager_name] = scenarioManagerABM(json_dict[scenario_manager_name],scenario_manager_name,filenames=[filename])
                     self.scenario_managers[scenario_manager_name].instantiate_model()
 
+                # HANDLE SD SCENARIOS
                 else:
-                    print(json_dict[scenario_manager_name])
                     if scenario_manager_name not in self.scenario_managers.keys():
 
                         self.scenario_managers[scenario_manager_name] = scenarioManagerSD(base_points=None,
@@ -136,6 +137,8 @@ class ScenarioManagerFactory():
                         sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
                                                  scenario_manager_name=scenario_manager_name)
 
+
+
                         if not scenario_name in manager.scenarios.keys():
                             manager.scenarios[scenario_name] = sce
 
@@ -155,7 +158,7 @@ class ScenarioManagerFactory():
         else:
             print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
 
-    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[]):
+    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],type=""):
         """
         If self.scenario_managers is empty, this method attempts to load all scenario managers from disk in the specified path
         :param path: path to look for JSON files containing scenario managers and scenarios
@@ -170,17 +173,20 @@ class ScenarioManagerFactory():
             self.scenario_files = glob.glob(os.path.join(path, '*.json'))
 
             for infile in glob.glob(os.path.join(path, '*.json')):
-                print(infile)
                 self.__readScenario(filename=infile)
 
             log("[INFO] Successfully loaded all scenarios!")
 
-        if len(scenario_managers_to_filter) > 0:
-            scenario_managers = {k: v for k, v in self.scenario_managers.items() if k in scenario_managers_to_filter}
+        scenario_managers = self.scenario_managers
 
-            return scenario_managers
-        else:
-            return self.scenario_managers
+        if type != "":
+            scenario_managers = {k: v for k, v in scenario_managers.copy().items() if v.type == type}
+
+
+        if len(scenario_managers_to_filter) > 0:
+            scenario_managers = {k: v for k, v in scenario_managers.copy().items() if k in scenario_managers_to_filter}
+
+        return scenario_managers
 
     def reset_scenario(self, scenario_manager, scenario):
         """
@@ -226,21 +232,12 @@ class ScenarioManagerFactory():
         :return:
         """
 
-        scenario_managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
 
-        managers = {}
+        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers,type=type)
 
-        # Filter by type
-        if type != "":
-            for name, manager in scenario_managers.items():
-                if manager.type == type:
-                    managers[name] = manager
-
-        else:
-            managers = scenario_managers
 
         scenarios_objects = {}
-        if len(scenario_managers) > 1:
+        if len(managers) > 1:
 
             for manager_name, manager in managers.items():
                 for scenario_name, scenario in manager.scenarios.items():
@@ -263,6 +260,7 @@ class ScenarioManagerFactory():
                 if key in scenarios_objects.keys():
                     filtered_scenarios[key] = scenarios_objects[key]
             scenarios_objects = filtered_scenarios
+
         return scenarios_objects
 
     def add_scenario(self, scenario, scenario_manager, source="", model=None):

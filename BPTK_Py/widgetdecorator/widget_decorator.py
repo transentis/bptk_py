@@ -15,6 +15,9 @@ import BPTK_Py.config.config as config
 from BPTK_Py import log
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as py_widgets
+from IPython.display import clear_output
+import matplotlib
+
 import numpy as np
 
 
@@ -40,10 +43,16 @@ class widgetDecorator():
         """
         self.bptk = bptk
         log("[INFO] widgetDecorator created")
+        self.widgets = {}
+        self.output = py_widgets.Output()
 
     # This method will be passed over to the user and used to modify the graph output
 
-    def dashboard(self, scenarios, equations, scenario_managers=[], kind=config.configuration["kind"],
+
+
+
+
+    def dashboard(self, scenarios, equations=[],agents=[], scenario_managers=[], kind=config.configuration["kind"],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0,
                   x_label="", y_label="",
@@ -72,13 +81,18 @@ class widgetDecorator():
         """
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                          scenarios=scenarios)
+                                                                          scenarios=scenarios,type="sd")
+
+        param_visualize_from = visualize_from_period
+        param_visualize_to = visualize_to_period
+
+
 
         ## Only store data and create widgets and pack them
         log("[INFO] Creating widget objects for interactive plot of scenarios {}".format(str(scenarios)))
 
         # Generate the widget objects
-        widgets = {}
+        self.widgets = {}
         for val in constants:
             try:
                 if type(val) is tuple:
@@ -116,8 +130,8 @@ class widgetDecorator():
                             scenario_objects += list(manager.scenarios.values())
 
                         for scenario in scenario_objects:
-                            if scenario.model.stoptime > end:
-                                end = scenario.model.stoptime
+                            if scenario.stoptime > end:
+                                end = scenario.stoptime
 
                         ### Search done
 
@@ -177,7 +191,8 @@ class widgetDecorator():
                                                       style=config.configuration["slider_style"],
                                                       layout=config.configuration["slider_layout"], continuous_update=False)
 
-                widgets[name] = widget
+
+                self.widgets[name] = widget
 
             except TypeError as e:
                 log(
@@ -188,20 +203,22 @@ class widgetDecorator():
             except Exception as e:
                 log("[ERROR] Problem creating widget: \"{}\". Error type:  {}".format(str(e),str(type(e))))
 
-        param_visualize_from = visualize_from_period
-        param_visualize_to = visualize_to_period
 
-        @interact(**widgets)
+
+
+
+        @interact(**self.widgets)
         def compute_new_plot(**kwargs):
             """
             Actual method that we hand over to interact. Evaluates the widget values and creates the plots
-            :param kwargs: widgets dict : {name : value}
+            :param dictionary: widgets dict : {name : value}
             :return: None
             """
+
             visualize_from_period = param_visualize_from
             visualize_to_period = param_visualize_to
-            for widget_name, widget in kwargs.items():
 
+            for widget_name, widget in kwargs.items():
                 if type(widget) == tuple:
                     visualize_from_period = widget[0]
                     visualize_to_period = widget[1] + 1
@@ -220,17 +237,19 @@ class widgetDecorator():
 
                         self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
 
-            ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations,
-                                   scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                   stacked=stacked,
-                                   freq=freq, start_date=start_date, title=title,
-                                   visualize_from_period=visualize_from_period,
-                                   visualize_to_period=visualize_to_period, x_label=x_label,
-                                   y_label=y_label,
-                                   series_names=series_names, strategy=strategy,
-                                   return_df=return_df)
+            ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations, agents=agents,
+                                              scenario_managers=scenario_managers, kind=kind, alpha=alpha,
+                                              stacked=stacked,
+                                              freq=freq, start_date=start_date, title=title,
+                                              visualize_from_period=visualize_from_period,
+                                              visualize_to_period=visualize_to_period, x_label=x_label,
+                                              y_label=y_label,
+                                              series_names=series_names, strategy=strategy,
+                                              return_df=return_df)
 
             if return_df:
                 return ax
+
+
 
         # return interact(compute_new_plot,**widgets)

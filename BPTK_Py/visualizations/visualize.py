@@ -13,6 +13,7 @@
 import BPTK_Py.config.config as config
 import statistics
 import pandas as pd
+from IPython.display import clear_output
 
 class visualizer():
 
@@ -28,6 +29,7 @@ class visualizer():
         series_names_keys = series_names.keys()
 
         if len(series_names) > 0:
+
             new_columns = {}
             for column in df.columns:
                 for series_names_key in series_names_keys:
@@ -39,12 +41,16 @@ class visualizer():
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:
+
+
+
             ### Get the plot object
             if visualize_to_period == 0:
+
                 ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
-                                                 title=title,
-                                                 alpha=alpha, color=config.configuration["colors"],
-                                                 lw=config.configuration["linewidth"])
+                                                     title=title,
+                                                     alpha=alpha, color=config.configuration["colors"],
+                                                     lw=config.configuration["linewidth"])
 
             elif visualize_from_period == visualize_to_period:
                 print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),str(visualize_to_period)))
@@ -55,15 +61,15 @@ class visualizer():
                     visualize_to_period = len(df)
 
                 ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
-                                                     figsize=config.configuration["figsize"],
-                                                     title=title,
-                                                     alpha=alpha, color=config.configuration["colors"],
-                                                     lw=config.configuration["linewidth"])
-            ### Set axes labels and set the formats
+                                                         figsize=config.configuration["figsize"],
+                                                         title=title,
+                                                         alpha=alpha, color=config.configuration["colors"],
+                                                         lw=config.configuration["linewidth"])
+                ### Set axes labels and set the formats
             if (len(x_label) > 0):
                 ax.set_xlabel(x_label)
 
-            # Set the y-axis label
+                # Set the y-axis label
             if (len(y_label) > 0):
                 ax.set_ylabel(y_label)
 
@@ -72,6 +78,7 @@ class visualizer():
 
 
             self.update_plot_formats(ax)
+            return ax
 
         ### If user wanted a dataframe instead, here it is!
         if return_df:

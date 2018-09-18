@@ -23,14 +23,14 @@ from BPTK_Py import widgetDecorator
 import BPTK_Py.config.config as config
 
 from BPTK_Py import ScenarioManagerFactory
-from BPTK_Py import simulationWrapper
+from BPTK_Py import SDsimulationWrapper
 from BPTK_Py import simulationScenario
 from BPTK_Py import sdSimulationRunner
 from BPTK_Py import abmSimulationRunner
 
 from BPTK_Py import pulseWidget
 
-
+from ipywidgets import Output
 plt.interactive(True)
 
 
@@ -67,13 +67,13 @@ class bptk():
         :param scenario_managers: names of scenario managers to select scenarios from
         :return: dict of simulationScenario
         """
-        return simulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
-                                                                                              equations=equations,
-                                                                                              output=output,
-                                                                                              scenario_managers=scenario_managers)
+        return SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
+                                                                                                equations=equations,
+                                                                                                output=output,
+                                                                                                scenario_managers=scenario_managers)
 
 
-    def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+    def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[],agents=[]):
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
         :param scenarios: names of scenarios to simulate
@@ -82,13 +82,16 @@ class bptk():
         :param scenario_managers: names of scenario managers to select scenarios from
         :return: dict of simulationScenarios
         """
-        return simulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
-                                                                                equations=equations,
-                                                                                output=output,
-                                                                                scenario_managers=scenario_managers)
+
+        return self.plot_scenarios(scenarios=scenarios,equations=equations,return_df=True,scenario_managers=scenario_managers,agents=agents)
+
+        #return SDsimulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
+        #                                                                        equations=equations,
+        #                                                                        output=output,
+        #                                                                        scenario_managers=scenario_managers)
 
 
-    def plot_scenarios(self, scenarios, equations, scenario_managers,agents, kind=config.configuration["kind"],
+    def plot_scenarios(self, scenarios, scenario_managers,agents=[],equations=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
@@ -116,21 +119,32 @@ class bptk():
          :return: dataFrame with simulation results if return_df=True
          """
 
+        # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
+        if len(scenario_managers) == 1 and len(scenarios) == 1:
+            if len(agents) > 0:
+                for agent in agents:
+                    series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + agent] = agent
+            else:
+                for equation in equations:
+                    series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + equation] = equation
+
+
 
         dfs = []
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
-            if manager.type == "abm" and manager.name in scenario_managers:
+            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+
                 runner = abmSimulationRunner(self.scenario_manager_factory,self)
                 dfs+= [runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                                                      agents=agents,
+                                                      agents=agents,progressBar=return_df,
                                                       scenario_managers=[manager.name],
 
                                                       strategy=strategy,
                                                       )]
 
 
-            elif manager.name in scenario_managers:
+            elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = sdSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [ runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                                                  equations=equations,
@@ -140,24 +154,38 @@ class bptk():
                                                  )]
 
 
+        if len(agents) == len(equations) == 0:
+            log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
+            return None
 
-        df = dfs.pop(0)
-        for tmp_df in dfs:
-            df = df.join(tmp_df)
+        else:
+            if len(dfs) > 1:
+                df = dfs.pop(0)
+                for tmp_df in dfs:
+                    df = df.join(tmp_df)
+            elif len(dfs) == 1:
+                df = dfs[0]
+
+            else:
+                log("[ERROR] No results produced. Check your parameters!")
+                import pandas as pd
+                return None
 
 
-        return self.visualizer.plot(df=df,
-                                    return_df=return_df,
-                                    visualize_from_period=visualize_from_period,
-                                    visualize_to_period=visualize_to_period,
-                                    stacked=stacked,
-                                    kind=kind,
-                                    title=title,
-                                    alpha=alpha,
-                                    x_label=x_label,
-                                    y_label=y_label,
-                                    start_date=start_date,
-                                    freq=freq)
+            return self.visualizer.plot(df=df,
+                                        return_df=return_df,
+                                        visualize_from_period=visualize_from_period,
+                                        visualize_to_period=visualize_to_period,
+                                        stacked=stacked,
+                                        kind=kind,
+                                        title=title,
+                                        alpha=alpha,
+                                        x_label=x_label,
+                                        y_label=y_label,
+                                        start_date=start_date,
+                                        freq=freq,
+                                        series_names=series_names
+                                        )
 
 
 
@@ -169,7 +197,7 @@ class bptk():
 
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
-    def dashboard(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],
+    def dashboard(self, scenarios,  scenario_managers, kind=config.configuration["kind"],agents=[],equations=[],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                   y_label="",
@@ -202,6 +230,7 @@ class bptk():
 
         return widget_decorator.dashboard(scenarios=scenarios,
                                           equations=equations,
+                                          agents=agents,
                                           scenario_managers=scenario_managers,
                                           kind=kind,
                                           alpha=alpha,

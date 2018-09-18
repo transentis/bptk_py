@@ -1,54 +1,89 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+#| |                                | | (_)           /########`-
+#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2018 transentis labs GmbH
+# MIT License
+
+
+
+## IMPORTS
 from .scheduler import Scheduler
 from BPTK_Py import log
+##
 
+#################################
+## SIMULTANEOUSSCHEDULER CLASS ##
+#################################
 
 class SimultaneousScheduler(Scheduler):
+    """
+    Implementation of a scheduler. Runs steps synchronously
+    """
 
-    def run(self, scenario, progress_widget=None):
+    def run(self, model, progress_widget=None):
+        """
+        Run method
+        :param model: ABMOdel instance
+        :param progress_widget: FloatBarProgress instance
+        :return:  None
+        """
 
         self.progress = 0
 
         if progress_widget:
             progress_widget.value = self.progress
 
-        for sim_round in range(scenario.start_time, scenario.stop_time+1):
+        for sim_round in range(model.starttime, model.stoptime + 1):
 
-            for step in range(round(1/scenario.step)):
+            for step in range(round(1 / model.dt)):
 
-                self.run_step(scenario, sim_round, step, progress_widget)
+                self.run_step(model, sim_round, step, progress_widget)
 
-    def run_step(self, scenario, sim_round, step, progress_widget=None):
+    def run_step(self, model, sim_round, dt, progress_widget=None):
+        """
+        Run one step
+        :param sim_round: simulator round
+        :param dt: step of round
+        :param model: ABMOdel instance
+        :param progress_widget: FloatBarProgress instance (ipywidgets)
+        :return:  None
+        """
 
         self.current_round = sim_round
 
-        self.current_step = step
+        self.current_step = dt
 
-        time = sim_round + step * scenario.step
+        time = sim_round + dt * model.dt
 
         self.current_time = time
 
-        self.progress = self.current_time/scenario.stop_time
+        self.progress = self.current_time / model.stoptime
 
         if progress_widget:
             progress_widget.value = self.progress
 
-        log("[INFO] Round #{} Step #{}".format(sim_round, step))
+        log("[INFO] Round #{} Step #{}".format(sim_round, dt))
 
         # the simultaneous scheduler first distributes all events to all agents ...
 
-        while len(scenario.events) > 0:
-            event = scenario.events.pop()
+        while len(model.events) > 0:
+            event = model.events.pop()
 
-            scenario.agents[event.receiver_id].receive_event(event)
+            model.agents[event.receiver_id].receive_event(event)
 
-            if scenario.data_collector:
-                scenario.data_collector.record_event(time, event)
+            if model.data_collector:
+                model.data_collector.record_event(time, event)
 
         # ... then it let's the agents act on the events
         # The agents are called in the order they were created in
 
-        for agent in scenario.agents:
-            agent.act(time, sim_round, step)
+        for agent in model.agents:
+            agent.act(time, sim_round, dt)
 
-        if scenario.data_collector:
-            scenario.data_collector.collect_agent_statistics(time, scenario.agents)
+        if model.data_collector:
+            model.data_collector.collect_agent_statistics(time, model.agents)

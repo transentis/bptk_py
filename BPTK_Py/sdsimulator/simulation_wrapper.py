@@ -16,13 +16,13 @@ from BPTK_Py import log
 import numpy as np
 ##
 
-###############################
-### Class simulationWrapper ###
-###############################
+#################################
+### Class SDsimulationWrapper ###
+#################################
 
-class simulationWrapper():
+class SDsimulationWrapper():
     """
-    This class contains methods for running simulations and wraps them away from bptk.py
+    This class contains methods for running SD simulations and wraps them away from bptk.py
     """
 
     def __init__(self, scenario_manager_factory):
@@ -119,6 +119,8 @@ class simulationWrapper():
             ## Cast all keys to int (standard JSON does not allow int keys)
             strategy = {float(k): v for k, v in strategy.items()}
 
+
+
             simu = Simulator(model=scenario.model, name=scenario.name)
 
             # Get the strategy's points to change equations at and sort ascending.
@@ -128,8 +130,9 @@ class simulationWrapper():
             if len(points_to_change_at) == 0:
                 log(
                     "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
+
                 scenarios_objects[scenario.name] = \
-                    self.run_simulations(scenarios=[scenario.name], equations=equations, output=output)[
+                    self.run_simulations(scenarios=[scenario.name], equations=equations, output=output,scenario_managers=scenario_managers)[
                         scenario.name]
 
             # Simulation with a strategy. Iterate the points of the simulation. Run one step at a time

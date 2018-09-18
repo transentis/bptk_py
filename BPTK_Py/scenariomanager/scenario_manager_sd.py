@@ -54,12 +54,6 @@ class scenarioManagerSD(scenarioManager):
 
         self.type = "sd"
 
-    def get_scenario_names(self):
-        """
-
-        :return: Names of scenarios the manager manages
-        """
-        return list(self.scenarios.keys())
 
     def add_scenario(self, scenario):
         """
@@ -139,6 +133,9 @@ class scenarioManagerSD(scenarioManager):
                 for scenario in self.scenarios.values():
                     if scenario.model == None:
                         scenario.model = mod.simulation_model()
+                        scenario.starttime =  scenario.model.starttime
+                        scenario.stoptime =  scenario.model.stoptime
+                        scenario.dt = scenario.model.dt
                         scenario.setup_constants()
                         scenario.setup_points()
             else:
