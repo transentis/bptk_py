@@ -11,10 +11,8 @@
 
 ## IMPORTS
 import pandas as pd
-import BPTK_Py.config.config as config
-from BPTK_Py.logger.logger import log
-from BPTK_Py.simulationrunners.simrunner import simulationRunner
-import statistics
+from BPTK_Py import log
+from .simrunner import simulationRunner
 ##
 
 
@@ -25,14 +23,14 @@ import statistics
 
 class sdSimulationRunner(simulationRunner):
     """
-    This class wraps away the visualization part for plots. Implements the plot_scenarios method and creates the dataFrame for plotting
+    This class wraps away the visualization part for plots. Implements the plot_scenarios method and builds the plot
     """
 
 
 
 
     #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def generate_df(self, scenarios, equations, series_names={}):
+    def __generate_df(self, scenarios, equations, series_names={}):
         """
         Generates a dataFrame from simulation results. Generate series names and time series
         :param scenarios: names of scenarios
@@ -56,7 +54,7 @@ class sdSimulationRunner(simulationRunner):
                     if equation in df.columns:
                         series = df[equation]
 
-                        series.name = scenario + "_" + equation
+                        series.name = scenario.name + "_" + equation
                         plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
@@ -65,7 +63,7 @@ class sdSimulationRunner(simulationRunner):
             for equation in equations.keys():
                 if equation in df.columns:
                     series = df[equation]
-                    series.name = equation
+                    series.name = scenario.name + "_" + equation
                     plot_df[series.name] = series
 
 
@@ -142,8 +140,8 @@ class sdSimulationRunner(simulationRunner):
 
         ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
 
-        df = self.generate_df(scenario_objects, dict_equations,
-                                   )
+        df = self.__generate_df(scenario_objects, dict_equations,
+                                )
 
         return df
 

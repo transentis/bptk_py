@@ -25,6 +25,8 @@ import BPTK_Py.config.config as config
 from BPTK_Py import ScenarioManagerFactory
 from BPTK_Py import simulationWrapper
 from BPTK_Py import simulationScenario
+from BPTK_Py import sdSimulationRunner
+from BPTK_Py import abmSimulationRunner
 
 from BPTK_Py import pulseWidget
 
@@ -86,7 +88,7 @@ class bptk():
                                                                                 scenario_managers=scenario_managers)
 
 
-    def plot_scenarios(self, scenarios, equations, scenario_managers, kind=config.configuration["kind"],
+    def plot_scenarios(self, scenarios, equations, scenario_managers,agents, kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
@@ -120,8 +122,8 @@ class bptk():
 
             if manager.type == "abm" and manager.name in scenario_managers:
                 runner = abmSimulationRunner(self.scenario_manager_factory,self)
-                dfs+= [runner.run_sim(scenarios=[manager.scenario],
-                                                      agents=equations,
+                dfs+= [runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                                                      agents=agents,
                                                       scenario_managers=[manager.name],
 
                                                       strategy=strategy,
@@ -130,7 +132,7 @@ class bptk():
 
             elif manager.name in scenario_managers:
                 runner = sdSimulationRunner(self.scenario_manager_factory, self)
-                dfs += [ runner.run_sim(scenarios=scenarios,
+                dfs += [ runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                                                  equations=equations,
                                                  scenario_managers=[manager.name],
 
@@ -289,13 +291,13 @@ class bptk():
     def reset_all_scenarios(self):
         """
         Reload all scenarios from storage
-        :return: All Scenario Managers
+        :return: All ABMModel Managers
         """
         return self.scenario_manager_factory.reset_all_scenarios()
 
     def model_check(self, data, check, message):
         """
-        Model checker
+        ABMModel checker
         :param data: dataframe series or any data
         :param check: lambda function of structure : lambda data : BOOLEAN CHECK
         :param message: Error message if test failed

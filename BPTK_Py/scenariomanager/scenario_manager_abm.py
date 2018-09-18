@@ -11,15 +11,14 @@
 
 
 ### IMPORTS
-import os
-import BPTK_Py.config.config as config
+
 from BPTK_Py.logger.logger import log
 import importlib
-import datetime
 
-from BPTK_Py.abm.simultaneousScheduler  import SimultaneousScheduler
-from BPTK_Py.abm.dataCollector import DataCollector
-from BPTK_Py.abm.model import Model
+from BPTK_Py import SimultaneousScheduler
+from BPTK_Py import DataCollector
+
+from .scenario_manager import scenarioManager
 ###
 
 
@@ -28,7 +27,7 @@ from BPTK_Py.abm.model import Model
 ##############################
 
 
-class scenarioManagerABM():
+class scenarioManagerABM(scenarioManager):
     """
     This class reads ABM models and manages them
     """
@@ -42,53 +41,36 @@ class scenarioManagerABM():
 
         self.json_config = json_config
         self.type = "abm"
-        self.scenario = None
+        self.scenarios = {}
         self.name = name
 
     def get_config(self):
         return self.json_config
 
 
-    def instantiate_model(self):
-        scenarioClass = self.json_config["classes"]["scenario"]
-        agent_classes = self.json_config["classes"]["agents"]
+    def instantiate_model(self,reset=False):
+        if reset:
+            self.scenarios = {}
+            log("[INFO] Resetting the simulation scenarios for {}".format(str(self.name)))
 
-        split = scenarioClass.split(".")
-        className = split[len(split) - 1]
-        packageName = '.'.join(split[:-1])
 
-        mod = importlib.import_module(packageName)
-        scenario_class = getattr(mod, className)
+        for scenarioName, scenarioClass in self.json_config["scenarios"].items():
 
-        model = Model(self.json_config["name"])
+            if scenarioName not in self.scenarios.keys():
 
-        class clazzManager():
-            def __init__(self, agent):
-                self.agent = agent
-                self.split = self.agent.split(".")
-                self.className = self.split[len(self.split) - 1]
-                self.packageName = '.'.join(self.split[:-1])
-                self.module = importlib.import_module(self.packageName)
+                split = scenarioClass.split(".")
+                className = split[len(split) - 1]
+                packageName = '.'.join(split[:-1])
 
-                self.class_ = getattr(self.module, self.className)
+                mod = importlib.import_module(packageName)
+                scenario_class = getattr(mod, className)
 
-            def getClazz(self):
-                return self.class_
 
-            def getAgentFactory(self):
-                return lambda agent_id, scenario: self.class_(agent_id, scenario)
+                scenario = scenario_class(name=scenarioName, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
 
-            def getType(self):
-                return self.getClazz().TYPE
+                scenario.instantiate_model()
 
-        clazzManagers = []
+                scenario.configure(self.json_config)
 
-        for agent in agent_classes:
-            clazzManagers += [clazzManager(agent=agent)]
-
-        for i in range(0, len(clazzManagers)):
-            model.register_agent_factory(clazzManagers[i].getClazz().TYPE, clazzManagers[i].getAgentFactory())
-
-        self.scenario = scenario_class(model=model, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
-
-        self.scenario.configure(self.json_config)
+                self.scenarios[scenarioName] = scenario
+                log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))

@@ -1,6 +1,21 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+#| |                                | | (_)           /########`-
+#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2018 transentis labs GmbH
+# MIT License
 
+import pandas as pd
 
 class simulationRunner():
+    """
+    Generic class for simulationRunners. A simulation runner implements the "run_sim" method and stores the scenario manager factory and a bptk instance.
+    It handles the simulation running for simulation models with the specified scenarios
+    """
 
     def __init__(self,scenario_manager_factory,bptk):
         """
@@ -12,4 +27,14 @@ class simulationRunner():
         self.bptk = bptk
 
     def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False,):
+        """
+        Run the simulation and return a DataFrame storing the simulation results
+        :param scenarios:
+        :param agents:
+        :param scenario_managers:
+        :param strategy:
+        :return:
+        """
         print("IMPLEMENT THIS METHOD IN A CLASS THAT INHERITS FROM THIS ONE")
+
+        return pd.DataFrame()

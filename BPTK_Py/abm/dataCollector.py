@@ -31,27 +31,6 @@ class DataCollector:
 
     def statistics(self):
 
-        # begin statistics
-
-        # statistics = "{"
-        # first = True
-        #
-        # for step in self.agent_statistics:
-        #
-        #     if not first:
-        #
-        #         statistics += ","
-        #
-        #     else:
-        #
-        #         first = False
-        #
-        #     statistics += self.step_statistics(step)
-        #
-        # # end statistics
-        #
-        # statistics += "}"
-
         return self.agent_statistics
 
     def step_statistics(self, time):

@@ -11,10 +11,7 @@
 
 ## IMPORTS
 import pandas as pd
-import BPTK_Py.config.config as config
-from BPTK_Py.logger.logger import log
-import statistics
-from BPTK_Py.simulationrunners.simrunner import simulationRunner
+from .simrunner import simulationRunner
 #
 ############################
 ### Class abmVisualizer  ###
@@ -65,14 +62,20 @@ class abmSimulationRunner(simulationRunner):
         :return:
         """
         # Obtain simulation results
+
+        scenario_objects = []
+
         for manager_name in scenario_managers:
             manager =self.scenario_manager_factory.scenario_managers[manager_name]
-            manager.instantiate_model()
+            scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios ]
+            manager.instantiate_model(reset=False)
 
         dfs = []
-        for scenario in scenarios:
+        for scenario in scenario_objects:
 
-            scenario.run(True)
+
+            if not len(scenario.statistics()) > 0:
+                scenario.run(False)
 
             data = scenario.statistics()
 
@@ -85,7 +88,7 @@ class abmSimulationRunner(simulationRunner):
 
                 if len(agents) > 1:
                     for series in df.columns:
-                        new_df[agent + "-" + series] = df[series]
+                        new_df[scenario.name + "-" + agent + "-" + series] = df[series]
                 else:
                     new_df = df
 

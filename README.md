@@ -165,7 +165,7 @@ bptk = bptk()
 **Optional lines**
 ```python
 # To Show all available scenarios and -managers:
-print("Available Scenario Managers and Scenarios:\n")
+print(Model)
 managers = bptk.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=[])
 
 for key, manager in managers.items():

@@ -43,7 +43,7 @@ class modelMonitor():
         current_dir = str(os.getcwd())
         self.execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + source_file + "\" -t py -c > \"" + current_dir + "/" + dest + ".py\""
         log(
-            "[INFO] Model Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(
+            "[INFO] ABMModel Monitor: Starting to Monitor {} for changes. Will transform itmx file to Python model whenever I observe changes to it! Destination file: {}".format(
                 source_file, dest))
 
         # As long as this is True, I will keep monitoring. Otherwise the thread will terminate
@@ -81,7 +81,7 @@ class modelMonitor():
                 ## Check if changed
                 if stamp > self._cached_stamp:
 
-                    log("[INFO] Model Monitor for {}: Observed a change to the model. Calling the parser".format(
+                    log("[INFO] ABMModel Monitor for {}: Observed a change to the model. Calling the parser".format(
                         str(self.source_file)))
                     self._cached_stamp = stamp
 
@@ -104,11 +104,11 @@ class modelMonitor():
 
                     ## Refresh all scenarios with the given model file
                     self.update_func(self.source_file)
-                    log("[INFO] Model Monitor for {}: model updated and relaoded scenarios!".format(
+                    log("[INFO] ABMModel Monitor for {}: model updated and relaoded scenarios!".format(
                         str(self.source_file)))
 
                     # Store new timestamp as cached timestamp
                     self._cached_stamp = stamp
             time.sleep(1)
 
-        log("[INFO] Model Monitor for {}: I got killed... Goodbye!".format(str(self.source_file)))
+        log("[INFO] ABMModel Monitor for {}: I got killed... Goodbye!".format(str(self.source_file)))

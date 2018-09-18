@@ -13,7 +13,7 @@
 ## IMPORTS
 from .scenario import simulationScenario
 import BPTK_Py.config.config as config
-from .scenario_manager import scenarioManager
+from .scenario_managerSD import scenarioManagerSD
 from BPTK_Py import log
 from BPTK_Py  import modelMonitor
 from BPTK_Py  import jsonMonitor
@@ -75,15 +75,17 @@ class ScenarioManagerFactory():
 
                 if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name]["type"].lower() == "abm":
 
+
                     self.scenario_managers[scenario_manager_name] = scenarioManagerABM(json_dict[scenario_manager_name],scenario_manager_name)
                     self.scenario_managers[scenario_manager_name].instantiate_model()
 
                 else:
+                    print(json_dict[scenario_manager_name])
                     if scenario_manager_name not in self.scenario_managers.keys():
 
-                        self.scenario_managers[scenario_manager_name] = scenarioManager(base_points=None,
-                                                                             base_constants=None, scenarios={},
-                                                                             name=scenario_manager_name)
+                        self.scenario_managers[scenario_manager_name] = scenarioManagerSD(base_points=None,
+                                                                                          base_constants=None, scenarios={},
+                                                                                          name=scenario_manager_name)
 
                     manager = self.scenario_managers[scenario_manager_name]
 
@@ -127,7 +129,7 @@ class ScenarioManagerFactory():
                         if scenario_name in manager.scenarios.keys():
                             # Check if an update was made to the scenario --> Value equality not given anymore
                             if not scenario_dict == manager.scenarios[scenario_name].dictionary:
-                                log("[INFO] Scenario {} was updated!".format(scenario_name))
+                                log("[INFO] ABMModel {} was updated!".format(scenario_name))
                                 manager.scenarios.pop(scenario_name)
 
 
@@ -145,7 +147,7 @@ class ScenarioManagerFactory():
                             self.__add_monitor(manager.source, manager.model_file)
                         elif not os.path.isfile(manager.source):
                             log(
-                                "[ERROR] Model monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
+                                "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                     str(manager.source)))
                     manager.instantiate_model()
 
@@ -168,6 +170,7 @@ class ScenarioManagerFactory():
             self.scenario_files = glob.glob(os.path.join(path, '*.json'))
 
             for infile in glob.glob(os.path.join(path, '*.json')):
+                print(infile)
                 self.__readScenario(filename=infile)
 
             log("[INFO] Successfully loaded all scenarios!")
@@ -195,7 +198,7 @@ class ScenarioManagerFactory():
         for filename in manager_filenames:
             self.__readScenario(filename=filename)
 
-        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
+        log("[INFO] Successfully reloaded scenario {} for ABMModel Manager {}".format(scenario, scenario_manager))
 
     def reset_all_scenarios(self):
         """
@@ -272,14 +275,14 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = scenarioManager(scenarios={scenario.name: scenario},
-                                                                       name=scenario_manager,
-                                                                       model_file=model)
+            self.scenario_managers[scenario_manager] = scenarioManagerSD(scenarios={scenario.name: scenario},
+                                                                         name=scenario_manager,
+                                                                         model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
 
 
         else:
-            log("[WARN] Scenario Manager already existing. Not overwriting the model!")
+            log("[WARN] ABMModel Manager already existing. Not overwriting the model!")
             self.scenario_managers[scenario_manager].add_scenario(scenario)
 
         if len(source) > 0:

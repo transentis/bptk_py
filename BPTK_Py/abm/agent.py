@@ -1,5 +1,5 @@
 import random
-from BPTK_Py.logger.logger import log
+from BPTK_Py import log
 
 
 class Agent:

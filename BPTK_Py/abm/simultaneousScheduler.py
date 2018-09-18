@@ -1,5 +1,5 @@
 from .scheduler import Scheduler
-from BPTK_Py.logger.logger import log
+from BPTK_Py import log
 
 
 class SimultaneousScheduler(Scheduler):

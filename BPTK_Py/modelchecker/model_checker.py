@@ -21,7 +21,7 @@ class modelChecker():
 
     def model_check(self, data, check, message="None"):
         """
-        Model checker
+        ABMModel checker
         :param data: dataframe series or any data
         :param check: lambda function of structure : lambda data : BOOLEAN CHECK
         :param message: Error message if test failed
@@ -30,7 +30,7 @@ class modelChecker():
 
         try:
             assert check(data), message
-            print("[SUCCESS] Model check successful!")
+            print("[SUCCESS] ABMModel check successful!")
 
         except AssertionError as e:
-            print("[ERROR] Model Checking failed with message: \"{}\"".format(e))
+            print("[ERROR] ABMModel Checking failed with message: \"{}\"".format(e))
