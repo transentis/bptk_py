@@ -86,9 +86,12 @@ class Agent:
         :return: None
         """
 
-        if self.state in self.eventHandlers:
-            if event.name in self.eventHandlers[self.state]:
-                self.eventHandlers[self.state][event.name](event)
+        #if self.state in self.eventHandlers:
+            #if event.name in self.eventHandlers[self.state]:
+        try:
+            self.eventHandlers[self.state][event.name](event)
+        except KeyError as e:
+            pass
 
     def act(self, time, sim_round, step):
         """
@@ -98,15 +101,20 @@ class Agent:
         :param step: step number of round
         :return: None
         """
-        if self.state in self.eventHandlers:
 
+
+        try:
             handlers = self.eventHandlers[self.state]
 
             while len(self.events) > 0:
                 event = self.events.pop()
 
-                if event.name in handlers:
+                try:
                     handlers[event.name](event)
+                except KeyError as e:
+                    pass
+        except KeyError as e:
+            pass
 
     def to_string(self):
         """

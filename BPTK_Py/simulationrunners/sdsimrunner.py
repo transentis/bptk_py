@@ -28,7 +28,7 @@ class SDSimulationRunner(SimulationRunner):
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def __generate_df(self, scenarios, equations, series_names={}):
+    def __generate_df(self, scenarios, equations):
         """
         Generates a dataFrame from simulation results. Generate series names and time series
         :param scenarios: names of scenarios
@@ -42,30 +42,20 @@ class SDSimulationRunner(SimulationRunner):
         ## Generate empty df to plot
         plot_df = pd.DataFrame()
 
-        if len(
-                scenarios.keys()) > 1:  # If we see more than one scenario, we will attach the scenario name to each Series name.
-            for scenario in scenarios.keys():
-                df = scenarios[scenario].result
 
+
+        for scenario in scenarios.keys():
+            df = scenarios[scenario].result
+
+            if not df is None:
                 for equation in equations.keys():
+
                     if equation in df.columns:
                         series = df[equation]
 
                         series.name = scenarios[scenario].scenario_manager + "_" + scenarios[scenario].name + "_" + equation
                         plot_df[series.name] = series
-        else:
-            scenario = scenarios[list(scenarios.keys())[0]]
-            df = scenario.result
-
-            for equation in equations.keys():
-                if equation in df.columns:
-                    series = df[equation]
-                    series.name = scenario.scenario_manager + "_" + scenario.name + "_" + equation
-                    plot_df[series.name] = series
-
-        # Process series name overrides as specified by user. Will traverse the series as they are in the DF
-        # Usually this shold follow the order of the equations!
-
+           
         return plot_df
 
     def run_sim(self, scenarios, equations, scenario_managers=[], strategy=False, ):
@@ -89,11 +79,6 @@ class SDSimulationRunner(SimulationRunner):
          :param return_df: set True if you want to receive a dataFrame instead of the plot
          :return: None
          """
-
-        # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
-        if len(scenarios) == 0 or scenarios[0] == '':
-            scenarios = list(
-                self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
 
         # Obtain simulation results
         if not strategy:

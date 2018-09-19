@@ -157,7 +157,14 @@ class ABModel:
         if name not in self.properties:
             log("[ERROR] sim.getProperty: property unknown")
 
-        return self.properties[name]
+        try:
+            return_val = self.properties[name]
+            return return_val
+        except KeyError as e:
+            log("[ERROR] sim.getProperty: property unknown")
+            return None
+
+
 
     def run_specs(self, starttime, stoptime, dt):
         """
@@ -242,7 +249,7 @@ class ABModel:
         agent_ids = []
 
         for _ in range(actual_num_agents):
-            agent_ids.append(agent_map[ABMModel.get_random_integer(0, num_agents_in_map - 1)])
+            agent_ids.append(agent_map[ABModel.get_random_integer(0, num_agents_in_map - 1)])
 
         return agent_ids
 
@@ -307,8 +314,13 @@ class ABModel:
         Get statistics from DataCollector
         :return: None
         """
-        if self.data_collector:
+
+        try:
+            return_val = self.data_collector.statistics()
             return self.data_collector.statistics()
+        except AttributeError as e:
+            log("[ERROR] Tried to obtain Agent statistics but no data Collector available!")
+
 
     @staticmethod
     def get_random_integer(min_value, max_value):

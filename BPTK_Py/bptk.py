@@ -160,8 +160,6 @@ class bptk():
 
 
 
-
-
         # prepare dataframes
         else:
             if len(dfs) > 1:
@@ -312,8 +310,13 @@ class bptk():
         :return: None
         """
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
-        for key in scenario.model.memo.keys():
-            scenario.model.memo[key] = {}
+        try:
+            for key in scenario.model.memo.keys():
+                scenario.model.memo[key] = {}
+        except AttributeError as e:
+            for key in scenario.memo.keys():
+                scenario.memo[key] = {}
+                scenario.run(False)
 
     def reset_scenario(self, scenario_manager, scenario):
         """

@@ -276,7 +276,7 @@ class ScenarioManagerFactory():
 
 
         else:
-            log("[WARN] ABMModel Manager already existing. Not overwriting the model!")
+            log("[WARN] Model Manager already existing. Not overwriting the model!")
             self.scenario_managers[scenario_manager].add_scenario(scenario)
 
         if len(source) > 0:

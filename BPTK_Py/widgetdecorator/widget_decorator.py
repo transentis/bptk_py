@@ -78,7 +78,8 @@ class WidgetDecorator():
         for scenario_obj in self.scenarios.values():
             # Find out if there is an Agent based model!
             if isinstance(scenario_obj, ABModel):
-                print("WARNING: WIDGET ONLY SHOWS EFFECT ON HYBRID MODELS THAT IMPLEMENT AND USE EQUATIONS!")
+                print("WARNING: WIDGET ONLY SHOWS EFFECT ON HYBRID MODELS THAT IMPLEMENT AND USE SD EQUATIONS!")
+                print("IT MAY TAKE A WHILE TO RE-RUN THE AGENT BASED SIMULATION(S)!")
                 break
 
         param_visualize_from = visualize_from_period
@@ -99,10 +100,11 @@ class WidgetDecorator():
                 name = ""
 
                 if widget_type.lower() == "checkbox":
-                    if len(val) < 2:
+                    try:
+                        name = val[1]
+                    except IndexError as e:
                         raise IndexError("Too few arguments for {}".format(widget_type))
 
-                    name = val[1]
                     widget = py_widgets.Checkbox(description=name, value=False, disabled=False,
                                                  style=config.configuration["slider_style"],
                                                  layout=config.configuration["slider_layout"])
@@ -146,14 +148,20 @@ class WidgetDecorator():
 
 
                 elif widget_type.lower() == "slider":
-                    if len(val) < 4:
+
+                    try:
+                        name = val[1]
+                        start = val[2]
+                        end = val[3]
+                    except IndexError as e:
                         raise IndexError("Too few arguments for {}".format(widget_type))
-                    name = val[1]
-                    start = val[2]
-                    end = val[3]
 
                     if type(start) == float and len(val) == 5:
-                        step = val[4]
+                        try:
+                            step = val[4]
+                        except IndexError as e:
+                            raise IndexError("Too few arguments for {}".format(widget_type))
+
                         precision = len(str(step).split(".")[1])
 
                         options = [round(x, precision) for x in list(np.arange(start, end + step, step))]
@@ -219,34 +227,29 @@ class WidgetDecorator():
                     visualize_from_period = widget[0]
                     visualize_to_period = widget[1] + 1
 
-                # Checkbox
-                elif type(widget) == bool:
-                    widget_val = 1 if widget == True else 0
-
-                    for name, scenario_obj in self.scenarios.items():
-                        scenario_obj.model.equations[widget_name] = lambda t: widget_val
-                        scenario_obj.constants[widget_name] = widget_val
-
-                # Ordinary slider
+                # Checkbox and ordinary sliders
                 else:
-                    widget_val = widget
-
-
+                    if type(widget) == bool:
+                        widget_val = 1 if widget == True else 0
+                    else:
+                        widget_val = widget
 
                     for name, scenario_obj in self.scenarios.items():
-
                         try:
+
                             scenario_obj.constants[widget_name] = widget_val
 
                         except AttributeError as e:
-                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT THE "CONSTANTS" FIELD!
+                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT THE "CONSTANTS" FIELD! (ABModel)
                             continue
 
                         try:
                             scenario_obj.model.equations[widget_name] = lambda t: widget_val
+
                         except AttributeError as e:
                             # HANDLE SCENARIOS THAT DO NOT IMPLEMENT A SPECIFIC MODEL (E.G: Hybrid models of ABM)
                             scenario_obj.equations[widget_name] = lambda t: widget_val
+
 
 
                         self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager, scenario=scenario_obj.name)

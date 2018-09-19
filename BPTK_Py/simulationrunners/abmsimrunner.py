@@ -63,14 +63,16 @@ class AbmSimulationRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[]):
+    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[],rerun=False):
         """
         Method that generates the required dataframe(s) for the simulations
-        :param scenarios:
-        :param agents:
-        :param scenario_managers:
+        :param scenarios: scenarios to plot for
+        :param agents: Agents to plot for
+        :param scenario_managers: Scenario managers to plot for
+        :param progressBar: Show Progress Bar if True
         :param agent_states: LIst of agent states to plot for (optional)
-        :return:
+        :param rerun: If True, will run the simulation. If False, only run if the model was never run before
+        :return: DataFrame containing the simulation results
         """
         # Obtain simulation results
 
@@ -84,7 +86,7 @@ class AbmSimulationRunner(SimulationRunner):
         dfs = []
         for scenario in scenario_objects:
 
-            if not len(scenario.statistics()) > 0:
+            if not len(scenario.statistics()) > 0 or rerun:
                 scenario.run(progressBar)
 
             data = scenario.statistics()

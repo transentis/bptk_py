@@ -95,8 +95,6 @@ class SDsimulationWrapper():
 
         for key in scenarios_objects.keys():
             scenario = scenarios_objects[key]
-            starttime = scenario.model.starttime
-            stoptime = scenario.model.stoptime
 
             if len(equations) == 0:
                 log("[ERROR] No equation to simulate given. Simulation will fail!")
