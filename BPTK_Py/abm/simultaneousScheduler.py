@@ -11,10 +11,10 @@
 
 
 
-## IMPORTS
-from .scheduler import Scheduler
 from BPTK_Py import log
-##
+
+from .scheduler import Scheduler
+
 
 #################################
 ## SIMULTANEOUSSCHEDULER CLASS ##

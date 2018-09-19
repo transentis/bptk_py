@@ -15,13 +15,13 @@
 ##########################
 
 # Simple model checking
-class modelChecker():
+class ModelChecker():
     """simple model checking class. Can check assertions using lambda methods
     """
 
     def model_check(self, data, check, message="None"):
         """
-        ABMModel checker
+        Model checker
         :param data: dataframe series or any data
         :param check: lambda function of structure : lambda data : BOOLEAN CHECK
         :param message: Error message if test failed

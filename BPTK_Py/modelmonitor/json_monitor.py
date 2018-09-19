@@ -10,26 +10,26 @@
 #
 
 
-####### IMPORTS
-from threading import Thread
-import time
-from BPTK_Py import log
 import os
-import BPTK_Py.config.config as config
-#######
+import time
+
+from threading import Thread
+
+from BPTK_Py import log
+
 
 ########################
 ## ClASS MODELMONITOR ##
 ########################
 
 
-class jsonMonitor():
+class JsonMonitor():
     """
     Simple monitoring script for itmx files.
     Monitors itmx files and invokes parser when a change is detected
     """
 
-    def __init__(self, json_file,  update_func):
+    def __init__(self, json_file, update_func):
         """
 
         :param json_file: path to itmx model
@@ -38,7 +38,6 @@ class jsonMonitor():
         """
         self.update_func = update_func
         self.json_file = json_file
-
 
         log(
             "[INFO] JSON Monitor: Starting to Monitor {} for changes. Will update scenarios whenever I observe changes to it! ".format(
@@ -78,7 +77,6 @@ class jsonMonitor():
 
                 ## Check if changed
                 if stamp > self._cached_stamp:
-
                     log("[INFO] JSON Monitor: Observed a change to {} ".format(
                         str(self.json_file)))
                     self._cached_stamp = stamp

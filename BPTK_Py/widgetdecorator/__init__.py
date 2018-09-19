@@ -1,3 +1,2 @@
-
-from .pulse_widget import pulseWidget
-from .widget_decorator import widgetDecorator
+from .pulse_widget import PulseDashboard
+from .widget_decorator import WidgetDecorator

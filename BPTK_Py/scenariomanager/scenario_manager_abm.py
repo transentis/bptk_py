@@ -10,7 +10,7 @@
 # MIT License
 
 
-### IMPORTS
+
 
 from BPTK_Py.logger.logger import log
 import importlib
@@ -18,16 +18,16 @@ import importlib
 from BPTK_Py import SimultaneousScheduler
 from BPTK_Py import DataCollector
 
-from .scenario_manager import scenarioManager
-###
+from .scenario_manager import ScenarioManager
+
 
 
 ##############################
-## ClASS scenarioManagerABM ##
+## ClASS ScenarioManagerABM ##
 ##############################
 
 
-class scenarioManagerABM(scenarioManager):
+class ScenarioManagerABM(ScenarioManager):
     """
     This class reads ABM models and manages them
     """
@@ -74,6 +74,8 @@ class scenarioManagerABM(scenarioManager):
                 scenario.instantiate_model()
 
                 scenario.configure(self.json_config["scenarios"][scenarioName])
+
+                scenario.set_scenario_manager(self.name)
 
                 self.scenarios[scenarioName] = scenario
                 log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))

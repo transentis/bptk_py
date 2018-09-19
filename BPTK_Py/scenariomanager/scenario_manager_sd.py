@@ -10,26 +10,26 @@
 # MIT License
 
 
-### IMPORTS
+
+import importlib
 import os
+
 import BPTK_Py.config.config as config
 from BPTK_Py import log
-from .scenario_manager import scenarioManager
-import importlib
-###
+from .scenario_manager import ScenarioManager
 
 
-###########################
-## ClASS scenarioManagerSD ##
-###########################
+#############################
+## ClASS ScenarioManagerSD ##
+#############################
 
 
-class scenarioManagerSD(scenarioManager):
+class ScenarioManagerSD(ScenarioManager):
     """
     This class reads and writes scenarios and starts the file monitors for each scenario's model
     """
 
-    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="",filenames=[],
+    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=[],
                  model_file=""):
         """
 
@@ -53,7 +53,6 @@ class scenarioManagerSD(scenarioManager):
         self.filenames = filenames
 
         self.type = "sd"
-
 
     def add_scenario(self, scenario):
         """
@@ -133,8 +132,8 @@ class scenarioManagerSD(scenarioManager):
                 for scenario in self.scenarios.values():
                     if scenario.model == None:
                         scenario.model = mod.simulation_model()
-                        scenario.starttime =  scenario.model.starttime
-                        scenario.stoptime =  scenario.model.stoptime
+                        scenario.starttime = scenario.model.starttime
+                        scenario.stoptime = scenario.model.stoptime
                         scenario.dt = scenario.model.dt
                         scenario.setup_constants()
                         scenario.setup_points()

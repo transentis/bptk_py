@@ -10,20 +10,21 @@
 #
 
 
-####### IMPORTS
-from threading import Thread
-import time
-from BPTK_Py import log
 import os
+import time
+
+from threading import Thread
+
 import BPTK_Py.config.config as config
-#######
+from BPTK_Py import log
+
 
 ########################
 ## ClASS MODELMONITOR ##
 ########################
 
 
-class modelMonitor():
+class ModelMonitor():
     """
     Simple monitoring script for itmx files.
     Monitors itmx files and invokes parser when a change is detected

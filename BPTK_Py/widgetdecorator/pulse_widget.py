@@ -10,17 +10,15 @@
 # MIT License
 
 
-## IMPORTS
 import ipywidgets as widgets
 import numpy as np
-#
 
 from IPython.display import clear_output, display
 
 
-class pulseWidget():
+class PulseDashboard():
     """
-    Class to create widgets for PULSE functions
+    Class to create dashboard for PULSE functions
     """
 
     def flatten(self, l):
@@ -69,7 +67,6 @@ class pulseWidget():
             self.flatten([list(scenario_obj.model.equations.keys()) for scenario_obj in self.scenario_objs.values()]))
 
         constant_list = sorted(constant_list.copy())
-
 
         self.variable = widgets.Dropdown(options=constant_list)
         self.number_initial = widgets.Text(placeholder="initial value")
@@ -129,14 +126,14 @@ class pulseWidget():
                     self.bptk.reset_scenario(scenario=scenario, scenario_manager=manager)
 
             # Get the updated objects!
-            self.scenario_objs= self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=self.scenario_managers,
-                                                                              scenarios=self.scenarios,type="sd")
+            self.scenario_objs = self.bptk.scenario_manager_factory.get_scenarios(
+                scenario_managers=self.scenario_managers,
+                scenarios=self.scenarios, type="sd")
 
         # Create strateg(ies)
         if not error:
             strategies = {}
             equation = self.variable.value
-
 
             # Create actual strategy
             for scenario in self.scenarios:
@@ -147,8 +144,10 @@ class pulseWidget():
                 strategies[scenario]['0'] = {}
                 strategies[scenario]['0'][equation] = float(self.number_initial.value)
 
-                for i in np.arange(first_moment, self.scenario_objs[scenario].model.stoptime+self.scenario_objs[scenario].model.dt, pulse_frequency):
-                    t = round(i,2)
+                for i in np.arange(first_moment,
+                                   self.scenario_objs[scenario].model.stoptime + self.scenario_objs[scenario].model.dt,
+                                   pulse_frequency):
+                    t = round(i, 2)
                     dt = self.scenario_objs[scenario].model.dt
                     strategies[scenario][t] = {}
                     strategies[scenario][t + dt] = {}
@@ -158,7 +157,6 @@ class pulseWidget():
             # Add strategy
             self.bptk.modify_strategy(scenarios=self.scenario_objs, extended_strategy=strategies)
 
-
             # Reset memo of simulations
             for manager in self.scenario_managers:
                 for scenario in self.scenarios:
@@ -167,11 +165,9 @@ class pulseWidget():
             # print output
             with self.output:
                 print("Pulse function created for variable {}".format(str(equation)))
-                print("scenarios: {}".format(str(self.del_duplicates(self.scenarios)).replace("[", "").replace("]", "")))
+                print(
+                    "scenarios: {}".format(str(self.del_duplicates(self.scenarios)).replace("[", "").replace("]", "")))
                 print("scenario managers:".format(str(self.scenario_managers)))
 
                 if self.keep_strategy.value:
                     print("Keeping the existing strategy. May not overwrite previously-created PULSE functions!")
-
-
-

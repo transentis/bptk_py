@@ -9,31 +9,25 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
-## IMPORTS
+
 from __future__ import print_function
+
+import ipywidgets as py_widgets
+import numpy as np
+from ipywidgets import interact
+
 import BPTK_Py.config.config as config
 from BPTK_Py import log
-from ipywidgets import interact, interactive, fixed, interact_manual
-import ipywidgets as py_widgets
-from IPython.display import clear_output
-import matplotlib
 
-import numpy as np
-
-
-##
 
 #############################
-### Class widgetDecorator ###
+### Class WidgetDecorator ###
 #############################
 
 
-class widgetDecorator():
+class WidgetDecorator():
     """
-    This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders
-    Later maybe even other interactive projects
-    This is the core of the interactive plotting module
-
+    This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders or checkboxes for specific SD equations
     """
 
     def __init__(self, bptk):
@@ -42,17 +36,13 @@ class widgetDecorator():
         :param bptk: A live instance of bptk
         """
         self.bptk = bptk
-        log("[INFO] widgetDecorator created")
+        log("[INFO] WidgetDecorator created")
         self.widgets = {}
         self.output = py_widgets.Output()
 
     # This method will be passed over to the user and used to modify the graph output
 
-
-
-
-
-    def dashboard(self, scenarios, equations=[],agents=[], scenario_managers=[], kind=config.configuration["kind"],
+    def dashboard(self, scenarios, equations=[], agents=[], scenario_managers=[], kind=config.configuration["kind"],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0,
                   x_label="", y_label="",
@@ -81,12 +71,10 @@ class widgetDecorator():
         """
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                          scenarios=scenarios,type="sd")
+                                                                          scenarios=scenarios, type="sd")
 
         param_visualize_from = visualize_from_period
         param_visualize_to = visualize_to_period
-
-
 
         ## Only store data and create widgets and pack them
         log("[INFO] Creating widget objects for interactive plot of scenarios {}".format(str(scenarios)))
@@ -156,13 +144,13 @@ class widgetDecorator():
                     start = val[2]
                     end = val[3]
 
-
                     if type(start) == float and len(val) == 5:
                         step = val[4]
                         precision = len(str(step).split(".")[1])
 
-                        options = [round(x, precision) for x in list(np.arange(start, end+step, step))]
-                        value = options[int((len(options)-1)/2) if (len(options)-1)%2 == 0 else int((len(options)-1)/2)+1 ]
+                        options = [round(x, precision) for x in list(np.arange(start, end + step, step))]
+                        value = options[int((len(options) - 1) / 2) if (len(options) - 1) % 2 == 0 else int(
+                            (len(options) - 1) / 2) + 1]
 
                         widget = py_widgets.SelectionSlider(options=options,
                                                             value=value,
@@ -189,8 +177,8 @@ class widgetDecorator():
                                                       value=(end - start - step) / 2,
                                                       description=name,
                                                       style=config.configuration["slider_style"],
-                                                      layout=config.configuration["slider_layout"], continuous_update=False)
-
+                                                      layout=config.configuration["slider_layout"],
+                                                      continuous_update=False)
 
                 self.widgets[name] = widget
 
@@ -199,18 +187,16 @@ class widgetDecorator():
                     "[ERROR] Problem creating widget with a TypeError. Please do only use numbers for the widget limits and text in double quotes for names and widget type! Message: \"{}\"".format(
                         str(e)))
             except IndexError as e:
-                log("[ERROR] Problem creating widget with a ValueError. Did you supply all required fields? Message: \"{}\"".format(str(e)))
+                log(
+                    "[ERROR] Problem creating widget with a ValueError. Did you supply all required fields? Message: \"{}\"".format(
+                        str(e)))
             except Exception as e:
-                log("[ERROR] Problem creating widget: \"{}\". Error type:  {}".format(str(e),str(type(e))))
-
-
-
-
+                log("[ERROR] Problem creating widget: \"{}\". Error type:  {}".format(str(e), str(type(e))))
 
         @interact(**self.widgets)
         def compute_new_plot(**kwargs):
             """
-            Actual method that we hand over to interact. Evaluates the widget values and creates the plots
+            Actual function we hand over to interact. Evaluates the widget values and creates the plots
             :param dictionary: widgets dict : {name : value}
             :return: None
             """
@@ -235,21 +221,18 @@ class widgetDecorator():
                         scenario_obj.model.equations[widget_name] = lambda t: widget_val
                         scenario_obj.constants[widget_name] = widget_val
 
-                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.group, scenario=name)
+                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager, scenario=name)
 
             ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations, agents=agents,
-                                              scenario_managers=scenario_managers, kind=kind, alpha=alpha,
-                                              stacked=stacked,
-                                              freq=freq, start_date=start_date, title=title,
-                                              visualize_from_period=visualize_from_period,
-                                              visualize_to_period=visualize_to_period, x_label=x_label,
-                                              y_label=y_label,
-                                              series_names=series_names, strategy=strategy,
-                                              return_df=return_df)
+                                          scenario_managers=scenario_managers, kind=kind, alpha=alpha,
+                                          stacked=stacked,
+                                          freq=freq, start_date=start_date, title=title,
+                                          visualize_from_period=visualize_from_period,
+                                          visualize_to_period=visualize_to_period, x_label=x_label,
+                                          y_label=y_label,
+                                          series_names=series_names, strategy=strategy,
+                                          return_df=return_df)
 
             if return_df:
                 return ax
 
-
-
-        # return interact(compute_new_plot,**widgets)

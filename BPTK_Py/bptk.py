@@ -18,17 +18,17 @@ from BPTK_Py import visualizer
 from BPTK_Py.logger.logger import log
 
 import matplotlib.pyplot as plt
-from .modelchecker import modelChecker
-from BPTK_Py import widgetDecorator
+from .modelchecker import ModelChecker
+from BPTK_Py import WidgetDecorator
 import BPTK_Py.config.config as config
 
 from BPTK_Py import ScenarioManagerFactory
 from BPTK_Py import SDsimulationWrapper
-from BPTK_Py import simulationScenario
-from BPTK_Py import sdSimulationRunner
-from BPTK_Py import abmSimulationRunner
+from BPTK_Py import SimulationScenario
+from BPTK_Py import SDSimulationRunner
+from BPTK_Py import AbmSimulationRunner
 
-from BPTK_Py import pulseWidget
+from BPTK_Py import PulseDashboard
 
 from ipywidgets import Output
 plt.interactive(True)
@@ -65,7 +65,7 @@ class bptk():
         :param equations: names of equations to simulate
         :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
         :param scenario_managers: names of scenario managers to select scenarios from
-        :return: dict of simulationScenario
+        :return: dict of SimulationScenario
         """
         return SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
@@ -85,13 +85,9 @@ class bptk():
 
         return self.plot_scenarios(scenarios=scenarios,equations=equations,return_df=True,scenario_managers=scenario_managers,agents=agents)
 
-        #return SDsimulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
-        #                                                                        equations=equations,
-        #                                                                        output=output,
-        #                                                                        scenario_managers=scenario_managers)
 
 
-    def plot_scenarios(self, scenarios, scenario_managers,agents=[],equations=[], kind=config.configuration["kind"],
+    def plot_scenarios(self, scenarios, scenario_managers,agents=[],agent_states=[],equations=[], kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
@@ -99,9 +95,11 @@ class bptk():
                        return_df=False):
 
         """
-         Generic method for plotting scenarios
+         Generic method for plotting scenarios for SD as well as Agent based models (ABM)
          :param scenarios: names of scenarios to plot
-         :param equations:  names of equations to plot
+         :param equations:  names of equations to plot (System Dynamics, SD)
+         :param agents: List of agents to plot (Agent based modelling)
+         :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
          :param scenario_managers: names of scenario managers to plot
          :param kind: type of graph to plot
          :param alpha:  transparency 0 < x <= 1
@@ -128,24 +126,34 @@ class bptk():
                 for equation in equations:
                     series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + equation] = equation
 
+        # Make sure that agent_states is only used when agent is used!
+        if len(agent_states) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            exit()
+
+
+
 
 
         dfs = []
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
+            # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
 
-                runner = abmSimulationRunner(self.scenario_manager_factory,self)
+                runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs+= [runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                                                      agents=agents,progressBar=return_df,
+                                                      agents=agents,agent_states=agent_states,progressBar=return_df,
                                                       scenario_managers=[manager.name],
 
                                                       strategy=strategy,
                                                       )]
 
 
+
+            # Handle SD models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
-                runner = sdSimulationRunner(self.scenario_manager_factory, self)
+                runner = SDSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [ runner.run_sim(scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                                                  equations=equations,
                                                  scenario_managers=[manager.name],
@@ -158,6 +166,11 @@ class bptk():
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
             return None
 
+
+
+
+
+        # prepare dataframes
         else:
             if len(dfs) > 1:
                 df = dfs.pop(0)
@@ -226,7 +239,7 @@ class bptk():
         """
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
-        widget_decorator = widgetDecorator(self)
+        widget_decorator = WidgetDecorator(self)
 
         return widget_decorator.dashboard(scenarios=scenarios,
                                           equations=equations,
@@ -259,7 +272,7 @@ class bptk():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
             scenario = scenarios[scenario_name]
-            self.reset_simulation_model(scenario_manager=scenario.group, scenario=scenario_name)
+            self.reset_simulation_model(scenario_manager=scenario.scenario_manager, scenario=scenario_name)
 
             ## Points in time where the extended strategy makes changes
             points_to_change_at = list(extended_strategy[scenario_name].keys())
@@ -332,11 +345,11 @@ class bptk():
         :param message: Error message if test failed
         :return: None
         """
-        modelChecker().model_check(data=data, check=check, message=message)
+        ModelChecker().model_check(data=data, check=check, message=message)
 
 
     def pulse_function_create(self,scenarios,scenario_managers):
-        widget = pulseWidget(scenarios=scenarios,scenario_managers=scenario_managers,bptk=self)
+        widget = PulseDashboard(scenarios=scenarios, scenario_managers=scenario_managers, bptk=self)
         widget.show()
 
     def add_scenario(self, dictionary):
@@ -354,7 +367,7 @@ class bptk():
             scenarios = [k for k in dictionary[scenario_manager_name].keys() if not k == "source" and not k == "model"]
 
             for scenario_name in scenarios:
-                scenario = simulationScenario(model=None, name=scenario_name, scenario_manager_name=scenario_manager_name,
+                scenario = SimulationScenario(model=None, name=scenario_name, scenario_manager_name=scenario_manager_name,
                                               dictionary=dictionary[scenario_manager_name][scenario_name])
 
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,

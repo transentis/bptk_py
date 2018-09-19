@@ -1,36 +1,33 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
-## IMPORTS
+
 import pandas as pd
+
 from BPTK_Py import log
-from .simrunner import simulationRunner
+from .simrunner import SimulationRunner
 from ..sdsimulator import SDsimulationWrapper
-##
 
 
 ################################
-### Class sdSimulationRunner ###
+### Class SDSimulationRunner ###
 ################################
 
 
-class sdSimulationRunner(simulationRunner):
+class SDSimulationRunner(SimulationRunner):
     """
-    This class wraps away the visualization part for plots. Implements the plot_scenarios method and builds the plot
+    This class runs System dynamics simulations
     """
 
-
-
-
-    #Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
+    # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
     def __generate_df(self, scenarios, equations, series_names={}):
         """
         Generates a dataFrame from simulation results. Generate series names and time series
@@ -45,9 +42,8 @@ class sdSimulationRunner(simulationRunner):
         ## Generate empty df to plot
         plot_df = pd.DataFrame()
 
-
-
-        if len(scenarios.keys()) > 1: # If we see more than one scenario, we will attach the scenario name to each Series name.
+        if len(
+                scenarios.keys()) > 1:  # If we see more than one scenario, we will attach the scenario name to each Series name.
             for scenario in scenarios.keys():
                 df = scenarios[scenario].result
 
@@ -55,7 +51,7 @@ class sdSimulationRunner(simulationRunner):
                     if equation in df.columns:
                         series = df[equation]
 
-                        series.name = scenarios[scenario].group +"_" + scenarios[scenario].name + "_" + equation
+                        series.name = scenarios[scenario].scenario_manager + "_" + scenarios[scenario].name + "_" + equation
                         plot_df[series.name] = series
         else:
             scenario = scenarios[list(scenarios.keys())[0]]
@@ -64,20 +60,15 @@ class sdSimulationRunner(simulationRunner):
             for equation in equations.keys():
                 if equation in df.columns:
                     series = df[equation]
-                    series.name = scenario.group +"_" + scenario.name + "_" + equation
+                    series.name = scenario.scenario_manager + "_" + scenario.name + "_" + equation
                     plot_df[series.name] = series
-
 
         # Process series name overrides as specified by user. Will traverse the series as they are in the DF
         # Usually this shold follow the order of the equations!
 
-
         return plot_df
 
-
-
-
-    def run_sim(self, scenarios, equations, scenario_managers=[], strategy=False,):
+    def run_sim(self, scenarios, equations, scenario_managers=[], strategy=False, ):
         """
          Generic method for plotting scenarios
          :param scenarios: names of scenarios to plot
@@ -99,12 +90,10 @@ class sdSimulationRunner(simulationRunner):
          :return: None
          """
 
-
         # If no scenario names are given, we will just take all scenarios that are available for the scenario manager(s)
         if len(scenarios) == 0 or scenarios[0] == '':
             scenarios = list(
                 self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers).keys())
-
 
         # Obtain simulation results
         if not strategy:
@@ -113,21 +102,21 @@ class sdSimulationRunner(simulationRunner):
                                                                                                   output=["frame"],
                                                                                                   scenario_managers=scenario_managers)
         else:
-            scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
-                                                                                                                equations=equations,
-                                                                                                                output=["frame"],
-                                                                                                                scenario_managers=scenario_managers)
+            scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(
+                scenarios=scenarios,
+                equations=equations,
+                output=["frame"],
+                scenario_managers=scenario_managers)
         if len(scenario_objects.keys()) == 0:
-            log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(str(scenario_managers), str(scenarios)))
+            log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(
+                str(scenario_managers), str(scenarios)))
             return None
 
         # Visualize Object
         dict_equations = {}
 
-
         # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
         scenarios = [key for key in scenario_objects.keys()]
-
 
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
         for scenario_name in scenarios:
@@ -139,11 +128,5 @@ class sdSimulationRunner(simulationRunner):
                     dict_equations[equation] += [scenario_name]
 
 
-        ### Prepare the Plottable DataFrame using the visualize class. It generates the time series and the DataFrame
-
-        df = self.__generate_df(scenario_objects, dict_equations,
+        return self.__generate_df(scenario_objects, dict_equations,
                                 )
-
-        return df
-
-

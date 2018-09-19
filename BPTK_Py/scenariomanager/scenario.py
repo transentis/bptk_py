@@ -18,7 +18,7 @@ from BPTK_Py import log
 ###############################
 
 
-class simulationScenario():
+class SimulationScenario():
     """
     This class stores the settings for each scenario
     """
@@ -32,7 +32,7 @@ class simulationScenario():
         """
 
         self.dictionary = dictionary
-        self.group = scenario_manager_name
+        self.scenario_manager = scenario_manager_name
         self.model = model
 
         if model is not None:
@@ -78,11 +78,11 @@ class simulationScenario():
                 try:
                     if type(value) == str:
                         self.model.equations[constant] = eval("lambda t : " + value)
-                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.group, self.name, constant,
+                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
                                                                               str(value)))
                     elif type(value) == int or type(value) == float:
                         self.model.equations[constant] = eval("lambda t: " + str(value))
-                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.group, self.name, constant,
+                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
                                                                               str(value)))
                     else:
                         log("[ERROR] Invalid type for constant {}: {}".format(constant, str(value)))
@@ -108,10 +108,10 @@ class simulationScenario():
                 try:
                     if type(value) == str:
                         self.model.points[name] = eval(value)
-                        log("[INFO] {}, {}: Changed points {} to {}".format(self.group, self.name, name, str(value)))
+                        log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
                     elif type(value) == list:
                         self.model.points[name] = value
-                        log("[INFO] {}, {}: Changed points {} to {}".format(self.group, self.name, name, str(value)))
+                        log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
                     else:
                         log("[ERROR] Invalid type for points {}: {}".format(name, str(value)))
 

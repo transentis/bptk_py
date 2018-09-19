@@ -1,1 +1,1 @@
-from .model_checker import modelChecker
+from .model_checker import ModelChecker

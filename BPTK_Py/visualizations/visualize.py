@@ -1,9 +1,9 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
@@ -13,18 +13,36 @@
 import BPTK_Py.config.config as config
 import statistics
 import pandas as pd
-from IPython.display import clear_output
+
 
 class visualizer():
+    """
+    Class for building plots from dataframes. Includes capabilities to produce time series data.
+    Can also only modify dataframes to generate time series and return the modified dataframe
+    """
 
-
-
-
-
-    def plot(self,df,return_df,visualize_from_period,visualize_to_period,stacked,kind,title,alpha,x_label,y_label,start_date="1/1/2018", freq="D",series_names={}):
+    def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
+             y_label, start_date="1/1/2018", freq="D", series_names={}):
+        """
+        Plot method. Creates plots from dataframes
+        :param df: DataFrame input
+        :param return_df: Flag. If true return a dataFrame and do not plot (default: False)
+        :param visualize_from_period: visualize from a specific t (default: 0)
+        :param visualize_to_period:  visualize until a specific t (default: model's stoptime)
+        :param stacked: If True, use stacked series (default: False)
+        :param kind: Kind of plot (default: area)
+        :param title: Title of plot
+        :param alpha: Alpha of series (default: see config!)
+        :param x_label: x_label of plot
+        :param y_label: y_label of plot
+        :param start_date: Start date for time series
+        :param freq: Frequency setting for time series
+        :param series_names: series renaming patterns
+        :return: DataFrame or Matplotlib Subplot, depends on return_df flag
+        """
 
         if not start_date == "":
-            df.index= pd.date_range(start_date, periods=len(df),freq=freq)
+            df.index = pd.date_range(start_date, periods=len(df), freq=freq)
 
         series_names_keys = series_names.keys()
 
@@ -42,29 +60,30 @@ class visualizer():
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not return_df:
 
-
-
             ### Get the plot object
             if visualize_to_period == 0:
 
-                ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked, figsize=config.configuration["figsize"],
-                                                     title=title,
-                                                     alpha=alpha, color=config.configuration["colors"],
-                                                     lw=config.configuration["linewidth"])
+                ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
+                                                          figsize=config.configuration["figsize"],
+                                                          title=title,
+                                                          alpha=alpha, color=config.configuration["colors"],
+                                                          lw=config.configuration["linewidth"])
 
             elif visualize_from_period == visualize_to_period:
-                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),str(visualize_to_period)))
+                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
+                                                                              str(visualize_to_period)))
                 return None
 
             else:
-                if visualize_to_period +1 > len(df):
+                if visualize_to_period + 1 > len(df):
                     visualize_to_period = len(df)
 
                 ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
-                                                         figsize=config.configuration["figsize"],
-                                                         title=title,
-                                                         alpha=alpha, color=config.configuration["colors"],
-                                                         lw=config.configuration["linewidth"])
+                                                                             figsize=config.configuration["figsize"],
+                                                                             title=title,
+                                                                             alpha=alpha,
+                                                                             color=config.configuration["colors"],
+                                                                             lw=config.configuration["linewidth"])
                 ### Set axes labels and set the formats
             if (len(x_label) > 0):
                 ax.set_xlabel(x_label)
@@ -74,8 +93,7 @@ class visualizer():
                 ax.set_ylabel(y_label)
 
             for ymaj in ax.yaxis.get_majorticklocs():
-                ax.axhline(y=ymaj, ls='-',alpha=0.05,color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
-
+                ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
 
             self.update_plot_formats(ax)
             return ax
@@ -86,13 +104,12 @@ class visualizer():
                 return df.iloc[visualize_from_period:]
             elif visualize_from_period == visualize_to_period:
                 print("[INFO] No data for period t={} to t={}".format(str(visualize_from_period + 1),
-                                                                              str(visualize_to_period + 1)))
+                                                                      str(visualize_to_period + 1)))
                 return None
             else:
                 return df.iloc[visualize_from_period:visualize_to_period]
 
-
-    def update_plot_formats(self,ax):
+    def update_plot_formats(self, ax):
         """
         Configure the plot formats for the labels. Generates the formatting for y labels
         :param ax:
@@ -111,4 +128,3 @@ class visualizer():
             ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
 
         ax.set_yticklabels(ylabels)
-

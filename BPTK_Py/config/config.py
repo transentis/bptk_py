@@ -1,20 +1,22 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
 
-## IMPORTS
-from ipywidgets import Layout
-import BPTK_Py
 import os
-##
+
+from ipywidgets import Layout
+
+import BPTK_Py
+
+
 
 ##################################
 ## BPTK_Py Global Configuration ##
@@ -45,13 +47,11 @@ transentis_colors = {
 
 }
 
-
-
 sd_py_compiler_root = str(os.path.dirname(BPTK_Py.__file__)) + "/sd-compiler"
 
 configuration = {
     "sd_py_compiler_root": sd_py_compiler_root,
-    "bptk_Py_module_path" :os.path.dirname(BPTK_Py.__file__),
+    "bptk_Py_module_path": os.path.dirname(BPTK_Py.__file__),
 
     # Graphic settings
     "matplotlib_rc_settings": matplotlib_rc_settings,
@@ -62,10 +62,10 @@ configuration = {
     "alpha": 0.25,
     "linewidth": matplotlib_rc_settings["lines.linewidth"],
 
-    #Relative path to scenario storage
+    # Relative path to scenario storage
     "scenario_storage": "scenarios/",
-    "slider_style" :  {'description_width': '50%'},
-    "slider_layout" : Layout(width='100%',position="left"),
+    "slider_style": {'description_width': '50%'},
+    "slider_layout": Layout(width='100%', position="left"),
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],

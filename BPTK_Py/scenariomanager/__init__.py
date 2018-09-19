@@ -1,4 +1,4 @@
-from .scenario import simulationScenario as simulationScenario
-from .scenario_manager_factory import ScenarioManagerFactory as ScenarioManagerFactory
-from .scenario_manager_sd import scenarioManagerSD as scenarioManager
-from .scenario_manager_abm import scenarioManagerABM
+from .scenario import SimulationScenario
+from .scenario_manager_factory import ScenarioManagerFactory
+from .scenario_manager_sd import ScenarioManagerSD
+from .scenario_manager_abm import ScenarioManagerABM

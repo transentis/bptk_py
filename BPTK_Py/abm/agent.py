@@ -1,9 +1,9 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
@@ -11,10 +11,10 @@
 
 
 
-## IMPORTS
 import random
+
 from BPTK_Py import log
-##
+
 
 #################
 ## AGENT CLASS ##
@@ -87,7 +87,7 @@ class Agent:
         """
 
         if self.state in self.eventHandlers:
-            if event.name in self.eventHandlers[self. state]:
+            if event.name in self.eventHandlers[self.state]:
                 self.eventHandlers[self.state][event.name](event)
 
     def act(self, time, sim_round, step):

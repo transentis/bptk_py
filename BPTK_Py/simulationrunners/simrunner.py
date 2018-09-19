@@ -11,7 +11,7 @@
 
 import pandas as pd
 
-class simulationRunner():
+class SimulationRunner():
     """
     Generic class for simulationRunners. A simulation runner implements the "run_sim" method and stores the scenario manager factory and a bptk instance.
     It handles the simulation running for simulation models with the specified scenarios
@@ -35,6 +35,6 @@ class simulationRunner():
         :param strategy:
         :return:
         """
-        print("IMPLEMENT THIS METHOD IN A CLASS THAT INHERITS FROM THIS ONE")
+        print("IMPLEMENT THIS METHOD IN A SUBCLASS")
 
         return pd.DataFrame()

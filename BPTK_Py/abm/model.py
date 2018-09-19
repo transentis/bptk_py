@@ -1,25 +1,25 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
 
-
-## IMPORTS
 import random
-from BPTK_Py import log
 import threading
-from IPython.display import display
+
 import ipywidgets as widgets
 import numpy as np
+from IPython.display import display
 from scipy.interpolate import interp1d
-##
+
+from BPTK_Py import log
+
 
 ###################
 ## ABMODEL CLASS ##
@@ -31,14 +31,13 @@ class ABModel:
     This is the main agent base model
     """
 
-    def __init__(self,name,  scheduler, data_collector=None):
+    def __init__(self, name, scheduler, data_collector=None):
         """
 
         :param name: Name as string
         :param scheduler: Implemented instance of scheduler (e.g. simultaneousScheduler)
         :param data_collector: Instance of DataCollector)
         """
-
 
         self.properties = {}
         self.agents = []
@@ -47,17 +46,23 @@ class ABModel:
         self.data_collector = data_collector
         self.scheduler = scheduler
         self.events = []
+
+        # Global Model variables (for SD as well as ABM)
         self.starttime = 0
         self.stoptime = 0
         self.dt = 1
-        self.agent_factories = {}
+        self.scenario_manager = ""
 
-        # This is placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
+        # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
 
+        self.agent_factories = {}
 
         for agent_type in self.agent_factories:
             self.agent_type_map[agent_type] = []
+
+    def set_scenario_manager(self, scenario_manager):
+        self.scenario_manager = scenario_manager
 
     def register_agent_factory(self, agent_type, agent_factory):
         """
@@ -179,7 +184,6 @@ class ABModel:
                 orientation='horizontal'
             )
 
-
             thread = threading.Thread(target=self.scheduler.run, args=(self, progress_widget,))
             display(progress_widget)
             thread.start()
@@ -193,7 +197,6 @@ class ABModel:
         :return: None
         """
         print("IMPLEMENT THIS METHOD IN AN INHERITING CLASS!")
-
 
     def enqueue_event(self, event):
         """
@@ -214,7 +217,6 @@ class ABModel:
         for agent in self.agents:
 
             if agent.agent_type == agent_type and agent.state == state:
-
                 return agent
 
     def random_agents(self, agent_type, num_agents):
@@ -312,9 +314,14 @@ class ABModel:
         """
         return round(random.random() * (max_value - min_value) + min_value)
 
-
     @staticmethod
     def lookup(x, points):
+        """
+        Lookup function: Interpolate between set of points. E.g. for "graphical functions" as known from SD
+        :param x: x-value to find the y value for
+        :param points:
+        :return:
+        """
         x_vals = np.array([x[0] for x in points])
         y_vals = np.array([x[1] for x in points])
 
@@ -326,5 +333,3 @@ class ABModel:
 
         f = interp1d(x_vals, y_vals)
         return float(f(x))
-
-

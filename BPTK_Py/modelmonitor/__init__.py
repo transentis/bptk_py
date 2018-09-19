@@ -1,2 +1,2 @@
-from .json_monitor import jsonMonitor
-from .model_monitor import modelMonitor
+from .json_monitor import JsonMonitor
+from .model_monitor import ModelMonitor

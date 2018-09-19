@@ -10,18 +10,20 @@
 # MIT License
 
 
-## IMPORTS
-from .scenario import simulationScenario
-import BPTK_Py.config.config as config
-from .scenario_manager_sd import scenarioManagerSD
-from BPTK_Py import log
-from BPTK_Py  import modelMonitor
-from BPTK_Py  import jsonMonitor
 import glob
-import os
 import json
-from BPTK_Py.scenariomanager.scenario_manager_abm import scenarioManagerABM
-##
+import os
+
+import BPTK_Py.config.config as config
+from BPTK_Py import JsonMonitor
+from BPTK_Py import log
+from BPTK_Py import ModelMonitor
+from BPTK_Py.scenariomanager.scenario_manager_abm import ScenarioManagerABM
+
+from .scenario import SimulationScenario
+from .scenario_manager_sd import ScenarioManagerSD
+
+
 
 ####################################
 ### Class ScenarioManagerFactory ###
@@ -44,7 +46,7 @@ class ScenarioManagerFactory():
         self.model_monitors = {}
         self.json_monitors = {}
         self.path = ""
-        self.scenario_files=[]
+        self.scenario_files = []
 
     def __readScenario(self, filename=""):
         """
@@ -58,8 +60,8 @@ class ScenarioManagerFactory():
         """
 
         if filename.lower().endswith(".json") and not filename in self.json_monitors.keys():
-            self.json_monitors[filename] = jsonMonitor(json_file=filename,update_func=self.__refresh_scenarios_for_json)
-
+            self.json_monitors[filename] = JsonMonitor(json_file=filename,
+                                                       update_func=self.__refresh_scenarios_for_json)
 
         if len(filename) > 0 and filename.lower().endswith(".json"):
 
@@ -74,22 +76,23 @@ class ScenarioManagerFactory():
             for scenario_manager_name in json_dict.keys():
 
                 # HANDLE ABM SCENARIOS
-                if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name]["type"].lower() == "abm":
+                if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name][
+                    "type"].lower() == "abm":
 
-
-                    self.scenario_managers[scenario_manager_name] = scenarioManagerABM(json_dict[scenario_manager_name],scenario_manager_name,filenames=[filename])
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(json_dict[scenario_manager_name],
+                                                                                       scenario_manager_name,
+                                                                                       filenames=[filename])
                     self.scenario_managers[scenario_manager_name].instantiate_model()
 
                 # HANDLE SD SCENARIOS
                 else:
                     if scenario_manager_name not in self.scenario_managers.keys():
-
-                        self.scenario_managers[scenario_manager_name] = scenarioManagerSD(base_points=None,
-                                                                                          base_constants=None, scenarios={},
+                        self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points=None,
+                                                                                          base_constants=None,
+                                                                                          scenarios={},
                                                                                           name=scenario_manager_name)
 
                     manager = self.scenario_managers[scenario_manager_name]
-
 
                     if filename not in manager.filenames:
                         manager.filenames += [filename]
@@ -107,7 +110,6 @@ class ScenarioManagerFactory():
                     for scenario_name in scen_dict.keys():
 
                         scenario_dict = scen_dict[scenario_name]
-
 
                         # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
                         if len(manager.base_constants.keys()) > 0:
@@ -133,15 +135,11 @@ class ScenarioManagerFactory():
                                 log("[INFO] ABMModel {} was updated!".format(scenario_name))
                                 manager.scenarios.pop(scenario_name)
 
-
-                        sce = simulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
+                        sce = SimulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
                                                  scenario_manager_name=scenario_manager_name)
-
-
 
                         if not scenario_name in manager.scenarios.keys():
                             manager.scenarios[scenario_name] = sce
-
 
                     if "source" in json_dict[scenario_manager_name].keys():
                         manager.source = json_dict[scenario_manager_name]["source"]
@@ -158,7 +156,8 @@ class ScenarioManagerFactory():
         else:
             print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
 
-    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],type=""):
+    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],
+                              type=""):
         """
         If self.scenario_managers is empty, this method attempts to load all scenario managers from disk in the specified path
         :param path: path to look for JSON files containing scenario managers and scenarios
@@ -181,7 +180,6 @@ class ScenarioManagerFactory():
 
         if type != "":
             scenario_managers = {k: v for k, v in scenario_managers.copy().items() if v.type == type}
-
 
         if len(scenario_managers_to_filter) > 0:
             scenario_managers = {k: v for k, v in scenario_managers.copy().items() if k in scenario_managers_to_filter}
@@ -223,7 +221,7 @@ class ScenarioManagerFactory():
         """
         return self.scenario_managers[scenario_manager].scenarios[scenario]
 
-    def get_scenarios(self, scenario_managers=[], scenarios=[],type=""):
+    def get_scenarios(self, scenario_managers=[], scenarios=[], type=""):
         """
         Get an arbitrary amount of scenario objects, depending on the parameters
         :param scenario_managers:  Names of the scenario_managers to lookup
@@ -232,9 +230,7 @@ class ScenarioManagerFactory():
         :return:
         """
 
-
-        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers,type=type)
-
+        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers, type=type)
 
         scenarios_objects = {}
         if len(managers) > 1:
@@ -273,7 +269,7 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = scenarioManagerSD(scenarios={scenario.name: scenario},
+            self.scenario_managers[scenario_manager] = ScenarioManagerSD(scenarios={scenario.name: scenario},
                                                                          name=scenario_manager,
                                                                          model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
@@ -294,7 +290,7 @@ class ScenarioManagerFactory():
         :return:  None
         """
         if not source in self.model_monitors.keys():
-            self.model_monitors[source] = modelMonitor(source, str(
+            self.model_monitors[source] = ModelMonitor(source, str(
                 model), update_func=self.refresh_scenarios_for_source_model)
 
     def destroy(self):
@@ -335,9 +331,7 @@ class ScenarioManagerFactory():
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))
 
-
-
-    def __refresh_scenarios_for_json(self,filename):
+    def __refresh_scenarios_for_json(self, filename):
         """
         Refresh all scenario managers that use this filename as source (JSON!)
         Also update for scenarios that are spread over multiple files
@@ -381,7 +375,6 @@ class ScenarioManagerFactory():
 
         return base_constants
 
-
     def __get_all_base_points(self, scenario_manager, filenames):
         """
         This method loads all base points for a given scenario manager. It looks them up in all the files given
@@ -409,9 +402,3 @@ class ScenarioManagerFactory():
                         base_points[key] = value
 
         return base_points
-
-
-
-
-
-
