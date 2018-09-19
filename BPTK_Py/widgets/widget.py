@@ -6,13 +6,18 @@ import importlib
 
 class WidgetLoader():
 
+    def __init__(self):
+        self.widgets = []
+
     def create_widget(self, widget, **kwargs):
         mod = importlib.import_module("BPTK_Py.widgets")
 
-        self.widget = getattr(mod, widget)(**kwargs)
+
+        self.widgets += [getattr(mod, widget)(**kwargs)]
 
     def start(self):
-        self.widget.start()
+        for widget in self.widgets:
+            widget.start()
 
 
 class Widget():
