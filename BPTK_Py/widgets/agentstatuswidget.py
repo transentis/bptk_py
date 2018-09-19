@@ -37,13 +37,14 @@ class AgentStatusWidget(Widget):
 
 
         self.main_Vbox = widgets.VBox(children=hboxes)
-        display(self.main_Vbox)
+
 
 
 
     def start(self):
         self.running = True
         self.thread.start()
+        return self.main_Vbox
 
     def stop(self):
         self.running = False

@@ -4,6 +4,9 @@
 
 import importlib
 
+from ipywidgets import VBox
+from IPython.display import display
+
 class WidgetLoader():
 
     def __init__(self):
@@ -16,11 +19,20 @@ class WidgetLoader():
         self.widgets += [getattr(mod, widget)(**kwargs)]
 
     def start(self):
+        widgets = []
         for widget in self.widgets:
-            widget.start()
+            widgets += [widget.start()]
+
+        display(VBox(widgets))
 
 
 class Widget():
 
     def start(self):
+        """
+        Should return a widget object
+        :return:
+        """
         print("IMPLEMENT IN SUBCLASS")
+
+        return None
