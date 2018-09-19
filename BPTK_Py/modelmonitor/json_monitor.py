@@ -15,7 +15,7 @@ import time
 
 from threading import Thread
 
-from BPTK_Py import log
+from ..logger import log
 
 
 ########################

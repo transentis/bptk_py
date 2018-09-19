@@ -18,7 +18,7 @@ import numpy as np
 from IPython.display import display
 from scipy.interpolate import interp1d
 
-from BPTK_Py import log
+from ..logger import log
 
 
 ###################
@@ -52,6 +52,7 @@ class ABModel:
         self.stoptime = 0
         self.dt = 1
         self.scenario_manager = ""
+        self.memo = {}
 
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
@@ -62,6 +63,11 @@ class ABModel:
             self.agent_type_map[agent_type] = []
 
     def set_scenario_manager(self, scenario_manager):
+        """
+        Set the scenario manager name
+        :param scenario_manager: String
+        :return: None
+        """
         self.scenario_manager = scenario_manager
 
     def register_agent_factory(self, agent_type, agent_factory):
@@ -333,3 +339,36 @@ class ABModel:
 
         f = interp1d(x_vals, y_vals)
         return float(f(x))
+
+    ### Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations
+
+    def memoize(self, equation, arg):
+        """
+        Memoize method
+        :param equation: name of equation
+        :param arg: argument (t)
+        :return: result of equation
+        """
+        mymemo = self.memo[equation]
+        if arg in mymemo.keys():
+            return mymemo[arg]
+        else:
+            result = self.equations[equation](arg)
+            mymemo[arg] = result
+
+        return result
+
+    def add_equation(self, equation, lambda_method):
+        """
+        Add an equation. ALWAYS use this method to configure equations! Configures the memo as well!
+        :param equation: Name of the equation
+        :param lambda_method: A lambda function we can insert into the set of equations
+        :return: None
+        """
+        if equation in self.equations.keys():
+            log("[WARN] Hybrid Model {}: Overwriting equation {} ".format(str(self.name), str(equation)))
+
+        self.equations[equation] = lambda_method
+
+        # Initialize memo for equation
+        self.memo[equation] = {}

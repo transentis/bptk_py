@@ -15,7 +15,7 @@ import importlib
 import os
 
 import BPTK_Py.config.config as config
-from BPTK_Py import log
+from ..logger import log
 from .scenario_manager import ScenarioManager
 
 

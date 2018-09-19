@@ -17,7 +17,9 @@ import numpy as np
 from ipywidgets import interact
 
 import BPTK_Py.config.config as config
-from BPTK_Py import log
+from ..abm import ABModel
+from ..logger import log
+from ..scenariomanager import SimulationScenario
 
 
 #############################
@@ -47,7 +49,7 @@ class WidgetDecorator():
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0,
                   x_label="", y_label="",
                   series_names=[], strategy=False,
-                  return_df=False, constants=[]):
+                  return_df=False, constants=[],agent_states=[]):
         """
         Generic method for plotting with interactive widgets
         :param scenarios: names of scenarios to plot
@@ -71,7 +73,13 @@ class WidgetDecorator():
         """
 
         self.scenarios = self.bptk.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                          scenarios=scenarios, type="sd")
+                                                                          scenarios=scenarios)
+
+        for scenario_obj in self.scenarios.values():
+            # Find out if there is an Agent based model!
+            if isinstance(scenario_obj, ABModel):
+                print("WARNING: WIDGET ONLY SHOWS EFFECT ON HYBRID MODELS THAT IMPLEMENT AND USE EQUATIONS!")
+                break
 
         param_visualize_from = visualize_from_period
         param_visualize_to = visualize_to_period
@@ -205,23 +213,43 @@ class WidgetDecorator():
             visualize_to_period = param_visualize_to
 
             for widget_name, widget in kwargs.items():
+
+                # Timerange
                 if type(widget) == tuple:
                     visualize_from_period = widget[0]
                     visualize_to_period = widget[1] + 1
 
+                # Checkbox
                 elif type(widget) == bool:
                     widget_val = 1 if widget == True else 0
 
                     for name, scenario_obj in self.scenarios.items():
                         scenario_obj.model.equations[widget_name] = lambda t: widget_val
                         scenario_obj.constants[widget_name] = widget_val
+
+                # Ordinary slider
                 else:
                     widget_val = widget
-                    for name, scenario_obj in self.scenarios.items():
-                        scenario_obj.model.equations[widget_name] = lambda t: widget_val
-                        scenario_obj.constants[widget_name] = widget_val
 
-                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager, scenario=name)
+
+
+                    for name, scenario_obj in self.scenarios.items():
+
+                        try:
+                            scenario_obj.constants[widget_name] = widget_val
+
+                        except AttributeError as e:
+                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT THE "CONSTANTS" FIELD!
+                            continue
+
+                        try:
+                            scenario_obj.model.equations[widget_name] = lambda t: widget_val
+                        except AttributeError as e:
+                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT A SPECIFIC MODEL (E.G: Hybrid models of ABM)
+                            scenario_obj.equations[widget_name] = lambda t: widget_val
+
+
+                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager, scenario=scenario_obj.name)
 
             ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations, agents=agents,
                                           scenario_managers=scenario_managers, kind=kind, alpha=alpha,
@@ -231,7 +259,7 @@ class WidgetDecorator():
                                           visualize_to_period=visualize_to_period, x_label=x_label,
                                           y_label=y_label,
                                           series_names=series_names, strategy=strategy,
-                                          return_df=return_df)
+                                          return_df=return_df,agent_states=agent_states)
 
             if return_df:
                 return ax

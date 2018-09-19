@@ -11,7 +11,7 @@
 
 
 
-from BPTK_Py import log
+from ..logger import log
 
 from .scheduler import Scheduler
 

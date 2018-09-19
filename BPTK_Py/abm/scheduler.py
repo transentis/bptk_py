@@ -12,7 +12,7 @@
 
 
 
-from BPTK_Py import log
+from ..logger import log
 
 
 #####################

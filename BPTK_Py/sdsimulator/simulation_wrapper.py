@@ -12,7 +12,7 @@
 
 import numpy as np
 
-from BPTK_Py import log
+from ..logger import log
 from .model_simulator import Simulator
 
 

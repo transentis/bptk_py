@@ -10,31 +10,23 @@
 # MIT License
 
 
-### IMPORTS
 
-from BPTK_Py import log
-from BPTK_Py import visualizer
-
-from BPTK_Py.logger.logger import log
 
 import matplotlib.pyplot as plt
-from .modelchecker import ModelChecker
-from BPTK_Py import WidgetDecorator
+
 import BPTK_Py.config.config as config
+from .modelchecker import ModelChecker
+from .scenariomanager import ScenarioManagerFactory
+from .scenariomanager import SimulationScenario
+from .sdsimulator import SDsimulationWrapper
+from .simulationrunners import AbmSimulationRunner
+from .simulationrunners import SDSimulationRunner
+from .visualizations import visualizer
+from .widgetdecorator import PulseDashboard
+from .widgetdecorator import WidgetDecorator
+from .logger import log
 
-from BPTK_Py import ScenarioManagerFactory
-from BPTK_Py import SDsimulationWrapper
-from BPTK_Py import SimulationScenario
-from BPTK_Py import SDSimulationRunner
-from BPTK_Py import AbmSimulationRunner
-
-from BPTK_Py import PulseDashboard
-
-from ipywidgets import Output
 plt.interactive(True)
-
-
-###
 
 
 ##################
@@ -181,7 +173,6 @@ class bptk():
 
             else:
                 log("[ERROR] No results produced. Check your parameters!")
-                import pandas as pd
                 return None
 
 
@@ -210,7 +201,7 @@ class bptk():
 
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
-    def dashboard(self, scenarios,  scenario_managers, kind=config.configuration["kind"],agents=[],equations=[],
+    def dashboard(self, scenarios,  scenario_managers, kind=config.configuration["kind"],agents=[],agent_states=[],equations=[],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                   y_label="",
@@ -220,6 +211,8 @@ class bptk():
         Generic method for plotting with interactive widgets
         :param scenarios: names of scenarios to plot
         :param equations:  names of equations to plot
+        :param agents: Agents to plot
+        :param agent_states: States of agents to plot
         :param scenario_managers: names of scenario managers to plot
         :param kind: type of graph to plot
         :param alpha:  transparency 0 < x <= 1
@@ -257,7 +250,8 @@ class bptk():
                                           series_names=series_names,
                                           strategy=strategy,
                                           return_df=return_df,
-                                          constants=constants)
+                                          constants=constants,
+                                          agent_states=agent_states)
 
     def modify_strategy(self, scenarios, extended_strategy):
         """

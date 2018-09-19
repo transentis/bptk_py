@@ -17,7 +17,7 @@ from threading import Thread
 import numpy as np
 import pandas as pd
 
-from BPTK_Py import log
+from ..logger import log
 
 now = datetime.datetime.now()
 

@@ -15,10 +15,10 @@ import json
 import os
 
 import BPTK_Py.config.config as config
-from BPTK_Py import JsonMonitor
-from BPTK_Py import log
-from BPTK_Py import ModelMonitor
-from BPTK_Py.scenariomanager.scenario_manager_abm import ScenarioManagerABM
+from ..modelmonitor import JsonMonitor
+from ..logger import log
+from ..modelmonitor import ModelMonitor
+from ..scenariomanager import ScenarioManagerABM
 
 from .scenario import SimulationScenario
 from .scenario_manager_sd import ScenarioManagerSD
@@ -84,7 +84,7 @@ class ScenarioManagerFactory():
                                                                                        filenames=[filename])
                     self.scenario_managers[scenario_manager_name].instantiate_model()
 
-                # HANDLE SD SCENARIOS
+                # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
                 else:
                     if scenario_manager_name not in self.scenario_managers.keys():
                         self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points=None,

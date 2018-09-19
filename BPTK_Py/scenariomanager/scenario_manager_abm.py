@@ -12,11 +12,11 @@
 
 
 
-from BPTK_Py.logger.logger import log
+from ..logger import log
 import importlib
 
-from BPTK_Py import SimultaneousScheduler
-from BPTK_Py import DataCollector
+from ..abm import SimultaneousScheduler
+from ..abm import DataCollector
 
 from .scenario_manager import ScenarioManager
 

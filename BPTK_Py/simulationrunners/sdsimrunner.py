@@ -12,7 +12,7 @@
 
 import pandas as pd
 
-from BPTK_Py import log
+from ..logger import log
 from .simrunner import SimulationRunner
 from ..sdsimulator import SDsimulationWrapper
 
