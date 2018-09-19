@@ -22,8 +22,8 @@ from .sdsimulator import SDsimulationWrapper
 from .simulationrunners import AbmSimulationRunner
 from .simulationrunners import SDSimulationRunner
 from .visualizations import visualizer
-from .widgetdecorator import PulseDashboard
-from .widgetdecorator import WidgetDecorator
+from .widgets import PulseDashboard
+from .widgets import Dashboard
 from .logger import log
 
 plt.interactive(True)
@@ -76,6 +76,21 @@ class bptk():
         """
 
         return self.plot_scenarios(scenarios=scenarios,equations=equations,return_df=True,scenario_managers=scenario_managers,agents=agents)
+
+    def run_abm_with_widget(self,scenario_manager,scenario, agents,agent_states,widget_type,widget_arguments={}):
+
+        runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+
+        manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
+
+
+
+        return runner.run_sim(scenarios=[scenario],
+                       agents=agents, agent_states=agent_states, progressBar=False,widget=True,
+                       scenario_managers=[manager.name]
+                       )
+
+
 
 
 
@@ -198,7 +213,7 @@ class bptk():
 
 
 
-    ## Method for plotting scenarios with sliders. A more generic method that uses the WidgetDecorator class to decorate the plot with the sliders
+    ## Method for plotting scenarios with sliders. A more generic method that uses the Dashboard class to decorate the plot with the sliders
     def dashboard(self, scenarios,  scenario_managers, kind=config.configuration["kind"],agents=[],agent_states=[],equations=[],
                   alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
@@ -230,7 +245,7 @@ class bptk():
         """
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
-        widget_decorator = WidgetDecorator(self)
+        widget_decorator = Dashboard(self)
 
         return widget_decorator.dashboard(scenarios=scenarios,
                                           equations=equations,

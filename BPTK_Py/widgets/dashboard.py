@@ -23,11 +23,11 @@ from ..scenariomanager import SimulationScenario
 
 
 #############################
-### Class WidgetDecorator ###
+### Class Dashboard ###
 #############################
 
 
-class WidgetDecorator():
+class Dashboard():
     """
     This class simply decorates an output of "plotScenarios" of bptk with an arbitrary amount of sliders or checkboxes for specific SD equations
     """
@@ -38,7 +38,7 @@ class WidgetDecorator():
         :param bptk: A live instance of bptk
         """
         self.bptk = bptk
-        log("[INFO] WidgetDecorator created")
+        log("[INFO] Dashboard created")
         self.widgets = {}
         self.output = py_widgets.Output()
 
@@ -245,6 +245,8 @@ class WidgetDecorator():
 
                         try:
                             scenario_obj.model.equations[widget_name] = lambda t: widget_val
+                            self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager,
+                                                             scenario=scenario_obj.name)
 
                         except AttributeError as e:
                             # HANDLE SCENARIOS THAT DO NOT IMPLEMENT A SPECIFIC MODEL (E.G: Hybrid models of ABM)
@@ -252,7 +254,7 @@ class WidgetDecorator():
 
 
 
-                        self.bptk.reset_simulation_model(scenario_manager=scenario_obj.scenario_manager, scenario=scenario_obj.name)
+
 
             ax = self.bptk.plot_scenarios(scenarios=scenarios, equations=equations, agents=agents,
                                           scenario_managers=scenario_managers, kind=kind, alpha=alpha,

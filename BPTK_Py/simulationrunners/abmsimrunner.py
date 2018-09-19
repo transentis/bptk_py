@@ -13,6 +13,7 @@
 import pandas as pd
 
 from .simrunner import SimulationRunner
+from ..logger import log
 
 
 ############################
@@ -63,7 +64,7 @@ class AbmSimulationRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[],rerun=False):
+    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[],rerun=False,widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for
@@ -78,12 +79,33 @@ class AbmSimulationRunner(SimulationRunner):
 
         scenario_objects = []
 
+        if widget and len(scenarios) > 1:
+            log("[ERROR] Currently, we can only spawn a widget for exactly one ABM simulation! Try to run for only one scenario")
+
+
+
         for manager_name in scenario_managers:
             manager = self.scenario_manager_factory.scenario_managers[manager_name]
             scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios]
             manager.instantiate_model(reset=False)
 
         dfs = []
+
+        if widget:
+            try:
+                widgetLoader = scenario_objects[0].build_widget()
+                from ipywidgets import Output
+                from IPython.display import display
+
+
+                widgetLoader.start()
+
+            except Exception as e:
+                log("[ERROR] Make sure you implement the build_widget() method in your ABM model!")
+                print(e)
+
+
+
         for scenario in scenario_objects:
 
             if not len(scenario.statistics()) > 0 or rerun:

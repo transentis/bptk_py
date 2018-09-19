@@ -96,10 +96,10 @@ class visualizer():
                 ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
 
             self.update_plot_formats(ax)
-            return ax
+            return
 
         ### If user wanted a dataframe instead, here it is!
-        if return_df:
+        elif return_df:
             if visualize_to_period == 0:
                 return df.iloc[visualize_from_period:]
             elif visualize_from_period == visualize_to_period:
@@ -108,6 +108,8 @@ class visualizer():
                 return None
             else:
                 return df.iloc[visualize_from_period:visualize_to_period]
+
+
 
     def update_plot_formats(self, ax):
         """
