@@ -93,7 +93,7 @@ class SimulationScenario():
 
         else:
             log(
-                "[ERROR] Attempted to initialize constants of a model before the model is available for ABMModel {}".format(
+                "[ERROR] Attempted to initialize constants of a model before the model is available for Model {}".format(
                     self.name))
 
     def setup_points(self):

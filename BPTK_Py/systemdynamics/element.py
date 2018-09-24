@@ -74,10 +74,16 @@ class Element:
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
-    def plot(self,starttime,stoptime):
+    def plot(self,starttime=0,stoptime=None,dt=None):
 
         ## Equation von start bis stop
-        df = pd.DataFrame({self.name : { t : self(t) for t in  np.arange(starttime,stoptime,self.model.dt)}})
+        dt = self.model.dt if dt is None else dt
+        stoptime = self.model.stoptime if stoptime is None else stoptime
+
+        try:
+            df = pd.DataFrame({self.name : { t : self(t) for t in  np.arange(starttime,stoptime+dt,dt)}})
+        except:
+            df = pd.DataFrame({self.name : { t : self(t) for t in  np.arange(self.model.starttime,self.model.stoptime+dt,dt)}})
 
         ax = df.plot(kind="area",
                 stacked=False,

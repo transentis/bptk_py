@@ -449,6 +449,28 @@ class ABModel:
         for equation in self.memo:
             self.memo[equation] = {}
 
+    def register_simulation_scenario(self,bptk,manager_name="SystemDynamics"):
+        """
+        Create a simulation scenario that is plottable with BPTK-Py
+        :return: None
+        """
+        scenario_name = "undefined" if len(self.name) == 0 else self.name
+
+        ## Create Scenario
+        from ..scenariomanager import SimulationScenario
+        scenario = SimulationScenario(dictionary={},name=scenario_name,model=self,scenario_manager_name=manager_name)
+
+        ## Create Scenario Manager
+        from ..scenariomanager import ScenarioManagerSD
+        # base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=[],
+        #                  model_file=""
+
+        manager = ScenarioManagerSD(scenarios={scenario.name : scenario},model=self,name=manager_name)
+
+        ## Add scenario to Manager
+            ## Name
+
+        bptk.scenario_manager_factory.scenario_managers[manager_name] = manager
 
 
 
