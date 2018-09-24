@@ -17,6 +17,7 @@ import os
 import BPTK_Py.config.config as config
 from ..logger import log
 from .scenario_manager import ScenarioManager
+from .scenario import SimulationScenario
 
 
 #############################
@@ -62,6 +63,48 @@ class ScenarioManagerSD(ScenarioManager):
         """
         self.scenarios[scenario.name] = scenario
         self.instantiate_model()
+
+    def load_scenarios(self, scen_dict, model_file, source):
+        # Create simulation scenarios from structure
+        for scenario_name in scen_dict.keys():
+
+            scenario_dict = scen_dict[scenario_name]
+
+            # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
+            if len(self.base_constants.keys()) > 0:
+                if not "constants" in scenario_dict.keys():
+                    scenario_dict["constants"] = {}
+
+                for const, value in self.base_constants.items():
+                    if not const in scenario_dict["constants"].keys():
+                        scenario_dict["constants"][const] = value
+
+            # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
+            if len(self.base_points.keys()) > 0:
+                if not "points" in scenario_dict.keys():
+                    scenario_dict["points"] = {}
+
+                for points, value in self.base_points.items():
+                    if not points in scenario_dict["points"].keys():
+                        scenario_dict["points"][points] = value
+
+            if scenario_name in self.scenarios.keys():
+                # Check if an update was made to the scenario --> Value equality not given anymore
+                if not scenario_dict == self.scenarios[scenario_name].dictionary:
+                    log("[INFO] ABMModel {} was updated!".format(scenario_name))
+                    self.scenarios.pop(scenario_name)
+
+            sce = SimulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
+                                     scenario_manager_name=self.name)
+
+            if not scenario_name in self.scenarios.keys():
+                self.scenarios[scenario_name] = sce
+
+        self.model_file=model_file
+        self.source = source
+
+        self.instantiate_model()
+
 
     def instantiate_model(self):
         """
