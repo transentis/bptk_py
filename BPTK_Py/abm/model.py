@@ -20,6 +20,11 @@ from scipy.interpolate import interp1d
 
 from ..logger import log
 
+from ..systemdynamics import Constant
+from ..systemdynamics import Flow
+from ..systemdynamics import Stock
+from ..systemdynamics import Converter
+
 
 ###################
 ## ABMODEL CLASS ##
@@ -28,16 +33,20 @@ from ..logger import log
 
 class ABModel:
     """
-    This is the main agent base model
+    This is the main agent base / System dynamics / Hybrid model class
+    It can run manually generated SD models, AB Models or define hybrid classes
     """
 
-    def __init__(self, name, scheduler, data_collector=None):
+
+    def __init__(self, starttime, stoptime, dt,name="", scheduler=None,data_collector=None):
         """
 
         :param name: Name as string
         :param scheduler: Implemented instance of scheduler (e.g. simultaneousScheduler)
         :param data_collector: Instance of DataCollector)
         """
+
+        self._caching_on = False
 
         self.properties = {}
         self.agents = []
@@ -48,11 +57,21 @@ class ABModel:
         self.events = []
 
         # Global Model variables (for SD as well as ABM)
-        self.starttime = 0
-        self.stoptime = 0
+        self.starttime = starttime
+        self.stoptime = stoptime
         self.dt = 1
         self.scenario_manager = ""
+
+
+
+        ## For Hybrid Models (SD and AB)
         self.memo = {}
+        self.equations = {}
+        self.stocks = {}
+        self.flows = {}
+        self.converters = {}
+        self.constants = {}
+
 
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
@@ -352,7 +371,7 @@ class ABModel:
         f = interp1d(x_vals, y_vals)
         return float(f(x))
 
-    ### Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations
+    ### System Dynamics (SD) / Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations
 
     def memoize(self, equation, arg):
         """
@@ -384,3 +403,52 @@ class ABModel:
 
         # Initialize memo for equation
         self.memo[equation] = {}
+
+    def stock(self, name):
+        """
+        Create a SD stock
+        :param name:
+        :return:
+        """
+        if name in self.stocks:
+            return self.stocks[name]
+        else:
+            stock = Stock(self, name)
+            self.stocks[name] = stock
+            return stock
+
+    def flow(self, name):
+        if name in self.flows:
+            return self.flows[name]
+        else:
+            flow = Flow(self, name)
+            self.flows[name] = flow
+            return flow
+
+    def constant(self, name):
+        if name in self.constants:
+            return self.constants[name]
+        else:
+            constant = Constant(self, name)
+            self.constants[name] = constant
+            return constant
+
+    def converter(self, name):
+        if name in self.converters:
+            return self.converters[name]
+        else:
+            converter = Converter(self, name)
+            self.converters[name] = converter
+            return converter
+
+    def evaluate_function(self, name, t):
+        self.reset_cache()
+        return self.equations[name](t)
+
+    def reset_cache(self):
+        for equation in self.memo:
+            self.memo[equation] = {}
+
+
+
+

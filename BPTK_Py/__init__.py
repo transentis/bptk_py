@@ -11,6 +11,8 @@ from .abm import SimultaneousScheduler
 from .bptk import bptk
 from .logger import log
 
+import BPTK_Py.systemdynamics.functions as sd
+
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version
 
