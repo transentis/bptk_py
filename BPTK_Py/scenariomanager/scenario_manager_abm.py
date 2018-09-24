@@ -47,10 +47,19 @@ class ScenarioManagerABM(ScenarioManager):
 
 
     def get_config(self):
+        """
+
+        :return: configuration dictionary
+        """
         return self.json_config
 
 
     def instantiate_model(self,reset=False):
+        """
+        Create the simulation model from the relative path to the file
+        :param reset: If True, clear all scenarios and reinstantiate
+        :return: None
+        """
         if reset:
             self.scenarios = {}
             log("[INFO] Resetting the simulation scenarios for {}".format(str(self.name)))
