@@ -38,7 +38,7 @@ class ABModel:
     """
 
 
-    def __init__(self, starttime, stoptime, dt,name="", scheduler=None,data_collector=None):
+    def __init__(self, starttime=0, stoptime=0, dt=1,name="", scheduler=None,data_collector=None):
         """
 
         :param name: Name as string
