@@ -77,7 +77,7 @@ class bptk():
 
         return self.plot_scenarios(scenarios=scenarios,equations=equations,return_df=True,scenario_managers=scenario_managers,agents=agents)
 
-    def run_abm_with_widget(self,scenario_manager,scenario, agents,agent_states):
+    def run_abm_with_widget(self,scenario_manager,scenario):
 
         runner = AbmSimulationRunner(self.scenario_manager_factory, self)
 
@@ -85,8 +85,8 @@ class bptk():
 
 
 
-        return runner.run_sim(scenarios=[scenario],
-                       agents=agents, agent_states=agent_states, progressBar=False,widget=True,
+        runner.run_sim(scenarios=[scenario],
+                       agents=[], agent_states=[], progressBar=False,widget=True,rerun=True,
                        scenario_managers=[manager.name]
                        )
 

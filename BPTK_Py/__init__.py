@@ -23,3 +23,17 @@ except:
 
 name = "BPTK_Py"
 
+
+
+lambda model, t: max(
+    0, min(
+    model.memoize('openTasks',t),
+    (
+            (model.memoize('staff',t)) *
+            (model.memoize('productivity',t))
+    ) /
+    (
+        model.memoize('effortPerTask',t)
+     )
+)
+                      )

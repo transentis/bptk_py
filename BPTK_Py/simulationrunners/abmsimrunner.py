@@ -125,7 +125,8 @@ class AbmSimulationRunner(SimulationRunner):
 
                 dfs += [new_df]
 
-        df = pd.concat(dfs, sort=True).fillna(0)
-        df.index.name = "t"
+        if not widget:
+            df = pd.concat(dfs, sort=True).fillna(0)
+            df.index.name = "t"
 
-        return df
+            return df

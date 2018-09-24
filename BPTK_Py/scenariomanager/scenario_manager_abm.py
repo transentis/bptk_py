@@ -15,8 +15,8 @@
 from ..logger import log
 import importlib
 
-from ..abm import SimultaneousScheduler
-from ..abm import DataCollector
+from ..abm.simultaneousScheduler import SimultaneousScheduler
+from ..abm.dataCollector import DataCollector
 
 from .scenario_manager import ScenarioManager
 

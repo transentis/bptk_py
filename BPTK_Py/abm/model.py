@@ -19,11 +19,12 @@ from IPython.display import display
 from scipy.interpolate import interp1d
 
 from ..logger import log
-
+from ..scenariomanager import ScenarioManagerSD
+from ..scenariomanager import SimulationScenario
 from ..systemdynamics import Constant
+from ..systemdynamics import Converter
 from ..systemdynamics import Flow
 from ..systemdynamics import Stock
-from ..systemdynamics import Converter
 
 
 ###################
@@ -371,7 +372,10 @@ class ABModel:
         f = interp1d(x_vals, y_vals)
         return float(f(x))
 
-    ### System Dynamics (SD) / Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations
+
+    ################################################################################################################################################
+    ### System Dynamics (SD) / Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations  ##
+    ################################################################################################################################################
 
     def memoize(self, equation, arg):
         """
@@ -407,8 +411,8 @@ class ABModel:
     def stock(self, name):
         """
         Create a SD stock
-        :param name:
-        :return:
+        :param name: name of the flow
+        :return: Stock object
         """
         if name in self.stocks:
             return self.stocks[name]
@@ -418,6 +422,11 @@ class ABModel:
             return stock
 
     def flow(self, name):
+        """
+        Create a SD flow
+        :param name: Name of the flow
+        :return: Flow object
+        """
         if name in self.flows:
             return self.flows[name]
         else:
@@ -426,6 +435,11 @@ class ABModel:
             return flow
 
     def constant(self, name):
+        """
+        Create a SD constant
+        :param name: Name of the constant
+        :return: Constant object
+        """
         if name in self.constants:
             return self.constants[name]
         else:
@@ -434,6 +448,11 @@ class ABModel:
             return constant
 
     def converter(self, name):
+        """
+        Create a converter
+        :param name: Name of the converter
+        :return: Converter object
+        """
         if name in self.converters:
             return self.converters[name]
         else:
@@ -442,33 +461,36 @@ class ABModel:
             return converter
 
     def evaluate_function(self, name, t):
+        """
+        Evaluate an element's equation
+        :param name: Name of the equation
+        :param t: timestep to evaluate for
+        :return: float of simulation result
+        """
         self.reset_cache()
         return self.equations[name](t)
 
     def reset_cache(self):
+        """
+        Reset memo of all equations
+        :return: None
+        """
         for equation in self.memo:
             self.memo[equation] = {}
 
     def register_simulation_scenario(self,bptk,manager_name="SystemDynamics"):
         """
-        Create a simulation scenario that is plottable with BPTK-Py
+        Create a simulation scenario from this model. This way it is plottable with BPTK-Py alongside hard-coded scenarios
         :return: None
         """
         scenario_name = "undefined" if len(self.name) == 0 else self.name
 
         ## Create Scenario
-        from ..scenariomanager import SimulationScenario
         scenario = SimulationScenario(dictionary={},name=scenario_name,model=self,scenario_manager_name=manager_name)
 
         ## Create Scenario Manager
-        from ..scenariomanager import ScenarioManagerSD
-        # base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=[],
-        #                  model_file=""
-
         manager = ScenarioManagerSD(scenarios={scenario.name : scenario},model=self,name=manager_name)
 
-        ## Add scenario to Manager
-            ## Name
 
         bptk.scenario_manager_factory.scenario_managers[manager_name] = manager
 
