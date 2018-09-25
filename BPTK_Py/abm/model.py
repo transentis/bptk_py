@@ -113,12 +113,14 @@ class ABModel:
 
         # all else can be changed
 
-        self.properties = {}
+        #self.properties = {}
         self.agents = []
 
-        self.starttime = 0
-        self.stoptime = 0
-        self.dt = 1
+        #self.starttime = 0
+        #self.stoptime = 0
+        #self.dt = 1
+        self.data_collector.agent_statistics = {}
+        self.data_collector.event_statistics = {}
 
     def agent_ids(self, agent_type):
         """

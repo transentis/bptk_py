@@ -36,7 +36,7 @@ class ScenarioManagerSD(ScenarioManager):
 
         :param scenarios: dict {scenario_name : scenario_object ...}. All scenarios this manager is responsible for
         :param name: name of this scenario manager
-        :param model: simulation_model object
+        :param model: simulation_model object instance
         :param filename: source filename (the JSON file parsed for this scenario manager)
         :param source: itmx source file (stela model)
         :param model_file: python file containing the simulation model
@@ -64,7 +64,14 @@ class ScenarioManagerSD(ScenarioManager):
         self.scenarios[scenario.name] = scenario
         self.instantiate_model()
 
-    def load_scenarios(self, scen_dict, model_file, source):
+    def load_scenarios(self, scen_dict, model_file, source=None):
+        """
+        Interpret the JSON dictionary for this scenario manager and instantiate simulationScenario objects
+        :param scen_dict: JSON dictionary containing the scenario instructions: base_constants (optional), base_points (optional) and strategies (optional). Define at least a scenario...
+        :param model_file: Relative link to simulation model (from working directory of your notebook / script)
+        :param source: Optional: link to source file (itmx)
+        :return: None
+        """
         # Create simulation scenarios from structure
         for scenario_name in scen_dict.keys():
 
@@ -91,7 +98,7 @@ class ScenarioManagerSD(ScenarioManager):
             if scenario_name in self.scenarios.keys():
                 # Check if an update was made to the scenario --> Value equality not given anymore
                 if not scenario_dict == self.scenarios[scenario_name].dictionary:
-                    log("[INFO] ABMModel {} was updated!".format(scenario_name))
+                    log("[INFO] Model {} was updated!".format(scenario_name))
                     self.scenarios.pop(scenario_name)
 
             sce = SimulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,

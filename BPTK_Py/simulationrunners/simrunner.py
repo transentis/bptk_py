@@ -25,6 +25,7 @@ class SimulationRunner():
         """
         self.scenario_manager_factory = scenario_manager_factory
         self.bptk = bptk
+        self.df = pd.DataFrame()
 
     def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False,):
         """

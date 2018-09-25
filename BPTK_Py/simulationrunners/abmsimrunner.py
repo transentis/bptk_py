@@ -26,6 +26,8 @@ class AbmSimulationRunner(SimulationRunner):
     Similar to the visualizer class, this class makes sure to create a valid dataframe from the Agent based simulation results and plot them
     """
 
+
+
     def get_df_for_agent(self, data, agent_name, agent_states):
 
         """
@@ -108,25 +110,22 @@ class AbmSimulationRunner(SimulationRunner):
 
         for scenario in scenario_objects:
 
-            if not len(scenario.statistics()) > 0 or rerun:
+            if not len(scenario.statistics()) > 0:
                 scenario.run(progressBar)
 
             data = scenario.statistics()
 
             for agent in agents:
+                new_df = pd.DataFrame()
 
                 df = self.get_df_for_agent(data, agent, agent_states)
 
-                new_df = pd.DataFrame()
-
-                for series in df.columns:
-                    new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + series] = df[series]
-
+                for state in df.columns:
+                        new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state] = df[state]
 
                 dfs += [new_df]
 
-        if not widget:
-            df = pd.concat(dfs, sort=True).fillna(0)
-            df.index.name = "t"
+        df = pd.concat(dfs, sort=True).fillna(0)
+        df.index.name = "t"
 
-            return df
+        return df

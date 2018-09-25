@@ -49,6 +49,7 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer()
+        self.abmrunner = AbmSimulationRunner(self.scenario_manager_factory, self)
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -77,16 +78,16 @@ class bptk():
 
         return self.plot_scenarios(scenarios=scenarios,equations=equations,return_df=True,scenario_managers=scenario_managers,agents=agents)
 
-    def run_abm_with_widget(self,scenario_manager,scenario):
+    def run_abm_with_widget(self,scenario_manager,scenario,agents=[],agent_states=[]):
 
-        runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
 
 
-        runner.run_sim(scenarios=[scenario],
-                       agents=[], agent_states=[], progressBar=False,widget=True,rerun=True,
+        return self.abmrunner.run_sim(scenarios=[scenario],
+                       agents=agents, agent_states=agent_states, progressBar=False,widget=True,
                        scenario_managers=[manager.name]
                        )
 
@@ -326,12 +327,20 @@ class bptk():
         """
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         try:
+
             for key in scenario.model.memo.keys():
                 scenario.model.memo[key] = {}
         except AttributeError as e:
-            for key in scenario.memo.keys():
-                scenario.memo[key] = {}
-                scenario.run(False)
+            log("[WARN] Couldn't modify memo, probably not dealing with an SD model. I will try the generic memo reference of the scenario instead.")
+            log("[WARN] Error: {}".format(str(e)))
+            try:
+                for key in scenario.memo.keys():
+                    scenario.memo[key] = {}
+                    scenario.run(False)
+            except Exception as e:
+                log("[ERROR] Unable to reset simulation model. Error: {}".format(str(e)))
+
+
 
     def reset_scenario(self, scenario_manager, scenario):
         """
