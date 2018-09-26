@@ -112,6 +112,65 @@ class ScenarioManagerSD(ScenarioManager):
 
         self.instantiate_model()
 
+    def add_scenarios(self, scenario_dictionary):
+        for name, scenario in scenario_dictionary.items():
+
+            self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
+                               scenario_manager_name=self.name)
+
+            # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
+            if len(self.base_constants.keys()) > 0:
+                if not "constants" in self.scenarios[name].dictionary.keys():
+                    self.scenarios[name].dictionary["constants"] = {}
+
+                for const, value in self.base_constants.items():
+                    if not const in self.scenarios[name].dictionary["constants"].keys():
+                        self.scenarios[name].dictionary["constants"][const] = value
+
+            # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
+            if len(self.base_points.keys()) > 0:
+                if not "points" in self.scenarios[name].dictionary.keys():
+                    self.scenarios[name].dictionary["points"] = {}
+
+                for points, value in self.base_points.items():
+                    if not points in self.scenarios[name].dictionary["points"].keys():
+                        self.scenarios[name].dictionary["points"][points] = value
+
+
+    def get_cloned_model(self,model):
+        from ..abm import Model
+        new_mod = Model( starttime=model.starttime,stoptime=model.stoptime,dt=model.dt,name=model.name)
+
+
+        for name, constant in model.constants.items():
+            new_const = new_mod.constant(constant.name)
+            new_const.function_string = constant.function_string
+            new_const.equation = constant.equation
+            new_const.generate_function()
+            new_mod.memo[constant.name] = {}
+
+        for name, converter in model.converters.items() :
+            new_converter = new_mod.converter(converter.name)
+            new_converter.function_string = converter.function_string
+            new_converter.generate_function()
+            new_mod.memo[converter.name] = {}
+
+        for name, flow in model.flows.items():
+            new_flow = new_mod.flow(flow.name)
+            new_flow.function_string = flow.function_string
+            new_flow.generate_function()
+            new_mod.memo[flow.name] = {}
+
+        for name, stock in model.stocks.items():
+            new_stock = new_mod.stock(stock.name)
+            new_stock.function_string = stock.function_string
+            new_stock._Stock__initial_value = new_mod.constants[stock._Stock__initial_value.name] if type(stock._Stock__initial_value) is str else stock._Stock__initial_value
+            new_stock.generate_function()
+            new_mod.memo[stock.name] = {}
+
+        return new_mod
+
+
 
     def instantiate_model(self):
         """
