@@ -480,21 +480,62 @@ class Model:
         for equation in self.memo:
             self.memo[equation] = {}
 
-    def register_simulation_scenario(self,bptk,manager_name="SystemDynamics"):
+    def register_simulation_scenario(self, bptk, scenario_manager="SystemDynamics"):
         """
         Create a simulation scenario from this model. This way it is plottable with BPTK-Py alongside hard-coded scenarios
         :return: None
         """
         scenario_name = "undefined" if len(self.name) == 0 else self.name
 
+        self_cloned = self.get_cloned_model()
         ## Create Scenario
-        scenario = SimulationScenario(dictionary={},name=scenario_name,model=self,scenario_manager_name=manager_name)
+        scenario = SimulationScenario(dictionary={}, name=scenario_name, model=self_cloned, scenario_manager_name=scenario_manager)
 
         ## Create Scenario Manager
-        manager = ScenarioManagerSD(scenarios={scenario.name : scenario},model=self,name=manager_name)
+        if scenario_manager in bptk.scenario_manager_factory.scenario_managers.keys():
+            manager = bptk.scenario_manager_factory.scenario_managers[scenario_manager]
+            manager.scenarios[scenario.name] = scenario
+        else:
+            manager = ScenarioManagerSD(scenarios={scenario.name : scenario}, model=self_cloned, name=scenario_manager)
 
 
-        bptk.scenario_manager_factory.scenario_managers[manager_name] = manager
+        bptk.scenario_manager_factory.scenario_managers[scenario_manager] = manager
+
+
+    def get_cloned_model(self):
+        new_mod = Model( starttime=self.starttime,stoptime=self.stoptime,dt=self.dt,name=self.name)
+
+
+        for name, constant in self.constants.items():
+            new_const = new_mod.constant(constant.name)
+            new_const.function_string = constant.function_string
+            new_const.equation = constant.equation
+            new_const.generate_function()
+            new_mod.memo[constant.name] = {}
+
+        for name, converter in self.converters.items() :
+            new_converter = new_mod.converter(converter.name)
+            new_converter.function_string = converter.function_string
+            new_converter.generate_function()
+            new_mod.memo[converter.name] = {}
+
+        for name, flow in self.flows.items():
+            new_flow = new_mod.flow(flow.name)
+            new_flow.function_string = flow.function_string
+            new_flow.generate_function()
+            new_mod.memo[flow.name] = {}
+
+
+
+        for name, stock in self.stocks.items():
+            new_stock = new_mod.stock(stock.name)
+            new_stock.function_string = stock.function_string
+            new_stock._Stock__initial_value = new_mod.constants[stock._Stock__initial_value.name] if type(stock._Stock__initial_value) is str else stock._Stock__initial_value
+            new_stock.generate_function()
+            new_mod.memo[stock.name] = {}
+
+        return new_mod
+
 
 
 
