@@ -73,6 +73,7 @@ class Model:
         self.flows = {}
         self.converters = {}
         self.constants = {}
+        self.points = {}
 
 
 

@@ -120,21 +120,27 @@ class ScenarioManagerSD(ScenarioManager):
 
             # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
             if len(self.base_constants.keys()) > 0:
-                if not "constants" in self.scenarios[name].dictionary.keys():
-                    self.scenarios[name].dictionary["constants"] = {}
+                if not "constants" in scenario.keys():
+                    scenario["constants"] = {}
 
                 for const, value in self.base_constants.items():
-                    if not const in self.scenarios[name].dictionary["constants"].keys():
-                        self.scenarios[name].dictionary["constants"][const] = value
+                    if not const in scenario["constants"].keys():
+                        scenario["constants"][const] = value
 
             # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
             if len(self.base_points.keys()) > 0:
-                if not "points" in self.scenarios[name].dictionary.keys():
-                    self.scenarios[name].dictionary["points"] = {}
+                if not "points" in scenario.keys():
+                    scenario["points"] = {}
+
 
                 for points, value in self.base_points.items():
-                    if not points in self.scenarios[name].dictionary["points"].keys():
-                        self.scenarios[name].dictionary["points"][points] = value
+                    if not points in scenario["points"].keys():
+                        scenario["points"][points] = value
+
+            self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name,
+                                                      model=self.get_cloned_model(self.model),
+                                                      scenario_manager_name=self.name)
+
 
 
     def get_cloned_model(self,model):

@@ -374,13 +374,14 @@ class bptk():
 
     def register_model(self, model, dictionary):
         ## Create Scenario Manager
+
         for scenario_manager, values in dictionary.items():
             if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
             else:
 
-                manager = ScenarioManagerSD(scenarios={}, model=values["model"], name=scenario_manager,
+                manager = ScenarioManagerSD(scenarios={}, model=model, name=scenario_manager,
                                             base_constants=values[
                                                 "base_constants"] if "base_constants" in values.keys() else {},
                                             base_points=values["base_points"] if "base_points" in values.keys() else {})
@@ -389,4 +390,5 @@ class bptk():
 
             self.scenario_manager_factory.scenario_managers[scenario_manager] = manager
 
-            
+            log("[INFO] Successfully registered scenario manager {}".format(scenario_manager))
+
