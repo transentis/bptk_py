@@ -59,6 +59,8 @@ class SimulationScenario():
 
         if "points" in dictionary.keys():
             self.points = dictionary["points"]
+            if model is not None:
+                self.model.points = self.points
         else:
             self.points = {}
 

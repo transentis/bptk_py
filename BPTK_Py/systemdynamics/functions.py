@@ -47,7 +47,11 @@ class Lookup(Function):
 
     def __init__(self, element,points):
         self.element=element
-        self.points=points
+
+        if type(points) is str:
+            self.points="\"" + points + "\""
+        else:
+            self.points = points
 
     def term(self):
         return "model.lookup({},{})".format(self.element, self.points)

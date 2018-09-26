@@ -174,6 +174,8 @@ class ScenarioManagerSD(ScenarioManager):
             new_stock.generate_function()
             new_mod.memo[stock.name] = {}
 
+        new_mod.points = model.points
+
         return new_mod
 
 

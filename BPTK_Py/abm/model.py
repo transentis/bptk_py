@@ -357,14 +357,19 @@ class Model:
         """
         return round(random.random() * (max_value - min_value) + min_value)
 
-    @staticmethod
-    def lookup(x, points):
+    #@staticmethod
+    def lookup(self,x, points):
         """
         Lookup function: Interpolate between set of points. E.g. for "graphical functions" as known from SD
         :param x: x-value to find the y value for
         :param points:
         :return:
         """
+
+        if type(points) is str:
+            points = self.points[points]
+
+
         x_vals = np.array([x[0] for x in points])
         y_vals = np.array([x[1] for x in points])
 
