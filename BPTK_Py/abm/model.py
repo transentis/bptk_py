@@ -32,7 +32,7 @@ from ..systemdynamics import Stock
 ###################
 
 
-class ABModel:
+class Model:
     """
     This is the main agent base / System dynamics / Hybrid model class
     It can run manually generated SD models, AB Models or define hybrid classes
@@ -271,7 +271,7 @@ class ABModel:
         agent_ids = []
 
         for _ in range(actual_num_agents):
-            agent_ids.append(agent_map[ABModel.get_random_integer(0, num_agents_in_map - 1)])
+            agent_ids.append(agent_map[Model.get_random_integer(0, num_agents_in_map - 1)])
 
         return agent_ids
 

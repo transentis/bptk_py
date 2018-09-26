@@ -42,7 +42,7 @@ class Time(Function):
 
 class Lookup(Function):
     """
-    Lookup function. Uses the points of a graphical function to receive the mai
+    Lookup function. Uses the points of a graphical function for interpolation
     """
 
     def __init__(self, element,points):
@@ -50,7 +50,7 @@ class Lookup(Function):
         self.points=points
 
     def term(self):
-        return "LERP({},{})".format(self.element, self.points)
+        return "model.lookup({},{})".format(self.element, self.points)
 
 
 def time():

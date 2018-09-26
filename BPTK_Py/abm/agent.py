@@ -30,7 +30,7 @@ class Agent:
         """
 
         :param agent_id: id of agent. Model should manage this. Do use agent factories!
-        :param simulation: ABModel instance
+        :param simulation: Model instance
         """
         self.sim = simulation
         self.events = []

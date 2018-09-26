@@ -2,7 +2,7 @@
 
 import pkg_resources
 
-from .abm import ABModel
+from .abm import Model
 from .abm import Agent
 from .abm import DataCollector
 from .abm import Event
@@ -11,7 +11,7 @@ from .abm import SimultaneousScheduler
 from .bptk import bptk
 from .logger import log
 
-import BPTK_Py.systemdynamics.functions as sd
+import BPTK_Py.systemdynamics.functions as sd_functions
 
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version
@@ -23,17 +23,3 @@ except:
 
 name = "BPTK_Py"
 
-
-
-lambda model, t: max(
-    0, min(
-    model.memoize('openTasks',t),
-    (
-            (model.memoize('staff',t)) *
-            (model.memoize('productivity',t))
-    ) /
-    (
-        model.memoize('effortPerTask',t)
-     )
-)
-                      )

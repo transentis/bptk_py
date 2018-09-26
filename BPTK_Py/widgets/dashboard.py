@@ -17,7 +17,7 @@ import numpy as np
 from ipywidgets import interact
 
 import BPTK_Py.config.config as config
-from ..abm import ABModel
+from ..abm import Model
 from ..logger import log
 from ..scenariomanager import SimulationScenario
 
@@ -77,7 +77,7 @@ class Dashboard():
 
         for scenario_obj in self.scenarios.values():
             # Find out if there is an Agent based model!
-            if isinstance(scenario_obj, ABModel):
+            if isinstance(scenario_obj, Model):
                 print("WARNING: WIDGET ONLY SHOWS EFFECT ON HYBRID MODELS THAT IMPLEMENT AND USE SD EQUATIONS!")
                 print("IT MAY TAKE A WHILE TO RE-RUN THE AGENT BASED SIMULATION(S)!")
                 break
@@ -240,7 +240,7 @@ class Dashboard():
                             scenario_obj.constants[widget_name] = widget_val
 
                         except AttributeError as e:
-                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT THE "CONSTANTS" FIELD! (ABModel)
+                            # HANDLE SCENARIOS THAT DO NOT IMPLEMENT THE "CONSTANTS" FIELD! (Model)
                             continue
 
                         try:
