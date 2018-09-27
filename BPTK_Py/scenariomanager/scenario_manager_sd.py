@@ -216,7 +216,7 @@ class ScenarioManagerSD(ScenarioManager):
             last_stamp_model = 0
 
         if not os.path.isfile(self.model_file + ".py") or last_stamp_source > last_stamp_model:
-            if os.path.isfile(self.source):  ## <- Only do if the source actually exists
+            if not self.source is None and os.path.isfile(self.source):  ## <- Only do if the source actually exists
                 current_dir = str(os.getcwd())
                 os.chdir(config.configuration["sd_py_compiler_root"])
                 execute_script = "node -r babel-register src/cli.js -i \"" + current_dir + "/" + self.source + "\" -t py -c > \"" + current_dir + "/" + self.model_file + ".py\""
@@ -236,28 +236,43 @@ class ScenarioManagerSD(ScenarioManager):
             package_link = self.model_file.replace("/", ".").replace("\\",
                                                                      ".")  # The last change is for windows path notation
 
-            if os.path.isfile(self.model_file + ".py"):
+            #if True or os.path.isfile(self.model_file + ".py"):
 
-                ## ACTUAL IMPORT OF MODEUL
+
+            class_link = "simulation_model"
+
+            mod = None
+
+            try:
+                mod = importlib.import_module(package_link)
+            except:
+                class_link = package_link.split(".")[len(package_link.split(".")) - 1]
+                package_link = ".".join(package_link.split(".")[:-1])
                 mod = importlib.import_module(package_link)
 
-                #  In case we loaded the same module before, Python would not do anything with the above line alone. We explicitly need to tell Python to reload the file!
-                mod = importlib.reload(mod)
 
-                ## INSTANTIATE THE MODEL OBJECT.
-                for scenario in self.scenarios.values():
-                    if scenario.model == None:
-                        scenario.model = mod.simulation_model()
-                        scenario.starttime = scenario.model.starttime
-                        scenario.stoptime = scenario.model.stoptime
-                        scenario.dt = scenario.model.dt
-                        scenario.setup_constants()
-                        scenario.setup_points()
-            else:
-                log(
-                    "[ERROR] ABMModel manager: The python model for scenario manager \"{}\" does not exist: \"{}\". Will not be able to run simulations for this scenario manager!".format(
-                        str(self.name), str(self.model_file) + ".py"))
-                self.scenarios = {}
+
+            ## ACTUAL IMPORT OF MODEUL
+            #mod = importlib.import_module(package_link)
+
+            #  In case we loaded the same module before, Python would not do anything with the above line alone. We explicitly need to tell Python to reload the file!
+            mod = importlib.reload(mod)
+            model_class = getattr(mod, class_link)
+
+            ## INSTANTIATE THE MODEL OBJECT.
+            for scenario in self.scenarios.values():
+                if scenario.model == None:
+                    scenario.model = model_class()
+                    scenario.starttime = scenario.model.starttime
+                    scenario.stoptime = scenario.model.stoptime
+                    scenario.dt = scenario.model.dt
+                    scenario.setup_constants()
+                    scenario.setup_points()
+            #else:
+#               log(
+                    #"[ERROR] ABMModel manager: The python model for scenario manager \"{}\" does not exist: \"{}\". Will not be able to run simulations for this scenario manager!".format(
+                    #    str(self.name), str(self.model_file) + ".py"))
+                #self.scenarios = {}
 
         except Exception as e:
             log(

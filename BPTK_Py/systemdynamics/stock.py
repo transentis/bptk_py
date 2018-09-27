@@ -43,7 +43,7 @@ class Stock(Element):
         self._equation = equation
 
         self.model.reset_cache()
-        
+
         self.build_function_string()
         self.generate_function()
 

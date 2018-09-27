@@ -40,8 +40,6 @@ class Dashboard():
         self.bptk = bptk
         log("[INFO] Dashboard created")
         self.widgets = {}
-        self.output = py_widgets.Output()
-
     # This method will be passed over to the user and used to modify the graph output
 
     def dashboard(self, scenarios, equations=[], agents=[], scenario_managers=[], kind=config.configuration["kind"],
