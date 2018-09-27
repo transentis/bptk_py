@@ -38,7 +38,7 @@ class Constant(Element):
         """
         self._equation = equation
 
-        self.model.memo[self.name] = []
+        self.model.reset_cache()
 
 
         if isinstance(equation, (int, float)):

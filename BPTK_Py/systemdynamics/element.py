@@ -73,7 +73,7 @@ class Element:
         """
         self._equation = equation
 
-        self.model.memo[self.name] = []
+        self.model.reset_cache()
 
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
