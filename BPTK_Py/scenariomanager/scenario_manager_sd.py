@@ -204,12 +204,11 @@ class ScenarioManagerSD(ScenarioManager):
             last_stamp_model = os.stat(self.model_file + ".py").st_mtime
             last_stamp_source = 0
 
-            if not os.path.isfile(self.source):
+            if not self.source is None and not os.path.isfile(self.source):
                 log("[ERROR] Source model file not found: \"{}\"".format(str(self.source)))
                 self.source = ""
 
-
-            else:
+            elif not self.source is None:
                 last_stamp_source = os.stat(self.source).st_mtime
 
         else:
