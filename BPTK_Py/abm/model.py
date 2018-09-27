@@ -477,7 +477,7 @@ class Model:
         :param t: timestep to evaluate for
         :return: float of simulation result
         """
-        self.reset_cache()
+        #self.reset_cache()
         return self.equations[name](t)
 
     def reset_cache(self):

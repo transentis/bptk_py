@@ -38,6 +38,9 @@ class Constant(Element):
         """
         self._equation = equation
 
+        self.model.memo[self.name] = []
+
+
         if isinstance(equation, (int, float)):
             self.function_string = "lambda model, t: {}".format(equation)
         else:

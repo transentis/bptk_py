@@ -41,6 +41,7 @@ class Stock(Element):
     @equation.setter
     def equation(self, equation):
         self._equation = equation
+        self.model.memo[self.name] = []
         self.build_function_string()
         self.generate_function()
 
