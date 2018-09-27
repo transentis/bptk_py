@@ -227,150 +227,81 @@ The other parameters are optional. Always use Python's list notations for the pl
 This was just a short intro. You may learn how to create interactive plots and define scenarios in our tutorial and blog posts available at [https://www.transentis.com/products/business-prototyping-toolkit/](https://www.transentis.com/products/business-prototyping-toolkit/).
 
 # Creating your own Simulation models
-Instead of converting 3rd party simulation models, you may define your own simulation model. 
+Instead of converting 3rd party simulation models, you may define your own simulation model using the SystemDynamics API we created (starting with version 0.4.0).
 A simulation model is a self-contained python script. 
 This means, it can be executed as its own file without any dependencies. 
-Well, only for some methods you may require some python packages, but feel free to rewrite if you want to omit these.
 
-Here is a working example of a simulation model python file:
+Here is the reduced code an example available in the interactive tutorial.
 
 
 ```python
-import statistics
-import math
-import random
-import numpy as np
-from scipy.interpolate import interp1d
+from BPTK_Py import Model
+from BPTK_Py import sd_functions as sd
 
-# linear interpolation between a set of points
-def LERP(x,points):
-    x_vals = np.array([ x[0] for x in points])
-    y_vals = np.array([x[1] for x in points])
+class simulation_model(Model):
 
-    if x<= x_vals[0]:
-        return y_vals[0]
+    def __init__(self):
 
-    if x >= x_vals[len(x_vals)-1]:
-        return y_vals[len(x_vals)-1]
+        # Never forget calling the super method to initialize the main parameters
+        super().__init__(starttime=0,stoptime=120,dt=1,name ='SimpleProjectManagament_scenario80' )
 
-    f = interp1d(x_vals, y_vals)
-    return float(f(x))
+        # Stocks
+        openTasks = self.stock("openTasks")
+        closedTasks = self.stock("closedTasks")
+        staff = self.stock("staff")
 
+        # Flows
+        completionRate = self.flow("completionRate")
 
-class simulation_model():
-  def memoize(self, equation, arg):
-    mymemo = self.memo[equation]
-    if arg in mymemo.keys():
-      return mymemo[arg]
-    else:
-      result = self.equations[equation](arg)
-      mymemo[arg] = result
-
-    return result
-
-  def __init__(self):
-    # Simulation Buildins
-    self.dt = 0.25
-    self.starttime = 1
-    self.stoptime = 120
-    self.equations = {
-        "equation_1" : lambda t : self.memoize("constant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
-        
-        "constant_1" : lambda t : 10000
-    }
-     
-
-    self.points = {
-  	 }
-
-    self.dimensions = {
-  		'Dim_Name_1': {
-  			'labels': [  ],
-  			'variables': [  ]
-  		},
-  	 }
-
-    self.memo = {}
-    for key in list(self.equations.keys()):
-      self.memo[key] = {}  # DICT OF DICTS!
-
-  def specs(self):
-    return self.starttime, self.stoptime, self.dt, 'Days', 'Euler'
-
-  def setDT(self,v):
-    self.dt = v
-
-  def setStarttime(self,v):
-    self.starttime = v
-
-  def setStoptime(self,v):
-    self.stoptime = v
-
-```
-
-The imports are quite convenient to give you access to methods for different functions such as mathematical and scientific functions using ```math and scipy``` as well as statistical functions. 
-eel free to remove or add imports as required.
-This is no convention. Just make sure that you import all packages the model requires to function properly. As said before, the model should be self-contained.
-
-The ``LERP`` method is required for interpolation of graphical functions. For simplicity, we use ``interpol1d`` from the scipy package. Feel free to replace it. 
-Then you see that we start a class ``simulation_model``. For the framework to recognize the model, **do only use** this class name. 
-
-
-The ``__init__`` configures the model properties such as the start time, stop time, dt and the equations. ``equations`` is a python ``dict`` that stores all equations.
- An equation has a key and is a ``lambda`` function of the following format:
- ```python
- {
-    "name_of_equation" : lambda t : 0 if t <= self.starttime else self.memoize("some_equation",t-self.dt)
- }
- ```
- 
- Even constants have to be a lambda function. For each t it just returns the same value. This means, a valid constant looks like this : `` "constant_name" : lambda t : 10000 ``.
- 
-An equation usually refers to past values of the same equation or other equations.
-This is why the most important method is the ``memoize`` method. 
-It uses the concept of memoization to cache simulation results for each equation and point in time to avoid deep recursions for big t's.
-For each equation, it fills a dictionary inside the ``self.memo``. 
-To avoid tail-recursion you need a stop-criterion for each lambda, usually this is the start time.
-To ease the understanding of the concepts used, refer to this simple example with two equations:
-
-```python
-def __init__(self):
-    #....
-    # Setup all other things
+        # Converters
+        currentTime = self.converter("currentTime")
+        remainingTime = self.converter("remainingTime")
     
-    self.equations = {
-        "equation_1" : lambda t : self.memoize("constant_1",t) if t <= self.starttime else 100 + self.memoize("equation_1",t-self.dt),
+       ...
+        # Constants
+        deadline = self.constant("deadline")
+        effortPerTask = self.constant("effortPerTask")
         
-        "constant_1" : lambda t : 10000
-    }
-        
-```
+        ...
 
-The ``constant_1`` equation always returns 10,000. ``equation_1`` returns 10,000 if the given t is below or equal the 
-model's start time or otherwise recurse by calling the memoize method for itself and ``t-self.dt`` and add 100 to that result.
-The memoize method either returns its cached value for t-dt or calls the equation if the cache for t-dt is not built yet.
+        # Actual Logic
 
-For storing graphical functions, we make use of the dict ``self.points``. 
-It stores lists of ``(x,y)`` values you may use in your equations for linear interpolation by calling the ``LERP`` function for arbitrary x values. 
-In this way, you avoid defining very complex functions in equations. The x values may even be the result of other equations.
+        openTasks.initial_value = 100
+        closedTasks.initial_value = 0  # not really necessary, but I like to be explicit
 
-Example set of points:
-```python
-self.points = {
-  		'productivity': [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1.03400735294118],[1.25,1.119],
-  		    [1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ],
-  	 }
+        ...
+
+        completionRate.equation = sd.max(0, sd.min(openTasks, staff * (productivity / effortPerTask)))
 ```
 
 
-**ATTENTION:** Please always do use the following lines to initialize the simulation model's memo as shown in the example:
-```python
-for key in list(self.equations.keys()):
-      self.memo[key] = {}
-``` 
+The model's class name __has to be__ ``simulation_model``, subclassing ``BPTK_Py.Model``. Following the call to the ``super().__init__`` method to setup the main parameters, 
+we start defining the stocks, flows, converters and constants. You can set the equation using simple mathematical operators rather than defining complex Python code. 
+Furthermore, the API implements some SystemDynamics functions such as min/max using the prefix ``sd.``
+The API internally makes sure to create the equation logic in Python and register them with the model.
 
-This code initializes the model's memo for each equation with an empty dictionary.
-You are now able to define your own simulation model quickly. If something is missing, please do contact us!
+To use this model within your preferred environment, you can either import and initialize it within your code. Each model element can easily be plotted using ``element.plot(starttime=0,stoptime=120,dt=1)``.
+But for convenience you may store it in a subfolder of your project and initialize it with ``BPTK`` instead. As for the generated models, we use the JSON notation. Store the following file in the ``scenarios/`` subfolder:
+````json
+{
+  "smSimpleProjectManagement_Manual": {
+    "model": "simulation_models/simple_project_manual",
+    "base_constants": {
+      "deadline": 100,
+      "initialOpenTasks": 100
+    },
+    "base_points": {
+      "productivity":  [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1],[1.25,1.119],[1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ]
+    },
+    "scenarios": {
+      "scenario100": {
+        "constants": {
+          "initialOpenTasks": 100
+        } } } } }
+````
+
+We highly recommend looking at our blog posts for details on BPTK, the System Dynamics API and the agent based models. 
+Another great source for getting started is the regularly-updated [interactive tutorial](https://www.transentis.com/products/business-prototyping-toolkit/)!
 
 
 # Links
