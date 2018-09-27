@@ -372,7 +372,7 @@ class bptk():
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
                                                            source=source, model=model_file)
 
-    def register_model(self, model, dictionary):
+    def register_scenario_manager(self, model, dictionary):
         ## Create Scenario Manager
 
         for scenario_manager, values in dictionary.items():
@@ -386,9 +386,20 @@ class bptk():
                                                 "base_constants"] if "base_constants" in values.keys() else {},
                                             base_points=values["base_points"] if "base_points" in values.keys() else {})
 
-            manager.add_scenarios(scenario_dictionary=values["scenarios"])
+            # Add scenario if any in the dictionary is found
+            if "scenarios" in values.keys():
+                manager.add_scenarios(scenario_dictionary=values["scenarios"])
 
             self.scenario_manager_factory.scenario_managers[scenario_manager] = manager
 
             log("[INFO] Successfully registered scenario manager {}".format(scenario_manager))
+
+    def register_scenarios(self,dictionary,scenario_manager):
+            if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
+                manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
+
+                manager.add_scenarios(scenario_dictionary=dictionary)
+
+            else:
+                log("[ERROR] Scenario manager not found. Did you register it?")
 

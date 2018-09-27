@@ -390,6 +390,10 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 # Changelog
 
+## 0.4.0
+- Framework for Agent Based models
+- Framework for defining System Dynamics models in code with less effort
+
 ## 0.3.7
 - PULSE functions can now be defined within Jupyter environment. Just use the new ``pulse_function_create(scenarios,scenario_managers)`` method and be surprised.
 - Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. Improves readability tremendously!
