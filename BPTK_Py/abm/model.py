@@ -26,7 +26,7 @@ from ..systemdynamics import Stock
 
 
 ###################
-## ABMODEL CLASS ##
+## MODEL CLASS ##
 ###################
 
 
@@ -58,10 +58,8 @@ class Model:
         # Global Model variables (for SD as well as ABM)
         self.starttime = starttime
         self.stoptime = stoptime
-        self.dt = 1
+        self.dt = dt
         self.scenario_manager = ""
-
-
 
 
         ## For Hybrid Models (SD and AB)
