@@ -462,16 +462,17 @@ class bptk():
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
                                                            source=source, model=model_file)
 
-    def register_scenario_manager(self, model, scenario_manager):
+    def register_scenario_manager(self, scenario_manager):
         ## Create Scenario Manager
 
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
+                print("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
 
             else:
-
-                manager = ScenarioManagerSD(scenarios={}, model=model, name=scenario_manager_name,
+                print(values["model"])
+                manager = ScenarioManagerSD(scenarios={}, model=values["model"], name=scenario_manager_name,
                                             base_constants=values[
                                                 "base_constants"] if "base_constants" in values.keys() else {},
                                             base_points=values["base_points"] if "base_points" in values.keys() else {})
