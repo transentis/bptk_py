@@ -59,6 +59,9 @@ class bptk():
         :param scenario_managers: names of scenario managers to select scenarios from
         :return: dict of SimulationScenario
         """
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        equations = equations if type(equations) is list else equations.split(",")
+
         return SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
                                                                                                 output=output,
@@ -73,11 +76,17 @@ class bptk():
         :param scenario_managers: names of scenario managers to select scenarios from
         :return: dict of simulationScenarios
         """
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        equations = equations if type(equations) is list else equations.split(",")
 
         return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True,
                                    scenario_managers=scenario_managers, agents=agents)
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
+
+        agents = agents if type(agents) is list else agents.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
@@ -117,6 +126,12 @@ class bptk():
          :return: dataFrame with simulation results if return_df=True
          """
 
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        equations = equations if type(equations) is list else equations.split(",")
+        agents = agents if type(agents) is list else agents.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+
         # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
         if len(scenario_managers) == 1 and len(scenarios) == 1:
             if len(agents) > 0:
@@ -145,8 +160,6 @@ class bptk():
 
                     strategy=strategy,
                     )]
-
-
 
             # Handle SD models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
@@ -193,6 +206,74 @@ class bptk():
                                         series_names=series_names
                                         )
 
+    def plot_lookup(self,scenarios,scenario_managers,lookup_names,return_df=False,visualize_from_period=0,visualize_to_period=0,stacked=config.configuration["stacked"],title="",alpha=config.configuration["alpha"],x_label="",y_label="",start_date="",freq="D",series_names={},kind=config.configuration["kind"]):
+        """
+        Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
+        :param scenarios:  List of scenarios with names
+        :param scenario_managers:
+        :param lookup_names:
+        :param return_df:
+        :param visualize_from_period:
+        :param visualize_to_period:
+        :param stacked:
+        :param title:
+        :param alpha:
+        :param x_label:
+        :param y_label:
+        :param start_date:
+        :param freq:
+        :param series_names:
+        :param kind:
+        :return:
+        """
+
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        print(scenario_managers)
+        lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
+
+        managers = [manager for name, manager in self.scenario_manager_factory.scenario_managers.items() if name in scenario_managers]
+        models = []
+
+        dfs = []
+        for scenario in scenarios:
+            for manager in managers:
+                if scenario in manager.scenarios.keys():
+                    models += [manager.scenarios[scenario].model]
+                    df = manager.scenarios[scenario].model.lookup_data(lookup_names)
+                    columns = {}
+                    for column in df.columns:
+                        columns[column] = manager.name + "_" + scenario + "_" + column
+
+                    df.rename(columns=columns,inplace=True)
+
+                    dfs += [df]
+
+        if len(dfs) > 1:
+            df = dfs.pop(0)
+            for elem in dfs:
+                df = df.combine_first(elem)
+
+        else:
+            df = dfs.pop(0)
+
+        df= df.fillna(0)
+
+
+        return self.visualizer.plot(df=df,
+                                         return_df=return_df,
+                                         visualize_from_period=visualize_from_period,
+                                         visualize_to_period=visualize_to_period,
+                                         stacked=stacked,
+                                         kind=kind,
+                                         title=title,
+                                         alpha=alpha,
+                                         x_label=x_label,
+                                         y_label=y_label,
+                                         start_date=start_date,
+                                         freq=freq,
+                                         series_names=series_names)
+
     ## Method for plotting scenarios with sliders. A more generic method that uses the Dashboard class to decorate the plot with the sliders
     def dashboard(self, scenarios, scenario_managers, kind=config.configuration["kind"], agents=[], agent_states=[],
                   equations=[],
@@ -227,6 +308,12 @@ class bptk():
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
         widget_decorator = Dashboard(self)
+
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        equations = equations if type(equations) is list else equations.split(",")
+        agents = agents if type(agents) is list else agents.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
 
         return widget_decorator.dashboard(scenarios=scenarios,
                                           equations=equations,
@@ -372,16 +459,16 @@ class bptk():
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
                                                            source=source, model=model_file)
 
-    def register_scenario_manager(self, model, dictionary):
+    def register_scenario_manager(self, model, scenario_manager):
         ## Create Scenario Manager
 
-        for scenario_manager, values in dictionary.items():
-            if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
-                manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
+        for scenario_manager_name, values in scenario_manager.items():
+            if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
+                manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
 
             else:
 
-                manager = ScenarioManagerSD(scenarios={}, model=model, name=scenario_manager,
+                manager = ScenarioManagerSD(scenarios={}, model=model, name=scenario_manager_name,
                                             base_constants=values[
                                                 "base_constants"] if "base_constants" in values.keys() else {},
                                             base_points=values["base_points"] if "base_points" in values.keys() else {})
@@ -390,9 +477,9 @@ class bptk():
             if "scenarios" in values.keys():
                 manager.add_scenarios(scenario_dictionary=values["scenarios"])
 
-            self.scenario_manager_factory.scenario_managers[scenario_manager] = manager
+            self.scenario_manager_factory.scenario_managers[scenario_manager_name] = manager
 
-            log("[INFO] Successfully registered scenario manager {}".format(scenario_manager))
+            log("[INFO] Successfully registered scenario manager {}".format(scenario_manager_name))
 
     def register_scenarios(self,dictionary,scenario_manager):
             if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
