@@ -345,8 +345,6 @@ class bptk():
         :return: None
         """
 
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-
         for scenario_name in extended_strategy.keys():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
