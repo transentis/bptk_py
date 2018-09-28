@@ -61,6 +61,7 @@ class bptk():
         """
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         equations = equations if type(equations) is list else equations.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
 
         return SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
@@ -229,7 +230,6 @@ class bptk():
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-        print(scenario_managers)
         lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
 
         managers = [manager for name, manager in self.scenario_manager_factory.scenario_managers.items() if name in scenario_managers]
@@ -341,6 +341,8 @@ class bptk():
         :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
         :return: None
         """
+
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
 
         for scenario_name in extended_strategy.keys():
 
@@ -481,11 +483,11 @@ class bptk():
 
             log("[INFO] Successfully registered scenario manager {}".format(scenario_manager_name))
 
-    def register_scenarios(self,dictionary,scenario_manager):
+    def register_scenarios(self, scenarios, scenario_manager):
             if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-                manager.add_scenarios(scenario_dictionary=dictionary)
+                manager.add_scenarios(scenario_dictionary=scenarios)
 
             else:
                 log("[ERROR] Scenario manager not found. Did you register it?")
