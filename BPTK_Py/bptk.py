@@ -471,7 +471,6 @@ class bptk():
                 print("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
 
             else:
-                print(values["model"])
                 manager = ScenarioManagerSD(scenarios={}, model=values["model"], name=scenario_manager_name,
                                             base_constants=values[
                                                 "base_constants"] if "base_constants" in values.keys() else {},

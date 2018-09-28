@@ -13,11 +13,7 @@ def lookup_data(model, names):
     if type(names) is str:
         names = names.split(",")
 
-    def find_lookup(name):
-        for elem, value in model.converters.items():
-            if type(value._equation) is Lookup:
-                if value.name == name:
-                    return value._equation.points
+
 
     dfs = []
     for name in names:
@@ -25,7 +21,7 @@ def lookup_data(model, names):
         if name in model.points.keys():
             points = model.points[name]
         else:
-            points = find_lookup(name)
+            points = find_lookup(name,model)
 
         try:
             x_vals = np.array([x[0] for x in points])
@@ -54,3 +50,10 @@ def lookup_data(model, names):
         df = dfs.pop(0)
 
     return df
+
+def find_lookup(name,model):
+    from BPTK_Py.systemdynamics.functions import Lookup
+    for elem, value in model.converters.items():
+        if type(value._equation) is Lookup:
+            if value.name == name:
+                return value._equation.points

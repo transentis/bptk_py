@@ -380,65 +380,32 @@ class Model:
         f = interp1d(x_vals, y_vals)
         return float(f(x))
 
-    def lookup_data(self, names):
-        """
-        Get interpolated data of lookup function
-        :param name: Name(s) of lookup function as a list or string (comma,seperated
-        :return: None
-        """
 
-        from BPTK_Py.systemdynamics.functions import Lookup
-        from scipy.interpolate import interp1d
-        import numpy as np
-        import pandas as pd
+    def plot_lookup(self,lookup_names):
+        from ..util import lookup_data
+        from ..visualizations import visualizer
+        import BPTK_Py.config.config as config
 
-        if type(names) is str:
-            names = names.split(",")
+        lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
 
-        def find_lookup(name):
-            for elem, value in self.converters.items():
-                if type(value._equation) is Lookup:
-                    if value.name == name:
-                        return value._equation.points
+        df = lookup_data(self, lookup_names)
 
 
-        dfs=[]
-        for name in names:
-
-            if name in self.points.keys():
-                points = self.points[name]
-            else:
-                points = find_lookup(name)
-
-            try:
-                x_vals = np.array([x[0] for x in points])
-                y_vals = np.array([x[1] for x in points])
-                xmax = np.max(x_vals)
-                xmin = np.min(x_vals)
-
-                x2 = np.arange(xmin, xmax, 0.01)
-                f = interp1d(x_vals, y_vals)
-                data = {}
-                data[name] = []
-                index = list(x2)
-                for i in x2:
-                    data[name] += [float(f(i))]
-
-                dfs += [pd.DataFrame(data, index=index)]
-            except TypeError: # -> lookup function not found
-                pass
-
-        if len(dfs) > 1:
-            df = dfs.pop(0)
-            for elem in dfs:
-                df = df.combine_first(elem)
-                #df = df.join(elem)
-        else:
-            df = dfs.pop(0)
+        return visualizer().plot(df=df,
+                                    return_df=False,
+                                    visualize_from_period=0,
+                                    visualize_to_period=0,
+                                    stacked=config.configuration["stacked"],
+                                    kind=config.configuration["kind"],
+                                    title=str(lookup_names).replace("[","").replace("]","").replace("\'",""),
+                                    alpha=config.configuration["alpha"],
+                                    x_label="",
+                                    y_label="",
+                                    start_date="",
+                                    freq="",
+                                    series_names={})
 
 
-
-        return df
 
 
 
