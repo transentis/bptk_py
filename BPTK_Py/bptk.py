@@ -228,6 +228,8 @@ class bptk():
         :return:
         """
 
+        from .util import lookup_data
+
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
@@ -240,7 +242,8 @@ class bptk():
             for manager in managers:
                 if scenario in manager.scenarios.keys():
                     models += [manager.scenarios[scenario].model]
-                    df = manager.scenarios[scenario].model.lookup_data(lookup_names)
+                    df = lookup_data(manager.scenarios[scenario].model,lookup_names)
+                    #df = manager.scenarios[scenario].model.lookup_data(lookup_names)
                     columns = {}
                     for column in df.columns:
                         columns[column] = manager.name + "_" + scenario + "_" + column

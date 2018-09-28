@@ -4,12 +4,12 @@ __Welcome to the Business Prototyping Toolkit for Python! (BPTK_Py)__
 
 
 ## What is it?
-BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics models. 
-It gives you the power to simulate System Dynamics Models within Python and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks - or just export the simulation results for further processing outside the framework.
+BPTK_Py is the implementation of a simulation and plotting engine for System Dynamics and Agent-Based models. 
+It gives you the power to simulate Simulation Models within Python and create beautiful plots of the simulation results for use in Jupyter Lab/ Notebooks - or just export the simulation results for further processing outside the framework.
 
 The framework requires a Python simulation model following certain conventions.
  
-Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code.
+Typically System Dynamics models are created using visual modeling environments. To address this use case, BPTK_Py ships with __transentis' sdcc parser__  for transpiling such models into Python code. Starting with version 0.4.0, we include a code API to produce System Dynamics models without requiring complex modeling software.
 
 Currently sdcc only supports models created using the [XMILE format](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile), which is an open XML protocol for sharing interoperable system dynamics models and simulations. 
 The XMILE standard is governed by the OASIS standards consortium.
@@ -139,15 +139,13 @@ jupyter lab extension for jupyter-widgets |Use ipywidgets in jupyter lab | 0.36.
 
 ## Limitations
 
-Currently the BPTK_Py framework is geared towards our own need and has a number of limitations - we are happy to extend the framewor. Please let us know what you need so that we can prioritize our activities.
+Currently the BPTK_Py framework is geared towards our own need and has a number of limitations - we are happy to extend it. Please let us know what you need so that we can prioritize our activities.
 
 Here are the known limitations:
 
 * Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
 * The SD model transpiler only supports stocks, flows/biflows and converters. The other modeling elements provided by Stella (such as ovens and conveyors) are not supported.
 * The SD model transpiler currently only supports the following builtin functions: ``size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step``
-
-
 
 ## Using the Framework in Python
 
@@ -165,7 +163,8 @@ bptk = bptk()
 **Optional lines**
 ```python
 # To Show all available scenarios and -managers:
-print(Model)
+from BPTK_Py import bptk
+bptk = bptk()
 managers = bptk.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=[])
 
 for key, manager in managers.items():
@@ -193,9 +192,9 @@ You may use the API to generate plots from your simulation models almost instant
 You can control all major settings for the simulation and the later plot layout using a large set of parameters:
 ```python
 bptk.plot_scenarios(
-    scenarios,
-    scenario_managers=[], 
-    equations=[], 
+    scenarios="",
+    scenario_managers="", 
+    equations="", 
     kind=config.kind, 
     alpha=config.alpha, 
     stacked=config.stacked, 
@@ -208,9 +207,9 @@ bptk.plot_scenarios(
     series_names={"series_to_rename":"rename_to"},return_df=False)
 ```
 The method plots one or multiple equations for an arbitrary amount of scenarios. The scenario names are specified in the scenario JSON file. 
-The other parameters are optional. Always use Python's list notations for the plural parameters (``scenarios / equations / scenario_managers``).
+The other parameters are optional. You can either supply a python list of strings for the ``scenario_managers``,``scenarios`` or ``equations`` (["value1","vlaue2"] ) parameters or simply use comma-seperated values as __one__ string ("value1,value2").
 
-* ``scenario_managers``: You may use a list to filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
+* ``scenario_managers``: Filter the scenarios by the scenario managers. If not specified, ``bptk_py`` will look for the specified scenarios(s) within all scenario managers. You might receive duplicates. We handle this by adding a suffix for all duplicates based on their scenario manager's name.
 * ``scenarios``: Select the scenario(s) to plot. Only ``scenarios`` and ``equations`` are mandatory.
 * ``equations``: Select the simulation's equation(s) to plot. If no equation is specified, the simulator has nothing to simulate.
 * ``kind``: Kind of plot (area, line, bar, ...)
@@ -307,6 +306,8 @@ Another great source for getting started is the regularly-updated [interactive t
 # Links
 [1] https://pip.pypa.io/en/stable/installing/
 
+[2] [Interactive Tutorial](https://www.transentis.com/products/business-prototyping-toolkit/)
+
 # License
 Copyright (c) 2018 transentis labs GmbH <support@transentis.com>
 
@@ -323,7 +324,10 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 
 ## 0.4.0
 - Framework for Agent Based models
-- Framework for defining System Dynamics models in code with less effort
+- Framework for defining System Dynamics models in code with less effort. No need for complex recursive calls anymore. Simply define your equations as easy as ```element.equation = element * anotherElement```. Example in the tutorial!
+- Simplify API: use comma-seperated values to specify scenarios/scenario managers or equations, no need for Python lists anymore!
+
+...Many more internal improvements under the hood.
 
 ## 0.3.7
 - PULSE functions can now be defined within Jupyter environment. Just use the new ``pulse_function_create(scenarios,scenario_managers)`` method and be surprised.
