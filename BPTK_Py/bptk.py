@@ -428,15 +428,23 @@ class bptk():
 
     def model_check(self, data, check, message):
         """
-        ABMModel checker
-        :param data: dataframe series or any data
-        :param check: lambda function of structure : lambda data : BOOLEAN CHECK
+        Model checker
+        :param data: dataframe series or any data that the given check method can parse
+        :param check: lambda function of structure : lambda data : BOOLEAN CHECK ON DATA
         :param message: Error message if test failed
         :return: None
         """
         ModelChecker().model_check(data=data, check=check, message=message)
 
     def pulse_function_create(self, scenarios, scenario_managers):
+        """
+        Create a PULSE function using the PulseWidget interactively. This is a nice feature to create SD PULSE functions in interactive sessions.
+        No need for re-modelling in Stella or SD DSL.
+        Displays an interactive dashboard for selecting the equations/constants to define the PULSEs for (as many as possible)
+        :param scenarios: Name of scenarios to create the function(s) for
+        :param scenario_managers: Name of scenario managers to take the scenarios from
+        :return: None
+        """
         widget = PulseDashboard(scenarios=scenarios, scenario_managers=scenario_managers, bptk=self)
         widget.show()
 
@@ -463,7 +471,11 @@ class bptk():
                                                            source=source, model=model_file)
 
     def register_scenario_manager(self, scenario_manager):
-        ## Create Scenario Manager
+        """
+        Register a manually defined Scenario manager using the common JSON notation. Keep in mind that it HAS TO contain a reference to a live model instance
+        :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
+        :return: None
+        """
 
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
@@ -485,11 +497,17 @@ class bptk():
             log("[INFO] Successfully registered scenario manager {}".format(scenario_manager_name))
 
     def register_scenarios(self, scenarios, scenario_manager):
-            if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
-                manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
+        """
+        Register a new scenario with an existing scenario manager using the common JSON notation (Read the interactive tutorial)
+        :param scenarios: JSON notation of scenario as known from "offline" definition in JSON file
+        :param scenario_manager: name of scenario manager to add the scenario to
+        :return: None
+        """
+        if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
+            manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-                manager.add_scenarios(scenario_dictionary=scenarios)
+            manager.add_scenarios(scenario_dictionary=scenarios)
 
-            else:
-                log("[ERROR] Scenario manager not found. Did you register it?")
+        else:
+            log("[ERROR] Scenario manager not found. Did you register it?")
 

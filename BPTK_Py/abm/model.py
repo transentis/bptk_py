@@ -418,7 +418,12 @@ class Model:
         :param arg: argument (t)
         :return: result of equation
         """
-        mymemo = self.memo[equation]
+        try:
+            mymemo = self.memo[equation]
+        except:
+            # In case the equation does not exist in memo
+            self.memo[equation] = {}
+            mymemo = self.memo[equation]
         if arg in mymemo.keys():
             return mymemo[arg]
         else:

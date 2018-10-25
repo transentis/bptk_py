@@ -236,7 +236,6 @@ class ScenarioManagerSD(ScenarioManager):
             package_link = self.model_file.replace("/", ".").replace("\\",
                                                                      ".")  # The last change is for windows path notation
 
-            #if True or os.path.isfile(self.model_file + ".py"):
 
 
             class_link = "simulation_model"
@@ -250,10 +249,6 @@ class ScenarioManagerSD(ScenarioManager):
                 package_link = ".".join(package_link.split(".")[:-1])
                 mod = importlib.import_module(package_link)
 
-
-
-            ## ACTUAL IMPORT OF MODEUL
-            #mod = importlib.import_module(package_link)
 
             #  In case we loaded the same module before, Python would not do anything with the above line alone. We explicitly need to tell Python to reload the file!
             mod = importlib.reload(mod)
