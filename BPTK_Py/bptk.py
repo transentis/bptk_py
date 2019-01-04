@@ -96,7 +96,7 @@ class bptk():
                                       scenario_managers=[manager.name]
                                       )
 
-    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], equations=[],
+    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], equations=[],
                        kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
@@ -111,7 +111,7 @@ class bptk():
          :param agents: List of agents to plot (Agent based modelling)
          :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
          :param scenario_managers: names of scenario managers to plot
-         :param kind: type of graph to plot
+         :param kind: type of graph to plot ("line" or "area")
          :param alpha:  transparency 0 < x <= 1
          :param stacked: if yes, use stacked (only with kind="bar")
          :param freq: frequency of time series
@@ -156,7 +156,7 @@ class bptk():
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [runner.run_sim(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, progressBar=return_df,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, progressBar=return_df,
                     scenario_managers=[manager.name],
 
                     strategy=strategy,
@@ -480,7 +480,7 @@ class bptk():
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
-                print("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
+                log("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
 
             else:
                 manager = ScenarioManagerSD(scenarios={}, model=values["model"], name=scenario_manager_name,

@@ -35,8 +35,9 @@ class Agent:
         self.sim = simulation
         self.events = []
         self.id = agent_id
-        self.state = "state not set yet"
+        self.state = "active"
         self.agent_type = "agent"
+        self.properties = None
         self.eventHandlers = {}
 
     def serialize(self):
@@ -86,8 +87,6 @@ class Agent:
         :return: None
         """
 
-        #if self.state in self.eventHandlers:
-            #if event.name in self.eventHandlers[self.state]:
         try:
             self.eventHandlers[self.state][event.name](event)
         except KeyError as e:

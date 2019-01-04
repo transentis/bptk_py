@@ -30,7 +30,7 @@ class visualizer():
         :param visualize_from_period: visualize from a specific t (default: 0)
         :param visualize_to_period:  visualize until a specific t (default: model's stoptime)
         :param stacked: If True, use stacked series (default: False)
-        :param kind: Kind of plot (default: area)
+        :param kind: 'area' or 'line' plot (ldefault: area)
         :param title: Title of plot
         :param alpha: Alpha of series (default: see config!)
         :param x_label: x_label of plot

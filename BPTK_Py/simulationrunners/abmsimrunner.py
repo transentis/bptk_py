@@ -28,7 +28,7 @@ class AbmSimulationRunner(SimulationRunner):
 
 
 
-    def get_df_for_agent(self, data, agent_name, agent_states):
+    def get_df_for_agent(self, data, agent_name, agent_states, agent_properties):
 
         """
         This method creates a dataFrame from the abm agent statistics
@@ -36,25 +36,33 @@ class AbmSimulationRunner(SimulationRunner):
         :return:
         """
 
-        def get_stats_for(data, agent_name, agent_states):
-            output = []
-            ts = list(data.keys())
+        def get_stats_for(data, agent_name, agent_states, agent_properties):
             output = {}
             for t, row in data.items():
-                for agent, series in row.items():
+                for agent, states in row.items():
                     if agent == agent_name:
                         if len(agent_states) > 0:
-                            ser = series.copy()
-                            columns = list(ser.keys())
-                            for column in columns:
-                                if column not in agent_states:
-                                    ser.pop(column)
-                            output[t] = ser
+                            if len(agent_properties) > 0:
+                                counts = {}
+                                columns = list(states.keys())
+                                for column in columns:
+                                    if column in agent_states:
+                                        counts[column] = states[column]["count"]
+                                        for agent_property in agent_properties:
+                                            counts[column+"_"+agent_property] = states[column][agent_property]["total"]
+                                output[t] = counts
+                            else:
+                                counts = {}
+                                columns = list(states.keys())
+                                for column in columns:
+                                    if column in agent_states:
+                                        counts[column] = states[column]["count"]
+                                output[t] = counts
                         else:
                             output[t] = series
             return output
 
-        res = get_stats_for(data, agent_name, agent_states)
+        res = get_stats_for(data, agent_name, agent_states, agent_properties)
 
         output = {}
 
@@ -66,14 +74,15 @@ class AbmSimulationRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[],rerun=False,widget=False):
+    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[], agent_properties=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for
         :param agents: Agents to plot for
         :param scenario_managers: Scenario managers to plot for
         :param progressBar: Show Progress Bar if True
-        :param agent_states: LIst of agent states to plot for (optional)
+        :param agent_states: List of agent states to plot for (optional)
+        :param agent_properties: List of agent properties to plot for (optional)
         :param rerun: If True, will run the simulation. If False, only run if the model was never run before
         :return: DataFrame containing the simulation results
         """
@@ -104,7 +113,6 @@ class AbmSimulationRunner(SimulationRunner):
 
             except Exception as e:
                 log("[ERROR] Make sure you implement the build_widget() method in your ABM model!")
-                print(e)
 
 
 
@@ -118,14 +126,22 @@ class AbmSimulationRunner(SimulationRunner):
             for agent in agents:
                 new_df = pd.DataFrame()
 
-                df = self.get_df_for_agent(data, agent, agent_states)
+                df = self.get_df_for_agent(data, agent, agent_states, agent_properties)
 
-                for state in df.columns:
+                if agent_properties:
+                    for state in agent_states:
+                        new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state] = df[state]
+
+                        for agent_property in agent_properties:
+                            new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state+ "_" + agent_property] = df[state+"_"+agent_property]
+
+                else:
+                    for state in df.columns:
                         new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state] = df[state]
 
                 dfs += [new_df]
 
-        df = pd.concat(dfs, sort=True).fillna(0)
+        df = pd.concat(dfs, axis=1, sort=True).fillna(0)
         df.index.name = "t"
 
         return df

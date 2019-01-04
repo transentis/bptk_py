@@ -337,7 +337,6 @@ class Model:
         """
 
         try:
-            return_val = self.data_collector.statistics()
             return self.data_collector.statistics()
         except AttributeError as e:
             log("[ERROR] Tried to obtain Agent statistics but no data Collector available!")
