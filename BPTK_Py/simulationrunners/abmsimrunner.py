@@ -6,7 +6,7 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2019 transentis labs GmbH
 # MIT License
 
 
@@ -43,11 +43,11 @@ class AbmSimulationRunner(SimulationRunner):
                     if agent == agent_name:
                         if len(agent_states) > 0:
                             if len(agent_properties) > 0:
+                                # in this case, we only pass back the properties and not the agent_state counts
                                 counts = {}
                                 columns = list(states.keys())
                                 for column in columns:
                                     if column in agent_states:
-                                        counts[column] = states[column]["count"]
                                         for agent_property in agent_properties:
                                             counts[column+"_"+agent_property] = states[column][agent_property]["total"]
                                 output[t] = counts
@@ -130,7 +130,6 @@ class AbmSimulationRunner(SimulationRunner):
 
                 if agent_properties:
                     for state in agent_states:
-                        new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state] = df[state]
 
                         for agent_property in agent_properties:
                             new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state+ "_" + agent_property] = df[state+"_"+agent_property]

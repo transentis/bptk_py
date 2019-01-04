@@ -6,7 +6,7 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2019 transentis labs GmbH
 # MIT License
 
 
@@ -112,12 +112,8 @@ class Model:
 
         # all else can be changed
 
-        #self.properties = {}
         self.agents = []
 
-        #self.starttime = 0
-        #self.stoptime = 0
-        #self.dt = 1
         self.data_collector.agent_statistics = {}
         self.data_collector.event_statistics = {}
 
@@ -279,13 +275,25 @@ class Model:
         Distribute a number of random events
         :param agent_type: Agent types supposed to receive events
         :param num_agents: Number of random agents
-        :param event_factory: Agent factory that creates the events (function)
+        :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
         :return:
         """
         agent_ids = self.random_agents(agent_type, num_agents)
 
         for agent_id in agent_ids:
             self.enqueue_event(event_factory(agent_id))
+
+    def broadcast_event(self, agent_type, event_factory):
+        """
+        Broadcast an event to all agents of a particular agent_type
+        :param agent_type: Agent types that are to receive the event
+        :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
+        :return:
+        """
+
+        for agent_id in self.agent_type_map[agent_type]:
+            self.enqueue_event(event_factory(agent_id))
+
 
     def configure(self, config):
         """
