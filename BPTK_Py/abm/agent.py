@@ -13,6 +13,7 @@
 
 import random
 
+from .property import Property
 from ..logger import log
 
 
@@ -79,6 +80,13 @@ class Agent:
         :return: None
         """
         log("[ERROR] agent.initialize should be called from subclass")
+
+    def property(self, name, type, value):
+
+        if not self.properties:
+            self.properties = dict()
+
+        return Property(name, type, value, self.properties)
 
     def receive_instantaneous_event(self, event):
         """
