@@ -13,7 +13,6 @@
 
 import random
 
-from .property import Property
 from ..logger import log
 
 
@@ -81,12 +80,56 @@ class Agent:
         """
         log("[ERROR] agent.initialize should be called from subclass")
 
-    def property(self, name, type, value):
-
+    def set_property(self, name, data):
+        """
+        Configure a property of the simulaiton
+        :param property_spec: Specification of property (dictionary)
+        :return:
+        """
         if not self.properties:
             self.properties = dict()
 
-        return Property(name, type, value, self.properties)
+        self.properties[name] = data
+
+    def set_property_value(self, name, value):
+        self.properties[name]["value"] = value
+
+    def get_property(self, name):
+        """
+        Get one property
+        :param name: Name of property
+        :return: Dictionary for property
+        """
+        if name not in self.properties:
+            log("[ERROR] agent.get_property: property unknown")
+
+        try:
+            data = self.properties[name]
+            return data
+        except KeyError as e:
+            log("[ERROR] agent.get_property: property unknown")
+            return None
+
+    def get_property_value(self, name):
+        return self.properties[name]["value"]
+
+    # overriding getattr and setattr to ensure that properties in self.properties can be accessed as object attributes
+
+    def __getattr__(self, name):
+        if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
+            return self.get_property_value(name)
+        else:
+            if self.__dict__.get(name):
+                return self.__dict__.get(name)
+            else:
+                raise AttributeError('{0}.{1} is invalid.'.format(self.__class__.__name__, name))
+
+
+    def __setattr__(self, name, value):
+        if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
+            self.set_property_value(name, value)
+        else:
+            self.__dict__[name] = value
 
     def receive_instantaneous_event(self, event):
         """

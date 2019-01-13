@@ -181,8 +181,6 @@ class Model:
             log("[ERROR] sim.getProperty: property unknown")
             return None
 
-
-
     def run_specs(self, starttime, stoptime, dt):
         """
         Configure
