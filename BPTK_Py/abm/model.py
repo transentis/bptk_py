@@ -172,14 +172,38 @@ class Model:
         :return: Dictionary for property
         """
         if name not in self.properties:
-            log("[ERROR] sim.getProperty: property unknown")
+            log("[ERROR] sim.get_property: property unknown")
 
         try:
             return_val = self.properties[name]
             return return_val
         except KeyError as e:
-            log("[ERROR] sim.getProperty: property unknown")
+            log("[ERROR] sim.get_property: property unknown")
             return None
+
+    def set_property_value(self, name, value):
+        self.properties[name]["value"] = value
+
+    def get_property_value(self, name):
+        return self.properties[name]["value"]
+
+    # overriding getattr and setattr to ensure that properties in self.properties can be accessed as object attributes
+
+    def __getattr__(self, name):
+        if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
+            return self.get_property_value(name)
+        else:
+            if self.__dict__.get(name):
+                return self.__dict__.get(name)
+            else:
+                raise AttributeError('{0}.{1} is invalid.'.format(self.__class__.__name__, name))
+
+
+    def __setattr__(self, name, value):
+        if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
+            self.set_property_value(name, value)
+        else:
+            self.__dict__[name] = value
 
     def run_specs(self, starttime, stoptime, dt):
         """
