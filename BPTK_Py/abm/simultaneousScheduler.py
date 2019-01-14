@@ -46,7 +46,7 @@ class SimultaneousScheduler(Scheduler):
         Run one step
         :param sim_round: simulator round
         :param dt: step of round
-        :param model: ABMOdel instance
+        :param model: ABM Model instance
         :param progress_widget: FloatBarProgress instance (ipywidgets)
         :return:  None
         """

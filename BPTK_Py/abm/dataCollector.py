@@ -60,16 +60,45 @@ class DataCollector:
             if agent.state not in self.agent_statistics[time][agent.agent_type]:
                 self.agent_statistics[time][agent.agent_type][agent.state] = {"count": 0}
 
-                if agent.properties:
-
-                    for agent_property_name, agent_property_value in agent.properties.items():
-                        if agent_property_value["type"] == "Integer" or agent_property_value["type"] == "Double":
-                            if agent_property_name not in self.agent_statistics[time][agent.agent_type][agent.state]:
-                                self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name] = {"total": 0}
-
-                            self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["total"] += agent_property_value["value"]
-
             self.agent_statistics[time][agent.agent_type][agent.state]["count"] += 1
+
+            if agent.properties:
+
+                for agent_property_name, agent_property_value in agent.properties.items():
+                    if agent_property_value["type"] == "Integer" or agent_property_value["type"] == "Double":
+                        if agent_property_name not in self.agent_statistics[time][agent.agent_type][agent.state]:
+                            self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name] = {
+                                "total": 0, "avg": 0, "max": None, "min": None}
+
+                        self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["total"] += \
+                        agent_property_value["value"]
+
+                        self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["avg"] = (
+                                    self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["total"]/
+                                    self.agent_statistics[time][agent.agent_type][agent.state]["count"]
+                        )
+
+                        if self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name][
+                            "max"] is None:
+                            (self.agent_statistics[time][agent.agent_type][agent.state]
+                            [agent_property_name]["max"]) = agent_property_value["value"]
+
+                            (self.agent_statistics[time][agent.agent_type][agent.state]
+                            [agent_property_name]["min"]) = agent_property_value["value"]
+
+
+                        else:
+                            (self.agent_statistics[time][agent.agent_type][agent.state]
+                            [agent_property_name]["max"]) = (max(self.agent_statistics[time][agent.agent_type]
+                                                                 [agent.state][agent_property_name]["max"],
+                                                                 agent_property_value["value"]))
+
+                            (self.agent_statistics[time][agent.agent_type][agent.state]
+                            [agent_property_name]["min"]) = (min(self.agent_statistics[time][agent.agent_type]
+                                                                 [agent.state][agent_property_name]["min"],
+                                                                 agent_property_value["value"]))
+
+
 
     def statistics(self):
         """

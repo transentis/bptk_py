@@ -11,6 +11,7 @@
 
 
 import matplotlib.pyplot as plt
+import sys
 
 import BPTK_Py.config.config as config
 from .logger import log
@@ -96,7 +97,7 @@ class bptk():
                                       scenario_managers=[manager.name]
                                       )
 
-    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], equations=[],
+    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
                        kind=config.configuration["kind"],
                        alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
@@ -147,11 +148,20 @@ class bptk():
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            exit()
+            sys.exit
 
-        if len(agent_properties)>0 and len(agents)==0:
-            log("[ERROR] You may only use the agent_properties paraemeter if you also set the agents parameter!")
-            exit()
+        if len(agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
+            sys.exit
+
+        if len(agent_properties) > 0 and len(agent_property_types) == 0:
+            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
+            sys.exit
+
+
+        if len(agent_property_types) > 0 and len(agent_properties) == 0:
+            log("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            sys.exit
 
         dfs = []
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
@@ -162,7 +172,7 @@ class bptk():
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [runner.run_sim(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, progressBar=progressBar,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar,
                     scenario_managers=[manager.name],
 
                     strategy=strategy,
@@ -213,7 +223,7 @@ class bptk():
                                         series_names=series_names
                                         )
 
-    def plot_lookup(self,scenarios,scenario_managers,lookup_names,return_df=False,visualize_from_period=0,visualize_to_period=0,stacked=config.configuration["stacked"],title="",alpha=config.configuration["alpha"],x_label="",y_label="",start_date="",freq="D",series_names={},kind=config.configuration["kind"]):
+    def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=config.configuration["stacked"], title="", alpha=config.configuration["alpha"], x_label="", y_label="", start_date="", freq="D", series_names={}, kind=config.configuration["kind"]):
         """
         Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
         :param scenarios:  List of scenarios with names
