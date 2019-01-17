@@ -26,18 +26,19 @@ class Agent:
     An agent does things in the simulation and interacts with others
     """
 
-    def __init__(self, agent_id, simulation):
+    def __init__(self, agent_id, model, properties):
         """
 
         :param agent_id: id of agent. Model should manage this. Do use agent factories!
-        :param simulation: Model instance
+        :param model: Model instance
+        :param properties: Dictionary of agent properties
         """
-        self.sim = simulation
+        self.model = model
         self.events = []
         self.id = agent_id
         self.state = "active"
         self.agent_type = "agent"
-        self.properties = None
+        self.properties = properties
         self.eventHandlers = {}
 
     def serialize(self):
@@ -82,7 +83,7 @@ class Agent:
 
     def set_property(self, name, data):
         """
-        Configure a property of the simulaiton
+        Configure an agent property
         :param property_spec: Specification of property (dictionary)
         :return:
         """
@@ -128,8 +129,8 @@ class Agent:
     def __setattr__(self, name, value):
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
-        else:
-            self.__dict__[name] = value
+
+        super.__setattr__(self, name, value)
 
     def receive_instantaneous_event(self, event):
         """

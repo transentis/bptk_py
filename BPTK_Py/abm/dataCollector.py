@@ -68,12 +68,12 @@ class DataCollector:
                     if agent_property_value["type"] == "Integer" or agent_property_value["type"] == "Double":
                         if agent_property_name not in self.agent_statistics[time][agent.agent_type][agent.state]:
                             self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name] = {
-                                "total": 0, "avg": 0, "max": None, "min": None}
+                                "total": 0, "max": None, "min": None}
 
                         self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["total"] += \
                         agent_property_value["value"]
 
-                        self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["avg"] = (
+                        self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["mean"] = (
                                     self.agent_statistics[time][agent.agent_type][agent.state][agent_property_name]["total"]/
                                     self.agent_statistics[time][agent.agent_type][agent.state]["count"]
                         )

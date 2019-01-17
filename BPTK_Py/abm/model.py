@@ -144,22 +144,22 @@ class Model:
         log("[INFO] Creating {} agents of type {}".format(agent_spec["count"], agent_spec["name"]))
 
         for _ in range(agent_spec["count"]):
-            self.create_agent(agent_spec["name"])
+            self.create_agent(agent_spec["name"], agent_spec.get("properties"))
 
-    def create_agent(self, agent_type):
+    def create_agent(self, agent_type, agent_properties):
         """
         Create one agent
         :param agent_type: Type of agent
         :return: None
         """
-        agent = self.agent_factories[agent_type](len(self.agents), self)
+        agent = self.agent_factories[agent_type](len(self.agents), self, agent_properties)
         agent.initialize()
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
 
     def set_property(self, property_spec):
         """
-        Configure a property of the simulaiton
+        Configure a property of the simulation
         :param property_spec: Specification of property (dictionary)
         :return:
         """
@@ -202,8 +202,8 @@ class Model:
     def __setattr__(self, name, value):
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
-        else:
-            self.__dict__[name] = value
+
+        super.__setattr__(self, name, value)
 
     def run_specs(self, starttime, stoptime, dt):
         """
