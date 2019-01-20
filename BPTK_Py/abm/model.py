@@ -81,6 +81,10 @@ class Model:
         for agent_type in self.agent_factories:
             self.agent_type_map[agent_type] = []
 
+    @property
+    def model(self):
+        return self
+
     def set_scenario_manager(self, scenario_manager):
         """
         Set the scenario manager name
@@ -202,6 +206,11 @@ class Model:
     def __setattr__(self, name, value):
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
+            #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+
+            if value["type"]=="Lookup":
+                self.points[name]=value["value"]
+
 
         super.__setattr__(self, name, value)
 
@@ -330,6 +339,11 @@ class Model:
 
         for sim_property in properties:
             self.set_property(sim_property)
+
+            #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+
+            if sim_property["type"]=="Lookup":
+                self.points[sim_property["name"]]=sim_property["value"]
 
         agents = config["agents"]
 
