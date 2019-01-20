@@ -28,12 +28,15 @@ class Element:
 
     type = "Element"
 
-    def __init__(self, model, name):
+    def __init__(self, model, name, function_string = None):
 
         self.model = model
         self.name = name
         self.converters = []
-        self.function_string = self.default_function_string()
+        if function_string is None:
+            self.function_string = self.default_function_string()
+        else:
+            self.function_string = function_string
         self._equation = None
         self.generate_function()
 

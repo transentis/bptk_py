@@ -88,12 +88,5 @@ class serializer():
         # Oder zwei Schritte: erst alle Objekte bauen
         # Dann links fixen, wenn fehlende gefunden
 
-        import importlib
-        res = ser.serialize(model)
-        mod = res["__type__"].split(".")[:-1]
-        mod = ".".join(mod)
-        clazz = res["__type__"].split(".")[len(res["__type__"].split("."))-1]
 
-
-        module = importlib.import_module(mod)
-        model_class = getattr(module, clazz)
+        # Lambda funktionen sind komplizierter

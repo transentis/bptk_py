@@ -321,6 +321,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
+## 0.5.1
+- Bugfix for ABM module
+
+## 0.5
+Large improvements for the Agent Based Modeling component! Main changes:
+- Agents can now have properties.
+- Agent properties can be set via the JSON config file. Properties can be accessed using dot-notation, i.e. agent.property
+- The necessary property get/set methods are added automatically using Python metaprogramming facilities - this keeps the code that needs to implemented by the modeler to a mimimum.The same is true of model properties - these can now also be accessed using dot-notation.
+- Statistics for properties are automatically collected and can be plotted using the plot_scenarios method. Currently the following statistics are collected: total, min, max, mean.
+
 ## 0.4.1
 - Bugfix in Model class: dt param was not properly instantiated
 
