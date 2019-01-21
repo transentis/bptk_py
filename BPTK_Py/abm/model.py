@@ -175,14 +175,11 @@ class Model:
         :param name: Name of property
         :return: Dictionary for property
         """
-        if name not in self.properties:
-            log("[ERROR] sim.get_property: property unknown")
 
         try:
             return_val = self.properties[name]
             return return_val
         except KeyError as e:
-            log("[ERROR] sim.get_property: property unknown")
             return None
 
     def set_property_value(self, name, value):
@@ -206,10 +203,12 @@ class Model:
     def __setattr__(self, name, value):
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
-            #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
 
-            if value["type"]=="Lookup":
-                self.points[name]=value["value"]
+            # Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+            # this should be reworked once lookup handling is harmonized between sd and abm
+
+            if self.properties[name]["type"] == "Lookup":
+                self.points[name] = value
 
 
         super.__setattr__(self, name, value)
@@ -252,12 +251,23 @@ class Model:
         else:
             self.scheduler.run(self, None)
 
+    def act(self, time, sim_round, step):
+        """
+        Actual play method. Triggered by scheduler.
+        Makes the model progress by one step.
+        Add any logic here that is needed to update dynamic properties
+
+        :param time: t
+        :param sim_round: round number
+        :param step: step number of round
+        :return: None
+        """
+
     def instantiate_model(self):
         """
         Instantiate model stub. Implement this method in your model!
         :return: None
         """
-        print("IMPLEMENT THIS METHOD IN AN INHERITING CLASS!")
 
     def enqueue_event(self, event):
         """

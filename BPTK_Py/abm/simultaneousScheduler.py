@@ -76,10 +76,15 @@ class SimultaneousScheduler(Scheduler):
             if model.data_collector:
                 model.data_collector.record_event(time, event)
 
+        # give the model a chance to act and update dynamic properties etc.
+
+        model.act(time, sim_round, dt)
+
         # ... then it let's the agents act on the events
         # The agents are called in the order they were created in
 
         for agent in model.agents:
+            agent.handle_events(time, sim_round, dt)
             agent.act(time, sim_round, dt)
 
         if model.data_collector:

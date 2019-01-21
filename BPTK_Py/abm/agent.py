@@ -13,8 +13,6 @@
 
 import random
 
-from ..logger import log
-
 
 #################
 ## AGENT CLASS ##
@@ -79,7 +77,6 @@ class Agent:
         Initialize. Implement this method!
         :return: None
         """
-        log("[ERROR] agent.initialize should be called from subclass")
 
     def set_property(self, name, data):
         """
@@ -101,14 +98,11 @@ class Agent:
         :param name: Name of property
         :return: Dictionary for property
         """
-        if name not in self.properties:
-            log("[ERROR] agent.get_property: property unknown")
 
         try:
             data = self.properties[name]
             return data
         except KeyError as e:
-            log("[ERROR] agent.get_property: property unknown")
             return None
 
     def get_property_value(self, name):
@@ -144,16 +138,7 @@ class Agent:
         except KeyError as e:
             pass
 
-    def act(self, time, sim_round, step):
-        """
-        Actual play method. Triggered by scheduler. Makes the agent progress by one step
-        :param time: t
-        :param sim_round: round number
-        :param step: step number of round
-        :return: None
-        """
-
-
+    def handle_events(self, time, sim_round, step):
         try:
             handlers = self.eventHandlers[self.state]
 
@@ -166,6 +151,15 @@ class Agent:
                     pass
         except KeyError as e:
             pass
+
+    def act(self, time, sim_round, step):
+        """
+        Actual play method. Triggered by scheduler. Makes the agent progress by one step
+        :param time: t
+        :param sim_round: round number
+        :param step: step number of round
+        :return: None
+        """
 
     def to_string(self):
         """
