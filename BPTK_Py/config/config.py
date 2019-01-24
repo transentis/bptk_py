@@ -71,3 +71,6 @@ configuration = {
     "log_modes": ["logfile"],
     "log_file": "bptk_py.log"
 }
+
+
+loglevel = "WARN"
