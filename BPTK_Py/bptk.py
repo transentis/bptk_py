@@ -197,6 +197,10 @@ class bptk():
 
         # prepare dataframes
         else:
+            if len(dfs) == 0:
+                log("[WARN] No output data produced. Hopefully this was your intention.")
+                return None
+
             if len(dfs) > 1:
                 df = dfs.pop(0)
                 for tmp_df in dfs:
