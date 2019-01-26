@@ -18,6 +18,15 @@ import datetime
 def log(message):
     """logs all log messages either to file or stdout"""
     message = message.replace("\n", "")
+
+    if config.loglevel == "ERROR":
+        if "ERROR" not in message:
+            return
+    if config.loglevel == "WARN":
+        if not "ERROR" in message or not "WARN" in message:
+            return
+
+
     if "logfile" in config.configuration["log_modes"]:
         with open(config.configuration["log_file"], "a", encoding="UTF-8") as myfile:
             myfile.write(str(datetime.datetime.now()) + ", " + message + "\n")

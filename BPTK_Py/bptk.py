@@ -69,7 +69,9 @@ class bptk():
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
 
-    def run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[], agents=[]):
+    def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
+                       series_names={}, strategy=False,progressBar=False
+                       ):
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
         :param scenarios: names of scenarios to simulate
@@ -82,8 +84,7 @@ class bptk():
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
 
-        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True,
-                                   scenario_managers=scenario_managers, agents=agents)
+        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True,series_names=series_names,strategy=strategy,scenario_managers=scenario_managers, agents=agents,agent_states=agent_states, agent_properties=agent_properties,progressBar=progressBar)
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
 
@@ -197,6 +198,10 @@ class bptk():
 
         # prepare dataframes
         else:
+            if len(dfs) == 0:
+                log("[WARN] No output data produced. Hopefully this was your intention.")
+                return None
+
             if len(dfs) > 1:
                 df = dfs.pop(0)
                 for tmp_df in dfs:

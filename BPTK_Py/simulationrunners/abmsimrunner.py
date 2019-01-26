@@ -125,6 +125,11 @@ class AbmSimulationRunner(SimulationRunner):
 
             data = scenario.statistics()
 
+            if len(data) == 0:
+                log("[WARN] No output data produced. Hopefully this was your intention.")
+                return pd.DataFrame()
+
+
             for agent in agents:
                 new_df = pd.DataFrame()
 
