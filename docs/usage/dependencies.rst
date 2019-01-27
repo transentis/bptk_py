@@ -16,5 +16,6 @@ matplotlib   Plotting environment                          2.2.2
 ipywidgets   Widget environment for notebooks              7.4.0
 scipy        Linear interpolation for graphical functions  1.1.0
 numpy        Linear interpolation and required by pandas   1.15.0
+============ ============================================= =====================
 
-If you are using jupyter lab, you need the jupyter lab extension for ipywidgets.
+If you are using `Jupyter Lab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.

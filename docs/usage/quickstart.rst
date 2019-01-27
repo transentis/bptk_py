@@ -11,7 +11,7 @@ The objective of the tutorial is to illustrate how to use the BPTK_PY framework,
 We illustrate the framework using a simple project management model and the Bass Diffusion model:
 
 * *Simple Project Management Model*. This model is an illustration of `Parkinson's law <https://en.wikipedia.org/wiki/Parkinson%27s_law>`_, which states that work expands so as to fill the time available for its completion.
-* *Bass Diffusion Model*. This model is an implementation of the `Bass diffusion model <https://en.wikipedia.org/wiki/Bass_diffusion_model>`_ originally created by `Frank Bass <https://en.wikipedia.org/wiki/Frank_Bass>`_ that describes the process of how new products get adopted in a population. The Bass model has been widely used in forecasting, especially new products' sales forecasting and technology forecasting.
+* *Bass Diffusion Model*. This model is an implementation of the `Bass Diffusion Model <https://en.wikipedia.org/wiki/Bass_diffusion_model>`_ originally created by `Frank Bass <https://en.wikipedia.org/wiki/Frank_Bass>`_ that describes the process of how new products get adopted in a population. The Bass model has been widely used in forecasting, especially new products' sales forecasting and technology forecasting.
 
 You can learn more about these models on our blog:
 

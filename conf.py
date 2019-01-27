@@ -14,8 +14,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('./BPTK_Py'))
-
+sys.path.insert(0, os.path.abspath('./oliver'))
+sys.path.insert(0, os.path.abspath('./BPTK_PY'))
 
 # -- Project information -----------------------------------------------------
 
