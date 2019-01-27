@@ -14,7 +14,6 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('./oliver'))
 sys.path.insert(0, os.path.abspath('./BPTK_PY'))
 
 # -- Project information -----------------------------------------------------
@@ -134,7 +133,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'bptk_py.tex', 'bptk\\_py Documentation',
-     'transentis labs Gmbh, Oliver Grasl, Dominik Schröck', 'manual'),
+     'transentis labs Gmbh, Oliver Grasl, Dominik Schro"ck', 'manual'),
 ]
 
 
