@@ -14,3 +14,4 @@ BPTK_Py/sd-compiler/node_modules/
 scenarios/
 simulation_models/
 sd_compiler/node_modules
+_build
