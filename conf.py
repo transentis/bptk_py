@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('./BPTK_PY'))
 
 project = 'BPTK_PY'
 copyright = '2019, transentis labs GmbH'
-author = 'transentis labs Gmbh, Oliver Grasl, Dominik Schröck'
+author = 'transentis labs Gmbh, Oliver Grasl, Dominik Schro"ck'
 
 # The short X.Y version
 version = '0.5.3'
