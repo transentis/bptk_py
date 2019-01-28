@@ -14,7 +14,10 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('./BPTK_PY'))
+sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, os.path.abspath('./BPTK_Py/abm'))
+#sys.path.insert(0, os.path.abspath('./BPTK_Py/systemdynamics'))
+#sys.path.insert(0, os.path.abspath('./BPTK_Py/logger'))
 
 # -- Project information -----------------------------------------------------
 
@@ -72,6 +75,8 @@ exclude_patterns = ['_build', 'venv','README','BPTK_PY.egg-info','.ipynb_checkpo
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+
+add_module_names = False
 
 # -- Options for HTML output -------------------------------------------------
 
