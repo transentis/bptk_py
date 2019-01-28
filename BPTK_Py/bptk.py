@@ -54,11 +54,11 @@ class bptk():
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         method to run raw simulations (if you want to omit plotting). Simulates with the strategies of the scenarios
-        :param scenarios: names of scenarios to simulate
-        :param equations: names of equations to simulate
-        :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
-        :param scenario_managers: names of scenario managers to select scenarios from
-        :return: dict of SimulationScenario
+            :param scenarios: names of scenarios to simulate
+            :param equations: names of equations to simulate
+            :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
+            :param scenario_managers: names of scenario managers to select scenarios from
+            :return: dict of SimulationScenario
         """
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         equations = equations if type(equations) is list else equations.split(",")
@@ -74,11 +74,11 @@ class bptk():
                        ):
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
-        :param scenarios: names of scenarios to simulate
-        :param equations: names of equations to simulate
-        :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario_name.csv
-        :param scenario_managers: names of scenario managers to select scenarios from
-        :return: dict of simulationScenarios
+            :param scenarios: names of scenarios to simulate
+            :param equations: names of equations to simulate
+            :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario_name.csv
+            :param scenario_managers: names of scenario managers to select scenarios from
+            :return: dict of simulationScenarios
         """
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -108,27 +108,27 @@ class bptk():
                        return_df=False):
 
         """
-         Generic method for plotting scenarios for SD as well as Agent based models (ABM)
-         :param scenarios: names of scenarios to plot
-         :param equations:  names of equations to plot (System Dynamics, SD)
-         :param agents: List of agents to plot (Agent based modelling)
-         :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
-         :param scenario_managers: names of scenario managers to plot
-         :param kind: type of graph to plot ("line" or "area")
-         :param alpha:  transparency 0 < x <= 1
-         :param stacked: if yes, use stacked (only with kind="bar")
-         :param freq: frequency of time series
-         :param start_date: start date for time series
-         :param title: title of plot
-         :param visualize_from_period: visualize from specific period onwards
-         :param visualize_to_period; visualize until a specific period
-         :param x_label: label for x axis
-         :param y_label: label for y axis
-         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-         :param strategy: set True if you want to use the scenarios' strategies
-         :param progressBar: set True if you want to show a progress bar (useful for ABM simulations)
-         :param return_df: set True if you want to receive a dataFrame instead of the plot
-         :return: dataFrame with simulation results if return_df=True
+         THE method for plotting scenarios for SD as well as Agent based models (ABM)
+            :param scenarios: names of scenarios to plot
+            :param equations:  names of equations to plot (System Dynamics, SD)
+            :param agents: List of agents to plot (Agent based modelling)
+            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
+            :param scenario_managers: names of scenario managers to plot
+            :param kind: type of graph to plot ("line" or "area")
+            :param alpha:  transparency 0 < x <= 1
+            :param stacked: if yes, use stacked (only with kind="bar")
+            :param freq: frequency of time series
+            :param start_date: start date for time series
+            :param title: title of plot
+            :param visualize_from_period: visualize from specific period onwards
+            :param visualize_to_period: visualize until a specific period
+            :param x_label: label for x axis
+            :param y_label: label for y axis
+            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+            :param strategy: set True if you want to use the scenarios' strategies
+            :param progressBar: set True if you want to show a progress bar (useful for ABM simulations)
+            :param return_df: set True if you want to receive a dataFrame instead of the plot
+            :return: dataFrame with simulation results if return_df=True
          """
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
@@ -231,22 +231,22 @@ class bptk():
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=config.configuration["stacked"], title="", alpha=config.configuration["alpha"], x_label="", y_label="", start_date="", freq="D", series_names={}, kind=config.configuration["kind"]):
         """
         Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
-        :param scenarios:  List of scenarios with names
-        :param scenario_managers:
-        :param lookup_names:
-        :param return_df:
-        :param visualize_from_period:
-        :param visualize_to_period:
-        :param stacked:
-        :param title:
-        :param alpha:
-        :param x_label:
-        :param y_label:
-        :param start_date:
-        :param freq:
-        :param series_names:
-        :param kind:
-        :return:
+            :param scenarios:  List of scenarios with names
+            :param scenario_managers:
+            :param lookup_names:
+            :param return_df:
+            :param visualize_from_period:
+            :param visualize_to_period:
+            :param stacked:
+            :param title:
+            :param alpha:
+            :param x_label:
+            :param y_label:
+            :param start_date:
+            :param freq:
+            :param series_names:
+            :param kind:
+            :return:
         """
 
         from .util import lookup_data
@@ -308,26 +308,26 @@ class bptk():
                   return_df=False, constants=[]):
         """
         Generic method for plotting with interactive widgets
-        :param scenarios: names of scenarios to plot
-        :param equations:  names of equations to plot
-        :param agents: Agents to plot
-        :param agent_states: States of agents to plot
-        :param scenario_managers: names of scenario managers to plot
-        :param kind: type of graph to plot
-        :param alpha:  transparency 0 < x <= 1
-        :param stacked: if yes, use stacked (only with kind="bar")
-        :param freq: frequency of time series
-        :param start_date: start date for time series
-        :param title: title of plot
-        :param visualize_from_period: visualize from specific period onwards
-        :param visualize_to_period; visualize until a specific period
-        :param x_label: label for x axis
-        :param y_label: label for y axis
-        :param series_names: names of series to modify
-        :param strategy: set True if you want to use the scenarios' strategies
-        :param return_df: set True if you want to receive a dataFrame instead of the plot
-        :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
-        :return: dataFrame with simulation results if return_df=True
+            :param scenarios: names of scenarios to plot
+            :param equations:  names of equations to plot
+            :param agents: Agents to plot
+            :param agent_states: States of agents to plot
+            :param scenario_managers: names of scenario managers to plot
+            :param kind: type of graph to plot
+            :param alpha:  transparency 0 < x <= 1
+            :param stacked: if yes, use stacked (only with kind="bar")
+            :param freq: frequency of time series
+            :param start_date: start date for time series
+            :param title: title of plot
+            :param visualize_from_period: visualize from specific period onwards
+            :param visualize_to_period: visualize until a specific period
+            :param x_label: label for x axis
+            :param y_label: label for y axis
+            :param series_names: names of series to modify
+            :param strategy: set True if you want to use the scenarios' strategies
+            :param return_df: set True if you want to receive a dataFrame instead of the plot
+            :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
+            :return: dataFrame with simulation results if return_df=True
         """
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
@@ -361,9 +361,9 @@ class bptk():
     def modify_strategy(self, scenarios, extended_strategy):
         """
         Modifies a strategy during runtime. Experimental feature for now. You may even add lambdas to strategy
-        :param scenarios: names of scenarios to modify the strategies for
-        :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
-        :return: None
+            :param scenarios: names of scenarios to modify the strategies for
+            :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
+            :return: None
         """
 
         for scenario_name in extended_strategy.keys():
@@ -401,9 +401,8 @@ class bptk():
 
     def destroy(self):
         """
-        When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this...
-        It essentially only kills all the file monitors and makes sure the Python process can die happily
-        :return: None
+        When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this. It essentially only kills all the file monitors and makes sure the Python process can die happily.
+            :return: None
         """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
@@ -411,9 +410,9 @@ class bptk():
     def reset_simulation_model(self, scenario_manager="", scenario=""):
         """
         Resets only the memo (equation results) of a scenario, does not re-read from storage
-        :param scenario_manager: name of scenario manager for lookup
-        :param scenario: name of scenario
-        :return: None
+            :param scenario_manager: name of scenario manager for lookup
+            :param scenario: name of scenario
+            :return: None
         """
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         try:
@@ -434,37 +433,35 @@ class bptk():
     def reset_scenario(self, scenario_manager, scenario):
         """
         Reload scenario from storage
-        :param scenario_manager: name of scenario manager for lookup
-        :param scenario: name of scenario
-        :return: None
+            :param scenario_manager: name of scenario manager for lookup
+            :param scenario: name of scenario
+            :return: None
         """
         self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager, scenario=scenario)
 
     def reset_all_scenarios(self):
         """
         Reload all scenarios from storage
-        :return: All ABMModel Managers
+            :return: All ABMModel Managers
         """
         return self.scenario_manager_factory.reset_all_scenarios()
 
     def model_check(self, data, check, message):
         """
         Model checker
-        :param data: dataframe series or any data that the given check method can parse
-        :param check: lambda function of structure : lambda data : BOOLEAN CHECK ON DATA
-        :param message: Error message if test failed
-        :return: None
+            :param data: dataframe series or any data that the given check method can parse
+            :param check: lambda function of structure : lambda data : BOOLEAN CHECK ON DATA
+            :param message: Error message if test failed
+            :return: None
         """
         ModelChecker().model_check(data=data, check=check, message=message)
 
     def pulse_function_create(self, scenarios, scenario_managers):
         """
-        Create a PULSE function using the PulseWidget interactively. This is a nice feature to create SD PULSE functions in interactive sessions.
-        No need for re-modelling in Stella or SD DSL.
-        Displays an interactive dashboard for selecting the equations/constants to define the PULSEs for (as many as possible)
-        :param scenarios: Name of scenarios to create the function(s) for
-        :param scenario_managers: Name of scenario managers to take the scenarios from
-        :return: None
+        Create a PULSE function using the PulseWidget interactively. This is a nice feature to create SD PULSE functions in interactive sessions. No need for re-modelling in Stella or SD DSL. Displays an interactive dashboard for selecting the equations/constants to define the PULSEs for (as many as possible).
+            :param scenarios: Name of scenarios to create the function(s) for
+            :param scenario_managers: Name of scenario managers to take the scenarios from
+            :return: None
         """
         widget = PulseDashboard(scenarios=scenarios, scenario_managers=scenario_managers, bptk=self)
         widget.show()
@@ -472,8 +469,8 @@ class bptk():
     def add_scenario(self, dictionary):
         """
         Add scenario during runtime
-        :param dictionary: dictionary that contains all data required for the scenario. Check the readme!
-        :return: None
+            :param dictionary: dictionary that contains all data required for the scenario. Check the readme!
+            :return: None
         """
 
         for scenario_manager_name in dictionary.keys():
@@ -494,8 +491,8 @@ class bptk():
     def register_scenario_manager(self, scenario_manager):
         """
         Register a manually defined Scenario manager using the common JSON notation. Keep in mind that it HAS TO contain a reference to a live model instance
-        :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
-        :return: None
+            :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
+            :return: None
         """
 
         for scenario_manager_name, values in scenario_manager.items():
@@ -520,9 +517,9 @@ class bptk():
     def register_scenarios(self, scenarios, scenario_manager):
         """
         Register a new scenario with an existing scenario manager using the common JSON notation (Read the interactive tutorial)
-        :param scenarios: JSON notation of scenario as known from "offline" definition in JSON file
-        :param scenario_manager: name of scenario manager to add the scenario to
-        :return: None
+            :param scenarios: JSON notation of scenario as known from "offline" definition in JSON file
+            :param scenario_manager: name of scenario manager to add the scenario to
+            :return: None
         """
         if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
             manager = self.scenario_manager_factory.scenario_managers[scenario_manager]

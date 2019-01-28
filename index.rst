@@ -10,17 +10,19 @@ The Business Prototyping Toolkit for Python (BPTK_Py) provides you with a framew
 
 It gives you the power to quickly build simulation models in Python and create beautiful plots of the simulation results in Jupyter Notebooks - or just run the simulation in Python and use the results however you wish.
 
-The framework also ships with our *sdcc parser*  for transpiling  System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then experiment with them in Juypter.
+The framework also ships with our *sdcc parser*  for transpiling  System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then experiment with them in `Juypter <http://www.jupyter.org>`_.
+
+Our tutorial contains a number of models and Jupyter notebooks to get you started – you can download the tutorial from our `website <https://www.transentis.com/products/business-prototyping-toolkit/>`_.
 
 Main Features
 -------------
 
 * Build simulation models using System Dynamics and/or agent-based modeling and run them in Jupyter.
-* Retrieve simulation results as `Pandas DataFrame <https://github.com/pandas-dev/pandas>`_ timeseries data
-* Create plots from simulation results
-* Build interactive dashboards
-* Manage simulation scenarios
-* Automatically convert XMILE models into Python and run them in Jupyter
+* Retrieve simulation results as `Pandas DataFrame <https://github.com/pandas-dev/pandas>`_ timeseries data.
+* Create plots from simulation results.
+* Build interactive dashboards.
+* Manage simulation scenarios.
+* Automatically convert XMILE models into Python and run them in Jupyter.
 
 Getting Help
 ____________
@@ -35,7 +37,6 @@ BPTK_Py is developed and maintained by `transentis labs <http://www.transentis.c
 
    docs/usage/installation
    docs/usage/quickstart
-   docs/usage/dependencies
    docs/usage/limitations
    docs/api/api_overview
 

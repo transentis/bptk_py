@@ -6,21 +6,21 @@ Like every piece of software, BPTK_Py and its dependencies have to be installed 
 
 If you already have a running Python and Jupyter environment, ``pip install BPTK-Py`` or ``pip3 install BPTK-Py`` will do!
 
-Assuming you are starting from scratch, you need to perform the following steps
+Assuming you are starting from scratch, you need to perform the following steps:
 
 1. Install Python
 2. Install Node and npm
 3. Install BPTK_Py
 4. Install JupyterLab (optional)
 5. Setup a virtual environment (optional)
-6. Download our `BPTK_Py tutorial <https://www.transentis.com/products/business-prototyping-toolkit/>`_ (optional)
+6. Read our quickstart document
 
 Install Python
 ==============
 
 First of all, you need `Python <https://www.python.org/>`_. Download the latest version for your operating system.
 
-BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
+BPTK_Py was tested with Python 3.7, 3.6 and 3.4.
 
 Install Node and npm
 ====================
@@ -100,3 +100,29 @@ Enter the virtual environment. In the beginning of your prompt you should see "(
     pip install jupyterlab
     jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
+
+Read the quickstart
+===================
+
+To get started, read our :doc:`quickstart <quickstart>` document.
+
+Package dependencies
+====================
+
+If for any reason, you want to install the requirements manually or need to know why we need the packages, here comes the list.
+
+If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
+
+We have tested the framework with Python 3.4, 3.6 and 3.7. It should work fine with other Python 3.x versions.
+
+============ ============================================= =====================
+Package name What we use it for                            Latest tested version
+============ ============================================= =====================
+pandas       DataFrames and internal results storage       0.23.4
+matplotlib   Plotting environment                          2.2.2
+ipywidgets   Widget environment for notebooks              7.4.0
+scipy        Linear interpolation for graphical functions  1.1.0
+numpy        Linear interpolation and required by pandas   1.15.0
+============ ============================================= =====================
+
+If you are using `Jupyter Lab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.

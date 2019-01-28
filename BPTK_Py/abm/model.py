@@ -33,7 +33,7 @@ from ..systemdynamics import Stock
 class Model:
     """
     This is the main agent base / System dynamics / Hybrid model class
-    It can run manually generated SD models, AB Models or define hybrid classes
+    It can run manually generated SD models, AB Models or define hybrid models.
     """
 
 
@@ -88,17 +88,17 @@ class Model:
     def set_scenario_manager(self, scenario_manager):
         """
         Set the scenario manager name
-        :param scenario_manager: String
-        :return: None
+            :param scenario_manager: String
+            :return: None
         """
         self.scenario_manager = scenario_manager
 
     def register_agent_factory(self, agent_type, agent_factory):
         """
         Register an agent factory
-        :param agent_type: Type of agent to register
-        :param agent_factory: Function (typically lambda, but not limited to). Input: agent_id, model -> Output: Agent of agent_type
-        :return: None
+            :param agent_type: Type of agent to register
+            :param agent_factory: Function (typically lambda, but not limited to). Input: agent_id, model -> Output: Agent of agent_type
+            :return: None
         """
         log("[INFO] Registering agent factory for {}".format(agent_type))
 
@@ -108,7 +108,7 @@ class Model:
     def reset(self):
         """
         Reset simulation
-        :return:  None
+            :return:  None
         """
 
         for agent_type in self.agent_type_map:
@@ -124,8 +124,8 @@ class Model:
     def agent_ids(self, agent_type):
         """
         Receive agent ids for all agents of agent_type
-        :param agent_type: agent type to get ids for
-        :return: List
+            :param agent_type: agent type to get ids for
+            :return: List
         """
 
         return self.agent_type_map[agent_type]
@@ -133,8 +133,8 @@ class Model:
     def agent(self, agent_id):
         """
         Receive one agent by ID
-        :param agent_id: ID of agent (int)
-        :return: Agent object
+            :param agent_id: ID of agent (int)
+            :return: Agent object
         """
 
         return self.agents[agent_id]
@@ -142,8 +142,8 @@ class Model:
     def create_agents(self, agent_spec):
         """
         Create agents
-        :param agent_spec: Specification of Agent (dictionary)
-        :return: None
+            :param agent_spec: Specification of Agent (dictionary)
+            :return: None
         """
         log("[INFO] Creating {} agents of type {}".format(agent_spec["count"], agent_spec["name"]))
 
@@ -153,8 +153,8 @@ class Model:
     def create_agent(self, agent_type, agent_properties):
         """
         Create one agent
-        :param agent_type: Type of agent
-        :return: None
+            :param agent_type: Type of agent
+            :return: None
         """
         agent = self.agent_factories[agent_type](len(self.agents), self, agent_properties)
         agent.initialize()
@@ -164,16 +164,16 @@ class Model:
     def set_property(self, property_spec):
         """
         Configure a property of the simulation
-        :param property_spec: Specification of property (dictionary)
-        :return:
+            :param property_spec: Specification of property (dictionary)
+            :return:
         """
         self.properties[property_spec["name"]] = property_spec
 
     def get_property(self, name):
         """
         Get one property
-        :param name: Name of property
-        :return: Dictionary for property
+            :param name: Name of property
+            :return: Dictionary for property
         """
 
         try:
@@ -215,11 +215,11 @@ class Model:
 
     def run_specs(self, starttime, stoptime, dt):
         """
-        Configure
-        :param starttime:
-        :param stoptime:
-        :param dt:
-        :return:
+        Configure the runspecs of the model.
+            :param starttime: The starttime of the model.
+            :param stoptime: The stoptime of the model.
+            :param dt: The dt of the model.
+            :return: None
         """
 
         log("[INFO] Setting starttime to {}, stoptime to {} and step to {}".format(starttime, stoptime, dt))
@@ -230,8 +230,8 @@ class Model:
     def run(self, show_progress_widget=False):
         """
         Initiate simulation
-        :param show_progress_widget: Boolean: If true, shows a progress widget (only in Jupyter environment!)
-        :return: None
+            :param show_progress_widget: Boolean: If true, shows a progress widget (only in Jupyter environment!)
+            :return: None
         """
 
         if show_progress_widget:
@@ -257,32 +257,32 @@ class Model:
         Makes the model progress by one step.
         Add any logic here that is needed to update dynamic properties
 
-        :param time: t
-        :param sim_round: round number
-        :param step: step number of round
-        :return: None
+            :param time: t
+            :param sim_round: round number
+            :param step: step number of round
+            :return: None
         """
 
     def instantiate_model(self):
         """
-        Instantiate model stub. Implement this method in your model!
-        :return: None
+        Instantiate model stub. Called directly after the model is instantiated. Implement this method in your model to perform any kind of initialization you may need.
+            :return: None
         """
 
     def enqueue_event(self, event):
         """
-        Add one event
-        :param event: Event instance
-        :return: None
+        Called by the framework to enque events.
+            :param event: Event instance
+            :return: None
         """
         self.events.append(event)
 
     def next_agent(self, agent_type, state):
         """
-        Get the next agent by type and state
-        :param agent_type: Agent type
-        :param state: State the agent is in
-        :return: Agent object
+        Get the next agent by type and state.
+            :param agent_type: Agent type
+            :param state: State the agent is in
+            :return: Agent object
         """
 
         for agent in self.agents:
@@ -293,9 +293,9 @@ class Model:
     def random_agents(self, agent_type, num_agents):
         """
         Receive a number of random agents
-        :param agent_type: Type of agent
-        :param num_agents:  Number of agents to receive
-        :return: Agent IDs list
+            :param agent_type: Type of agent
+            :param num_agents:  Number of agents to receive
+            :return: Agent IDs list
         """
 
         agent_map = self.agent_type_map[agent_type]
@@ -314,10 +314,10 @@ class Model:
     def random_events(self, agent_type, num_agents, event_factory):
         """
         Distribute a number of random events
-        :param agent_type: Agent types supposed to receive events
-        :param num_agents: Number of random agents
-        :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
-        :return:
+            :param agent_type: Agent types supposed to receive events
+            :param num_agents: Number of random agents
+            :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
+            :return: None.
         """
         agent_ids = self.random_agents(agent_type, num_agents)
 
@@ -327,9 +327,9 @@ class Model:
     def broadcast_event(self, agent_type, event_factory):
         """
         Broadcast an event to all agents of a particular agent_type
-        :param agent_type: Agent types that are to receive the event
-        :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
-        :return:
+            :param agent_type: Agent types that are to receive the event
+            :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
+            :return:
         """
 
         for agent_id in self.agent_type_map[agent_type]:
@@ -338,9 +338,9 @@ class Model:
 
     def configure(self, config):
         """
-        Configure the model using a dictionary
-        :param config: Configuration dictionary
-        :return: None
+        Configure the model using a dictionary, which typically comes from a config file.
+            :param config: Configuration dictionary
+            :return: None
         """
 
         self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
@@ -363,17 +363,17 @@ class Model:
     def agent_count(self, agent_type):
         """
         Get number of agents
-        :param agent_type: Agent type to get count for
-        :return: Number of agents (int)
+            :param agent_type: Agent type to get count for
+            :return: Number of agents (int)
         """
         return len(self.agent_type_map[agent_type])
 
     def agent_count_per_state(self, agent_type, state):
         """
         Get number of agents in a specific state
-        :param agent_type: Agent type to get count for
-        :param state: state of agents to get count for
-        :return: Integer
+            :param agent_type: Agent type to get count for
+            :param state: state of agents to get count for
+            :return: Integer
         """
         agent_count = 0
         agent_ids = self.agent_type_map[agent_type]
@@ -387,7 +387,7 @@ class Model:
     def statistics(self):
         """
         Get statistics from DataCollector
-        :return: None
+            :return: None
         """
 
         try:
@@ -400,9 +400,9 @@ class Model:
     def get_random_integer(min_value, max_value):
         """
         Just compute a random integer within bounds
-        :param min_value: min value for random integer
-        :param max_value: max value for random integer
-        :return: Integer
+            :param min_value: min value for random integer
+            :param max_value: max value for random integer
+            :return: Integer
         """
         return round(random.random() * (max_value - min_value) + min_value)
 
@@ -410,9 +410,9 @@ class Model:
     def lookup(self,x, points):
         """
         Lookup function: Interpolate between set of points. E.g. for "graphical functions" as known from SD
-        :param x: x-value to find the y value for
-        :param points:
-        :return:
+            :param x: x-value to find the y value for
+            :param points:
+            :return:
         """
 
         if type(points) is str:
@@ -466,10 +466,10 @@ class Model:
 
     def memoize(self, equation, arg):
         """
-        Memoize method
-        :param equation: name of equation
-        :param arg: argument (t)
-        :return: result of equation
+        Memoize method - used by the system dynamics equations to remember values that have already been calculated.
+            :param equation: name of equation
+            :param arg: argument (t)
+            :return: result of equation
         """
         try:
             mymemo = self.memo[equation]
@@ -488,9 +488,9 @@ class Model:
     def add_equation(self, equation, lambda_method):
         """
         Add an equation. ALWAYS use this method to configure equations! Configures the memo as well!
-        :param equation: Name of the equation
-        :param lambda_method: A lambda function we can insert into the set of equations
-        :return: None
+            :param equation: Name of the equation
+            :param lambda_method: A lambda function we can insert into the set of equations
+            :return: None
         """
         if equation in self.equations.keys():
             log("[WARN] Hybrid Model {}: Overwriting equation {} ".format(str(self.name), str(equation)))
@@ -503,8 +503,8 @@ class Model:
     def stock(self, name):
         """
         Create a SD stock
-        :param name: name of the flow
-        :return: Stock object
+            :param name: name of the flow
+            :return: Stock object
         """
         if name in self.stocks:
             return self.stocks[name]
@@ -516,8 +516,8 @@ class Model:
     def flow(self, name):
         """
         Create a SD flow
-        :param name: Name of the flow
-        :return: Flow object
+            :param name: Name of the flow
+            :return: Flow object
         """
         if name in self.flows:
             return self.flows[name]
@@ -529,8 +529,8 @@ class Model:
     def constant(self, name):
         """
         Create a SD constant
-        :param name: Name of the constant
-        :return: Constant object
+            :param name: Name of the constant
+            :return: Constant object
         """
         if name in self.constants:
             return self.constants[name]
@@ -542,8 +542,8 @@ class Model:
     def converter(self, name):
         """
         Create a converter
-        :param name: Name of the converter
-        :return: Converter object
+            :param name: Name of the converter
+            :return: Converter object
         """
         if name in self.converters:
             return self.converters[name]
@@ -555,16 +555,16 @@ class Model:
     def evaluate_function(self, name, t):
         """
         Evaluate an element's equation
-        :param name: Name of the equation
-        :param t: timestep to evaluate for
-        :return: float of simulation result
+            :param name: Name of the equation
+            :param t: timestep to evaluate for
+            :return: float of simulation result
         """
         return self.equations[name](t)
 
     def reset_cache(self):
         """
         Reset memo of all equations
-        :return: None
+            :return: None
         """
         for equation in self.memo:
             self.memo[equation] = {}

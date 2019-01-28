@@ -37,18 +37,18 @@ class Scheduler:
     def run(self, model, progress_widget=None):
         """
         Override this in a subclass
-        :param model: Model instance
-        :param progress_widget: If true, show a progress widget during execution
-        :return:
+            :param model: Model instance
+            :param progress_widget: If true, show a progress widget during execution
+            :return:
         """
         log("[ERROR] Scheduler.run should be overriden in a subclass")
 
     def run_step(self, model, sim_round, dt, progress_widget=None):
         """
         Override this in a subclass
-        :param model: Model instance
-        :param sim_round: round of simulator
-        :param dt: Current step of round
-        :param progress_widget: Live instance of FloatProgressBar
+            :param model: Model instance
+            :param sim_round: round of simulator
+            :param dt: Current step of round
+            :param progress_widget: Live instance of FloatProgressBar
         """
         log("[ERROR] Scheduler.run_step should be overriden in a subclass")

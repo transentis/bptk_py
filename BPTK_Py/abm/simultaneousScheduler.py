@@ -26,9 +26,9 @@ class SimultaneousScheduler(Scheduler):
     def run(self, model, progress_widget=None):
         """
         Run method
-        :param model: ABMOdel instance
-        :param progress_widget: FloatBarProgress instance
-        :return:  None
+            :param model: ABMOdel instance
+            :param progress_widget: FloatBarProgress instance
+            :return:  None
         """
 
         self.progress = 0
@@ -44,11 +44,11 @@ class SimultaneousScheduler(Scheduler):
     def run_step(self, model, sim_round, dt, progress_widget=None):
         """
         Run one step
-        :param sim_round: simulator round
-        :param dt: step of round
-        :param model: ABM Model instance
-        :param progress_widget: FloatBarProgress instance (ipywidgets)
-        :return:  None
+            :param sim_round: simulator round
+            :param dt: step of round
+            :param model: ABM Model instance
+            :param progress_widget: FloatBarProgress instance (ipywidgets)
+            :return:  None
         """
 
         self.current_round = sim_round

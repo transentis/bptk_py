@@ -2,6 +2,6 @@
 Agent
 *****
 
-.. py:currentmodule:: agent
+.. py:module:: BPTK_Py.abm.agent
 .. autoclass:: Agent
    :members:

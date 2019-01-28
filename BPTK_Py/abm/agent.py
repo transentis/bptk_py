@@ -26,10 +26,10 @@ class Agent:
 
     def __init__(self, agent_id, model, properties):
         """
-
-        :param agent_id: id of agent. Model should manage this. Do use agent factories!
-        :param model: Model instance
-        :param properties: Dictionary of agent properties
+        Initializes the agent and sets its id, model and properties.
+         :param agent_id: id of agent. Model should manage this. Do use agent factories!
+         :param model: Model instance
+         :param properties: Dictionary of agent properties
         """
         self.model = model
         self.events = []
@@ -41,8 +41,8 @@ class Agent:
 
     def serialize(self):
         """
-        Serialize the agent
-        :return:
+        Serialize the agent.
+         :return: Returns a dictionary containing the agent state
         """
 
         output = {}
@@ -57,11 +57,11 @@ class Agent:
 
     def register_event_handler(self, states, event, handler):
         """
-        Register an event handler
-        :param states: States for which the event handler is valid
-        :param event: event instance
-        :param handler: Actual handler
-        :return: None
+        Register an event handler.
+         :param states: States for which the event handler is valid
+         :param event: event instance
+         :param handler: Actual handler
+         :return: None
         """
         for state in states:
             if state not in self.eventHandlers:
@@ -72,22 +72,23 @@ class Agent:
     def receive_event(self, event):
         """
         Receive an event
-        :param event: Event instance
-        :return: None
+         :param event: Event instance
+         :return: None
         """
         self.events.append(event)
 
     def initialize(self):
         """
-        Initialize. Implement this method!
-        :return: None
+        Initialize the agent - called by the framework directly after the agent is instantiated, useful for any kind of initialization code.
+         :return: None
         """
 
     def set_property(self, name, data):
         """
-        Configure an agent property
-        :param property_spec: Specification of property (dictionary)
-        :return:
+        Configure an agent property by passing a dictionary specifying the property.
+         :param name: The name of the property whose data is being set.
+         :param data: Specification of property (dictionary)
+         :return:
         """
         if not self.properties:
             self.properties = dict()
@@ -95,13 +96,19 @@ class Agent:
         self.properties[name] = data
 
     def set_property_value(self, name, value):
+        """
+        Sets the value of a property.
+         :param name: The name of the property to set.
+         :param value: The value of the property to set.
+         :return:
+        """
         self.properties[name]["value"] = value
 
     def get_property(self, name):
         """
         Get one property
-        :param name: Name of property
-        :return: Dictionary for property
+         :param name: Name of property
+         :return: Dictionary for property
         """
 
         try:
@@ -111,6 +118,11 @@ class Agent:
             return None
 
     def get_property_value(self, name):
+        """
+        Retrieves the value of a property.
+         :param name: The name of the property whose value is to be retrieved.
+         :return: The value of the property.
+        """
         return self.properties[name]["value"]
 
     # overriding getattr and setattr to ensure that properties in self.properties can be accessed as object attributes
@@ -134,8 +146,8 @@ class Agent:
     def receive_instantaneous_event(self, event):
         """
         Handle an event immediately, do not wait for another round
-        :param event: event instance
-        :return: None
+         :param event: event instance
+         :return: None
         """
 
         try:
@@ -157,28 +169,28 @@ class Agent:
         except KeyError as e:
             pass
 
-    def act(self, time, sim_round, step):
+    def act(self, time, round_no, step_no):
         """
-        Actual play method. Triggered by scheduler. Makes the agent progress by one step
-        :param time: t
-        :param sim_round: round number
-        :param step: step number of round
-        :return: None
+        This method is called by the scheduler every timestep. Agents implement their logic here.
+         :param time:     this is the current simulation time (equivalent to round_no+step_no*dt)
+         :param round_no: round number
+         :param step_no:  step number of round
+         :return: None
         """
 
     def to_string(self):
         """
         ToString method
-        :return: current state
+         :return: current state
         """
         return self.state
 
     @staticmethod
     def is_event_relevant(threshold):
         """
-        Function to differentiate relevant and irrelevant methods. Currently uses random number
-        :param threshold: Threshold for relevance
-        :return: Boolean
+        Function to differentiate relevant and irrelevant events. It generates a random number – if this is smaller than the threshold, the event is deemed relevant.
+         :param threshold: Threshold for relevance
+         :return: Boolean
         """
         return random.random() < threshold
 

@@ -30,9 +30,9 @@ class DataCollector:
     def record_event(self, time, event):
         """
         Record an event
-        :param time: t (int)
-        :param event: event instance
-        :return: None
+            :param time: t (int)
+            :param event: event instance
+            :return: None
         """
         if time not in self.event_statistics:
             self.event_statistics[time] = {}
@@ -45,9 +45,9 @@ class DataCollector:
     def collect_agent_statistics(self, time, agents):
         """
         Collect agent statistics from agent(s)
-        :param time: t (int)
-        :param agents: list of Agent
-        :return: None
+            :param time: t (int)
+            :param agents: list of Agent
+            :return: None
         """
 
         self.agent_statistics[time] = {}
@@ -103,11 +103,7 @@ class DataCollector:
     def statistics(self):
         """
         Get the statistics collected
-        :return: Dictionary
+            :return: Dictionary
         """
 
         return self.agent_statistics
-
-
-
-

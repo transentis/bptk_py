@@ -13,7 +13,7 @@ This automatically starts a background process that scans your ``scenario`` dire
 
 The method returns nothing or a Pandas dataframe with simulation results if return_df=True
 
-.. py:currentmodule:: BPTK_Py.bptk
+.. py:module:: BPTK_Py.bptk
 .. autoclass:: bptk
    :members:
 
