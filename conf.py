@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath('.'))
 
 project = 'BPTK_PY'
 copyright = '2019, transentis labs GmbH'
-author = 'transentis labs Gmbh, Oliver Grasl, Dominik Schro\u00f6ck'
+author = 'transentis labs GmbH'
 
 # The short X.Y version
 version = '0.5.3'
@@ -138,7 +138,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'bptk_py.tex', 'bptk\\_py Documentation',
-     'transentis labs Gmbh, Oliver Grasl, Dominik Schr\"ock', 'manual'),
+     'transentis labs Gmbh', 'manual'),
 ]
 
 
