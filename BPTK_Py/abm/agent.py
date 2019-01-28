@@ -44,11 +44,16 @@ class Agent:
         Serialize the agent
         :return:
         """
-        return {
-            "id": self.id,
-            "state": self.state,
-            "type": self.agent_type
-        }
+
+        output = {}
+        for key, value in self.properties.items():
+            output[key] = self.properties[value]['value']
+
+        output['id'] = self.id
+        output['state'] = self.state
+        output['type'] = self.agent_type
+
+        return output
 
     def register_event_handler(self, states, event, handler):
         """
