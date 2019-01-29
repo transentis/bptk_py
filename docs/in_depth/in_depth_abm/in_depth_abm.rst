@@ -74,7 +74,9 @@ Assuming that each task takes one day to complete when productivity is equal to 
 
 
 You can see that a project with 80 tasks still takes 100 days and a project with 120 tasks completes much faster than expected.
+
 You can see why this happens when you plot the productivity - this is quite different for each of the scenarios:
+
 * In the 80 scenario, the productivity is very low initially and then goes up as the deadline approaches.
 * In the 100 scenario, the productivity is at one right up to the deadline.
 * In the 120 scenario, the productivity is high right from the word go.

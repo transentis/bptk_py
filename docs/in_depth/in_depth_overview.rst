@@ -9,4 +9,5 @@ This section explains the architecture of the BPTK framework and goes into the d
    :caption: Contents:
 
    ./in_depth_abm/in_depth_abm
+   ./in_depth_architecture/in_depth_architecture
 
