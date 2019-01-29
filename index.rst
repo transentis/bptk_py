@@ -17,12 +17,12 @@ Our tutorial contains a number of models and Jupyter notebooks to get you starte
 Main Features
 -------------
 
-* Build simulation models using System Dynamics and/or agent-based modeling and run them in Jupyter.
-* Retrieve simulation results as `Pandas DataFrame <https://github.com/pandas-dev/pandas>`_ timeseries data.
-* Create plots from simulation results.
-* Build interactive dashboards.
-* Manage simulation scenarios.
-* Automatically convert XMILE models into Python and run them in Jupyter.
+* The BPTK_PY framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
+* The objective of the framework is to provide the infrastructure for managing model settings and scenarios and for running and plotting simulation results, so that the modeller can concentrate on modelling.
+* The framework automatically collect statistics on agents, their states and their properties, which makes plotting simulation results very easy.
+* Simulation results can also be returned as Pandas dataframes.
+* The framework uses some advanced Python metaprogramming techniques to ensure the amount of boilerplate code the modeler has to write is kept to a minimum.
+* Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing using the Jupyter environment very painless.
 
 Getting Help
 ____________
@@ -32,12 +32,13 @@ BPTK_Py is developed and maintained by `transentis labs <http://www.transentis.c
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
    docs/usage/installation
    docs/usage/quickstart
    docs/usage/limitations
+   docs/in_depth/in_depth_overview
    docs/api/api_overview
 
 Indices and tables

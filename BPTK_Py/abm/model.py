@@ -435,7 +435,7 @@ class Model:
     def plot_lookup(self,lookup_names):
         from ..util import lookup_data
         from ..visualizations import visualizer
-        import BPTK_Py.config.config as config
+        from ..config import config
 
         lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
 
