@@ -1,6 +1,6 @@
-***********
+###########
 Limitations
-***********
+###########
 
 Currently the BPTK_Py framework is geared towards our own need and has a number of limitations - we are happy to extend it. Please let us what you need so that we can prioritize our activities, you can reach us at `support@transentis.com <mailto:support@transentis.com>`_
 

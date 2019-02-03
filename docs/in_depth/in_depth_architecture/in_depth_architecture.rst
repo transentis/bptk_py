@@ -4,7 +4,17 @@ The Architecture of The BPTK Framework
 
 This document explains the overall architecture of the BPTK framework.
 
-Conceptually, there are five major building blocks:
+BPTK Building Blocks
+====================
+
+The BPTK framework was designed to meet a number of objectives:
+
+* Provide the modeler and analyst working in a Jupyter notebook environment with a easy to use API, bearing in mind that such analysts may not be expert Python developers.
+* Provide the ability to run simulations standalone (i.e. outside of a notebook environment)
+* The framework should be as light-weight as possible, yet easily extensible
+* Focus on modeling and simulation and reuse libraries such as `Pandas <http://pandas.pydata.org>`_ and `Matplotlib <http://www.matplotlib.org>`_ for manipulating and plotting simulation results.
+
+Currently the framework has five conceptual building blocks:
 
 * A component that allows you to build and run simulations in Python, using an Agent-based modeling approach, a System Dynamics modelling approach or both ("hybrid models").
 * A component that (automatically) translates System Dynamic models conforming to the XMILE standard into Python code.
@@ -12,8 +22,10 @@ Conceptually, there are five major building blocks:
 * A component that visualises the results produced by simulations, in the form of plots or dashboards.
 * A high level API that lets you interact with the other components using a simple and uniform API. In particular, this component allows you to run scenarios and plot scenario results from both models created in Python or translated from XMILE in a uniform manner.
 
-Before explaining how to make more complex plots or work with the output data, we would like to show you the architecture of the plotting API. The goal of the design is to decouple actual objects that *do* things from the API object, i.e. ``bptk``.
+The diagram below shows these building blocks and their dependencies.
 
+How The Bulding Blocks Work Together At Runtime
+===============================================
 
 Now let's see what happens at runtime, assuming that we are in a Jupyter notebook.
 
@@ -91,13 +103,13 @@ If you do this in a Jupyter notebook created within our `BPTK tutorial <http://w
 
 Sofar, none of the scenarios have been simulated yet. You could now run scenario by calling ``bptk.run_simulation()``, which runs the simulation and returns a dataset. But in most cases you probably want to visualise the results directly, in which case ``bptk.plot_scenario`` is the method to use.
 
-Ler's choose one of the scenarios from the list above, e.g. the ```est`` from the ``scenarioMananger``. then you could plot this as follows ::
+Ler's choose one of the scenarios from the list above, e.g. the ```scenario120`` from the ``smSimpleProjectManagement`` scenario manager. You can run the simulation and plot the behviour of the open tasks and closed tasks using the following command::
 
     bptk.plot_scenarios(
         scenario_managers=["smSimpleProjectManagement"],
         scenarios=["scenario120"],
         equations=['openTasks',"closedTasks"],
-        title="Example Plot with Dates",
+        title="plot_scenarios Results",
         x_label="Date",
         y_label="Open / Closed Tasks",
         start_date="1/11/2017",
@@ -106,10 +118,9 @@ Ler's choose one of the scenarios from the list above, e.g. the ```est`` from th
 
 This leads to the following result:
 
-Let's what happens behind the scenes in order to produce that result:
+What happens behind the scenes in order to produce this result?
 
-
-As mentioned above, the ``bptk`` object doesn't contain much logic of its own, because we want to decouple the bptk API from the components that actually *do* things.
+As mentioned above, the ``bptk`` object doesn't contain much logic of its own, because we want to decouple the API from the components that actually *do* things.
 
 The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9).
 

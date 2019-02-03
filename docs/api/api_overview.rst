@@ -6,10 +6,14 @@ BTPK APIs
    :maxdepth: 1
    :caption: Contents:
 
-   ./api_agent.rst
-   ./api_bptk.rst
-   ./api_datacollector.rst
-   ./api_event.rst
-   ./api_model.rst
-   ./api_scheduler.rst
-   ./api_simultaneousScheduler.rst
+   ./api_agent
+   ./api_bptk
+   ./api_datacollector
+   ./api_event
+   ./api_model
+   ./api_scheduler
+   ./api_scenario_manager
+   ./api_scenario_manager_abm
+   ./api_scenario_manager_factory
+   ./api_scenario_manager_sd
+   ./api_simultaneousScheduler

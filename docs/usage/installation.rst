@@ -1,18 +1,23 @@
-************
+############
 Installation
-************
+############
 
 Like every piece of software, BPTK_Py and its dependencies have to be installed correctly.
 
 If you already have a running Python and Jupyter environment, ``pip install BPTK-Py`` or ``pip3 install BPTK-Py`` will do!
 
+
+*********************
+Starting From Scratch
+*********************
+
 Assuming you are starting from scratch, you need to perform the following steps:
 
 1. Install Python
 2. Install Node and npm
-3. Install BPTK_Py
+3. Install BPTK_Py using pip
 4. Install JupyterLab (optional)
-5. Setup a virtual environment (optional)
+5. Set up a virtual environment (optional)
 6. Read our quickstart document
 
 Install Python
@@ -81,8 +86,8 @@ Just type ``jupyter lab`` in the terminal to get started.
 
 In order to keep your system clean, you may want to use a `virtual environment <https://docs.python-guide.org/dev/virtualenvs/>`_ instead of installing Python system-wide.
 
-Setup a virtual environment
-===========================
+Set up a virtual environment
+============================
 
 A virtual environment is a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages.
 
@@ -106,8 +111,9 @@ Read the quickstart
 
 To get started, read our :doc:`quickstart <quickstart>` document.
 
+********************
 Package dependencies
-====================
+********************
 
 If for any reason, you want to install the requirements manually or need to know why we need the packages, here comes the list.
 

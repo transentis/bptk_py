@@ -3,8 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+###########################################################
 BPTK_PY: System Dynamics and Agent-based Modeling In Python
-===========================================================
+###########################################################
 
 The Business Prototyping Toolkit for Python (BPTK_Py) provides you with a computational modeling framework that allows you to build and run simulation models using System Dynamics and/or agent-based modeling and plot the results.
 
@@ -15,7 +16,7 @@ The framework ships with our *sdcc parser*  for transpiling  System Dynamics mod
 Our tutorial contains a number of models and Jupyter notebooks to get you started – you can download the tutorial from our `website <https://www.transentis.com/products/business-prototyping-toolkit/>`_.
 
 Main Features
--------------
+=============
 
 * The BPTK_PY framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
 * The objective of the framework is to provide the infrastructure for managing model settings and scenarios and for running and plotting simulation results, so that the modeller can concentrate on modelling.
@@ -26,7 +27,7 @@ Main Features
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 Getting Help
-____________
+============
 
 BPTK_Py is developed and maintained by `transentis labs <http://www.transentis.com>`_. For questions regarding installation or usage and for feature requests, please  contact us at: `support@transentis.com <mailto:support@transentis.com>`_.
 

@@ -1,6 +1,6 @@
-**********
+##########
 Quickstart
-**********
+##########
 
 The best way to get started is to download our tutorial. Our tutorial contains Jupyter notebooks and example models that illustrate how to use the BPTK_Py framework to build models in Python System Dynamics, agent-based modeling and how to transpile models in XMILE format.
 

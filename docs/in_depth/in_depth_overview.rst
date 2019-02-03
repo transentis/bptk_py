@@ -1,6 +1,6 @@
-*************
+#############
 BPTK In Depth
-*************
+#############
 
 This section explains the architecture of the BPTK framework and goes into the details of how to build models using System Dynamics and agent-based modeling.
 
