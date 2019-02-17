@@ -1,9 +1,10 @@
 
+*******************************************
 A Simple Python Library For System Dynamics
-===========================================
+*******************************************
 
-Build System Dynamics simulations interactively in Jupyter using Python
------------------------------------------------------------------------
+**Build System Dynamics simulations interactively in Jupyter using Python**
+
 
 We love building computational models and our favorite environment for
 this kind of explorative, analytical work are
@@ -14,7 +15,7 @@ To make computational modeling easier we are developing the *Business
 Prototyping Toolkit for Python* (BPTK PY), a simple library that
 currently supports System Dynamics and Agent-based modeling.
 
-We first introduced the BPTK PY libary in our recent post `Writing
+We first introduced the BPTK PY libary in our blog post `Writing
 Computational Essays Based On Simulation
 Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/>`__.
 
@@ -51,7 +52,7 @@ Tutorial, which is available for `download
 here <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
 
 A simple model to demonstrate the library
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=========================================
 
 To illustrate the DSL, we will build the simple project management model
 we introduced in our `step-by-step tutorial on System
@@ -60,7 +61,7 @@ Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-syst
 The project management model is really simple and just containts a few
 stocks, flows and converters, as you can see in the following diagram:
 
-.. figure:: ./images/intro/simple_project_diagram.png
+.. figure:: simple_project_diagram.png
    :alt: Diagram of the Simple Project Management Model
 
    Diagram of the Simple Project Management Model
@@ -441,7 +442,7 @@ Prototyping Toolkit. The BPTK Framework is available under the MIT
 License on `PyPi <https://pypi.org/project/BPTK-Py/>`__, so you can
 start using it right away.
 
-You can download a tutorial (which includes this blog post as a Jupyter
+You can download a tutorial (which includes this document as a Jupyter
 notebook) on the `BPTK product
 homepage <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
 
@@ -450,13 +451,13 @@ particular also on how you can use the SD DSL in Python without using
 Jupyter.
 
 Conclusion
-~~~~~~~~~~
+==========
 
-This post introduced a simple domain-specific language for System
+This document introduced a simple domain-specific language for System
 Dynamics, implemented in Python. It let's you create System Dynamics in
 Python and supports interactive modeling in Jupyter.
 
-Creating System Dynamcis models directly in Python is particulary useful
+Creating System Dynamics models directly in Python is particulary useful
 if you have the need to extend your SD models with your own SD functions
 or you would like to combine your models with other computational models
 such as Agent-based models or mathematical models.
