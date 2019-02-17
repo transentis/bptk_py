@@ -11,21 +11,27 @@ The BPTK framework was designed to meet a number of objectives:
 
 * Provide the modeler and analyst working in a Jupyter notebook environment with a easy to use API, bearing in mind that such analysts may not be expert Python developers.
 * Provide the ability to run simulations standalone (i.e. outside of a notebook environment)
-* The framework should be as light-weight as possible, yet easily extensible
 * Focus on modeling and simulation and reuse libraries such as `Pandas <http://pandas.pydata.org>`_ and `Matplotlib <http://www.matplotlib.org>`_ for manipulating and plotting simulation results.
 
 Currently the framework has five conceptual building blocks:
 
-* A component that allows you to build and run simulations in Python, using an Agent-based modeling approach, a System Dynamics modelling approach or both ("hybrid models").
-* A component that (automatically) translates System Dynamic models conforming to the XMILE standard into Python code.
-* A component that lets you define and manage simulation scenarios in a uniform manner.
-* A component that visualises the results produced by simulations, in the form of plots or dashboards.
-* A high level API that lets you interact with the other components using a simple and uniform API. In particular, this component allows you to run scenarios and plot scenario results from both models created in Python or translated from XMILE in a uniform manner.
+* *ABM and SD Modeling.* A component that allows you to build and run simulations in Python, using an Agent-based modeling approach, a System Dynamics modelling approach or both ("hybrid models").
+* *SD Transpiler.* A component that (automatically) translates System Dynamic models conforming to the XMILE standard into Python code.
+* *Scenario Management.* A component that lets you define and manage simulation scenarios in a uniform manner. A scenario is a model and a set of initial values for the simulation parameters. Scenarios are a powerful tool, because they enable you to easily compare the results of running the same simulation with different parameters to each other, which is something you have to do frequently when working with simulations.
+* *Visualisation.* A component that visualises the results produced by simulations, in the form of plots or dashboards.
+* *BPTK API.* A high level API that lets you interact with the other components using a simple and uniform API. In particular, this component allows you to run scenarios and plot scenario results from both models created in Python or translated from XMILE in a uniform manner.
+
+To use the framework, the modeler needs to build simulation models, either directly Python (AB/SD Model) or in XMILE (using an XMILE compatible SD modeling tool, such as isee systems Stella). A model created in Python is essentially a subclass of the AB and SD Modeling component, while the XMILE models are transpiled into such a subclass by the SD Transpiler component.
+
+How does the framework know which models to compile? This is what the scenario config files are for - the modeler uses these to define scenario parameters and to identify the model that is relevant for a particular scenario. The model is then either the name of a Python class or the name of an XMILE model.
 
 The diagram below shows these building blocks and their dependencies.
 
-How The Bulding Blocks Work Together At Runtime
-===============================================
+
+.. image:: BPTK_Components.png
+
+How The Building Blocks Work Together At Runtime
+================================================
 
 Now let's see what happens at runtime, assuming that we are in a Jupyter notebook.
 
@@ -40,11 +46,14 @@ For each scenario manager in the config files, a scenario manager object is crea
 
 Depending on whether a scenario relates to a Python model or an XMILE model, the scenario will either be a correctly configured instance of the Python model or it will contain all the equations transpiled from the XMILE model.
 
-At this stage, all scenario managers, scenarios and models have been instantiated and configured according to the scenario definitions, but the have not run yet.
+At this stage, all scenario managers, scenarios and models have been instantiated and configured according to the scenario definitions, but the simulations have not run yet.
 
-This is very useful, because it means you can easliy compare the results of running different configurations of the same model or different versions of the same model using the same configuration or even completely different models to each other.
+You can easily test the transpiler by deleting the transpiled Python classes from the scenario directory - the scenario manager notices this and automatically re-transpiles the model.
 
-You can take a look at all the scenarios that have been loaded using the following piece of code – this is particularly useful for debugging purposes. ::
+This behaviour is particularly useful when building XMILE models and testing scenarios in a Jupyter notebook in parallel: As soon as you save a change to the XMILE model, the model is re-transpiled into Python. Now all you need to do is reset the model in the Jupyter notebook and the Python class is then automatically reloaded.
+
+
+The following piece of code lists all the scenarios that have been loaded::
 
     print()
     print("Available Scenario Managers and Scenarios:")
@@ -58,7 +67,7 @@ You can take a look at all the scenarios that have been loaded using the followi
         for name in manager.get_scenario_names():
             print("\t {}".format(name))
 
-If you do this in a Jupyter notebook created within our `BPTK tutorial <http://www.transentis.com/business-prototyping-toolkit>`_, you should get a result similar to this one: ::
+If you do this in a Jupyter notebook created within our `BPTK tutorial <http://www.transentis.com/business-prototyping-toolkit>`_, you should get a result similar to this one::
 
     Available Scenario Managers and Scenarios:
 
@@ -101,9 +110,11 @@ If you do this in a Jupyter notebook created within our `BPTK tutorial <http://w
     *** ABMsmBass ***
          scenarioBassBase
 
-Sofar, none of the scenarios have been simulated yet. You could now run scenario by calling ``bptk.run_simulation()``, which runs the simulation and returns a dataset. But in most cases you probably want to visualise the results directly, in which case ``bptk.plot_scenario`` is the method to use.
+Back to our discussion of ``bptk.plot_scenario``: So far, the scenarios have been loaded, but not simulated yet (which is good, because there could potentially be very many scenarios and you probably don't want to run them all at once).
 
-Ler's choose one of the scenarios from the list above, e.g. the ```scenario120`` from the ``smSimpleProjectManagement`` scenario manager. You can run the simulation and plot the behviour of the open tasks and closed tasks using the following command::
+To run a scenario, you could ``bptk.run_simulation`` with the appropriate parameters – this methods runs the given scenarios and returns a dataset. But in most cases you probably want to visualise the results directly, in which case ``bptk.plot_scenario`` is the method to use.
+
+Let's choose one of the scenarios from the list above, e.g. the ``scenario120`` from the ``smSimpleProjectManagement`` scenario manager. You can run the simulation and plot the behaviour of the open tasks and closed tasks using the following command::
 
     bptk.plot_scenarios(
         scenario_managers=["smSimpleProjectManagement"],
@@ -118,38 +129,22 @@ Ler's choose one of the scenarios from the list above, e.g. the ```scenario120``
 
 This leads to the following result:
 
+.. image:: output_6_0.png
+
 What happens behind the scenes in order to produce this result?
 
-As mentioned above, the ``bptk`` object doesn't contain much logic of its own, because we want to decouple the API from the components that actually *do* things.
+As mentioned above, the ``bptk`` object doesn't contain much logic of its own, because we want to decouple the API from the components that actually *do* the heavy lifting.
 
-The visualizer decouples simulation and visualization by forwarding method calls for the simulation to a ``simulation_wrapper`` (step 3) and later create the plots from the result data (step 9).
+The BPTK API calls the scenario manager to run the scenario.
 
-The call in step 3 is actually forwarded via ``bptk`` but we decided to omit this for readability.
+The scenario manager checks its internal simulation cache to see whether the scenario has already been run - if so, it passes the dataframe containing the simulation results from the cache to the visualisation component, which creates the relevant plot.
 
-Hence, you may use the ``run_simulation`` call without having to go the extra mile via the visualizer.
+This caching behaviour is essential – it means you do not need to re-run the scenario to plot the results from another equations or agent, you just need to look up the result in the cache. Without the cache, you would have to run the simulation again for every plot, which could take quite some time depending on the size and complexity of the model.
 
-However, we strongly encourage you to use the ``plot_scenarios`` method and obtain the resulting data using the ``return_df`` flag.
+If there is no data in the cache, the scenario manager runs the scenario by calling its ``run`` method, and then passes the dataframe to the ``visualisation`` component.
 
-It comes with neat features like generating timeseries data from your simulation results.
+Summary
+=======
 
-The ``simulationWrapper`` handles the simulations for each scenario. At this stage, the scenarios are only given with their names.
-
-Hence, the simulator has to get the actual data that the ``scenarioManagerFactory`` read from the JSON files (step 4).
-
-On the right side we denoted the hierarchy of the ``scenarioManager`` and ``simulationScenario``.
-The factory is at the top level and loads the JSON files and creates the scenario Managers.
-
-The scenario Manager  instantiates the simulation models from the model files and makes sure to transpile the Stella Architect models into Python.
-
-In a sense, it is the manager of the scenarioManagers, which group the actual scenarios. After looking up the scenarios, the factory returns these to the simulationWrapper (step 5).
-
-Finally, the simulations start for each scenario using the model simulator and are returned to the simulationWrapper (steps 6 and 7).
-
-The results are routed back to the Visualizer (step 8, keep in mind: Actually via bptk but omitted for readability).
-
-Finally, the Visualizer generates the time series data, the plots and formats them (step 9).
-
-The output goes back to ``bptk`` and the user gets to see a plot created with `Matplotlib <http://www.matplotlib.org>`_ - or a dataFrame if she used the ``return_df`` flag - step 10.
-
-So even though the API of the bptk object is simple, there is actually quite a lot going on behind the scenes. Because of the decoupling of the modules, we can treat both ABM, native SD and transpiled SD models in a similar fashion and we can further componemts if necessary.
+Even though the API of the ``bptk`` object is simple, there is actually quite a lot going on behind the scenes. Because the components only communicate via well-defined interfaces, the scenario manager can treat both ABM, native SD and transpiled SD models in a similar fashion. The framework could also be easily extended to deal with other kinds of simulations.
 
