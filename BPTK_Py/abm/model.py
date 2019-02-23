@@ -23,6 +23,7 @@ from ..systemdynamics import Constant
 from ..systemdynamics import Converter
 from ..systemdynamics import Flow
 from ..systemdynamics import Stock
+from ..systemdynamics import UserFunction
 
 
 ###################
@@ -70,6 +71,8 @@ class Model:
         self.converters = {}
         self.constants = {}
         self.points = {}
+        self.functions = {}
+        self.fn = {}
 
 
 
@@ -204,7 +207,7 @@ class Model:
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
 
-            # Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+            # Lookup properties need to be added to the point dictionary also, for compatibility with SD models
             # this should be reworked once lookup handling is harmonized between sd and abm
 
             if self.properties[name]["type"] == "Lookup":
@@ -512,6 +515,20 @@ class Model:
             stock = Stock(self, name)
             self.stocks[name] = stock
             return stock
+
+    def function(self, name, fn):
+        """
+        Create a user defined function for SD models.
+        :param name:  name of the function
+        :param fn: returns
+        :return: a nary function that creates a NaryFunction class
+        """
+
+        if name not in self.functions:
+            self.functions[name] = lambda *args: UserFunction(name, *args)
+            self.fn[name] = fn
+
+        return self.functions[name]
 
     def flow(self, name):
         """

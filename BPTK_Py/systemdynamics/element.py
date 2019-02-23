@@ -81,7 +81,7 @@ class Element:
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
-    def plot(self,starttime=0,stoptime=None,dt=None):
+    def plot(self,starttime = 0, stoptime = None, dt = None):
 
         ## Equation von start bis stop
         dt = self.model.dt if dt is None else dt

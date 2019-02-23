@@ -40,6 +40,9 @@ class Time(Function):
         """
         return "t"
 
+
+
+
 class Lookup(Function):
     """
     Lookup function. Uses the points of a graphical function for interpolation

@@ -45,6 +45,40 @@ class UnaryOperator:
     def __str__(self):
         return self.term()
 
+class NaryOperator:
+
+    def term(self, time="t"):
+        return "nary operator"
+
+    def __str__(self):
+        return self.term()
+
+
+class UserFunction(NaryOperator):
+
+    def __init__(self, name,  *args):
+        self.name = name
+        self.args = args
+
+    def term(self,  time="t"):
+        fn_str = "model.fn['{}'](model, {}".format(self.name, time)
+
+        num_args = len(self.args)
+
+        if num_args:
+            fn_str += ","
+
+        count = 0
+        for arg in self.args:
+            fn_str += str(arg)
+            count += 1
+            if count < num_args:
+                fn_str += ","
+
+        fn_str += ")"
+
+        return fn_str
+
 
 class AdditionOperator(BinaryOperator):
 
