@@ -23,7 +23,7 @@ from ..systemdynamics import Constant
 from ..systemdynamics import Converter
 from ..systemdynamics import Flow
 from ..systemdynamics import Stock
-from ..systemdynamics import UserFunction
+from ..systemdynamics import NaryOperator
 
 
 ###################
@@ -525,7 +525,7 @@ class Model:
         """
 
         if name not in self.functions:
-            self.functions[name] = lambda *args: UserFunction(name, *args)
+            self.functions[name] = lambda *args: NaryOperator(name, *args)
             self.fn[name] = fn
 
         return self.functions[name]
@@ -569,7 +569,7 @@ class Model:
             self.converters[name] = converter
             return converter
 
-    def evaluate_function(self, name, t):
+    def evaluate_equation(self, name, t):
         """
         Evaluate an element's equation
             :param name: Name of the equation

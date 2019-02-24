@@ -17,7 +17,7 @@ class Function:
     Generic function class
     """
 
-    def term(self):
+    def term(self, time="t"):
         return "function"
 
     def __str__(self):
@@ -33,12 +33,12 @@ class Time(Function):
 
     """
 
-    def term(self):
+    def term(self, time="t"):
         """
 
         :return: time of the simulation: "t"
         """
-        return "t"
+        return time
 
 
 
@@ -56,7 +56,7 @@ class Lookup(Function):
         else:
             self.points = points
 
-    def term(self):
+    def term(self, time="t"):
         return "model.lookup({},{})".format(self.element, self.points)
 
 

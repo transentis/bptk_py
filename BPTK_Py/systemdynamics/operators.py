@@ -47,15 +47,6 @@ class UnaryOperator:
 
 class NaryOperator:
 
-    def term(self, time="t"):
-        return "nary operator"
-
-    def __str__(self):
-        return self.term()
-
-
-class UserFunction(NaryOperator):
-
     def __init__(self, name,  *args):
         self.name = name
         self.args = args
@@ -78,6 +69,21 @@ class UserFunction(NaryOperator):
         fn_str += ")"
 
         return fn_str
+
+    def __str__(self):
+        return self.term()
+
+    def __truediv__(self, other):
+        return DivisionOperator(self, other)
+
+    def __rtruediv__(self, other):
+        return DivisionOperator(other, self)
+
+    def __rmul__(self, other):
+        return MultiplicationOperator(self, other)
+
+    def __mul__(self,other):
+        return MultiplicationOperator(self, other)
 
 
 class AdditionOperator(BinaryOperator):
