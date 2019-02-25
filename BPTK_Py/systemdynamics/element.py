@@ -110,7 +110,7 @@ class Element:
         return self.term()
 
     def __call__(self, *args, **kwargs):
-        return self.model.evaluate_function(self.name, args[0])
+        return self.model.evaluate_equation(self.name, args[0])
 
     def __mul__(self, other):
         return MultiplicationOperator(self, other)
