@@ -12,6 +12,7 @@
 
 
 import random
+import copy
 
 
 #################
@@ -36,7 +37,7 @@ class Agent:
         self.id = agent_id
         self.state = "active"
         self.agent_type = "agent"
-        self.properties = properties
+        self.properties = copy.deepcopy(properties)
         self.eventHandlers = {}
 
     def serialize(self):
@@ -140,8 +141,8 @@ class Agent:
     def __setattr__(self, name, value):
         if self.__dict__.get("properties") and name in self.__dict__.get("properties"):
             self.set_property_value(name, value)
-
-        super.__setattr__(self, name, value)
+        else:
+            super.__setattr__(self, name, value)
 
     def receive_instantaneous_event(self, event):
         """

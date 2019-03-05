@@ -27,5 +27,3 @@ You should also download the BPTK_Py tutorial, which contains the sample models 
 BPTK_Py is developed and maintained by transentis Labs GmbH. 
 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
-
-
