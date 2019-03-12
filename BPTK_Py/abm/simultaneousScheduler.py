@@ -23,7 +23,7 @@ class SimultaneousScheduler(Scheduler):
     Implementation of a scheduler. Runs steps synchronously
     """
 
-    def run(self, model, progress_widget=None):
+    def run(self, model, progress_widget=None, collect_data=True):
         """
         Run method
             :param model: ABMOdel instance
@@ -31,7 +31,11 @@ class SimultaneousScheduler(Scheduler):
             :return:  None
         """
 
+
         self.progress = 0
+
+        if model.data_collector:
+            model.data_collector.reset()
 
         if progress_widget:
             progress_widget.value = self.progress
@@ -39,9 +43,9 @@ class SimultaneousScheduler(Scheduler):
         for sim_round in range(model.starttime, model.stoptime + 1):
 
             for step in range(round(1 / model.dt)):
-                self.run_step(model, sim_round, step, progress_widget)
+                self.run_step(model, sim_round, step, progress_widget, collect_data)
 
-    def run_step(self, model, sim_round, dt, progress_widget=None):
+    def run_step(self, model, sim_round, dt, progress_widget=None, collect_data=True):
         """
         Run one step
             :param sim_round: simulator round
@@ -64,7 +68,7 @@ class SimultaneousScheduler(Scheduler):
         if progress_widget:
             progress_widget.value = self.progress
 
-        log("[INFO] Round #{} Step #{}".format(sim_round, dt))
+        log("[INFO] Round #{} Step #{}, collect_data={}".format(sim_round, dt, collect_data))
 
         # the simultaneous scheduler first distributes all events to all agents ...
 
@@ -76,9 +80,9 @@ class SimultaneousScheduler(Scheduler):
             if model.data_collector:
                 model.data_collector.record_event(time, event)
 
-        # give the model a chance to act and update dynamic properties etc.
+        # give the model a chance to update dynamic properties etc.
 
-        model.act(time, sim_round, dt)
+        model.begin_round(time, sim_round, dt)
 
         # ... then it let's the agents act on the events
         # The agents are called in the order they were created in
@@ -87,5 +91,14 @@ class SimultaneousScheduler(Scheduler):
             agent.handle_events(time, sim_round, dt)
             agent.act(time, sim_round, dt)
 
+        model.end_round(time, sim_round, dt)
+
         if model.data_collector:
-            model.data_collector.collect_agent_statistics(time, model.agents)
+            if collect_data:
+                model.data_collector.collect_agent_statistics(time, model.agents)
+            else:
+                # only collect data on the last round
+                if sim_round == model.stoptime and dt == (round(1/model.dt)-1):
+                    model.data_collector.collect_agent_statistics(time, model.agents)
+
+

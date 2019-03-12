@@ -69,6 +69,105 @@ class bptk():
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
 
+    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progressBar = False):
+        """
+        Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
+            :param episodes: the number of episodes to run
+            :param scenarios: the scenarios to run
+            :param scenario_managers: the scenario managers to select the scenarios from
+            :param agents: the agents containing the results we want to measure.
+            :param agent_states: the agent state information we are interested in
+            :param agent_properties: the agent property information we are interested in
+            :param agent_property_types: the agent property type we are interested in
+            :param series_names: allows renaming of variables in the plots
+            :param progressBar: shows a progress bar that tracks the epsiode number
+            :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
+        """
+
+
+        log("[INFO] Starting model training")
+
+        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        agents = agents if type(agents) is list else agents.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+
+        # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
+        if len(scenario_managers) == 1 and len(scenarios) == 1:
+            if len(agents) > 0:
+                for agent in agents:
+                    series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + agent] = agent
+
+        # Make sure that agent_states is only used when agent is used!
+        if len(agent_states) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            sys.exit
+
+        if len(agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
+            sys.exit
+
+        if len(agent_properties) > 0 and len(agent_property_types) == 0:
+            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
+            sys.exit
+
+        if len(agent_property_types) > 0 and len(agent_properties) == 0:
+            log("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            sys.exit
+
+        dfs = []
+        for name, manager in self.scenario_manager_factory.scenario_managers.items():
+
+            # Handle Agent based models (agents)
+            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+
+                runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+                dfs += [runner.train_simulation(
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar,
+                    scenario_managers=[manager.name],
+                    episodes=episodes
+                    )]
+
+
+        if len(agents) == 0:
+            log("[ERROR] No agents given, aborting!")
+            return None
+
+
+
+        # prepare dataframes
+        else:
+            if len(dfs) == 0:
+                log("[WARN] No output data produced. Hopefully this was your intention.")
+                return None
+
+            if len(dfs) > 1:
+                df = dfs.pop(0)
+                for tmp_df in dfs:
+                    df = df.join(tmp_df)
+            elif len(dfs) == 1:
+                df = dfs[0]
+
+            else:
+                log("[ERROR] No results produced. Check your parameters!")
+                return None
+
+            return self.visualizer.plot(df=df,
+                                        return_df=return_df,
+                                        visualize_from_period=0,
+                                        visualize_to_period=0,
+                                        stacked=config.configuration["stacked"],
+                                        kind=config.configuration["kind"],
+                                        title="Training Results",
+                                        alpha=config.configuration["alpha"],
+                                        x_label="Episodes",
+                                        y_label="Results",
+                                        start_date="",
+                                        series_names=series_names
+                                        )
+
+
     def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
                        series_names={}, strategy=False,progressBar=False
                        ):
@@ -93,7 +192,7 @@ class bptk():
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-        return self.abmrunner.run_sim(scenarios=[scenario],
+        return self.abmrunner.run_simmulation(scenarios=[scenario],
                                       agents=agents, agent_states=agent_states, progressBar=False, widget=True,
                                       scenario_managers=[manager.name]
                                       )
@@ -171,7 +270,7 @@ class bptk():
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
-                dfs += [runner.run_sim(
+                dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar,
                     scenario_managers=[manager.name],
@@ -182,7 +281,7 @@ class bptk():
             # Handle SD models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SDSimulationRunner(self.scenario_manager_factory, self)
-                dfs += [runner.run_sim(
+                dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_managers=[manager.name],

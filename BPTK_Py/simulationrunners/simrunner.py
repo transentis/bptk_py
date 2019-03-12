@@ -17,7 +17,7 @@ class SimulationRunner():
     It handles the simulation running for simulation models with the specified scenarios
     """
 
-    def __init__(self,scenario_manager_factory,bptk):
+    def __init__(self, scenario_manager_factory, bptk):
         """
 
         :param scenario_manager_factory: the scenario manager factory of bptk
@@ -27,15 +27,29 @@ class SimulationRunner():
         self.bptk = bptk
         self.df = pd.DataFrame()
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False,):
+    def run_simulation(self, scenarios, agents, scenario_managers=[], strategy=False):
         """
         Run the simulation and return a DataFrame storing the simulation results
-        :param scenarios:
-        :param agents:
-        :param scenario_managers:
-        :param strategy:
-        :return:
+            :param scenarios:
+            :param agents:
+            :param scenario_managers:
+            :param strategy:
+            :return:
         """
         print("IMPLEMENT THIS METHOD IN A SUBCLASS")
 
         return pd.DataFrame()
+
+
+    def train_simulation(self, scenarios, agents, episodes=1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):
+        """
+        Trains a simulation over the given number of episodes.
+            :param scenarios:
+            :param agents:
+            :param scenario_managers:
+            :param strategy:
+            :return:
+        """
+        print("IMPLEMENT THIS METHOD IN A SUBCLASS")
+
+

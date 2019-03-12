@@ -76,7 +76,7 @@ class AbmSimulationRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_sim(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_simulation(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for
@@ -149,5 +149,69 @@ class AbmSimulationRunner(SimulationRunner):
 
         df = pd.concat(dfs, axis=1, sort=True).fillna(0)
         df.index.name = "t"
+
+        return df
+
+    def train_simulation(self, scenarios, agents, episodes = 1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):
+        """
+        Method that generates the required dataframe(s) for the simulations
+        :param scenarios: scenarios to plot for
+        :param agents: Agents to plot for
+        :param scenario_managers: Scenario managers to plot for
+        :param progressBar: Show Progress Bar if True
+        :param agent_states: List of agent states to plot for (optional)
+        :param agent_properties: List of agent properties to plot for (optional)
+        :return: DataFrame containing the simulation results
+        """
+        # Obtain simulation results
+
+        scenario_objects = []
+
+
+        # find the appropriate scenarios
+
+        for manager_name in scenario_managers:
+            manager = self.scenario_manager_factory.scenario_managers[manager_name]
+            scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios]
+            manager.instantiate_model(reset=True)
+
+        dfs = []
+
+        episode_count = 0
+
+        while episode_count < episodes:
+
+            log("[INFO] Starting episode {} of {}".format(episode_count, episodes-1))
+            for scenario in scenario_objects:
+                scenario.begin_episode(episode_count)
+
+                scenario.run(collect_data=False)
+
+                data = scenario.statistics()
+
+                for agent in agents:
+                    # now collect the data for the agents - we just want the final value
+                    new_df = pd.DataFrame()
+
+                    df = self.get_df_for_agent(data, agent, agent_states, agent_properties, agent_property_types)
+
+
+                    if agent_properties:
+                        for state in agent_states:
+                            for agent_property in agent_properties:
+                                    for property_type in agent_property_types:
+                                        new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state+ "_" + agent_property+ "_" + property_type] = df[state+"_"+agent_property + "_" + property_type]
+
+                    else:
+                        for state in df.columns:
+                            new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state] = df[state]
+
+                    dfs += [new_df]
+
+                scenario.end_episode(episode_count)
+
+            episode_count += 1
+
+        df = pd.concat(dfs, axis=0, ignore_index=True).fillna(0)
 
         return df

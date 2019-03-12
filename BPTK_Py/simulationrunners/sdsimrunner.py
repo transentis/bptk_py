@@ -58,7 +58,7 @@ class SDSimulationRunner(SimulationRunner):
            
         return plot_df
 
-    def run_sim(self, scenarios, equations, scenario_managers=[], strategy=False, ):
+    def run_simmulation(self, scenarios, equations, scenario_managers=[], strategy=False, ):
         """
          Generic method for plotting scenarios
          :param scenarios: names of scenarios to plot

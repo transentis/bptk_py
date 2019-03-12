@@ -34,7 +34,7 @@ class Scheduler:
         self.current_step = 0
         self.progress = 0
 
-    def run(self, model, progress_widget=None):
+    def run(self, model, progress_widget=None, collect_data=True):
         """
         Override this in a subclass
             :param model: Model instance
@@ -43,7 +43,7 @@ class Scheduler:
         """
         log("[ERROR] Scheduler.run should be overriden in a subclass")
 
-    def run_step(self, model, sim_round, dt, progress_widget=None):
+    def run_step(self, model, sim_round, dt, progress_widget=None, collect_data=True):
         """
         Override this in a subclass
             :param model: Model instance

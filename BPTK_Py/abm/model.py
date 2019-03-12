@@ -117,7 +117,6 @@ class Model:
         for agent_type in self.agent_type_map:
             self.agent_type_map[agent_type] = []
 
-        # all else can be changed
 
         self.agents = []
 
@@ -164,13 +163,13 @@ class Model:
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
 
-    def set_property(self, property_spec):
+    def set_property(self, name, property_spec):
         """
         Configure a property of the simulation
             :param property_spec: Specification of property (dictionary)
             :return:
         """
-        self.properties[property_spec["name"]] = property_spec
+        self.properties[name] = property_spec
 
     def get_property(self, name):
         """
@@ -230,9 +229,9 @@ class Model:
         self.stoptime = stoptime
         self.dt = dt
 
-    def run(self, show_progress_widget=False):
+    def run(self, show_progress_widget=False, collect_data=True):
         """
-        Initiate simulation
+        Initiate simulation - this esssentially just calls the run method of the models scheduler.
             :param show_progress_widget: Boolean: If true, shows a progress widget (only in Jupyter environment!)
             :return: None
         """
@@ -247,24 +246,52 @@ class Model:
                 orientation='horizontal'
             )
 
-            thread = threading.Thread(target=self.scheduler.run, args=(self, progress_widget,))
+            thread = threading.Thread(target=self.scheduler.run, args=(self, progress_widget, collect_data))
             display(progress_widget)
             thread.start()
             thread.join()
         else:
-            self.scheduler.run(self, None)
+            self.scheduler.run(self, None, collect_data)
 
-    def act(self, time, sim_round, step):
-        """
-        Actual play method. Triggered by scheduler.
-        Makes the model progress by one step.
-        Add any logic here that is needed to update dynamic properties
+
+    def begin_round(self, time, sim_round, step):
+         """
+        Should be called by a scheduler at the beginning of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
 
             :param time: t
             :param sim_round: round number
             :param step: step number of round
             :return: None
         """
+
+    def end_round(self, time, sim_round, step):
+         """
+        Should be called by a scheduler at the end of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+
+            :param time: t
+            :param sim_round: round number
+            :param step: step number of round
+            :return: None
+        """
+    def begin_episode(self, episode_no):
+        """
+        When running a simulation repeatedly in episodes, this method is called by the framework to allow tidy up at the beginning of an episode, e.g. a "soft" reset of the simulation. The default implementation calls begin_episode on each agent.
+
+            :param episode_no: the number of the episode
+            :return: None
+        """
+        for agent in self.agents:
+            agent.begin_episode(episode_no)
+
+    def end_episode(self, episode_no):
+        """
+        When running a simulation repeatedly in episodes, this method is called by the framework to allow tidy up at the end of an episode. The default implementation calls end_episode on each agent.
+            :param episode_no: the number of the episode
+            :return: None
+        """
+
+        for agent in self.agents:
+            agent.end_episode(episode_no)
 
     def instantiate_model(self):
         """
@@ -274,7 +301,7 @@ class Model:
 
     def enqueue_event(self, event):
         """
-        Called by the framework to enque events.
+        Called by the framework to enqueue events. In generall you don't need to override this method.
             :param event: Event instance
             :return: None
         """
@@ -341,7 +368,7 @@ class Model:
 
     def configure(self, config):
         """
-        Configure the model using a dictionary, which typically comes from a config file.
+        Called to configure the model using a dictionary, which itself typically comes from a config file.
             :param config: Configuration dictionary
             :return: None
         """
@@ -351,12 +378,12 @@ class Model:
         properties = config["properties"]
 
         for sim_property in properties:
-            self.set_property(sim_property)
+            self.set_property(sim_property, properties[sim_property])
 
             #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
 
-            if sim_property["type"]=="Lookup":
-                self.points[sim_property["name"]]=sim_property["value"]
+            if properties[sim_property]["type"] == "Lookup":
+                self.points[properties[sim_property]["name"]]=properties[sim_property]["value"]
 
         agents = config["agents"]
 

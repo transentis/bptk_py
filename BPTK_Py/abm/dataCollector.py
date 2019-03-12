@@ -27,6 +27,10 @@ class DataCollector:
         self.agent_statistics = {}
         self.event_statistics = {}
 
+    def reset(self):
+        self.agent_statistics = {}
+        self.event_statistics = {}
+
     def record_event(self, time, event):
         """
         Record an event

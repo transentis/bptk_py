@@ -179,6 +179,24 @@ class Agent:
          :return: None
         """
 
+    def begin_episode(self, episode_no):
+        """
+        This method is called by the simulation at the beginning of an episode, e.g. to allow a soft reset of the agent. The default implementation does nothing.
+
+            :param episode_no: the number of the episode
+            :return: None
+        """
+
+
+    def end_episode(self, episode_no):
+        """
+        This method is called by the simulation at the end of an epsiode, to allow tidy up if necessary. The default implementation does nothing.
+
+            :param episode_no: the number of the episode
+            :return: None
+        """
+
+
     def to_string(self):
         """
         ToString method

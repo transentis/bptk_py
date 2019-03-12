@@ -27,3 +27,95 @@ You should also download the BPTK_Py tutorial, which contains the sample models 
 BPTK_Py is developed and maintained by transentis Labs GmbH. 
 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
+
+## Changelog
+
+### 0.6.4
+
+* New methods model.begin_round and model.end_round. Model.act is now obsolete
+
+### 0.6.3  
+
+* Bug fix to bptk.run_simulations: the parameter AgentPropertyTypes was not handled correctly
+
+
+### 0.6.2 
+
+* Bug fix:  all agents were receiving the same properties object on initialization. Fixed by using Python's copy module. Each agent now receives a deep copy. Changes on one agent's properties do not interfere with changes on other agents' properties anymore.
+
+### 0.6.1
+
+* Bug fix: valuate_function was renamed to evaluate_equation in 0.6.0 , but not everywhere
+
+### 0.6.0
+
+* New functionality: you can now define a function in Python and use it within an SD model.
+
+### 0.5.3
+
+* First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis.com
+* You can now run AB models with a custom data_collector without plotting using "run_simulations()". This allows you to create custom data collectors that do not emit data back to BPTK, e.g. a streaming data collector
+* Fixed an issue regarding absolute and relative imports in the Model class
+* Various improvements to ABM module
+
+### 0.5.2
+
+* Models now have their own act method, to allow updating of dynamic properties.
+* Internal changes to event handling in agents
+* Fixed a bug regarding lookup handling.
+
+### 0.5.1
+
+* Bugfix for ABM module
+
+### 0.5
+
+* Large improvements for the Agent Based Modeling component! Main changes:
+* Agents can now have properties.
+* Agent properties can be set via the JSON config file. Properties can be accessed using dot-notation, i.e. agent.property
+* The necessary property get/set methods are added automatically using Python metaprogramming facilities - this keeps the code that needs to implemented by the modeler to a mimimum.The same is true of model properties - these can now also be accessed using dot-notation.
+* Statistics for properties are automatically collected and can be plotted using the plot_scenarios method. Currently the following statistics are collected: total, min, max, mean.
+
+### 0.4.1
+
+* Bugfix in Model class: dt param was not properly instantiated
+
+### 0.4.0
+
+* Framework for Agent Based models
+* Framework for defining System Dynamics models in code with less effort. No need for complex recursive calls anymore. Simply define your equations as easy as element.equation = element * anotherElement. Example in the tutorial!
+* Simplify API: use comma-seperated values to specify scenarios/scenario managers or equations, no need for Python lists anymore!
+* Many more internal improvements under the hood.
+
+### 0.3.7
+
+* PULSE functions can now be defined within Jupyter environment. Just use the new pulse_function_create(scenarios,scenario_managers) method and be surprised.
+* Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. Improves readability tremendously!
+* Optimize imports using __init__.py properly.
+* Correct handling of decimal dt values within simulator.
+
+### 0.3.6.1
+
+* Bugfix to reduce size of the package
+
+### 0.3.6
+
+* Now interpreting strategies that modify at '0' as constants values and overwrite the constants
+* Use DT of simulation model
+
+### 0.3.5.5
+
+* Fixed a bug that prevented from plotting properly when giving multiple scenario managers where one of them did not store the given scenario name
+
+### 0.3.5.4
+
+* Monitoring of Scenario JSON files:
+* Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
+* Find added scenarios
+* Merge base values spread over multiple files
+
+### 0.3.5.3
+
+* horizontal lines in graphs to improve readability
+* Improvements to readme file
+* Small bug fixes
