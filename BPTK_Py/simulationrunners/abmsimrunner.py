@@ -152,7 +152,7 @@ class AbmSimulationRunner(SimulationRunner):
 
         return df
 
-    def train_simulation(self, scenarios, agents, episodes = 1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):
+    def train_simulation(self, scenarios, agents, episodes = 1, scenario_managers=[], progress_widget=None, agent_states=[], agent_properties=[], agent_property_types=[]):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for
@@ -182,6 +182,11 @@ class AbmSimulationRunner(SimulationRunner):
         while episode_count < episodes:
 
             log("[INFO] Starting episode {} of {}".format(episode_count, episodes-1))
+
+            if progress_widget:
+                #TODO: need to handle the case of multiple simulations being trained - the following is only correct for the single simulation case
+                progress_widget.value = episode_count/episodes
+
             for scenario in scenario_objects:
                 scenario.begin_episode(episode_count)
 

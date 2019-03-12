@@ -26,6 +26,11 @@ from .visualizations import visualizer
 from .widgets import Dashboard
 from .widgets import PulseDashboard
 
+# neded for the progress widget in train_simulations
+import threading
+import ipywidgets as widgets
+from IPython.display import display
+
 plt.interactive(True)
 
 
@@ -69,7 +74,7 @@ class bptk():
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
 
-    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progressBar = False):
+    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progress_bar = False):
         """
         Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
             :param episodes: the number of episodes to run
@@ -86,6 +91,41 @@ class bptk():
 
 
         log("[INFO] Starting model training")
+
+        progress_widget=None
+        if progress_bar:
+            progress_widget = widgets.FloatProgress(
+                value=0.0,
+                min=0.0,
+                max=1.0,
+                description='Running',
+                bar_style='info',
+                orientation='horizontal'
+            )
+
+            thread = threading.Thread(target=self._train_simulations, args=(scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types, series_names, return_df, progress_widget))
+            display(progress_widget)
+            thread.start()
+            thread.join()
+        else:
+            return self._train_simulations(scenarios, scenario_managers, episodes, agents, agent_states,agent_properties, agent_property_types, series_names, return_df)
+
+
+    def _train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progress_widget = None):
+        """
+        Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
+            :param episodes: the number of episodes to run
+            :param scenarios: the scenarios to run
+            :param scenario_managers: the scenario managers to select the scenarios from
+            :param agents: the agents containing the results we want to measure.
+            :param agent_states: the agent state information we are interested in
+            :param agent_properties: the agent property information we are interested in
+            :param agent_property_types: the agent property type we are interested in
+            :param series_names: allows renaming of variables in the plots
+            :param progressBar: shows a progress bar that tracks the epsiode number
+            :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
+        """
+
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -124,7 +164,7 @@ class bptk():
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [runner.train_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_widget=progress_widget,
                     scenario_managers=[manager.name],
                     episodes=episodes
                     )]
@@ -293,8 +333,6 @@ class bptk():
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
             return None
 
-
-
         # prepare dataframes
         else:
             if len(dfs) == 0:
@@ -363,7 +401,6 @@ class bptk():
                 if scenario in manager.scenarios.keys():
                     models += [manager.scenarios[scenario].model]
                     df = lookup_data(manager.scenarios[scenario].model,lookup_names)
-                    #df = manager.scenarios[scenario].model.lookup_data(lookup_names)
                     columns = {}
                     for column in df.columns:
                         columns[column] = manager.name + "_" + scenario + "_" + column
