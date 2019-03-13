@@ -33,6 +33,9 @@ For questions regarding installation, usage and other help please contact us at:
 ### 0.6.4
 
 * New methods model.begin_round and model.end_round. Model.act is now obsolete
+* Added a bptk.train_simulation method which runs simulation in episodes to allow training
+* Small changes to the scenario definition syntax (JSON) for agent-based models
+* Renamed the progressBar attribute of bptk.plot_simulation to progress_bar
 
 ### 0.6.3  
 
