@@ -27,7 +27,7 @@ class SimulationRunner():
         self.bptk = bptk
         self.df = pd.DataFrame()
 
-    def run_simulation(self, scenarios, agents, scenario_managers=[], strategy=False):
+    def run_simulation(self, scenarios, equations, agents, scenario_managers=[], strategy=False):
         """
         Run the simulation and return a DataFrame storing the simulation results
             :param scenarios:

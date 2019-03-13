@@ -232,7 +232,7 @@ class bptk():
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-        return self.abmrunner.run_simmulation(scenarios=[scenario],
+        return self.abmrunner.run_simulation(scenarios=[scenario],
                                       agents=agents, agent_states=agent_states, progressBar=False, widget=True,
                                       scenario_managers=[manager.name]
                                       )
@@ -243,7 +243,7 @@ class bptk():
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
                        series_names={}, strategy=False,
-                       progressBar=False,
+                       progress_bar=False,
                        return_df=False):
 
         """
@@ -265,7 +265,7 @@ class bptk():
             :param y_label: label for y axis
             :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
             :param strategy: set True if you want to use the scenarios' strategies
-            :param progressBar: set True if you want to show a progress bar (useful for ABM simulations)
+            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
             :param return_df: set True if you want to receive a dataFrame instead of the plot
             :return: dataFrame with simulation results if return_df=True
          """
@@ -312,7 +312,7 @@ class bptk():
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progress_bar,
                     scenario_managers=[manager.name],
 
                     strategy=strategy,

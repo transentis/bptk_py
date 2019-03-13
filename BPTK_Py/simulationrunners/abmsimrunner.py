@@ -76,7 +76,7 @@ class AbmSimulationRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_simulation(self, scenarios, agents, scenario_managers=[], strategy=False, progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_simulation(self, scenarios, equations=[], agents=[], scenario_managers=[], strategy=False, progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for
@@ -121,7 +121,7 @@ class AbmSimulationRunner(SimulationRunner):
         for scenario in scenario_objects:
 
             if not len(scenario.statistics()) > 0:
-                scenario.run(progressBar)
+                scenario.run(show_progress_widget=progress_bar)
 
             data = scenario.statistics()
 

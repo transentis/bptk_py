@@ -383,7 +383,7 @@ class Model:
             #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
 
             if properties[sim_property]["type"] == "Lookup":
-                self.points[properties[sim_property]["name"]]=properties[sim_property]["value"]
+                self.points[sim_property] = properties[sim_property]["value"]
 
         agents = config["agents"]
 
