@@ -223,7 +223,7 @@ class bptk():
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
 
-        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names, strategy=strategy, scenario_managers=scenario_managers, agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progressBar=progressBar)
+        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names, strategy=strategy, scenario_managers=scenario_managers, agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progressBar)
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
 
