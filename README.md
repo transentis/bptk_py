@@ -30,6 +30,12 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.6.6
+* Little improvements and bugfixes to data collectors. For Kinesis, you will be warned if ``boto`` (required for AWS access) is not installed as it is not a package dependency. t
+
+### 0.6.5
+* We want to make data analysis easy for you. Hence, we added data collectors as standard for model output: ``CSVDataCollector`` outputs each agents' events to CSV, one file per agent. ``KinesisDataCollector`` outputs the agent statistics to Kinesis, an AWS service. For both, the data output is event-wise
+
 ### 0.6.4
 
 * New methods model.begin_round and model.end_round. Model.act is now obsolete
