@@ -16,7 +16,7 @@
 
 
 import csv
-
+import os
 
 class CSVDataCollector:
     """
@@ -25,7 +25,7 @@ class CSVDataCollector:
     For now it only outputs the agent statistics, not the event statistics
     """
 
-    def __init__(self,filename):
+    def __init__(self,prefix="csv/"):
         """
 
         :param filename: filename of output file
@@ -33,11 +33,15 @@ class CSVDataCollector:
         self.agent_statistics = {}
         self.event_statistics = {}
 
+        self.prefix = prefix
+        if not os.path.isdir(prefix):
+             os.mkdir(prefix)
 
         self.column_names = None
 
-        self.outfile = open(filename, "w", encoding="UTF-8")
-        self.writer = csv.writer(self.outfile,delimiter=";")
+        self.csvwriters = {}
+
+
         self.headlines = None
 
     def record_event(self, time, event):
@@ -60,6 +64,7 @@ class CSVDataCollector:
     def reset(self):
         self.agent_statistics = {}
 
+
     def collect_agent_statistics(self, sim_time, agents):
         """
         Collect agent statistics from agent(s)
@@ -70,6 +75,9 @@ class CSVDataCollector:
 
         for agent in agents:
 
+            agent_type = agent.agent_type
+            id = agent.id
+
             stats = {}
             stats["id"] = agent.id
             stats["time"] = sim_time
@@ -79,13 +87,14 @@ class CSVDataCollector:
 
                 stats[agent_property_name] = agent_property_value['value']
 
+            if not id in self.csvwriters.keys():
+                outfile = open(self.prefix + "/" + str(id) + "_" + str(agent_type) + ".csv","w")
+                writer = csv.writer(outfile,delimiter=";")
+                self.csvwriters[id] = writer
+                writer.writerow(list(stats.keys()))
 
-            if not self.headlines:
-                 self.headlines = list(stats.keys())
-                 self.writer.writerow(self.headlines)
-
-            self.writer.writerow(list(stats.values()))
-            self.outfile.flush()
+            writer = self.csvwriters[id]
+            writer.writerow(list(stats.values()))
 
 
 

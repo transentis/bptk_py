@@ -31,7 +31,6 @@ class SimultaneousScheduler(Scheduler):
             :return:  None
         """
 
-
         self.progress = 0
 
         if model.data_collector:
@@ -98,7 +97,5 @@ class SimultaneousScheduler(Scheduler):
                 model.data_collector.collect_agent_statistics(time, model.agents)
             else:
                 # only collect data on the last round
-                if sim_round == model.stoptime and dt == (round(1/model.dt)-1):
+                if sim_round == model.stoptime and dt == (round(1 / model.dt) - 1):
                     model.data_collector.collect_agent_statistics(time, model.agents)
-
-

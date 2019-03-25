@@ -88,7 +88,6 @@ try:
     from boto import kinesis
 except ModuleNotFoundError as e:
     print("Module boto not available. This is required for acessing your AWS account. Please install using pip.")
-    raise e
 
 import json
 from time import sleep
