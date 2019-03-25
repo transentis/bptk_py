@@ -1,10 +1,11 @@
 from setuptools import setup
+import conf
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='BPTK_Py',
-      version='0.6.4',
+      version=conf.version,
       description='A python simulation engine for System Dynamics & Agent based models',
       long_description=long_description,
       long_description_content_type="text/markdown",
@@ -22,6 +23,7 @@ setup(name='BPTK_Py',
                 "BPTK_Py.widgets",
                 "BPTK_Py.modelchecker",
                 "BPTK_Py.abm",
+                "BPTK_Py.abm.datacollectors",
                 "BPTK_Py.simulationrunners",
                 "BPTK_Py.systemdynamics",
                 "BPTK_Py.util"],
