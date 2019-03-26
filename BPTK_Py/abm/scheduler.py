@@ -1,18 +1,17 @@
 #                                                       /`-
 # _                                  _   _             /####`-
-#| |                                | | (_)           /########`-
-#| |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
-#| __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
-#| |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
 
-
-
 from ..logger import log
+from .event import DelayedEvent
 
 
 #####################
@@ -20,11 +19,11 @@ from ..logger import log
 #####################
 
 
-
 class Scheduler:
     """
     Scheduler for agent based modelling
     """
+
     def __init__(self):
         """
         Init method, no params
@@ -33,6 +32,7 @@ class Scheduler:
         self.current_round = 0
         self.current_step = 0
         self.progress = 0
+        self.delayed_events = []
 
     def run(self, model, progress_widget=None, collect_data=True):
         """
@@ -52,3 +52,15 @@ class Scheduler:
             :param progress_widget: Live instance of FloatProgressBar
         """
         log("[ERROR] Scheduler.run_step should be overriden in a subclass")
+
+    def check_delayed_event(self, event,dt):
+        # Handle delayed events
+        if isinstance(event, DelayedEvent):
+            if event.trigger_in > 0:
+                event.trigger_in -= dt
+                self.delayed_events += [event]
+
+                return None
+
+        return event
+

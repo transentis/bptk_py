@@ -30,6 +30,11 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.7.0
+* Added Delayed Events in Agent based modelling. Now each agent can send events that trigger in the future. Instantiate a ```DelayedEvent``` and set the ``trigger_in`` parameter with the number of periods to wait before trigger. The framework will make sure to trigger the event at the right time.
+* Added ``agent_type`` as optional parameter for Agent. Now you do not need to add the agent type in the initialize method anymore if that is what you prefer
+* Better handling of progress bar in ABM simulation using ``ipywidgets.Out`` to make bar disappear after . Removed running scheduler as thread because this is not required here.
+
 ### 0.6.6
 * Little improvements and bugfixes to data collectors. For Kinesis, you will be warned if ``boto`` (required for AWS access) is not installed as it is not a package dependency.
 

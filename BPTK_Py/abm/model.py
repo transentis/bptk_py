@@ -246,9 +246,9 @@ class Model:
                 orientation='horizontal'
             )
 
-
             out = widgets.Output()
             display(out)
+
             with out:
                 display(progress_widget)
 

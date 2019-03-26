@@ -12,7 +12,7 @@
 
 from .scheduler import Scheduler
 from ..logger import log
-
+from .event import DelayedEvent
 
 #################################
 ## SIMULTANEOUSSCHEDULER CLASS ##
@@ -71,13 +71,19 @@ class SimultaneousScheduler(Scheduler):
 
         # the simultaneous scheduler first distributes all events to all agents ...
 
+        later_events = []
+
         while len(model.events) > 0:
-            event = model.events.pop()
 
-            model.agents[event.receiver_id].receive_event(event)
+            # Check if the event is of type DelayedEvent. If yes, we do not get a reply here and the event will be stored in self.delayed_events
+            event = self.check_delayed_event(model.events.pop(),dt=dt)
 
-            if model.data_collector:
-                model.data_collector.record_event(time, event)
+            if event:
+
+                model.agents[event.receiver_id].receive_event(event)
+
+                if model.data_collector:
+                    model.data_collector.record_event(time, event)
 
         # give the model a chance to update dynamic properties etc.
 
@@ -99,3 +105,9 @@ class SimultaneousScheduler(Scheduler):
                 # only collect data on the last round
                 if sim_round == model.stoptime and dt == (round(1 / model.dt) - 1):
                     model.data_collector.collect_agent_statistics(time, model.agents)
+
+
+        # If any delayed events, store them in the model's events list for later use
+        model.events += self.delayed_events
+        self.delayed_events = []
+

@@ -25,7 +25,7 @@ class Agent:
     An agent does things in the simulation and interacts with others
     """
 
-    def __init__(self, agent_id, model, properties):
+    def __init__(self, agent_id, model, properties,agent_type="agent"):
         """
         Initializes the agent and sets its id, model and properties.
          :param agent_id: id of agent. Model should manage this. Do use agent factories!
@@ -36,7 +36,7 @@ class Agent:
         self.events = []
         self.id = agent_id
         self.state = "active"
-        self.agent_type = "agent"
+        self.agent_type = agent_type
         self.properties = copy.deepcopy(properties)
         self.eventHandlers = {}
 
