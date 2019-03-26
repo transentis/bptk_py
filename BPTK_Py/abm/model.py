@@ -246,8 +246,15 @@ class Model:
                 orientation='horizontal'
             )
 
-            display(progress_widget)
+
+            out = widgets.Output()
+            display(out)
+            with out:
+                display(progress_widget)
+
             self.scheduler.run(self,progress_widget,collect_data)
+            out.clear_output()
+
 
         else:
             self.scheduler.run(self, None, collect_data)
