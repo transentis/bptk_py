@@ -95,8 +95,6 @@ class AbmSimulationRunner(SimulationRunner):
         if widget and len(scenarios) > 1:
             log("[ERROR] Currently, we can only spawn a widget for exactly one ABM simulation! Try to run for only one scenario")
 
-
-
         for manager_name in scenario_managers:
             manager = self.scenario_manager_factory.scenario_managers[manager_name]
             scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios]
