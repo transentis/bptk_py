@@ -24,3 +24,9 @@ class Event:
         self.name = name
         self.receiver_id = receiver_id
         self.data = data
+
+
+class DelayedEvent(Event):
+    def __init__(self, name, sender_id, receiver_id, data=None,trigger_in=0):
+        super().__init__(name,sender_id,receiver_id,data)
+        self.trigger_in = trigger_in

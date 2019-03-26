@@ -246,10 +246,9 @@ class Model:
                 orientation='horizontal'
             )
 
-            thread = threading.Thread(target=self.scheduler.run, args=(self, progress_widget, collect_data))
             display(progress_widget)
-            thread.start()
-            thread.join()
+            self.scheduler.run(self,progress_widget,collect_data)
+
         else:
             self.scheduler.run(self, None, collect_data)
 
