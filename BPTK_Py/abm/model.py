@@ -250,9 +250,10 @@ class Model:
                 value=0.0,
                 min=0.0,
                 max=1.0,
-                description='Running',
+                description='Running {}'.format(self.name),
                 bar_style='info',
-                orientation='horizontal'
+                orientation='horizontal',
+                style = {'description_width': 'initial'}
             )
 
             out = widgets.Output()

@@ -127,7 +127,6 @@ class AbmSimulationRunner(SimulationRunner):
 
             if not len(scenario.statistics()) > 0:
                 threads += [Thread(target=scenario.run,args=(progress_bar,))]
-                #scenario.run(show_progress_widget=progress_bar)
 
         for thread in threads:
             thread.start()
