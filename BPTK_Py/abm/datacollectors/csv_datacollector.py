@@ -41,7 +41,6 @@ class CSVDataCollector:
 
         self.csvwriters = {}
 
-
         self.headlines = None
 
     def record_event(self, time, event):
@@ -58,8 +57,6 @@ class CSVDataCollector:
             self.event_statistics[time][event.name] = 0
 
         self.event_statistics[time][event.name] += 1
-
-
 
     def reset(self):
         self.agent_statistics = {}
@@ -95,8 +92,6 @@ class CSVDataCollector:
 
             writer = self.csvwriters[id]
             writer.writerow(list(stats.values()))
-
-
 
 
     def statistics(self):

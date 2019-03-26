@@ -102,7 +102,11 @@ class AbmSimulationRunner(SimulationRunner):
             scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios]
             manager.instantiate_model(reset=False)
 
+        if len(scenario_objects) <= 0:
+            log("[ERROR] No scenario to simulate found")
+
         dfs = []
+
 
         if widget:
             try:
@@ -116,12 +120,22 @@ class AbmSimulationRunner(SimulationRunner):
             except Exception as e:
                 log("[ERROR] Make sure you implement the build_widget() method in your ABM model!")
 
-
+        threads = []
+        from threading import Thread
 
         for scenario in scenario_objects:
 
             if not len(scenario.statistics()) > 0:
-                scenario.run(show_progress_widget=progress_bar)
+                threads += [Thread(target=scenario.run,args=(progress_bar,))]
+                #scenario.run(show_progress_widget=progress_bar)
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        for scenario in scenario_objects:
 
             data = scenario.statistics()
 
@@ -147,7 +161,14 @@ class AbmSimulationRunner(SimulationRunner):
 
                 dfs += [new_df]
 
-        df = pd.concat(dfs, axis=1, sort=True).fillna(0)
+
+        try:
+            df = pd.concat(dfs, axis=1, sort=True).fillna(0)
+        except ValueError as e:
+            log("[ERROR] No data to plot found. It seems there is no scenario available.")
+
+            return pd.DataFrame()
+
         df.index.name = "t"
 
         return df

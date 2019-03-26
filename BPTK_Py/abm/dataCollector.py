@@ -103,7 +103,6 @@ class DataCollector:
                                                                  agent_property_value["value"]))
 
 
-
     def statistics(self):
         """
         Get the statistics collected

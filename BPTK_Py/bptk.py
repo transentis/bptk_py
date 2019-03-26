@@ -310,6 +310,7 @@ class bptk():
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progress_bar,
