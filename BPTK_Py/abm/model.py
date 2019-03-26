@@ -17,7 +17,7 @@ import numpy as np
 from IPython.display import display
 from scipy.interpolate import interp1d
 
-from .event import Event
+from .event import Event, DelayedEvent
 from .agent import Agent
 from ..logger import log
 from ..systemdynamics import Constant
@@ -325,6 +325,10 @@ class Model:
             pass
 
         if isinstance(event,Event):
+
+            if isinstance(event,DelayedEvent):
+                event.trigger_in -= self.dt # Because otherwise we will count down only in the next period and trigger the event one step too late
+
             self.events.append(event)
         else:
             raise WrongTypeException("{} is not an instance of BPTK_Py.Event".format(event))
