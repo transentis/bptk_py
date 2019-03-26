@@ -309,7 +309,7 @@ class bptk():
         scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
         if len(scenario_managers) == 0:
-            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder?")
+            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: {}".format(config.configuration["scenario_storage"]))
             import pandas as pd
             return pd.DataFrame() if return_df else None
 
