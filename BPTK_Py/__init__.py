@@ -18,7 +18,7 @@ except:
 name = "BPTK_Py"
 
 
-def instantiate(loglevel="WARN"):
+def instantiate(loglevel="INFO"):
     if loglevel in ["WARN","ERROR","INFO"]:
         config.loglevel = loglevel
     else:

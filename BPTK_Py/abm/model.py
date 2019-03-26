@@ -11,19 +11,20 @@
 
 
 import random
-import threading
 
 import ipywidgets as widgets
 import numpy as np
 from IPython.display import display
 from scipy.interpolate import interp1d
 
+from .event import Event
+from .agent import Agent
 from ..logger import log
 from ..systemdynamics import Constant
 from ..systemdynamics import Converter
 from ..systemdynamics import Flow
-from ..systemdynamics import Stock
 from ..systemdynamics import NaryOperator
+from ..systemdynamics import Stock
 
 
 ###################
@@ -158,7 +159,15 @@ class Model:
             :param agent_type: Type of agent
             :return: None
         """
+
+        class NotAnAgentException(Exception):
+            pass
+
         agent = self.agent_factories[agent_type](len(self.agents), self, agent_properties)
+
+        if not isinstance(agent,Agent):
+            raise NotAnAgentException("{} is not an instance of BPTK_Py.Agent. Please only use subclasses of Agent".format(agent))
+
         agent.initialize()
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
@@ -311,7 +320,13 @@ class Model:
             :param event: Event instance
             :return: None
         """
-        self.events.append(event)
+        class WrongTypeException(Exception):
+            pass
+
+        if isinstance(event,Event):
+            self.events.append(event)
+        else:
+            raise WrongTypeException("{} is not an instance of BPTK_Py.Event".format(event))
 
     def next_agent(self, agent_type, state):
         """

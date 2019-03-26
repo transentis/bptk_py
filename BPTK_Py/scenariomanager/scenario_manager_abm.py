@@ -74,8 +74,17 @@ class ScenarioManagerABM(ScenarioManager):
                 className = split[len(split) - 1]
                 packageName = '.'.join(split[:-1])
 
-                mod = importlib.import_module(packageName)
-                scenario_class = getattr(mod, className)
+                try:
+                    mod = importlib.import_module(packageName)
+                except ModuleNotFoundError as e:
+                    log("[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping.".format(packageName.replace(".","/")))
+                    return
+
+                try:
+                    scenario_class = getattr(mod, className)
+                except AttributeError as e:
+                    log("[ERROR] Could not find class {} in {}. Probably there is still a configuration that you do not use anymore. Skipping.".format(className,packageName))
+                    return
 
 
                 scenario = scenario_class(name=scenarioName, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
