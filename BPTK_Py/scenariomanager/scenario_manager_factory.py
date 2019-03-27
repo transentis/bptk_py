@@ -277,9 +277,15 @@ class ScenarioManagerFactory():
         Kill all file monitor threads
         :return:
         """
-        values = self.model_monitors.keys()
-        for scenario in values:
-            scenario.kill()
+
+        for name, obj in self.model_monitors.items():
+            obj.kill()
+            log("[INFO] Killing monitoring thread for {}".format(name))
+
+        for name, obj in self.json_monitors.items():
+            obj.kill()
+            log("[INFO] Killing monitoring thread for {}".format(name))
+
 
         self.model_monitors = {}
 
