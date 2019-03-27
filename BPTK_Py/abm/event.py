@@ -16,7 +16,7 @@
 
 class Event:
     """
-    The event class is used to capture event information. Each event has a name, the id of the sending agent, the id of the receiving agent an optionally also some data (the actual payload).
+    The Event class is used to capture event information. Each event has a name, the id of the sending agent, the id of the receiving agent an optionally also some data (the actual payload).
     """
 
     def __init__(self, name, sender_id, receiver_id, data=None):
@@ -24,3 +24,13 @@ class Event:
         self.name = name
         self.receiver_id = receiver_id
         self.data = data
+
+
+class DelayedEvent(Event):
+    """
+    The DelayedEvent class is used to send events that are not to be delivered in the next round but are delayed by a given number of time steps (dt).
+    """
+
+    def __init__(self, name, sender_id, receiver_id, delay, data=None,):
+        super().__init__(name, sender_id, receiver_id, data)
+        self.delay = delay

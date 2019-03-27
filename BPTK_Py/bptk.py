@@ -232,6 +232,7 @@ class bptk():
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
+
         return self.abmrunner.run_simulation(scenarios=[scenario],
                                       agents=agents, agent_states=agent_states, progressBar=False, widget=True,
                                       scenario_managers=[manager.name]
@@ -304,12 +305,21 @@ class bptk():
             sys.exit
 
         dfs = []
+        scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
+        scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
+
+        if len(scenario_managers) == 0:
+            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: {}".format(config.configuration["scenario_storage"]))
+            import pandas as pd
+            return pd.DataFrame() if return_df else None
+
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progress_bar,
