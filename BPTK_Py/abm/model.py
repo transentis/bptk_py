@@ -317,7 +317,7 @@ class Model:
 
     def enqueue_event(self, event):
         """
-        Called by the framework to enqueue events. In generall you don't need to override this method.
+        Called by the framework to enqueue events. In general you don't need to override this method.
             :param event: Event instance
             :return: None
         """

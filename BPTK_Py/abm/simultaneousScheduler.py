@@ -103,7 +103,7 @@ class SimultaneousScheduler(Scheduler):
                     model.data_collector.collect_agent_statistics(time, model.agents)
 
 
-        # If any delayed events, store them in the model's events list for later use
+        # If any delayed events observed, store them in the model's events list for later use
         model.events += self.delayed_events
         self.delayed_events = []
 
