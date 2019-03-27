@@ -324,11 +324,7 @@ class Model:
         class WrongTypeException(Exception):
             pass
 
-        if isinstance(event,Event):
-
-            if isinstance(event,DelayedEvent):
-                event.trigger_in -= self.dt # Because otherwise we will count down only in the next period and trigger the event one step too late
-
+        if isinstance(event, Event):
             self.events.append(event)
         else:
             raise WrongTypeException("{} is not an instance of BPTK_Py.Event".format(event))

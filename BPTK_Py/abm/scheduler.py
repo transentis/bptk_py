@@ -53,14 +53,17 @@ class Scheduler:
         """
         log("[ERROR] Scheduler.run_step should be overriden in a subclass")
 
-    def check_delayed_event(self, event,dt):
-        # Handle delayed events
+    def handle_delayed_event(self, event, dt):
+        """
+        This method checks to see whether the event is a DelayedEvent. If not, it simply returns the event. If yes, it counts down the delay by one timestep (dt), caches the event in delayed_events and returns None.
+            :param event: the event to check
+            :param dt: the timestep to count down.
+            :return: the event if this is not a DelayedEvent or the delay<=0 , otherwise None
+        """
         if isinstance(event, DelayedEvent):
-            if event.trigger_in > 0:
-                event.trigger_in -= dt
+            if event.delay > 0:
+                event.delay -= dt
                 self.delayed_events += [event]
-
                 return None
-
         return event
 
