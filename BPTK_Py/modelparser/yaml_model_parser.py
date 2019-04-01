@@ -66,6 +66,9 @@ class YAMLModelParser():
             duration = params["duration"]
             dt = params["dt"]
 
+            scenario_properties =  {} if "properties" not in scenario[scenario_name].keys() else scenario[scenario_name]["properties"]
+
+
             # Let's keep it generic.
             if "nodes" in params.keys():
                 params["agents"] = copy.deepcopy(params["nodes"])
@@ -73,7 +76,7 @@ class YAMLModelParser():
 
             agents = {} if not "agents" in params.keys() else params["agents"]
 
-            job.add_scenario(name=scenario_name, starttime=starttime, stoptime=duration, dt=dt)
+            job.add_scenario(name=scenario_name, starttime=starttime, stoptime=duration, dt=dt,properties=scenario_properties)
 
             for agent in agents:
                 name = list(agent.keys())[0]

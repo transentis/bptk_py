@@ -32,7 +32,6 @@ class ModelCreator():
 
         self.json_dict = json_dict
 
-
         # Handle cases where the user does not give a package link, rather than a class name only
         if len(model) == 1:
             model = "model." + model
@@ -44,7 +43,7 @@ class ModelCreator():
         self.scenarios = {
         }
 
-    def add_scenario(self, name, starttime, stoptime, dt):
+    def add_scenario(self, name, starttime, stoptime, dt,properties={}):
         self.scenarios[name] = {
             "runspecs": {
                 "starttime": starttime,
@@ -53,7 +52,7 @@ class ModelCreator():
 
             },
             "agents": [],
-            "properties": []
+            "properties": properties
         }
         return self
 
