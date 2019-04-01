@@ -410,12 +410,13 @@ class Model:
         properties = config["properties"]
 
         for sim_property in properties:
-            self.set_property(sim_property, properties[sim_property])
+            #print(sim_property)
+            self.set_property(sim_property["name"], sim_property["value"])
 
             #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
 
-            if properties[sim_property]["type"] == "Lookup":
-                self.points[sim_property] = properties[sim_property]["value"]
+            if sim_property["type"] == "Lookup":
+                self.points[sim_property["name"]] = sim_property["value"]
 
         agents = config["agents"]
 

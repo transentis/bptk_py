@@ -9,13 +9,16 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
+
+
+
 class ModelCreator():
     """
     This class creates a meta model for the scenario. You can export this model to BPTK-Compliant JSON format for further processing. It comes wiht its own serialization mechanism
     For now, it only supports ABM models. SD support is planned for the future!
     """
 
-    def __init__(self, name, type="abm", model="model", silent=False):
+    def __init__(self, name, type="abm", model="model", silent=False,json_dict = None):
         """
 
         :param name: Name of the scenario manager
@@ -26,6 +29,9 @@ class ModelCreator():
         self.name = name
 
         self.type = type
+
+        self.json_dict = json_dict
+
 
         # Handle cases where the user does not give a package link, rather than a class name only
         if len(model) == 1:
@@ -65,6 +71,10 @@ class ModelCreator():
         Serialization method. Outputs the model and all of its components as dictionary
         :return: Dictionary
         """
+
+        if self.type == "sd":
+            return None, self.json_dict
+
         def import_class(name):
             components = name.split('.')
             mod = __import__(components[0])

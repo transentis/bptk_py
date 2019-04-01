@@ -62,7 +62,7 @@ class ScenarioManagerFactory():
         """
         model = None
 
-        ## HANDLE YAML FILES
+        ## HANDLE ANY FILES
         if not filename.lower().endswith(".json"):
             from ..modelparser import ParserFactory
 
@@ -70,7 +70,7 @@ class ScenarioManagerFactory():
 
             if parser_class:
 
-                meta_model = parser_class().parse_yaml_model(filename,silent=True)
+                meta_model = parser_class().parse_model(filename,silent=True)
                 model, json_dict =  meta_model.create_model()
 
             else:
@@ -86,6 +86,9 @@ class ScenarioManagerFactory():
                 return None
 
         # ScenarioManager ->
+        if "type" in json_dict.keys():
+            json_dict.pop("type")
+
         for scenario_manager_name in json_dict.keys():
 
             # HANDLE ABM SCENARIOS
@@ -100,8 +103,9 @@ class ScenarioManagerFactory():
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:
                 if scenario_manager_name not in self.scenario_managers.keys():
-                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points=None,
-                                                                                      base_constants=None,
+
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points={},
+                                                                                      base_constants={},
                                                                                       scenarios={},
                                                                                       name=scenario_manager_name)
 
@@ -149,7 +153,7 @@ class ScenarioManagerFactory():
                 self.file_monitors[filename] = FileMonitor(json_file=filename,
                                                            update_func=self.__refresh_scenarios_for_json)
 
-            return self.scenario_managers
+        return self.scenario_managers
 
 
     def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],

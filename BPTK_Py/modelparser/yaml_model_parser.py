@@ -23,7 +23,7 @@ class YAMLModelParser():
     """
     PROPMAP = {float: "Double", str: "String", int: "Integer", dict: "Dictionary"}
 
-    def parse_yaml_model(self, filename, silent=False):
+    def parse_model(self, filename, silent=False):
         def import_class(name):
             components = name.split('.')
             mod = __import__(components[0])
@@ -44,12 +44,18 @@ class YAMLModelParser():
             model = yaml.load(stream, Loader=yaml.FullLoader)["Model"]
 
         # IN CASE, USER DID NOT WRITE THE MODEL DESTINATION
-        if "model" not in model.keys():
-            model["model"] = model["name"].lower() + "." + model["name"]
 
         if "type" not in model.keys():
             model["type"] = "abm"
 
+        ## HANDLE SD MODELS
+        if model["type"] == "sd":
+
+           return ModelCreator(type="sd",name="unimportant",model="unimportant",silent=silent,json_dict= model)
+
+
+        if "model" not in model.keys():
+            model["model"] = model["name"].lower() + "." + model["name"]
 
         job = ModelCreator(name=model["name"], model=model["model"], silent=silent)
 

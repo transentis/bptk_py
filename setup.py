@@ -8,7 +8,7 @@ import conf
 from unittest import TestLoader
 from unittest import TextTestRunner
 
-tests = TestLoader().discover(start_dir="./")
+tests = TestLoader().discover(start_dir="./test/")
 runner = TextTestRunner()
 failures = []
 
@@ -73,7 +73,7 @@ setup(name='BPTK_Py',
                 "BPTK_Py.exceptions",
                 "BPTK_Py.util",
                 "BPTK_Py.modelparser"],
-      
+
       install_requires=requirements,
       include_package_data=True,
       classifiers=(

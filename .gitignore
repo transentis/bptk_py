@@ -10,7 +10,7 @@ venv
 dist/
 *.egg-info
 build/
-test/
+
 BPTK_Py/sd-compiler/node_modules/
 scenarios/
 simulation_models/

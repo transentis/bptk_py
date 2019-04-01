@@ -123,13 +123,21 @@ class Agent:
          :return:
         """
 
+        print(data["value"])
+
+        if not data["value"]:
+            from ..logger import log
+            log("[WARN] No data for property received. Ignoring...")
+            return
+
+
         if not type(name) in [str]:
             raise ValueError("name param has to be a string")
 
         try:
             prop_type = data["type"]
-            if prop_type not in ["Double","String","Integer"]:
-                raise ValueError("prop type is wrong. Supported types: String, Integer, Double")
+            if prop_type not in ["Double","String","Integer","Lookup","Dictionary"]:
+                raise ValueError("prop type {} is wrong. Supported types: String, Integer, Double, Lookup".format(prop_type))
         except KeyError as e:
             raise e
         except ValueError as e:
