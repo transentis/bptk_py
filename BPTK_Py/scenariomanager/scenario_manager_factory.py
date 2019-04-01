@@ -74,6 +74,7 @@ class ScenarioManagerFactory():
                 model, json_dict =  meta_model.create_model()
 
             else:
+                log("[ERROR] No parser available for file {}. Skipping!".format(filename))
                 return None
 
         if len(filename) > 0 and filename.lower().endswith(".json"):
@@ -169,9 +170,8 @@ class ScenarioManagerFactory():
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
-            self.scenario_files = glob.glob(os.path.join(path, '*.json'))
-            self.scenario_files += glob.glob(os.path.join(path, '*.yaml'))
-            self.scenario_files += glob.glob(os.path.join(path, '*.yml'))
+            self.scenario_files = glob.glob(os.path.join(path, '*'))
+
 
             for infile in self.scenario_files:
                 self.__readScenario(filename=infile)
