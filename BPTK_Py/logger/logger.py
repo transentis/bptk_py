@@ -23,7 +23,7 @@ def log(message):
         if "ERROR" not in message:
             return
     if config.loglevel == "WARN":
-        if not "ERROR" in message or not "WARN" in message:
+        if  "ERROR" not in message or "WARN" not in message:
             return
 
 

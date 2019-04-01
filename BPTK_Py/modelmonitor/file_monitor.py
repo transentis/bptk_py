@@ -23,10 +23,11 @@ from ..logger import log
 ########################
 
 
-class JsonMonitor():
+class FileMonitor():
     """
-    Simple monitoring script for itmx files.
-    Monitors itmx files and invokes parser when a change is detected
+    Simple monitoring script for model files.
+    Monitors model files and invokes parser when a change is detected
+    The monitor is absolutely agnostic of filetype. It requires an update function to call whenever a change to the file is observed
     """
 
     def __init__(self, json_file, update_func):
@@ -84,9 +85,12 @@ class JsonMonitor():
                     # File has changed, so parse model again
 
                     ## Refresh all scenarios with the given model file
-                    self.update_func(self.json_file)
-                    log("[INFO] JSON Monitor for {}: model updated and relaoded scenarios!".format(
-                        str(self.json_file)))
+                    try:
+                        self.update_func(self.json_file)
+                        log("[INFO] JSON Monitor for {}: model updated and relaoded scenarios!".format(
+                            str(self.json_file)))
+                    except:
+                        log("[WARN] Could not reload scenario file. Will keep monitoring anyway...")
 
                     # Store new timestamp as cached timestamp
                     self._cached_stamp = stamp

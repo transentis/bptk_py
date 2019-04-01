@@ -10,8 +10,6 @@
 # MIT License
 
 
-
-
 from ..logger import log
 import importlib
 
@@ -19,7 +17,6 @@ from ..abm.simultaneousScheduler import SimultaneousScheduler
 from ..abm.dataCollector import DataCollector
 
 from .scenario_manager import ScenarioManager
-
 
 
 ##############################
@@ -32,19 +29,23 @@ class ScenarioManagerABM(ScenarioManager):
     This class reads ABM models and manages them
     """
 
-    def __init__(self,json_config,name,filenames=[]):
+    def __init__(self, json_config, name, filenames=[], model=None):
         """
 
         :param json_config: Configuration as a JSON dict
         :param name: name of scenario manager
+        :param model: If this parameter contains an instance of BPTK_Py.Model, the scenario manager does not try to load an external code file
         """
+        from ..abm.model import Model
+        if model and not isinstance(model, Model):
+            raise ValueError("model param is not of type BPTK_Py.Model")
 
         self.json_config = json_config
         self.type = "abm"
         self.scenarios = {}
         self.name = name
         self.filenames = filenames
-
+        self.model = model
 
     def get_config(self):
         """
@@ -53,8 +54,7 @@ class ScenarioManagerABM(ScenarioManager):
         """
         return self.json_config
 
-
-    def instantiate_model(self,reset=False):
+    def instantiate_model(self, reset=False):
         """
         Create the simulation model from the relative path to the file
         :param reset: If True, clear all scenarios and reinstantiate
@@ -64,36 +64,62 @@ class ScenarioManagerABM(ScenarioManager):
             self.scenarios = {}
             log("[INFO] Resetting the simulation scenarios for {}".format(str(self.name)))
 
-        model = self.json_config["model"]
+        model = None
 
-        for scenarioName, configuration in self.json_config["scenarios"].items():
+        if not self.model:
+            model = self.json_config["model"]
 
-            if scenarioName not in self.scenarios.keys():
+            for scenarioName, configuration in self.json_config["scenarios"].items():
 
-                split = model.split(".")
-                className = split[len(split) - 1]
-                packageName = '.'.join(split[:-1])
+                if scenarioName not in self.scenarios.keys():
 
-                try:
-                    mod = importlib.import_module(packageName)
-                except ModuleNotFoundError as e:
-                    log("[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping.".format(packageName.replace(".","/")))
-                    return
+                    split = model.split(".")
+                    className = split[len(split) - 1]
+                    packageName = '.'.join(split[:-1])
 
-                try:
-                    scenario_class = getattr(mod, className)
-                except AttributeError as e:
-                    log("[ERROR] Could not find class {} in {}. Probably there is still a configuration that you do not use anymore. Skipping.".format(className,packageName))
-                    return
+                    try:
+                        mod = importlib.import_module(packageName)
+                    except ModuleNotFoundError as e:
+                        log(
+                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping.".format(
+                                packageName.replace(".", "/")))
+                        return
 
+                    try:
+                        scenario_class = getattr(mod, className)
+                    except AttributeError as e:
+                        log(
+                            "[ERROR] Could not find class {} in {}. Probably there is still a configuration that you do not use anymore. Skipping.".format(
+                                className, packageName))
+                        return
 
-                scenario = scenario_class(name=scenarioName, scheduler=SimultaneousScheduler(), data_collector=DataCollector())
+                    scenario = scenario_class(name=scenarioName, scheduler=SimultaneousScheduler(),
+                                              data_collector=DataCollector())
 
-                scenario.instantiate_model()
+                    scenario.instantiate_model()
 
-                scenario.configure(self.json_config["scenarios"][scenarioName])
+                    scenario.configure(self.json_config["scenarios"][scenarioName])
 
-                scenario.set_scenario_manager(self.name)
+                    scenario.set_scenario_manager(self.name)
 
-                self.scenarios[scenarioName] = scenario
-                log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
+                    self.scenarios[scenarioName] = scenario
+                    log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
+
+        else:
+            from copy import deepcopy
+            for scenarioName, configuration in self.json_config["scenarios"].items():
+
+                if scenarioName not in self.scenarios.keys():
+                    scenario = deepcopy(self.model)
+                    scenario.name = scenarioName
+
+                    scenario.scheduler = SimultaneousScheduler()
+                    scenario.data_collector = DataCollector()
+
+                    scenario.instantiate_model()
+                    scenario.configure(self.json_config["scenarios"][scenarioName])
+
+                    scenario.set_scenario_manager(self.name)
+                    self.scenarios[scenarioName] = scenario
+
+                    log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))

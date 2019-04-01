@@ -15,7 +15,7 @@ import json
 import os
 
 import BPTK_Py.config.config as config
-from ..modelmonitor import JsonMonitor
+from ..modelmonitor import FileMonitor
 from ..logger import log
 from ..modelmonitor import ModelMonitor
 from ..scenariomanager import ScenarioManagerABM
@@ -44,9 +44,11 @@ class ScenarioManagerFactory():
 
         self.scenarios = {}
         self.model_monitors = {}
-        self.json_monitors = {}
+        self.file_monitors = {}
         self.path = ""
         self.scenario_files = []
+
+
 
     def __readScenario(self, filename=""):
         """
@@ -58,10 +60,21 @@ class ScenarioManagerFactory():
         :param filename: filename of JSON file to parse
         :return:  self.scenario_managers
         """
+        model = None
 
-        if filename.lower().endswith(".json") and not filename in self.json_monitors.keys():
-            self.json_monitors[filename] = JsonMonitor(json_file=filename,
-                                                       update_func=self.__refresh_scenarios_for_json)
+        ## HANDLE YAML FILES
+        if not filename.lower().endswith(".json"):
+            from ..modelparser import ParserFactory
+
+            parser_class = ParserFactory(filename)
+
+            if parser_class:
+
+                meta_model = parser_class().parse_yaml_model(filename,silent=True)
+                model, json_dict =  meta_model.create_model()
+
+            else:
+                return None
 
         if len(filename) > 0 and filename.lower().endswith(".json"):
 
@@ -72,68 +85,72 @@ class ScenarioManagerFactory():
                 log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
                 return None
 
-            # ScenarioManager ->
-            for scenario_manager_name in json_dict.keys():
+        # ScenarioManager ->
+        for scenario_manager_name in json_dict.keys():
 
-                # HANDLE ABM SCENARIOS
-                if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name][
-                    "type"].lower() == "abm":
+            # HANDLE ABM SCENARIOS
+            if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name][
+                "type"].lower() == "abm":
 
-                    self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(json_dict[scenario_manager_name],
-                                                                                       scenario_manager_name,
-                                                                                       filenames=[filename])
-                    self.scenario_managers[scenario_manager_name].instantiate_model()
+                self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(json_dict[scenario_manager_name],
+                                                                                   scenario_manager_name,
+                                                                                   filenames=[filename],model=model)
+                self.scenario_managers[scenario_manager_name].instantiate_model()
 
-                # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
-                else:
-                    if scenario_manager_name not in self.scenario_managers.keys():
-                        self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points=None,
-                                                                                          base_constants=None,
-                                                                                          scenarios={},
-                                                                                          name=scenario_manager_name)
+            # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
+            else:
+                if scenario_manager_name not in self.scenario_managers.keys():
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points=None,
+                                                                                      base_constants=None,
+                                                                                      scenarios={},
+                                                                                      name=scenario_manager_name)
 
-                    manager = self.scenario_managers[scenario_manager_name]
+                manager = self.scenario_managers[scenario_manager_name]
 
-                    if filename not in manager.filenames:
-                        manager.filenames += [filename]
+                if filename not in manager.filenames:
+                    manager.filenames += [filename]
 
-                    # Lookup base constants across all json files with the scenarios/ directory
-                    manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
-                    manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
-
-
-                    # ScenarioManager -> "scenarios" ->
-                    scen_dict = json_dict[scenario_manager_name]["scenarios"]
-                    model_file = json_dict[scenario_manager_name]["model"]
-                    source= None
-
-                    try:
-                        source=json_dict[scenario_manager_name]["source"]
-                    except:
-                        pass
+                # Lookup base constants across all json files with the scenarios/ directory
+                manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
+                manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
 
 
+                # ScenarioManager -> "scenarios" ->
+                scen_dict = json_dict[scenario_manager_name]["scenarios"]
+                model_file = json_dict[scenario_manager_name]["model"]
+                source= None
 
-                    # Create simulation scenarios from structure
-                    manager.load_scenarios(scen_dict=scen_dict,model_file=model_file,source=source)
-
-
-                    # Start monitor for source file
-                    if "source" in json_dict[scenario_manager_name].keys():
-
-                        if not source in self.model_monitors.keys() and os.path.isfile(source):
-                            self.__add_monitor(manager.source, manager.model_file)
-                        elif not os.path.isfile(manager.source):
-                            log(
-                                "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
-                                    str(manager.source)))
+                try:
+                    source=json_dict[scenario_manager_name]["source"]
+                except:
+                    pass
 
 
-                    manager.instantiate_model()
+
+                # Create simulation scenarios from structure
+                manager.load_scenarios(scen_dict=scen_dict,model_file=model_file,source=source)
+
+
+                # Start monitor for source file
+                if "source" in json_dict[scenario_manager_name].keys():
+
+                    if not source in self.model_monitors.keys() and os.path.isfile(source):
+                        self.__add_monitor(manager.source, manager.model_file)
+                    elif not os.path.isfile(manager.source):
+                        log(
+                            "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
+                                str(manager.source)))
+
+
+                manager.instantiate_model()
+
+            ## CREATE FILE MONITOR
+            if not filename in self.file_monitors.keys():
+                self.file_monitors[filename] = FileMonitor(json_file=filename,
+                                                           update_func=self.__refresh_scenarios_for_json)
 
             return self.scenario_managers
-        else:
-            print("[ERROR] Attempted to load a scenario manager without giving a filename. Skipping!")
+
 
     def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],
                               type=""):
@@ -149,8 +166,10 @@ class ScenarioManagerFactory():
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
             self.scenario_files = glob.glob(os.path.join(path, '*.json'))
+            self.scenario_files += glob.glob(os.path.join(path, '*.yaml'))
+            self.scenario_files += glob.glob(os.path.join(path, '*.yml'))
 
-            for infile in glob.glob(os.path.join(path, '*.json')):
+            for infile in self.scenario_files:
                 self.__readScenario(filename=infile)
 
             log("[INFO] Successfully loaded all scenarios!")
@@ -282,7 +301,7 @@ class ScenarioManagerFactory():
             obj.kill()
             log("[INFO] Killing monitoring thread for {}".format(name))
 
-        for name, obj in self.json_monitors.items():
+        for name, obj in self.file_monitors.items():
             obj.kill()
             log("[INFO] Killing monitoring thread for {}".format(name))
 
