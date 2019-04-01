@@ -123,14 +123,6 @@ class Agent:
          :return:
         """
 
-        print(data["value"])
-
-        if not data["value"]:
-            from ..logger import log
-            log("[WARN] No data for property received. Ignoring...")
-            return
-
-
         if not type(name) in [str]:
             raise ValueError("name param has to be a string")
 
