@@ -1,31 +1,6 @@
 from setuptools import setup
 import conf
 
-#################
-### RUN TESTS ###
-#################
-
-from unittest import TestLoader
-from unittest import TextTestRunner
-
-tests = TestLoader().discover(start_dir="./test/")
-runner = TextTestRunner()
-failures = []
-
-for test in tests:
-
-    x = runner.run(test)
-    if len(x.failures) > 0:
-        failures += x.failures
-
-if len(failures) > 0:
-    for fail in failures:
-        print(fail)
-
-    print("One or more tests failed. Will not build egg.")
-    exit()
-
-
 #########################
 ### LOAD REQUIREMENTS ###
 #########################
@@ -75,10 +50,13 @@ setup(name='BPTK_Py',
                 "BPTK_Py.modelparser"],
 
       install_requires=requirements,
+      setup_requires=["pytest-runner"],
+        tests_require=["pytest"],
       include_package_data=True,
-      classifiers=(
+
+      classifiers=[
           "Programming Language :: Python :: 3",
           'License :: OSI Approved :: MIT License',
           "Operating System :: OS Independent",
-      ),
+      ],
       zip_safe=False)
