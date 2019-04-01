@@ -32,8 +32,8 @@ For questions regarding installation, usage and other help please contact us at:
 
 ### 0.8.0
 * Fixed an annoying bug: We forgot to include the threads that watch the scenario JSON files into the ``bptk.destroy()`` method. Now it runs properly and once executed all monitors will stop monitoring.
-* YAML Support! Now you can easily define your Agent based models using YAML notation. This is much simpler than JSON. 
-* As a perk, you do not need the model implementation anymore. When using YAML notation, BPTK will create the necessary objects without requiring code.So now you can concentrate onyour agents without the need of registering agent factories!
+* YAML Support! Now you can easily define your models using YAML notation. This is much simpler than JSON. 
+* As a perk, you do not need the model implementation for AB models anymore. When using YAML notation, BPTK will create the necessary objects without requiring code. So now you can concentrate onyour agents without the need of registering agent factories!
 * We also included a meta model creator feeding on parser results. You only need to implement the model parser and feed the model creator. The model creator then builds the actual simulation model. This way, you can add modelling languages easily!
 
 
