@@ -1,4 +1,5 @@
-*.pyc
+.eggs/
+*.*pyc
 *__pycache
 *.csv
 *.log
@@ -9,9 +10,10 @@ venv
 dist/
 *.egg-info
 build/
-test/
+
 BPTK_Py/sd-compiler/node_modules/
 scenarios/
 simulation_models/
 sd_compiler/node_modules
 _build
+BPTK_Py/sd-compiler/package-lock.json

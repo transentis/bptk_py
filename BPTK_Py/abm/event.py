@@ -20,6 +20,12 @@ class Event:
     """
 
     def __init__(self, name, sender_id, receiver_id, data=None):
+        if sender_id and not type(sender_id) in [int,float]:
+            raise ValueError("{} did not receive a correct type for sender_id. Allowed types: int and float".format(type(self)))
+
+        if receiver_id and not type(receiver_id) in [int,float]:
+            raise ValueError("{} did not receive a correct type for receiver_id. Allowed types: int and float".format(type(self)))
+
         self.sender_id = sender_id
         self.name = name
         self.receiver_id = receiver_id
@@ -33,4 +39,7 @@ class DelayedEvent(Event):
 
     def __init__(self, name, sender_id, receiver_id, delay, data=None,):
         super().__init__(name, sender_id, receiver_id, data)
+
+        if not type(delay) in [int,float]:
+            raise ValueError("{} did not receive a correct type for delay. Allowed types: int and float".format(type(self)))
         self.delay = delay

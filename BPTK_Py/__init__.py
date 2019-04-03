@@ -18,9 +18,5 @@ except:
 name = "BPTK_Py"
 
 
-def instantiate(loglevel="INFO"):
-    if loglevel in ["WARN","ERROR","INFO"]:
-        config.loglevel = loglevel
-    else:
-        log("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: {}".format(str(["INFO","WARN","ERROR"])))
-    return bptk()
+def instantiate(loglevel="WARN"):
+    return bptk(loglevel)

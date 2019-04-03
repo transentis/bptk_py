@@ -78,7 +78,7 @@ class ScenarioManagerSD(ScenarioManager):
             scenario_dict = scen_dict[scenario_name]
 
             # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
-            if len(self.base_constants.keys()) > 0:
+            if self.base_constants and len(self.base_constants.keys()) > 0:
                 if not "constants" in scenario_dict.keys():
                     scenario_dict["constants"] = {}
 
@@ -87,7 +87,7 @@ class ScenarioManagerSD(ScenarioManager):
                         scenario_dict["constants"][const] = value
 
             # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
-            if len(self.base_points.keys()) > 0:
+            if self.base_points and len(self.base_points.keys()) > 0:
                 if not "points" in scenario_dict.keys():
                     scenario_dict["points"] = {}
 

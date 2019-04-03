@@ -15,6 +15,7 @@ import random
 import copy
 
 
+
 #################
 ## AGENT CLASS ##
 #################
@@ -32,8 +33,26 @@ class Agent:
          :param model: Model instance
          :param properties: Dictionary of agent properties
         """
+
+        from .model import Model
+        if not isinstance(model,Model):
+            raise ValueError("model parameter is not subclass of BPTK_Py.Model")
+
+        if type(agent_id) not in [float,int]:
+            raise ValueError("agent_id is not of type float or int")
+
+        if type(agent_type) not in [str]:
+            raise ValueError("agent_type is not of type String")
+
+        if not properties:
+            properties = {}
+
+        if type(properties) not in [dict]:
+            raise ValueError("properties is not of type dict")
+
         self.model = model
         self.events = []
+
         self.id = agent_id
         self.state = "active"
         self.agent_type = agent_type
@@ -64,6 +83,14 @@ class Agent:
          :param handler: Actual handler
          :return: None
         """
+
+        if type(states) not in [list]:
+            raise ValueError("states is not of type list")
+
+        if type(event) not in [str]:
+            raise ValueError("event is not of type string")
+
+
         for state in states:
             if state not in self.eventHandlers:
                 self.eventHandlers[state] = {}
@@ -76,6 +103,9 @@ class Agent:
          :param event: Event instance
          :return: None
         """
+        from BPTK_Py import Event
+        if not isinstance(event,Event):
+            raise ValueError("event param is not an instance of BPTK_Py.Event. Can only handle instances of Event, including subclasses")
         self.events.append(event)
 
     def initialize(self):
@@ -83,6 +113,7 @@ class Agent:
         Initialize the agent - called by the framework directly after the agent is instantiated, useful for any kind of initialization code.
          :return: None
         """
+        pass
 
     def set_property(self, name, data):
         """
@@ -91,6 +122,41 @@ class Agent:
          :param data: Specification of property (dictionary)
          :return:
         """
+
+
+        if not type(name) in [str]:
+            raise ValueError("name param has to be a string")
+
+        try:
+            prop_type = data["type"]
+            if prop_type not in ["Double","String","Integer","Lookup","Dictionary","Boolean"]:
+                raise ValueError("prop type {} is wrong. Supported types: String, Integer, Double, Lookup".format(prop_type))
+        except KeyError as e:
+            raise e
+        except ValueError as e:
+            raise e
+
+        try:
+            from BPTK_Py.exceptions import WrongTypeException
+            value = data["value"]
+            if prop_type == "Double":
+                try:
+                    value = float(value)
+                except:
+                    raise WrongTypeException(
+                        "property type for {} says Double but {} is not a floating point number.".format(name, value))
+            if prop_type == "String" and not type(value) == str:
+                raise WrongTypeException("property type for {} says String but {} is not a String.".format(name, value))
+            if prop_type == "Integer":
+                try:
+                    value = int(value)
+                except:
+                    raise WrongTypeException(
+                        "property type for {} says Integer but {} is not an Integer.".format(name, value))
+        except KeyError as e:
+            raise e
+
+
         if not self.properties:
             self.properties = dict()
 
@@ -103,6 +169,29 @@ class Agent:
          :param value: The value of the property to set.
          :return:
         """
+
+        if name not in self.properties.keys():
+            raise KeyError("property {} does not exist".format(name))
+
+        prop_type = self.properties[name]["type"]
+
+        from BPTK_Py.exceptions import WrongTypeException
+        prop_value = value
+        if prop_type == "Double":
+            try:
+                value = float(value)
+            except:
+                raise WrongTypeException("property type for {} says Double but {} is not a floating point number.".format(name,value))
+        if prop_type == "String" and not type(prop_value) == str:
+            raise WrongTypeException("property type for {} says String but {} is not a String.".format(name,value))
+        if prop_type == "Dictionary" and not type(prop_value) == dict:
+            raise WrongTypeException("property type for {} says Dictionary but {} is not a Dictionary.".format(name, value))
+        if prop_type == "Integer":
+            try:
+                value = int(value)
+            except:
+                raise WrongTypeException("property type for {} says Integer but {} is not an Integer.".format(name,value))
+
         self.properties[name]["value"] = value
 
     def get_property(self, name):
@@ -116,7 +205,7 @@ class Agent:
             data = self.properties[name]
             return data
         except KeyError as e:
-            return None
+            raise e
 
     def get_property_value(self, name):
         """
@@ -124,6 +213,10 @@ class Agent:
          :param name: The name of the property whose value is to be retrieved.
          :return: The value of the property.
         """
+
+        if name not in self.properties.keys():
+            raise AttributeError("{} is not a valid property".format(name))
+
         return self.properties[name]["value"]
 
     # overriding getattr and setattr to ensure that properties in self.properties can be accessed as object attributes
@@ -152,9 +245,9 @@ class Agent:
         """
 
         try:
-            self.eventHandlers[self.state][event.name](event)
+            return self.eventHandlers[self.state][event.name](event)
         except KeyError as e:
-            pass
+            raise e
 
     def handle_events(self, time, sim_round, step):
         try:
@@ -178,6 +271,7 @@ class Agent:
          :param step_no:  step number of round
          :return: None
         """
+        pass
 
     def begin_episode(self, episode_no):
         """
@@ -186,6 +280,7 @@ class Agent:
             :param episode_no: the number of the episode
             :return: None
         """
+        pass
 
 
     def end_episode(self, episode_no):
@@ -195,6 +290,7 @@ class Agent:
             :param episode_no: the number of the episode
             :return: None
         """
+        pass
 
 
     def to_string(self):

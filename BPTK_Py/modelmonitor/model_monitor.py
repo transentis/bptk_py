@@ -112,4 +112,4 @@ class ModelMonitor():
                     self._cached_stamp = stamp
             time.sleep(1)
 
-        log("[INFO] ABMModel Monitor for {}: I got killed... Goodbye!".format(str(self.source_file)))
+        log("[INFO] Model Monitor for {}: I got killed... Goodbye!".format(str(self.source_file)))

@@ -30,12 +30,21 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.0
+* Fixed an annoying bug: We forgot to include the threads that watch the scenario JSON files into the ``bptk.destroy()`` method. Now it runs properly and once executed all monitors will stop monitoring.
+* YAML Support! Now you can easily define your models using YAML notation. This is much simpler than JSON. 
+* As a perk, you do not need the model implementation for AB models anymore. When using YAML notation, BPTK will create the necessary objects without requiring code. So now you can concentrate onyour agents without the need of registering agent factories!
+* Choose Data collector class within the model file: The YAML file now supports the directive ``datacollector``. Here you can link to custom data collector classes. Try the included ones such as ``BPTK_Py.abm.CSVDAtaCollector``. Using custom data collectors reduces simulation time tremendously as ``BPTK-Py`` will not use its slow mechanism to create dataframes anymore.
+* We also included a meta model creator feeding on parser results. You only need to implement the model parser and feed the model creator. The model creator then builds the actual simulation model. This way, you can add modelling languages easily!
+
+
 ### 0.7.0
 * Added Delayed Events in Agent based modelling. Now each agent can send events that trigger in the future. Instantiate a ```DelayedEvent``` and set the ``trigger_in`` parameter with the number of periods to wait before trigger. The framework will make sure to trigger the event at the right time.
+* Multithreading for scenario execution: Speeding up multi-scenario simulation siginificantly by using one thread per scenario
 * Added ``agent_type`` as optional parameter for Agent. Now you do not need to add the agent type in the initialize method anymore if that is what you prefer
 * Better handling of progress bar in ABM simulation using ``ipywidgets.Out`` to make bar disappear after executiob. Removed running scheduler as thread because this is not required here.
 * ABM: If you still have scenario manager files but deleted the code, execution will not be stopped anymore but faulty scenario is skipped with an Error message. 
-* Multithreading for scenario execution: Speeding up multi-scenario simulation siginificantly by using one thread per scenario
+
 
 ### 0.6.6
 * Little improvements and bugfixes to data collectors. For Kinesis, you will be warned if ``boto`` (required for AWS access) is not installed as it is not a package dependency.

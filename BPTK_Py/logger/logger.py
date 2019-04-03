@@ -20,10 +20,11 @@ def log(message):
     message = message.replace("\n", "")
 
     if config.loglevel == "ERROR":
-        if "ERROR" not in message:
+        if not "ERROR" in message:
             return
+
     if config.loglevel == "WARN":
-        if not "ERROR" in message or not "WARN" in message:
+        if not "ERROR" in message and not "WARN" in message:
             return
 
 

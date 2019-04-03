@@ -76,7 +76,6 @@ class Model:
         self.fn = {}
 
 
-
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
 
@@ -95,6 +94,10 @@ class Model:
             :param scenario_manager: String
             :return: None
         """
+
+        if not type(scenario_manager) == str:
+            raise ValueError("Scenario manager name needs to be of type String")
+
         self.scenario_manager = scenario_manager
 
     def register_agent_factory(self, agent_type, agent_factory):
@@ -105,6 +108,10 @@ class Model:
             :return: None
         """
         log("[INFO] Registering agent factory for {}".format(agent_type))
+
+        if type(agent_type) not in [str]:
+            raise ValueError("agent_type param is not String but {}".format(type(agent_type)))
+
 
         self.agent_factories[agent_type] = agent_factory
         self.agent_type_map[agent_type] = []
@@ -321,12 +328,11 @@ class Model:
             :param event: Event instance
             :return: None
         """
-        class WrongTypeException(Exception):
-            pass
 
         if isinstance(event, Event):
             self.events.append(event)
         else:
+            from BPTK_Py.exceptions import WrongTypeException
             raise WrongTypeException("{} is not an instance of BPTK_Py.Event".format(event))
 
     def next_agent(self, agent_type, state):
@@ -384,6 +390,10 @@ class Model:
             :return:
         """
 
+        if not type(agent_type) == str:
+            from BPTK_Py.exceptions import  WrongTypeException
+            raise WrongTypeException("param {} for agent_type is not of type str".format(agent_type))
+
         for agent_id in self.agent_type_map[agent_type]:
             self.enqueue_event(event_factory(agent_id))
 
@@ -399,13 +409,31 @@ class Model:
 
         properties = config["properties"]
 
-        for sim_property in properties:
-            self.set_property(sim_property, properties[sim_property])
+        if type(properties) == list:
+            for property in properties:
+                try:
+                    prop_name = property["name"]
+                    prop_val = property["value"]
+                    prop_type = property["type"]
+                except KeyError as e:
+                    prop_name = list(property.keys())[0]
+                    prop_val = property[prop_name]["value"]
+                    prop_type = property[prop_name]["type"]
 
-            #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+                self.set_property(prop_name,prop_val)
 
-            if properties[sim_property]["type"] == "Lookup":
-                self.points[sim_property] = properties[sim_property]["value"]
+                if prop_type == "Lookup":
+                    self.points[prop_name] = prop_val
+
+        else:
+            for name, property in properties.items():
+
+                self.set_property(name, property)
+
+                #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
+
+                if property["type"] == "Lookup":
+                    self.points[name] = property["value"]
 
         agents = config["agents"]
 

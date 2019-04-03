@@ -74,10 +74,12 @@ class SimultaneousScheduler(Scheduler):
         while len(model.events) > 0:
 
             # Check if the event is of type DelayedEvent. If yes, we do not get a reply here and the event will be stored in self.delayed_events
+
             event = self.handle_delayed_event(model.events.pop(), dt=model.dt)
 
             if event:
                 model.agents[event.receiver_id].receive_event(event)
+
                 if model.data_collector:
                     model.data_collector.record_event(time, event)
 
@@ -105,5 +107,6 @@ class SimultaneousScheduler(Scheduler):
 
         # If any delayed events observed, store them in the model's events list for later use
         model.events += self.delayed_events
+
         self.delayed_events = []
 

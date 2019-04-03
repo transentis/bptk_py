@@ -1,8 +1,27 @@
 from setuptools import setup
 import conf
 
+#########################
+### LOAD REQUIREMENTS ###
+#########################
+
+requirements = []
+req_file = open("requirements.txt","r")
+for line in req_file.readlines():
+    requirements += [line.replace("\n","")]
+
+
+###################
+### LOAD README ###
+###################
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+#################
+### BUILD EGG ###
+#################
+
 
 setup(name='BPTK_Py',
       version=conf.version,
@@ -26,15 +45,18 @@ setup(name='BPTK_Py',
                 "BPTK_Py.abm.datacollectors",
                 "BPTK_Py.simulationrunners",
                 "BPTK_Py.systemdynamics",
-                "BPTK_Py.util"],
-      install_requires=[
-          'pandas', 'matplotlib', 'ipywidgets', 'scipy', 'numpy',
-      ],
+                "BPTK_Py.exceptions",
+                "BPTK_Py.util",
+                "BPTK_Py.modelparser"],
+
+      install_requires=requirements,
+      setup_requires=["pytest-runner"],
+        tests_require=["pytest"],
       include_package_data=True,
-      classifiers=(
+
+      classifiers=[
           "Programming Language :: Python :: 3",
           'License :: OSI Approved :: MIT License',
           "Operating System :: OS Independent",
-      ),
-
+      ],
       zip_safe=False)
