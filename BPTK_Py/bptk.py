@@ -295,20 +295,20 @@ class bptk():
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            sys.exit
+            sys.exit()
 
         if len(agent_properties) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
-            sys.exit
+            sys.exit()
 
         if len(agent_properties) > 0 and len(agent_property_types) == 0:
             log("[ERROR] You must set the relevant property types if you specify an agent_property!")
-            sys.exit
+            sys.exit()
 
 
         if len(agent_property_types) > 0 and len(agent_properties) == 0:
             log("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
-            sys.exit
+            sys.exit()
 
         dfs = []
         scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
