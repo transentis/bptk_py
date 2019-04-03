@@ -43,6 +43,8 @@ class CSVDataCollector:
 
         self.headlines = None
 
+
+
     def record_event(self, time, event):
         """
         Record an event
@@ -69,7 +71,6 @@ class CSVDataCollector:
         :param agents: list of Agent
         :return: None
         """
-
         for agent in agents:
 
             agent_type = agent.agent_type

@@ -47,6 +47,7 @@ class ScenarioManagerABM(ScenarioManager):
         self.filenames = filenames
         self.model = model
 
+
     def get_config(self):
         """
 
@@ -114,7 +115,7 @@ class ScenarioManagerABM(ScenarioManager):
                     scenario.name = scenarioName
 
                     scenario.scheduler = SimultaneousScheduler()
-                    scenario.data_collector = DataCollector()
+                    scenario.data_collector = DataCollector() if not scenario.data_collector else scenario.data_collector
 
                     scenario.instantiate_model()
                     scenario.configure(self.json_config["scenarios"][scenarioName])

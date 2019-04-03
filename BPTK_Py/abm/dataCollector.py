@@ -53,7 +53,6 @@ class DataCollector:
             :param agents: list of Agent
             :return: None
         """
-
         self.agent_statistics[time] = {}
 
         for agent in agents:

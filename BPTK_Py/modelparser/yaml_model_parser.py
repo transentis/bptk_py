@@ -59,12 +59,16 @@ class YAMLModelParser():
 
         job = ModelCreator(name=model["name"], model=model["model"], silent=silent)
 
+        datacollector = None if "datacollector" not in model.keys() else import_class(model["datacollector"])()
+
         for scenario in model["scenarios"]:
+
             scenario_name = list(scenario.keys())[0]
             params = scenario[scenario_name]
             starttime = params["starttime"]
             duration = params["duration"]
             dt = params["dt"]
+
 
             scenario_properties =  {} if "properties" not in scenario[scenario_name].keys() else scenario[scenario_name]["properties"]
 
@@ -76,7 +80,7 @@ class YAMLModelParser():
 
             agents = {} if not "agents" in params.keys() else params["agents"]
 
-            job.add_scenario(name=scenario_name, starttime=starttime, stoptime=duration, dt=dt,properties=scenario_properties)
+            job.add_scenario(name=scenario_name, starttime=starttime, stoptime=duration, dt=dt,properties=scenario_properties,datacollector=datacollector)
 
             for agent in agents:
                 name = list(agent.keys())[0]

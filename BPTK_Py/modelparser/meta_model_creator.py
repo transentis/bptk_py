@@ -29,6 +29,7 @@ class ModelCreator():
         self.name = name
 
         self.type = type
+        self.datacollector = None
 
         self.json_dict = json_dict
 
@@ -43,7 +44,7 @@ class ModelCreator():
         self.scenarios = {
         }
 
-    def add_scenario(self, name, starttime, stoptime, dt,properties={}):
+    def add_scenario(self, name, starttime, stoptime, dt,properties={},datacollector=None):
         self.scenarios[name] = {
             "runspecs": {
                 "starttime": starttime,
@@ -54,6 +55,7 @@ class ModelCreator():
             "agents": [],
             "properties": properties
         }
+        self.datacollector = datacollector
         return self
 
     def add_agent(self, agent, scenario):
@@ -114,7 +116,11 @@ class ModelCreator():
 
         ##  Agent factories erzeugen
         from BPTK_Py import Model
-        BPTK_Mod = Model()
+
+        if self.datacollector:
+            BPTK_Mod = Model(data_collector=self.datacollector)
+        else:
+            BPTK_Mod = Model()
 
         classes_to_type = {}
 
