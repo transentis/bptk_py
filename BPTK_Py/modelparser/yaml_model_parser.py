@@ -95,6 +95,7 @@ class YAMLModelParser():
                 try:
 
                     agent_class = import_class(agent_type)
+
                     agent_obj = agent_class(name=name, count=count, step=step, silent=silent)
                 except Exception as e:
                     agent_class = serializable_agent

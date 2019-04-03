@@ -42,10 +42,16 @@ plt.interactive(True)
 ### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
 
-    def __init__(self):
+    def __init__(self,loglevel="WARN"):
         """
         Configures the matplotlib config and instantiates the scenario manager factory and visualizer
         """
+
+        if loglevel in ["WARN", "ERROR", "INFO"]:
+            config.loglevel = loglevel
+        else:
+            log("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: {}".format(
+                str(["INFO", "WARN", "ERROR"])))
 
         # Setup matplotlib
         for key, value in config.configuration["matplotlib_rc_settings"].items():

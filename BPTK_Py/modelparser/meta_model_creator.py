@@ -71,7 +71,7 @@ class ModelCreator():
         :return: Dictionary
         """
 
-        if self.type == "sd":
+        if self.type == "sd" or self.type=="undefined":
             return None, self.json_dict
 
         def import_class(name):
@@ -148,6 +148,7 @@ class ModelCreator():
                     className = split[len(split) - 1]
                     packageName = '.'.join(split[:-1])
 
+
                     try:
                         mod = importlib.import_module(packageName)
                     except ModuleNotFoundError as e:
@@ -170,6 +171,7 @@ class ModelCreator():
             BPTK_Mod.register_agent_factory(name,
                                             fac.factory)
 
+        # We also return this serialized model as Dictionary as many internal mechanisms rely on dictionary data
         return BPTK_Mod, {self.name: serialize(model_to_dump)}
 
 

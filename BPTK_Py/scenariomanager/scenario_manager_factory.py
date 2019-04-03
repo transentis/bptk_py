@@ -24,7 +24,6 @@ from .scenario import SimulationScenario
 from .scenario_manager_sd import ScenarioManagerSD
 
 
-
 ####################################
 ### Class ScenarioManagerFactory ###
 ####################################
@@ -48,8 +47,6 @@ class ScenarioManagerFactory():
         self.path = ""
         self.scenario_files = []
 
-
-
     def __readScenario(self, filename=""):
         """
         Reads the specified JSON file and generates the scenario_manager and scenario objects
@@ -62,49 +59,42 @@ class ScenarioManagerFactory():
         """
         model = None
 
-        ## HANDLE ANY FILES
-        if not filename.lower().endswith(".json"):
+        ## FIND A PARSER FOR ALL FILES THAT ARE NOT JSON
+        if not os.path.isdir(filename):
             from ..modelparser import ParserFactory
 
             parser_class = ParserFactory(filename)
 
             if parser_class:
 
-                meta_model = parser_class().parse_model(filename,silent=True)
-                model, json_dict =  meta_model.create_model()
+                meta_model = parser_class().parse_model(filename, silent=True)
+                model, model_dictionary = meta_model.create_model()
 
             else:
                 log("[ERROR] No parser available for file {}. Skipping!".format(filename))
                 return None
-
-        if len(filename) > 0 and filename.lower().endswith(".json"):
-
-            json_data = open(filename, encoding="utf-8").read()
-            try:
-                json_dict = dict(json.loads(json_data))
-            except ValueError as e:
-                log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
-                return None
+        else:
+            return
 
         # ScenarioManager ->
-        if "type" in json_dict.keys():
-            json_dict.pop("type")
+        if "type" in model_dictionary.keys():
+            model_dictionary.pop("type")
 
-        for scenario_manager_name in json_dict.keys():
+        for scenario_manager_name in model_dictionary.keys():
 
             # HANDLE ABM SCENARIOS
-            if "type" in json_dict[scenario_manager_name].keys() and json_dict[scenario_manager_name][
+            if "type" in model_dictionary[scenario_manager_name].keys() and model_dictionary[scenario_manager_name][
                 "type"].lower() == "abm":
 
-                self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(json_dict[scenario_manager_name],
-                                                                                   scenario_manager_name,
-                                                                                   filenames=[filename],model=model)
+                self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(
+                    model_dictionary[scenario_manager_name],
+                    scenario_manager_name,
+                    filenames=[filename], model=model)
                 self.scenario_managers[scenario_manager_name].instantiate_model()
 
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:
                 if scenario_manager_name not in self.scenario_managers.keys():
-
                     self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points={},
                                                                                       base_constants={},
                                                                                       scenarios={},
@@ -119,25 +109,21 @@ class ScenarioManagerFactory():
                 manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
                 manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
 
-
                 # ScenarioManager -> "scenarios" ->
-                scen_dict = json_dict[scenario_manager_name]["scenarios"]
-                model_file = json_dict[scenario_manager_name]["model"]
-                source= None
+                scen_dict = model_dictionary[scenario_manager_name]["scenarios"]
+                model_file = model_dictionary[scenario_manager_name]["model"]
+                source = None
 
                 try:
-                    source=json_dict[scenario_manager_name]["source"]
+                    source = model_dictionary[scenario_manager_name]["source"]
                 except:
                     pass
 
-
-
                 # Create simulation scenarios from structure
-                manager.load_scenarios(scen_dict=scen_dict,model_file=model_file,source=source)
-
+                manager.load_scenarios(scen_dict=scen_dict, model_file=model_file, source=source)
 
                 # Start monitor for source file
-                if "source" in json_dict[scenario_manager_name].keys():
+                if "source" in model_dictionary[scenario_manager_name].keys():
 
                     if not source in self.model_monitors.keys() and os.path.isfile(source):
                         self.__add_monitor(manager.source, manager.model_file)
@@ -145,7 +131,6 @@ class ScenarioManagerFactory():
                         log(
                             "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
-
 
                 manager.instantiate_model()
 
@@ -155,7 +140,6 @@ class ScenarioManagerFactory():
                                                            update_func=self.__refresh_scenarios_for_json)
 
         return self.scenario_managers
-
 
     def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],
                               type=""):
@@ -172,9 +156,9 @@ class ScenarioManagerFactory():
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
             self.scenario_files = glob.glob(os.path.join(path, '*'))
 
-
             for infile in self.scenario_files:
-                self.__readScenario(filename=infile)
+                if not os.path.isdir(infile):
+                    self.__readScenario(filename=infile)
 
             log("[INFO] Successfully loaded all scenarios!")
 
@@ -309,7 +293,6 @@ class ScenarioManagerFactory():
             obj.kill()
             log("[INFO] Killing monitoring thread for {}".format(name))
 
-
         self.model_monitors = {}
 
     def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",
@@ -320,6 +303,7 @@ class ScenarioManagerFactory():
         :param dictionary: dictionary to parse to JSON
         :return:
         """
+
         with open(filename, 'w', encoding="utf-8") as outfile:
             json.dump(dictionary, outfile, indent=4)
 
@@ -366,20 +350,27 @@ class ScenarioManagerFactory():
         """
         base_constants = {}
         for filename in filenames:
-            json_data = open(filename, encoding="utf-8").read()
+            if not os.path.isdir(filename):
+                from ..modelparser import ParserFactory
 
-            try:
-                json_dict = dict(json.loads(json_data))
-            except ValueError as e:
-                log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
-                return None
+                parser_class = ParserFactory(filename)
 
-            if scenario_manager in json_dict.keys():
-                scenario_manager_dict = json_dict[scenario_manager]
+                if parser_class:
 
-                if "base_constants" in scenario_manager_dict.keys():
-                    for key, value in scenario_manager_dict["base_constants"].items():
-                        base_constants[key] = value
+                    meta_model = parser_class().parse_model(filename, silent=True)
+                    model, model_dictionary = meta_model.create_model()
+
+                else:
+                    log("[ERROR] No parser available for file {}. Skipping!".format(filename))
+                    return None
+
+                if scenario_manager in model_dictionary.keys():
+                    scenario_manager_dict = model_dictionary[scenario_manager]
+
+                    if "base_constants" in scenario_manager_dict.keys():
+                        for key, value in scenario_manager_dict["base_constants"].items():
+                            log("[INFO] Updated base constants of {}: {} = {}".format(scenario_manager, key, value))
+                            base_constants[key] = value
 
         return base_constants
 
@@ -394,19 +385,27 @@ class ScenarioManagerFactory():
         """
         base_points = {}
         for filename in filenames:
-            json_data = open(filename, encoding="utf-8").read()
+            if not os.path.isdir(filename):
 
-            try:
-                json_dict = dict(json.loads(json_data))
-            except ValueError as e:
-                log("[ERROR] Problem reading {}. Error message: {}".format(filename, str(e)))
-                return None
+                from ..modelparser import ParserFactory
 
-            if scenario_manager in json_dict.keys():
-                scenario_manager_dict = json_dict[scenario_manager]
+                parser_class = ParserFactory(filename)
 
-                if "base_points" in scenario_manager_dict.keys():
-                    for key, value in scenario_manager_dict["base_points"].items():
-                        base_points[key] = value
+                if parser_class:
+
+                    meta_model = parser_class().parse_model(filename, silent=True)
+                    model, model_dictionary = meta_model.create_model()
+
+                else:
+                    log("[ERROR] No parser available for file {}. Skipping!".format(filename))
+                    return None
+
+                if scenario_manager in model_dictionary.keys():
+                    scenario_manager_dict = model_dictionary[scenario_manager]
+
+                    if "base_points" in scenario_manager_dict.keys():
+                        for key, value in scenario_manager_dict["base_points"].items():
+                            log("[INFO] Updated base points of {}: {} = {}".format(scenario_manager, key, value))
+                            base_points[key] = value
 
         return base_points

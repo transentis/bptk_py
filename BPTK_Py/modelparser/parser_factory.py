@@ -11,8 +11,9 @@
 
 from ..logger import log
 from .yaml_model_parser import YAMLModelParser
+from .json_model_parser import JSONModelParser
 
-parsers = {"yml": YAMLModelParser, "yaml": YAMLModelParser}
+parsers = {"yml": YAMLModelParser, "yaml": YAMLModelParser,"json": JSONModelParser}
 
 def ParserFactory(filename):
     """
