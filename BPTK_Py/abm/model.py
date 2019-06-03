@@ -116,6 +116,7 @@ class Model:
         self.agent_factories[agent_type] = agent_factory
         self.agent_type_map[agent_type] = []
 
+
     def reset(self):
         """
         Reset simulation

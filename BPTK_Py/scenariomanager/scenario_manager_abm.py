@@ -82,8 +82,9 @@ class ScenarioManagerABM(ScenarioManager):
                         mod = importlib.import_module(packageName)
                     except ModuleNotFoundError as e:
                         log(
-                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping.".format(
-                                packageName.replace(".", "/")))
+                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping. Original Error: ".format(
+                                packageName.replace(".", "/"),e))
+
                         return
 
                     try:

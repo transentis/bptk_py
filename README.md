@@ -30,6 +30,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.1
+* Bugfix for agent: Property type can also be of type "Agent".
+
 ### 0.8.0
 * Fixed an annoying bug: We forgot to include the threads that watch the scenario JSON files into the ``bptk.destroy()`` method. Now it runs properly and once executed all monitors will stop monitoring.
 * YAML Support! Now you can easily define your models using YAML notation. This is much simpler than JSON. 

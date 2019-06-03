@@ -129,7 +129,7 @@ class Agent:
 
         try:
             prop_type = data["type"]
-            if prop_type not in ["Double","String","Integer","Lookup","Dictionary","Boolean"]:
+            if prop_type not in ["Double","String","Integer","Lookup","Dictionary","Boolean","Agent"]:
                 raise ValueError("prop type {} is wrong. Supported types: String, Integer, Double, Lookup".format(prop_type))
         except KeyError as e:
             raise e

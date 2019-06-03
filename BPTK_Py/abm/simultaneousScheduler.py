@@ -96,6 +96,8 @@ class SimultaneousScheduler(Scheduler):
 
         model.end_round(time, sim_round, step)
 
+
+
         if model.data_collector:
             if collect_data:
                 model.data_collector.collect_agent_statistics(time, model.agents)
