@@ -26,6 +26,7 @@ class ModelCreator():
         :param model: link to model file, if any. Uses Python dot notation
         :param silent: If True, no output will be made during parsing
         """
+
         self.name = name
 
         self.type = type
@@ -107,6 +108,7 @@ class ModelCreator():
 
         model = model_to_dump.model
 
+
         ### Create the import statements for the Model
         agents = []
 
@@ -116,11 +118,33 @@ class ModelCreator():
 
         ##  Agent factories erzeugen
         from BPTK_Py import Model
+        from BPTK_Py.logger import log
+        BPTK_Mod = None
 
-        if self.datacollector:
-            BPTK_Mod = Model(data_collector=self.datacollector)
-        else:
-            BPTK_Mod = Model()
+        try:
+            if (model!=model_to_dump.name):
+                import importlib
+                split = model.split(".")
+                className = split[len(split) - 1]
+                packageName = '.'.join(split[:-1])
+
+
+                mod = importlib.import_module(packageName)
+                class_object = getattr(mod,className)
+
+
+                if self.datacollector:
+                    BPTK_Mod = class_object(data_collector=self.datacollector if self.datacollector else None)
+                else:
+                    BPTK_Mod = class_object()
+        except Exception as e:
+            print(e)
+            print("ERROR")
+            log("[WARN] Could not load specific model class. Using standard Model")
+            if self.datacollector:
+                BPTK_Mod = Model(data_collector=self.datacollector)
+            else:
+                BPTK_Mod = Model()
 
         classes_to_type = {}
 

@@ -30,6 +30,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.2
+* We are working on making BPTK-Py even more flexible. The Scheduler interface now has an attribute ``running``. You can modify this during runtime in order to cancel long-standing jobs. This may be useful for third-party applications that use BPTK-Py and need to be able to cancel jobs.
+* The YAML Model parser now supports custom Model files for ABM simulations!
+
 ### 0.8.1
 * Bugfix for agent: Property type can also be of type "Agent".
 

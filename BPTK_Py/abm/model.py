@@ -179,6 +179,7 @@ class Model:
         agent.initialize()
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
+        return agent
 
     def set_property(self, name, property_spec):
         """

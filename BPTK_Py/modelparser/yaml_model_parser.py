@@ -59,6 +59,7 @@ class YAMLModelParser():
 
         job = ModelCreator(name=model["name"], model=model["model"], silent=silent)
 
+
         datacollector = None if "datacollector" not in model.keys() else import_class(model["datacollector"])()
 
         for scenario in model["scenarios"]:
@@ -82,46 +83,47 @@ class YAMLModelParser():
 
             job.add_scenario(name=scenario_name, starttime=starttime, stoptime=duration, dt=dt,properties=scenario_properties,datacollector=datacollector)
 
-            for agent in agents:
-                name = list(agent.keys())[0]
-                try:
-                    agent_type = "" if "type" not in agent[name].keys() else agent[name]["type"]
-                except KeyError as e:
-                    log("[ERROR] Missing type declaration for node {}".format(name))
-                    raise e
-                count = 1 if "count" not in agent[name].keys() else agent[name]["count"]
-                step = 1 if "step" not in agent[name].keys() else agent[name]["step"]
+            if agents:
+                for agent in agents:
+                    name = list(agent.keys())[0]
+                    try:
+                        agent_type = "" if "type" not in agent[name].keys() else agent[name]["type"]
+                    except KeyError as e:
+                        log("[ERROR] Missing type declaration for node {}".format(name))
+                        raise e
+                    count = 1 if "count" not in agent[name].keys() else agent[name]["count"]
+                    step = 1 if "step" not in agent[name].keys() else agent[name]["step"]
 
 
-                properties = [key for key in agent[name].keys() if
-                              key.lower() not in ["type", "count", "step","classname"]]
+                    properties = [key for key in agent[name].keys() if
+                                  key.lower() not in ["type", "count", "step","classname"]]
 
-                try:
+                    try:
 
-                    agent_class = import_class(agent_type)
+                        agent_class = import_class(agent_type)
 
-                    agent_obj = agent_class(name=name, count=count, step=step, silent=silent)
-                except Exception as e:
-                    agent_class = serializable_agent
-                    log("[WARN] Error instantiating model. Trying the classname directive")
-                    agent_obj = agent_class(name=name, count=count, step=step, silent=silent,
-                                            classname=agent[name]["classname"])
+                        agent_obj = agent_class(name=name, count=count, step=step, silent=silent)
+                    except Exception as e:
+                        agent_class = serializable_agent
+                        log("[WARN] Error instantiating model. Trying the classname directive")
+                        agent_obj = agent_class(name=name, count=count, step=step, silent=silent,
+                                                classname=agent[name]["classname"])
 
-                job.add_agent(scenario=scenario_name, agent=agent_obj)
+                    job.add_agent(scenario=scenario_name, agent=agent_obj)
 
-                for property in properties:
-                    prop_val = str(agent[name][property]) if type(agent[name][property]) == dict else agent[name][
-                        property]
+                    for property in properties:
+                        prop_val = str(agent[name][property]) if type(agent[name][property]) == dict else agent[name][
+                            property]
 
-                    if type(prop_val) == str:
-                        try: # We need to find dictionaries. They might be coded as String. Hence, try to find it with eval()
-                            prop_type = YAMLModelParser.PROPMAP[type(eval(prop_val))]
-                        except:
+                        if type(prop_val) == str:
+                            try: # We need to find dictionaries. They might be coded as String. Hence, try to find it with eval()
+                                prop_type = YAMLModelParser.PROPMAP[type(eval(prop_val))]
+                            except:
+                                prop_type = YAMLModelParser.PROPMAP[type(prop_val)]
+
+                        else:
                             prop_type = YAMLModelParser.PROPMAP[type(prop_val)]
-
-                    else:
-                        prop_type = YAMLModelParser.PROPMAP[type(prop_val)]
-                    agent_obj.set_property(property, prop_type, prop_val)
+                        agent_obj.set_property(property, prop_type, prop_val)
 
 
         return job

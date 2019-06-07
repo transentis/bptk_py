@@ -41,8 +41,14 @@ class SimultaneousScheduler(Scheduler):
 
         for sim_round in range(model.starttime, model.stoptime + 1):
 
-            for step in range(round(1 / model.dt)):
-                self.run_step(model, sim_round, step, progress_widget, collect_data)
+            if self.running:
+                for step in range(round(1 / model.dt)):
+                    if self.running:
+                        self.run_step(model, sim_round, step, progress_widget, collect_data)
+                    else:
+                        break
+            else:
+                break
 
     def run_step(self, model, sim_round, step, progress_widget=None, collect_data=True):
         """

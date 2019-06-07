@@ -228,6 +228,9 @@ class bptk():
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+        agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
+        agent_property_types = agent_property_types if type(agent_property_types) is list else agent_property_types.split(",")
 
         return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names, strategy=strategy, scenario_managers=scenario_managers, agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progressBar)
 

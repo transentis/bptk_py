@@ -33,6 +33,7 @@ class Scheduler:
         self.current_step = 0
         self.progress = 0
         self.delayed_events = []
+        self.running = True
 
     def run(self, model, progress_widget=None, collect_data=True):
         """

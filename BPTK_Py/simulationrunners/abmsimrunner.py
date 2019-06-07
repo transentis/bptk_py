@@ -134,6 +134,11 @@ class AbmSimulationRunner(SimulationRunner):
 
         for scenario in scenario_objects:
 
+            ## IGNORE UNFINISHED ABM SCENARIOS. E.G. if it was cancelled before completion
+            if hasattr(scenario,"scheduler"):
+                if scenario.scheduler.progress < 1.0 :
+                    continue # Skip this scenario
+
             data = scenario.statistics()
 
             if len(data) == 0:
