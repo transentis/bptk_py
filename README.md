@@ -30,6 +30,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.5
+* System Dynamics DSL: Extended the operator overrides, to ensure stocks can have more than two inflows or outflows.
+
 ### 0.8.4
 * Bug fix to bptk.add_scenario that occured when adding a new scenario to an existing scenario manager
 

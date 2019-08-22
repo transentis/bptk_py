@@ -28,6 +28,15 @@ class BinaryOperator:
     def __mul__(self,other):
         return MultiplicationOperator(self, other)
 
+    def __add__(self, other):
+        return AdditionOperator(self, other)
+
+    def __sub__(self, other):
+        return SubtractionOperator(self, other)
+
+    def __neg__(self):
+        return NumericalMultiplicationOperator(self, (-1))
+
     def term(self, time="t"):
         pass
 
