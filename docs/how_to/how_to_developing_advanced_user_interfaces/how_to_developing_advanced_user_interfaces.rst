@@ -2,8 +2,7 @@
 Developing Advanced User Interfaces
 ===================================
 
-Using Jupyter Widgets, Pandas Dataframes and Matplotlib
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*Using Jupyter Widgets, Pandas Dataframes and Matplotlib to create advanced user interfaces.*
 
 While BPTK-Py offers a number of high-level functions to quickly plot
 equations (such as ``bptk.plot_scenarios``) or create a dashboard (e.g.
