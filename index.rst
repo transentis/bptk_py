@@ -13,7 +13,7 @@ It gives you the power to quickly build simulation models in Python. If you use 
 
 The framework also includes our *sdcc parser*  for transpiling  System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then experiment with them in `Juypter <http://www.jupyter.org>`_.
 
-Our tutorial contains a number of models and Jupyter notebooks to get you started – you can download the tutorial from our `website <https://www.transentis.com/products/business-prototyping-toolkit/>`_.
+Our tutorial contains a number of models and Jupyter notebooks to get you started – you can clown or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial>`_ on bitbucket.
 
 Main Features
 =============
