@@ -15,7 +15,7 @@ To make computational modeling easier we are developing the *Business
 Prototyping Toolkit for Python* (BPTK PY), a simple library that
 currently supports System Dynamics and Agent-based modeling.
 
-We first introduced the BPTK PY libary in our blog post `Writing
+We first introduced the BPTK-Py libary in our blog post `Writing
 Computational Essays Based On Simulation
 Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/>`__.
 
@@ -40,16 +40,15 @@ Having such a DSL is useful for several reasons:
    e.g. machine-learning toolkits.
 
 Needless to say the new functionality seamlessly integrates with the
-rest of the BPTK PY framework, so you can use all the high-level
+rest of the BPTK-Py framework, so you can use all the high-level
 scenario management and plotting functions which are part of the
 framework.
 
 In this post I focus on how to build a System Dynamics model using the
 framework, I will take a look at Agent-based modeling in a future post.
 
-The post is also available as a Jupyter notebook in our BPTK PY
-Tutorial, which is available for `download
-here <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
+The post is also available as a Jupyter notebook in our BPTK-Py
+Tutorial, which you can clone or download from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`__ on bitbucket.
 
 A simple model to demonstrate the library
 =========================================
@@ -442,9 +441,8 @@ Prototyping Toolkit. The BPTK Framework is available under the MIT
 License on `PyPi <https://pypi.org/project/BPTK-Py/>`__, so you can
 start using it right away.
 
-You can download a tutorial (which includes this document as a Jupyter
-notebook) on the `BPTK product
-homepage <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
+You can also clone or ownload our BPTK-Py tutorial (which includes this document as a Jupyter
+notebook) from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`__ on bitbucket.
 
 The tutorial contains also illustrates some more advanced techniques, in
 particular also on how you can use the SD DSL in Python without using

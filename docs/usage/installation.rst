@@ -2,7 +2,7 @@
 Installation
 ############
 
-Like every piece of software, BPTK_Py and its dependencies have to be installed correctly.
+Like every piece of software, BPTK-Py and its dependencies have to be installed correctly.
 
 If you already have a running Python and Jupyter environment, ``pip install BPTK-Py`` or ``pip3 install BPTK-Py`` will do!
 
@@ -15,7 +15,7 @@ Assuming you are starting from scratch, you need to perform the following steps:
 
 1. Install Python
 2. Install Node and npm
-3. Install BPTK_Py using pip
+3. Install BPTK-Py using pip
 4. Install JupyterLab (optional)
 5. Set up a virtual environment (optional)
 6. Read our quickstart document
@@ -25,7 +25,7 @@ Install Python
 
 First of all, you need `Python <https://www.python.org/>`_. Download the latest version for your operating system.
 
-BPTK_Py was tested with Python 3.7, 3.6 and 3.4.
+BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 
 Install Node and npm
 ====================
@@ -49,7 +49,7 @@ Other Linux distributions should have similar packages.
 
 You may always refer to the official websites of `Python <https://www.python.org/>`_ and `Node.js <https://nodejs.org/en/>`_ for help on installing the dependencies for your specific operating system.
 
-Install BPTK_Py using Pip
+Install BPTK-Py using Pip
 =========================
 
 After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
