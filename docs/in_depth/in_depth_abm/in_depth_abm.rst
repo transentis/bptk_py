@@ -1,8 +1,8 @@
 *********************************
-Agent-based Modeling With BPTK_Py
+Agent-based Modeling With BPTK-Py
 *********************************
 
-This document explains how to build agent-based models using BPTK_Py. It uses the simple project management model from our tutorial as an illustration. You can download the tutorial from our website, the classes are in in the /abm/spm folder. The tutorial also contains an interactive Jupyter notebook corresponding to this document.
+This document explains how to build agent-based models using BPTK-Py. It uses the simple project management model from our tutorial as an illustration. You can download the tutorial from our website, the classes are in in the /abm/spm folder. The tutorial also contains an interactive Jupyter notebook corresponding to this document.
 
 This model is an illustration of `Parkinson's law <https://en.wikipedia.org/wiki/Parkinson%27s_law>`_, which states that work expands so as to fill the time available for its completion - Parkinson's law is particularly relevant in projects, where we need to set milestones judiciously to ensure that schedule pressure remains at an acceptable rate.
 
@@ -11,7 +11,7 @@ A Brief Introduction To Agent-based Modeling
 
 The basic concept behind AB models is quite simple: you populate an environment (the model) with a set of agents. Agents and the environment each have a set of properties and each agent must always be in a defined state. Agents can perform actions and interact amongst each other and with the environment by sending each other events - the agents react to these events by updating their properties and/or changing their state.
 
-So to create an agent using Python and the BPTK_PY framework, all you really need to do is:
+So to create an agent using Python and the BPTK-Py framework, all you really need to do is:
 
 * Identify the relevant agents
 * Define the agents properties
@@ -24,7 +24,7 @@ Defining the model is even easier:
 * Define the environment properties and update them when necessary
 * Tell the model which kinds of agents there are
 
-Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents. Each unique configuration of a model is refered to as a scenario. The BPTK_PY framework helps you to manage different scenarios and compare results easily.
+Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents. Each unique configuration of a model is refered to as a scenario. The BPTK-Py framework helps you to manage different scenarios and compare results easily.
 
 Configuring AB models is best done using a config file defined in JSON.
 
@@ -66,7 +66,7 @@ Tasks are even simpler, because they don't perform actions of their own, all the
 
 That's really all there is to it!
 
-Before we take a look at how to implement this in Python using the BPTK_PY Framework, let's take a look at the simulation results.
+Before we take a look at how to implement this in Python using the BPTK-Py Framework, let's take a look at the simulation results.
 
 Assuming that each task takes one day to complete when productivity is equal to one, here are the simulation results for a deadline of 100 days and 80, 100 and 120 tasks respectively:
 
@@ -88,11 +88,11 @@ We can also take a look at how schedule pressure develops over time:
 .. image:: output_11_0.png
 
 
-Implementing The Simple Project Management Model In Python Using BPTK_Py
+Implementing The Simple Project Management Model In Python Using BPTK-Py
 ========================================================================
 
 
-You can find the code for this model in the `/abm/spm` directory of the BPTK_PY tutorial.
+You can find the code for this model in the `/abm/spm` directory of the BPTK-Py tutorial.
 
 First let's take a look at the `act` method of the staff member agent, which implements the logic outline above (the `staffMember` is a subclass of the frameworks :doc:`Agent <../../api/api_agent>` class:
 
@@ -243,7 +243,7 @@ This is what the models `act` method is for - it is called by the scheduler at t
 
 We've included the code for the `act` method below, here is how schedule pressure and productivity are calculated:
 
-First the `remaining_effort` for all open tasks is calculated by walking along the list of remaining open tasks and reading their `effort` property. This list is accessed using the models's `agent_ids` method, which is provided by the BPTK_PY framework. To this effort we need to add the remaining_effort of the task currently being worked on.
+First the `remaining_effort` for all open tasks is calculated by walking along the list of remaining open tasks and reading their `effort` property. This list is accessed using the models's `agent_ids` method, which is provided by the BPTK-Py framework. To this effort we need to add the remaining_effort of the task currently being worked on.
 
 We then add the remaining effort for all the tasks that are currently being worked on, by all staff members.
 
@@ -306,7 +306,7 @@ The BPTK framework is loaded with the following lines: ::
 
     ## Start BPTK and automatically read the scnearios found in the scenario folder
 
-    from BPTK_Py.bptk import bptk
+    from BPTK-Py.bptk import bptk
 
     bptk = bptk()
 
@@ -689,9 +689,9 @@ We can then run the widget using the following code: ::
 Summary
 =======
 
-This was a brief introduction to agent-based modeling and simulation using the BPTK_PY framework. Here is a summary of the key points:
+This was a brief introduction to agent-based modeling and simulation using the BPTK-Py framework. Here is a summary of the key points:
 
-* The BPTK_PY framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
+* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
 * The objective of the framework is to provide the infrastructure for managing model settings and scenarios and for running and plotting simulation results, so that the modeller can concentrate on modelling.
 * The framework automatically collect statistics on agents, their states and their properties, which makes plotting simulation results very easy.
 * Simulation results can also be returned as Pandas dataframes.

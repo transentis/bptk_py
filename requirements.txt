@@ -3,4 +3,8 @@ matplotlib>=3.0.3
 scipy>=1.2.1
 numpy>=1.16.2
 pyyaml>=5.1
+<<<<<<< HEAD
 ipywidgets>=
+=======
+ipywidgets>=7.4.2
+>>>>>>> refs/remotes/origin/master

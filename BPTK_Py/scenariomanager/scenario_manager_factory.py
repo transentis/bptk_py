@@ -263,7 +263,7 @@ class ScenarioManagerFactory():
 
         else:
             log("[WARN] Model Manager already existing. Not overwriting the model!")
-            self.scenario_managers[scenario_manager].add_scenarios(scenario)
+            self.scenario_managers[scenario_manager].add_scenario(scenario)
 
         if len(source) > 0:
             self.__add_monitor(source, model)
