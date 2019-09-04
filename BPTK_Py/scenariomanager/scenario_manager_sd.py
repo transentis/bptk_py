@@ -194,10 +194,11 @@ class ScenarioManagerSD(ScenarioManager):
 
             x = os.system("npm install")
             os.chdir(current_dir)
+
             if x == 0:
                 print("[SUCCESS] Done downloading dependencies. Continuing initialization.")
             else:
-                print("[ERROR] Problem downloading the dependencies: {}".format(str(x)))
+                print("[ERROR] Problem downloading the dependencies. Most likely, node is not available. If you want to convert Stella Architect Models, please install node.js. Otherwise ignore this warning: {}".format(str(x)))
 
         # Check if the source file changed in the meantime (newer version saved outside Jupyter/Bptk)
         if os.path.isfile(self.model_file + ".py") and not self.source == "":
