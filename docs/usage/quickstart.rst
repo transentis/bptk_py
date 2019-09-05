@@ -4,7 +4,8 @@ Quickstart
 
 The best way to get started is to download our tutorial. Our tutorial contains Jupyter notebooks and example models that illustrate how to use the BPTK_Py framework to build models in Python System Dynamics, agent-based modeling and how to transpile models in XMILE format.
 
-You can download the tutorial from our `website <https://www.transentis.com/products/business-prototyping-toolkit/>`_. The tutorial comes in a ZIP file. Unzip the package at a temporary location and move the contents of the package into the root folder of your virtual environment.
+
+You can clone or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on bitbucket.
 
 The objective of the tutorial is to illustrate how to use the BPTK_PY framework, not to introduce System Dynamics modeling or Agent-based modeling in general.
 
@@ -18,7 +19,7 @@ You can learn more about these models on our blog:
 * `Step-by-step introduction to System Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/>`_ using the simple project management model.
 * Introduction to the `Bass Diffusion Model <https://www.transentis.com/causal-loop-diagramming/>`_.
 
-Here is an overview of the documents contained in this tutorial:
+Here is an overview of the documents contained in the tutorial:
 
 * *Writing Computational Essays Using Simulation Models.* Introduction to using simulation models built with ®Stella in Jupyter Notebooks using the BPTK_PY framework.
 * *A Simple Python Library for System Dynamics.* Introduction to using the BPTK_PY framework to built SD models directly in Juptyer Notebooks.

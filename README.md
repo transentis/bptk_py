@@ -22,7 +22,7 @@ The framework also includes our *sdcc parser*  for transpiling  System Dynamics 
 # Getting Help
 The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis-labs.com).
 
-You should also download the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can download the tutorial from our [website](https://www.transentis.com/products/business-prototyping-toolkit/). 
+You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://bitbucket.org/transentis/bptk_py_tutorial/src/master/). 
 
 BPTK-Py is developed and maintained by transentis Labs GmbH. 
 

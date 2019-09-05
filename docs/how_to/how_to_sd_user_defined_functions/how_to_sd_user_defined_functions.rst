@@ -1,5 +1,5 @@
 ****************************************************
-How To: Creating User-defined Functions in SD Models
+Creating User-defined Functions in SD Models
 ****************************************************
 
 One of the benefits of creating System Dynamics models in Python is that
