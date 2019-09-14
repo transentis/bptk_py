@@ -113,6 +113,7 @@ class ScenarioManagerSD(ScenarioManager):
         self.instantiate_model()
 
     def add_scenarios(self, scenario_dictionary):
+
         for name, scenario in scenario_dictionary.items():
 
             self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
@@ -137,15 +138,15 @@ class ScenarioManagerSD(ScenarioManager):
                     if not points in scenario["points"].keys():
                         scenario["points"][points] = value
 
-            self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name,
-                                                      model=self.get_cloned_model(self.model),
-                                                      scenario_manager_name=self.name)
 
 
 
-    def get_cloned_model(self,model):
+    def get_cloned_model(self, model):
+        if not model:
+            return None
+
         from ..abm import Model
-        new_mod = Model( starttime=model.starttime,stoptime=model.stoptime,dt=model.dt,name=model.name)
+        new_mod = Model(starttime=model.starttime, stoptime=model.stoptime,dt=model.dt, name=model.name)
 
 
         for name, constant in model.constants.items():

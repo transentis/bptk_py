@@ -55,6 +55,66 @@ class ScenarioManagerABM(ScenarioManager):
         """
         return self.json_config
 
+    def add_scenarios(self, scenario_dictionary):
+        if not self.model:
+            model = self.json_config["model"]
+
+            for scenarioName, configuration in scenario_dictionary.items():
+
+                if scenarioName not in self.scenarios.keys():
+
+                    split = model.split(".")
+                    className = split[len(split) - 1]
+                    packageName = '.'.join(split[:-1])
+
+                    try:
+                        mod = importlib.import_module(packageName)
+                    except ModuleNotFoundError as e:
+                        log(
+                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping. Original Error: ".format(
+                                packageName.replace(".", "/"),e))
+
+                        return
+
+                    try:
+                        scenario_class = getattr(mod, className)
+                    except AttributeError as e:
+                        log(
+                            "[ERROR] Could not find class {} in {}. Probably there is still a configuration that you do not use anymore. Skipping.".format(
+                                className, packageName))
+                        return
+
+                    scenario = scenario_class(name=scenarioName, scheduler=SimultaneousScheduler(),
+                                              data_collector=DataCollector())
+
+                    scenario.instantiate_model()
+
+                    scenario.configure(configuration)
+
+                    scenario.set_scenario_manager(self.name)
+
+                    self.scenarios[scenarioName] = scenario
+                    log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
+
+        else:
+            from copy import deepcopy
+            for scenarioName, configuration in scenario_dictionary.items():
+
+                if scenarioName not in self.scenarios.keys():
+                    scenario = deepcopy(self.model)
+                    scenario.name = scenarioName
+
+                    scenario.scheduler = SimultaneousScheduler()
+                    scenario.data_collector = DataCollector() if not scenario.data_collector else scenario.data_collector
+
+                    scenario.instantiate_model()
+                    scenario.configure(configuration)
+
+                    scenario.set_scenario_manager(self.name)
+                    self.scenarios[scenarioName] = scenario
+
+                    log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
+
     def instantiate_model(self, reset=False):
         """
         Create the simulation model from the relative path to the file
@@ -125,3 +185,4 @@ class ScenarioManagerABM(ScenarioManager):
                     self.scenarios[scenarioName] = scenario
 
                     log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
+
