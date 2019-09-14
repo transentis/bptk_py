@@ -56,6 +56,9 @@ class ScenarioManagerABM(ScenarioManager):
         return self.json_config
 
     def add_scenarios(self, scenario_dictionary):
+        self.instantiate_model(scenario_dictionary)
+
+    def old_add_scenarios(self, scenario_dictionary):
         if not self.model:
             model = self.json_config["model"]
 
@@ -115,7 +118,7 @@ class ScenarioManagerABM(ScenarioManager):
 
                     log("[INFO] Successfully instantiated the simulation model for scenario {}".format(scenarioName))
 
-    def instantiate_model(self, reset=False):
+    def instantiate_model(self, scenario_dictionary=None, reset=False):
         """
         Create the simulation model from the relative path to the file
         :param reset: If True, clear all scenarios and reinstantiate
@@ -125,12 +128,13 @@ class ScenarioManagerABM(ScenarioManager):
             self.scenarios = {}
             log("[INFO] Resetting the simulation scenarios for {}".format(str(self.name)))
 
-        model = None
+        if not scenario_dictionary:
+            scenario_dictionary = self.json_config["scenarios"]
 
         if not self.model:
             model = self.json_config["model"]
 
-            for scenarioName, configuration in self.json_config["scenarios"].items():
+            for scenarioName, configuration in scenario_dictionary.items():
 
                 if scenarioName not in self.scenarios.keys():
 
@@ -160,7 +164,7 @@ class ScenarioManagerABM(ScenarioManager):
 
                     scenario.instantiate_model()
 
-                    scenario.configure(self.json_config["scenarios"][scenarioName])
+                    scenario.configure(configuration)
 
                     scenario.set_scenario_manager(self.name)
 
@@ -169,7 +173,7 @@ class ScenarioManagerABM(ScenarioManager):
 
         else:
             from copy import deepcopy
-            for scenarioName, configuration in self.json_config["scenarios"].items():
+            for scenarioName, configuration in scenario_dictionary.items():
 
                 if scenarioName not in self.scenarios.keys():
                     scenario = deepcopy(self.model)
@@ -179,7 +183,7 @@ class ScenarioManagerABM(ScenarioManager):
                     scenario.data_collector = DataCollector() if not scenario.data_collector else scenario.data_collector
 
                     scenario.instantiate_model()
-                    scenario.configure(self.json_config["scenarios"][scenarioName])
+                    scenario.configure(configuration)
 
                     scenario.set_scenario_manager(self.name)
                     self.scenarios[scenarioName] = scenario

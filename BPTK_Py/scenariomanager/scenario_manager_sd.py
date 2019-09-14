@@ -116,8 +116,6 @@ class ScenarioManagerSD(ScenarioManager):
 
         for name, scenario in scenario_dictionary.items():
 
-            self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
-                               scenario_manager_name=self.name)
 
             # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
             if len(self.base_constants.keys()) > 0:
@@ -138,8 +136,10 @@ class ScenarioManagerSD(ScenarioManager):
                     if not points in scenario["points"].keys():
                         scenario["points"][points] = value
 
+            self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
+                               scenario_manager_name=self.name)
 
-
+            self.instantiate_model()
 
     def get_cloned_model(self, model):
         if not model:
@@ -186,6 +186,11 @@ class ScenarioManagerSD(ScenarioManager):
         This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
         :return: None
         """
+
+        # do nothing if this is an ABM model
+        from ..abm import Model
+        if isinstance(self.model, Model):
+            return
 
         if not os.path.isdir(config.configuration["sd_py_compiler_root"] + "/node_modules"):
             print("[INFO] Stella Architect compiler dependencies missing. Attempting npm install")

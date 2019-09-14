@@ -656,10 +656,17 @@ class bptk():
                 log("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
 
             else:
-                manager = ScenarioManagerSD(scenarios={}, model=values["model"], name=scenario_manager_name,
-                                            base_constants=values[
-                                                "base_constants"] if "base_constants" in values.keys() else {},
-                                            base_points=values["base_points"] if "base_points" in values.keys() else {})
+                model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
+                model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
+                manager = ScenarioManagerSD(
+                    scenarios={},
+                    model=model,
+                    name=scenario_manager_name,
+                    base_constants=values["base_constants"] if "base_constants" in values.keys() else {},
+                    base_points=values["base_points"] if "base_points" in values.keys() else {},
+                    source=values["source"] if "source" in values.keys() else "",
+                    model_file=model_file
+                )
 
             # Add scenario if any in the dictionary is found
             if "scenarios" in values.keys():
