@@ -125,3 +125,11 @@ class SimulationScenario():
             log(
                 "[ERROR] Attempted to initialize points of a model before the model is available for ABMModel {}".format(
                     self.name))
+
+    # needed to provide interface compatibility with abm scenarios (i.e. abm model class)
+    def set_property_value(self, name, value):
+        self.constants[name] = value
+
+    # needed to provide interface compatibility with abm scenarios (i.e. abm model class)
+    def get_property_value(self, name):
+        return self.constants[name]
