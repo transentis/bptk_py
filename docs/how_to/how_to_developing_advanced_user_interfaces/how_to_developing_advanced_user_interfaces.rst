@@ -487,21 +487,17 @@ and call it ``interactiveScenario``:
 
 .. code:: ipython3
 
-    bptk.add_scenario(dictionary={
-                          "smCustomerAcquisition":  
-                          {
-                              "source":"simulation_models/customer_acquisition.stmx",
-                              "model":"simulation_models/customer_acquisition",
-                              "interactiveScenario":{
-                                  "constants":{
-                                     "referrals":0,
-                                      "advertisingSuccessPct":0.1,
-                                      "referralFreeMonths":3,
-                                      "referralProgamAdoptionPct":10
-                                    }
-                              }
-                        }
-                        }
+    bptk.register_scenarios(scenario_manager="smCustomerAcquisition", scenarios=
+                      {
+                          "interactiveScenario":{
+                              "constants":{
+                                 "referrals":0,
+                                  "advertisingSuccessPct":0.1,
+                                  "referralFreeMonths":3,
+                                  "referralProgamAdoptionPct":10
+                                }
+                          }
+                    }
     )
 
 We can then access the scenario using
@@ -509,12 +505,8 @@ We can then access the scenario using
 
 .. code:: ipython3
 
-    scenarios= bptk.scenario_manager_factory.get_scenarios(["smCustomerAcquisition"],
-                                                                              ["interactiveScenario"])
-    scenarios["interactiveScenario"].constants
-
-
-
+    scenario = bptk.get_scenario("smCustomerAcquisition","interactiveScenario")
+    scenario.constants
 
 .. parsed-literal::
 
@@ -557,8 +549,7 @@ interact function.
         description='Advertising Success Pct'
     ))
     def dashboard(advertising_success_pct):
-        scenario= bptk.scenario_manager_factory.get_scenarios(["smCustomerAcquisition"],
-                                                                              ["interactiveScenario"])["interactiveScenario"]
+        scenario= bptk.get_scenario("smCustomerAcquisition","interactiveScenario")
         
         scenario.constants["advertisingSuccessPct"]=advertising_success_pct
         bptk.reset_simulation_model(scenario_manager="smCustomerAcquisition",
@@ -598,8 +589,7 @@ Now let's combine this with the tabs from above.
         description='Advertising Success Pct'
     ))
     def dashboardWithTabs(advertising_success_pct):
-        scenario= bptk.scenario_manager_factory.get_scenarios(["smCustomerAcquisition"],
-                                                                              ["interactiveScenario"])["interactiveScenario"]
+        scenario= bptk.get_scenario("smCustomerAcquisition","interactiveScenario")
         
         scenario.constants["advertisingSuccessPct"]=advertising_success_pct
         bptk.reset_simulation_model(scenario_manager="smCustomerAcquisition",

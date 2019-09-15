@@ -128,7 +128,7 @@ class PulseDashboard():
             # Get the updated objects!
             self.scenario_objs = self.bptk.scenario_manager_factory.get_scenarios(
                 scenario_managers=self.scenario_managers,
-                scenarios=self.scenarios, type="sd")
+                scenarios=self.scenarios, scenario_manager_type="sd")
 
         # Create strateg(ies)
         if not error:

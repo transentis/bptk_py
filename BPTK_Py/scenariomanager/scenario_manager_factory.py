@@ -142,11 +142,12 @@ class ScenarioManagerFactory():
         return self.scenario_managers
 
     def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],
-                              type=""):
+                              scenario_manager_type=""):
         """
         If self.scenario_managers is empty, this method attempts to load all scenario managers from disk in the specified path
         :param path: path to look for JSON files containing scenario managers and scenarios
         :param scenario_managers_to_filter: only look for certain scenario managers
+        :param scenario_manager_type: inly look for scenario managers of a given type
         :return: self.scenario_managers
         """
 
@@ -164,8 +165,8 @@ class ScenarioManagerFactory():
 
         scenario_managers = self.scenario_managers
 
-        if type != "":
-            scenario_managers = {k: v for k, v in scenario_managers.copy().items() if v.type == type}
+        if scenario_manager_type != "":
+            scenario_managers = {k: v for k, v in scenario_managers.copy().items() if v.type == scenario_manager_type}
 
         if len(scenario_managers_to_filter) > 0:
             scenario_managers = {k: v for k, v in scenario_managers.copy().items() if k in scenario_managers_to_filter}
@@ -207,16 +208,16 @@ class ScenarioManagerFactory():
         """
         return self.scenario_managers[scenario_manager].scenarios[scenario]
 
-    def get_scenarios(self, scenario_managers=[], scenarios=[], type=""):
+    def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
         """
         Get an arbitrary amount of scenario objects, depending on the parameters
         :param scenario_managers:  Names of the scenario_managers to lookup
         :param scenarios: Names of the scenarios to lookup
-        :param type: Type of simulation models to return
+        :param scenario_manager_type: Type of simulation models to return
         :return:
         """
 
-        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers, type=type)
+        managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers, scenario_manager_type=scenario_manager_type)
 
         scenarios_objects = {}
         if len(managers) > 1:
