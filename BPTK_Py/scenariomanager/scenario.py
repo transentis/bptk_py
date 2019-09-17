@@ -128,8 +128,22 @@ class SimulationScenario():
 
     # needed to provide interface compatibility with abm scenarios (i.e. abm model class)
     def set_property_value(self, name, value):
+        """
+        Set the property with given name to given value
+            :param name: The name of the property to set
+            :type name: String
+            :param value: The value to set the property to
+            :type value: A numerical value
+        """
         self.constants[name] = value
 
     # needed to provide interface compatibility with abm scenarios (i.e. abm model class)
     def get_property_value(self, name):
+        """
+        Retrieve the current value of a property.
+            :param name: The name of the property whose value you want to retrieve.
+            :type name: String
+            :return: Returns the value of the property
+            :rtype: A numerical value
+        """
         return self.constants[name]
