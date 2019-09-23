@@ -366,7 +366,7 @@ useful). If you were writing a document that needed a lot of plots of
 this kind, you could create your own high-level function to avoide
 having to copy and paste the code above multiple times.
 
-Advanced interactive user interfaces
+Advanced Interactive User Interfaces
 ------------------------------------
 
 Now let's try something a little more challenging: Let's build a
