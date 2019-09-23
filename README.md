@@ -30,6 +30,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.8
+
+* Extended the `export` function, it now also exports data to allow comparison between scenarios
+
 ### 0.8.7
 
 * Fixed an error in requirements.txt

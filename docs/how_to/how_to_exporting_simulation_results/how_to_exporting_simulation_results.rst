@@ -765,6 +765,222 @@ We now have all the data for all the scenarios in one large dataframe.
 Each row is indexed by the scenario it belongs to. The timestamp is only
 unique within a given scenario.
 
+Generating The Data For Scenario Comparison
+-------------------------------------------
+
+The data we have generated so far is a table with a column for each
+indicator, indexed by scenario.
+
+This is fine if you want to look at data scenario by scenario or plot
+two different indicators for the same scenario.
+
+But what if you want to compare the same indicator for different
+scenarios?
+
+In such a case, your data needs to be structured a little differently -
+essential we then want a table with a column for each scenario, indexed
+by the indicator.
+
+Do achieve this, we need to loop through the scenarios again:
+
+.. code:: ipython3
+
+    # create a new dataframe with a column for each scenario, indexed by time and indicator
+    indicator_dfs = []
+    for scenario_no, scenario in enumerate(scenarios):
+
+        scenario_dfs=[]
+        # loop through the equations
+        for equation in equations:
+            # add a column which will contain the name of the indicator
+            df = bptk.plot_scenarios(
+                scenario_managers=[scenario_manager],
+                scenarios=[scenario],
+                equations=[equation],
+                return_df=True)
+            df.rename(columns={equation:scenario},inplace=True)
+            if scenario_no is len(scenarios)-1:
+                df["indicator"] = [equation] * len(df.index)
+                df["time"] = df.index
+            scenario_dfs +=[df]
+
+        # conacate the indicators for the scenario (i.e. along axis 0)
+        indicators_scenario_tab = pd.concat(scenario_dfs, axis=0,ignore_index=True,sort=False)
+
+        # create a new column which will contain the time step (which won't be a unique index anymore, as we are concatenating many scenarios)
+
+        indicator_dfs += [indicators_scenario_tab]
+
+    #concatenate all the scenario columns (i.e. along axis 1)
+    indicators_tab=pd.concat(indicator_dfs,axis=1,sort=False)
+    indicators_tab.index.name="id"
+
+.. code:: ipython3
+
+    indicators_tab[0:10]
+
+
+
+
+.. raw:: html
+
+    <div>
+    <style scoped>
+        .dataframe tbody tr th:only-of-type {
+            vertical-align: middle;
+        }
+
+        .dataframe tbody tr th {
+            vertical-align: top;
+        }
+
+        .dataframe thead th {
+            text-align: right;
+        }
+    </style>
+    <table border="1" class="dataframe">
+      <thead>
+        <tr style="text-align: right;">
+          <th></th>
+          <th>base</th>
+          <th>serviceFlop</th>
+          <th>rethinkAdvertising</th>
+          <th>referSomeonePlease</th>
+          <th>hereWeGo</th>
+          <th>boomButBust</th>
+          <th>indicator</th>
+          <th>time</th>
+        </tr>
+        <tr>
+          <th>id</th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>0</th>
+          <td>0.000000</td>
+          <td>0.000000</td>
+          <td>0.000000</td>
+          <td>0.000000</td>
+          <td>0.000000</td>
+          <td>0.000000</td>
+          <td>customers</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td>800.000000</td>
+          <td>80.000000</td>
+          <td>80.000000</td>
+          <td>800.000000</td>
+          <td>800.000000</td>
+          <td>800.000000</td>
+          <td>customers</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>1599.893333</td>
+          <td>162.398901</td>
+          <td>183.998613</td>
+          <td>1623.890133</td>
+          <td>1839.861333</td>
+          <td>1839.861333</td>
+          <td>customers</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>2399.680014</td>
+          <td>247.268571</td>
+          <td>319.194051</td>
+          <td>2472.377134</td>
+          <td>3191.405164</td>
+          <td>3191.405164</td>
+          <td>customers</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <th>4</th>
+          <td>3199.360057</td>
+          <td>334.683026</td>
+          <td>494.942916</td>
+          <td>3346.188234</td>
+          <td>4947.891939</td>
+          <td>4947.891939</td>
+          <td>customers</td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <th>5</th>
+          <td>3998.933476</td>
+          <td>424.718494</td>
+          <td>723.406944</td>
+          <td>4246.071738</td>
+          <td>7230.375720</td>
+          <td>7230.375720</td>
+          <td>customers</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <th>6</th>
+          <td>4798.400284</td>
+          <td>517.453484</td>
+          <td>1020.393216</td>
+          <td>5172.797601</td>
+          <td>10195.910470</td>
+          <td>10195.910470</td>
+          <td>customers</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <th>7</th>
+          <td>5597.760498</td>
+          <td>612.968850</td>
+          <td>1406.445515</td>
+          <td>6127.158034</td>
+          <td>14048.126326</td>
+          <td>14048.126326</td>
+          <td>customers</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <th>8</th>
+          <td>6397.014130</td>
+          <td>711.347864</td>
+          <td>1908.261512</td>
+          <td>7109.968110</td>
+          <td>19050.823648</td>
+          <td>19050.823648</td>
+          <td>customers</td>
+          <td>8</td>
+        </tr>
+        <tr>
+          <th>9</th>
+          <td>7196.161194</td>
+          <td>812.676285</td>
+          <td>2560.532449</td>
+          <td>8122.066399</td>
+          <td>25545.383938</td>
+          <td>25545.383938</td>
+          <td>customers</td>
+          <td>9</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+
+
+
 Generating The Data For Interactive Dashboards
 ----------------------------------------------
 

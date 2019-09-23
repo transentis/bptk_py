@@ -762,9 +762,10 @@ class bptk():
             interactive_equations=None,
             interactive_settings=None,
             time_column_name="time",
-            scenario_column_name="scenario",
-            interactive_df_name="interactive",
             scenario_df_name="scenario",
+            scenario_column_name="scenario",
+            indicator_df_name="indicator",
+            interactive_df_name="interactive",
             filename=None):
         """
          Export data for the given scenarios in a structure that is amenable to analysis in BI tools. By default, the data is returned in a dictionary of dataframes.
@@ -781,16 +782,17 @@ class bptk():
             :param interactive_equations:
             :param interactive_settings:
             :param time_column_name:
-            :param scenario_df_name:
-            :param interactive_df_name:
             :param scenario_column_name:
+            :param scenario_df_name:
+            :param indicator_df_name:
+            :param interactive_df_name:
             :param filename:
             :return:
          """
         # if no scenarios are passed we export all scenarios
         if not scenarios:
             scenarios = self.get_scenario_names(scenario_managers=[scenario_manager])
-        # collect the scenarios, add a new column to include the scenario name and a new column for the time time dimension
+        # create a new dataframe with a column for each equation/indicator, indexed by time and scenario
         scenario_dfs = []
         for scenario in scenarios:
             df = self.plot_scenarios(
@@ -802,6 +804,36 @@ class bptk():
             df[time_column_name] = df.index
             scenario_dfs += [df]
         scenarios_tab = pd.concat(scenario_dfs, ignore_index=True, sort=False)
+        scenarios_tab.index.name = "id"
+
+        # create a new dataframe with a column for each scenario, indexed by time and indicator
+        indicator_dfs = []
+        for scenario_no, scenario in enumerate(scenarios):
+            scenario_dfs = []
+            # loop through the equations
+            for equation in equations:
+                # add a column which will contain the name of the indicator
+                df = self.plot_scenarios(
+                    scenario_managers=[scenario_manager],
+                    scenarios=[scenario],
+                    equations=[equation],
+                    return_df=True)
+                df.rename(columns={equation: scenario}, inplace=True)
+                if scenario_no is len(scenarios) - 1:
+                    df["indicator"] = [equation] * len(df.index)
+                    df["time"] = df.index
+                scenario_dfs += [df]
+
+            # concatenate the indicators for the scenario (i.e. along axis 0)
+            indicators_scenario_tab = pd.concat(scenario_dfs, axis=0, ignore_index=True, sort=False)
+            # create a new column which will contain the time step
+
+            indicator_dfs += [indicators_scenario_tab]
+
+        # concatenate all the scenario columns (i.e. along axis 1)
+        indicators_tab = pd.concat(indicator_dfs, axis=1, sort=False)
+        indicators_tab.index.name = "id"
+
         # now generate the data for the interactive scenarios
         if interactive_scenario:
             # generate all combinations of the settings
@@ -830,12 +862,14 @@ class bptk():
                 interactive_dfs += [df]
             # concatenate the interactive scenarios
             interactive_tab = pd.concat(interactive_dfs, ignore_index=True, sort=False)
+            interactive_tab.index.name = "id"
         else:
             interactive_tab = pd.DataFrame([])
         if filename:
             with pd.ExcelWriter(filename) as writer:
                 scenarios_tab.to_excel(writer, sheet_name=scenario_df_name)
+                indicators_tab.to_excel(writer, sheet_name=indicator_df_name)
                 interactive_tab.to_excel(writer, sheet_name=interactive_df_name)
             return None
         else:
-            return {scenario_df_name: scenarios_tab, interactive_df_name: interactive_tab}
+            return {scenario_df_name: scenarios_tab, indicator_df_name: indicators_tab, interactive_df_name: interactive_tab}
