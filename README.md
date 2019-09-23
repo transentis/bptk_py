@@ -30,6 +30,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.8.7
+
+* Fixed an error in requirements.txt
+
 ### 0.8.6
 * Added a new export method to the bptk class to simplify the export of simulation results.
 * Added some new methods to the bptk class to allow easy access to scenarios - accessing the scenarioManagerFactory is now no longer necessary.
@@ -39,7 +43,7 @@ For questions regarding installation, usage and other help please contact us at:
 * System Dynamics DSL: Extended the operator overrides, to ensure stocks can have more than two inflows or outflows.
 
 ### 0.8.4
-* Bug fix to bptk.add_scenario that occured when adding a new scenario to an existing scenario manager
+* Bug fix to bptk.add_scenario that occurred when adding a new scenario to an existing scenario manager
 
 ### 0.8.3
 
