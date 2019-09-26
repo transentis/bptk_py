@@ -1,1 +1,4 @@
+
 recursive-include BPTK_Py/sd-compiler *
+exclude BPTK_Py/sd-compiler/.git
+exclude BPTK_Py/sd-compiler/.gitignore
