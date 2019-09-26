@@ -53,5 +53,8 @@ module.exports = {
 	},
 	'or': function ( lhs, rhs ) {
 		return  lhs + ' or ' + rhs 
-	}
+	},
+	'exp':function(body) {
+        return 'np.exp(' + body + ')'
+    },
 }
