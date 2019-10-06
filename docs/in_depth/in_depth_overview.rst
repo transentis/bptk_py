@@ -11,4 +11,5 @@ This section explains the architecture of the BPTK framework and goes into the d
    ./in_depth_abm/in_depth_abm
    ./in_depth_architecture/in_depth_architecture
    ./in_depth_sd_dsl/in_depth_sd_dsl
+   ./in_depth_scenarios/in_depth_scenarios
 
