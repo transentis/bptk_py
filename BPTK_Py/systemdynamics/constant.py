@@ -41,10 +41,10 @@ class Constant(Element):
         self.model.reset_cache()
 
 
-        if isinstance(equation, (int, float)):
+        if isinstance(equation, (float)):
             self.function_string = "lambda model, t: {}".format(equation)
         else:
-            raise ElementError("Constants can only contain numerical values")
+            raise ElementError("Constants can only contain floating point values")
 
         self.generate_function()
 

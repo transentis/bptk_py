@@ -81,28 +81,34 @@ class Element:
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
-    def plot(self,starttime = 0, stoptime = None, dt = None):
+
+    def plot(self,starttime = None, stoptime = None, dt = None, return_df=False):
 
         ## Equation von start bis stop
         dt = self.model.dt if dt is None else dt
         stoptime = self.model.stoptime if stoptime is None else stoptime
+        starttime = self.model.starttime if starttime is None else starttime
 
         try:
-            df = pd.DataFrame({self.name : { t : self(t) for t in  np.arange(starttime,stoptime+dt,dt)}})
+            df = pd.DataFrame({self.name: {t: self(t) for t in np.arange(starttime,stoptime+dt,dt)}})
         except:
-            df = pd.DataFrame({self.name : { t : self(t) for t in  np.arange(self.model.starttime,self.model.stoptime+dt,dt)}})
+            df = pd.DataFrame({self.name: {t: self(t) for t in np.arange(self.model.starttime,self.model.stoptime+dt, dt)}})
+        # ensure column is of float type and not e.g. an integer
 
-        ax = df.plot(kind="area",
+        if return_df:
+            return df
+        else:
+            ax = df.plot(kind="area",
                 stacked=False,
                 figsize=config.configuration["figsize"],
                 title=self.name,
                 alpha=config.configuration["alpha"], color=config.configuration["colors"],
                 lw=config.configuration["linewidth"])
 
-        for ymaj in ax.yaxis.get_majorticklocs():
-            ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+            for ymaj in ax.yaxis.get_majorticklocs():
+                ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
 
-        self.update_plot_formats(ax)
+            self.update_plot_formats(ax)
 
     ### Operator overrides
 

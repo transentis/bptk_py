@@ -9,6 +9,12 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
+class OperatorError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 class BinaryOperator:
 

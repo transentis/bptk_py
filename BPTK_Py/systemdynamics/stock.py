@@ -11,6 +11,9 @@
 
 
 from .element import Element
+from .element import ElementError
+from .constant import Constant
+from .converter import Converter
 
 class Stock(Element):
 
@@ -18,7 +21,7 @@ class Stock(Element):
 
     def __init__(self, model, name):
         super(Stock, self).__init__(model, name)
-        self.__initial_value = 0
+        self.__initial_value = 0.0
 
     def default_function_string(self):
         return "lambda model, t : ( (0) if (t <= model.starttime) else (model.memoize('{}',t-model.dt)) )".format(self.name)
@@ -29,9 +32,13 @@ class Stock(Element):
 
     @initial_value.setter
     def initial_value(self, initial_value):
-        self.__initial_value = initial_value
-        self.build_function_string()
-        self.generate_function()
+        if isinstance(initial_value, (float, Constant, Converter)):
+            self.__initial_value = initial_value
+            self.build_function_string()
+            self.generate_function()
+        else:
+            raise ElementError("Initial values must be floating point values, constants or converters")
+
 
     @property
     def equation(self):

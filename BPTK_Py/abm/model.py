@@ -74,6 +74,7 @@ class Model:
         self.points = {}
         self.functions = {}
         self.fn = {}
+        self.equation_id = 0  # unique id used for internally generated functions
 
 
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
@@ -545,6 +546,15 @@ class Model:
     ################################################################################################################################################
     ### System Dynamics (SD) / Hybrid Simulation handling. Use the following methods for Hybrid models: Agent based models that use SD equations  ##
     ################################################################################################################################################
+
+    @property
+    def equation_prefix(self):
+        """
+        An id that is unique within this model that can be used to generate unique equation names
+        :return:
+        """
+        self.equation_id += 1
+        return "bptk_"+str(self.equation_id)+"_"
 
     def memoize(self, equation, arg):
         """
