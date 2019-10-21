@@ -4,6 +4,7 @@ from BPTK_Py import Agent
 
 from BPTK_Py import Model
 
+
 class TestAgent(unittest.TestCase):
     def setUp(self):
         pass
