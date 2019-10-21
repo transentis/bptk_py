@@ -5,3 +5,6 @@ numpy>=1.16.2
 pyyaml>=5.1
 ipywidgets>=7.4.2
 xlsxwriter
+parsimonious
+xmltodict
+jinja2
