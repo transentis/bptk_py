@@ -147,7 +147,7 @@ class ScenarioManagerFactory():
         If self.scenario_managers is empty, this method attempts to load all scenario managers from disk in the specified path
         :param path: path to look for JSON files containing scenario managers and scenarios
         :param scenario_managers_to_filter: only look for certain scenario managers
-        :param scenario_manager_type: inly look for scenario managers of a given type
+        :param scenario_manager_type: only look for scenario managers of a given type
         :return: self.scenario_managers
         """
 

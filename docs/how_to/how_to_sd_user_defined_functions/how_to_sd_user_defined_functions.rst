@@ -1,6 +1,6 @@
-****************************************************
+
 Creating User-defined Functions in SD Models
-****************************************************
+============================================
 
 One of the benefits of creating System Dynamics models in Python is that
 we can use the full power of Python to create our own functions, which
@@ -17,7 +17,7 @@ First of all, lets set up our model:
 
 .. code:: ipython3
 
-    model = Model(starttime=1,stoptime=10,dt=0.25,name='Test Model')
+    model = Model(starttime=1,stoptime=10,dt=0.25,name='TestModel')
 
 Now let's define a function we would like to use in our model. A user
 defined function can have as many arguments as you like, but it must
@@ -54,7 +54,7 @@ We can test the function as follows:
 
 .. code:: ipython3
 
-    model.evaluate_equation("converter",5)
+    converter(5)
 
 
 
@@ -112,24 +112,32 @@ We can do all the usual arithmethic:
 
 The function we created above was just dependent on time and not on
 other model variables. Let's create a function that takes more
-argmuments, e.g. one that multiplies a model variable with time.
+arguments, e.g. one that multiplies a model variable with time.
 
 You can add as many arguments as you like, but they must come after the
 ``model`` and ``t`` arguments.
 
 .. code:: ipython3
 
-    another_model_function = model.function("another_model_function", lambda model, t, element: 5*t*element)
+    another_model_function = model.function("another_model_function", lambda model, t, input_function, multiplier : t*input_function*multiplier)
 
 Define a new converter which will be the input for the function:
 
 .. code:: ipython3
 
-    input_converter = model.converter("input_converter")
+    input_function = model.converter("input_function")
 
 .. code:: ipython3
 
-    input_converter.equation= stock
+    input_function.equation= 5.0
+
+.. code:: ipython3
+
+    multiplier = model.converter("multiplier")
+
+.. code:: ipython3
+
+    multiplier.equation=1.0
 
 Now add a converter which will apply the ``another_model_function``:
 
@@ -139,7 +147,7 @@ Now add a converter which will apply the ``another_model_function``:
 
 .. code:: ipython3
 
-    another_converter.equation=another_model_function(input_converter)
+    another_converter.equation=another_model_function(input_function, multiplier)
 
 .. code:: ipython3
 
@@ -147,6 +155,93 @@ Now add a converter which will apply the ``another_model_function``:
 
 
 
-.. image:: output_30_0.png
+.. image:: output_32_0.png
+
+
+.. code:: ipython3
+
+    from BPTK_Py.bptk import bptk
+    import numpy as np
+    bptk=bptk()
+
+Of course functions defined in this way can also be used within
+scenarios. The quickest way to set up a scenario manager for a given
+model is as follows:
+
+.. code:: ipython3
+
+    bptk.register_model(model)
+
+This automatically creates a scenario manager whose name is the name of
+the model with the prefix "sm" and a base scenario. The models name is
+normalized to start with a capital letter (so TestModel is converted to
+smTestmodel).
+
+It also creates a "base" scenario which runs the model as-is, without
+any changed settings.
+
+You can list all scenarios and scenario managers using the
+``list_scenarios`` method.
+
+.. code:: ipython3
+
+    bptk.list_scenarios(scenario_managers=["smTestmodel"])
+
+
+.. parsed-literal::
+
+    
+    *** smTestmodel ***
+    	 base
+
+
+Let's add some new scenarios:
+
+.. code:: ipython3
+
+    bptk.register_scenarios(
+        scenarios =
+            {
+                "multiplier5": {
+                    "constants": {
+                        "multiplier": 5.0
+                    }
+                },
+                "multiplier10": {
+                    "constants": {
+                        "multiplier": 10.0
+                    }
+                },
+                "multiplier15": {
+                    "constants": {
+                        "multiplier": 15.0
+                    }
+                }
+            }
+        ,
+        scenario_manager="smTestmodel")
+
+.. code:: ipython3
+
+    bptk.list_scenarios(scenario_managers=["smTestmodel"])
+
+
+.. parsed-literal::
+
+    
+    *** smTestmodel ***
+    	 base
+    	 multiplier5
+    	 multiplier10
+    	 multiplier15
+
+
+.. code:: ipython3
+
+    bptk.plot_scenarios(scenario_managers=["smTestmodel"],scenarios=["base","multiplier5","multiplier10","multiplier15"],equations=["another_converter"])
+
+
+
+.. image:: output_41_0.png
 
 

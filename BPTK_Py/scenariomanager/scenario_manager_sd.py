@@ -141,12 +141,13 @@ class ScenarioManagerSD(ScenarioManager):
 
             self.instantiate_model()
 
-    def get_cloned_model(self, model):
+    def  get_cloned_model(self, model):
+        #TODO: looks like this should be a function of model, not of scenario manager sd
         if not model:
             return None
 
         from ..abm import Model
-        new_mod = Model(starttime=model.starttime, stoptime=model.stoptime,dt=model.dt, name=model.name)
+        new_mod = Model(starttime=model.starttime, stoptime=model.stoptime, dt=model.dt, name=model.name)
 
 
         for name, constant in model.constants.items():
@@ -175,9 +176,13 @@ class ScenarioManagerSD(ScenarioManager):
             new_stock.generate_function()
             new_mod.memo[stock.name] = {}
 
+        for name, function in model.functions.items():
+            new_function = new_mod.function(name, model.fn[name])
+
         new_mod.points = model.points
 
         return new_mod
+
 
 
 

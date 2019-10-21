@@ -625,6 +625,11 @@ class bptk():
         widget.show()
 
     def list_scenarios(self, scenario_managers=[], scenario_manager_type=""):
+        """
+        List all scenarios or scenarios from selected scenario managers
+            :param scenario_managers: The list of scenario managers whose scenarios you want to list. Default is an empty list.
+            :param scenario_manager_type: The type of scenario manager you want to list your scenarios for ("abm"|"sd"|""), default is an empty string, which returns scenario managers of both types.
+        """
         managers = self.scenario_manager_factory.\
                 get_scenario_managers(
                     scenario_managers_to_filter=scenario_managers,
@@ -703,11 +708,22 @@ class bptk():
                 self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
                                                            source=source, model=model_file)
 
+    def register_model(self, model, scenario_manager=None, scenario=None):
+        """
+        Registers the given model with bptk and automatically creates both a scenario manager and an initial scenario. If no scenario manager or scenario is passed, a scenario manager is created whose name is "sm<Model.name>" along with a scenario named "base". Internally, this method calls register_scenario_manager and then register_scenarios.
+            :param model: The model that is registered.
+            :param scenario_manager: A scenario manager in the dictionary format (see the examples in the In Depth section). This parameter is optional.
+            :param scenario: A scenario in the dictionary format (see the examples in the InDepth section)
+        """
+        scenario_manager = scenario_manager if scenario_manager is not None else "sm{}".format(model.name.capitalize())
+        scenario = scenario if scenario is not None else {"base": {}}
+        self.register_scenario_manager({scenario_manager: {"model": model}})
+        self.register_scenarios(scenario, scenario_manager)
+
     def register_scenario_manager(self, scenario_manager):
         """
         Register a manually defined Scenario manager using the common JSON notation. Keep in mind that it HAS TO contain a reference to a live model instance
             :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
-            :return: None
         """
 
         #TODO refactoring - much of this code should be part of scenario_manager_factory

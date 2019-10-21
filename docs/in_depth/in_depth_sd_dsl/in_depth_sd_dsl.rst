@@ -1,10 +1,9 @@
 
-*******************************************
 A Simple Python Library For System Dynamics
-*******************************************
+===========================================
 
-**Build System Dynamics simulations interactively in Jupyter using Python**
-
+Build System Dynamics simulations interactively in Jupyter using Python
+-----------------------------------------------------------------------
 
 We love building computational models and our favorite environment for
 this kind of explorative, analytical work are
@@ -15,7 +14,7 @@ To make computational modeling easier we are developing the *Business
 Prototyping Toolkit for Python* (BPTK PY), a simple library that
 currently supports System Dynamics and Agent-based modeling.
 
-We first introduced the BPTK-Py libary in our blog post `Writing
+We first introduced the BPTK PY libary in our recent post `Writing
 Computational Essays Based On Simulation
 Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/>`__.
 
@@ -40,18 +39,19 @@ Having such a DSL is useful for several reasons:
    e.g. machine-learning toolkits.
 
 Needless to say the new functionality seamlessly integrates with the
-rest of the BPTK-Py framework, so you can use all the high-level
+rest of the BPTK PY framework, so you can use all the high-level
 scenario management and plotting functions which are part of the
 framework.
 
 In this post I focus on how to build a System Dynamics model using the
 framework, I will take a look at Agent-based modeling in a future post.
 
-The post is also available as a Jupyter notebook in our BPTK-Py
-Tutorial, which you can clone or download from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`__ on bitbucket.
+The post is also available as a Jupyter notebook in our BPTK PY
+Tutorial, which is available for `download
+here <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
 
 A simple model to demonstrate the library
-=========================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To illustrate the DSL, we will build the simple project management model
 we introduced in our `step-by-step tutorial on System
@@ -88,7 +88,7 @@ all our model elements such as stocks, flows, converters and constants.
 
 .. code:: ipython3
 
-    model = Model(starttime=0,stoptime=120,dt=1,name='SimpleProjectManagament')
+    model = Model(starttime=0.0,stoptime=120.0,dt=1.0,name='SimpleProjectManagament')
 
 Creating model elements is really easy:
 
@@ -132,7 +132,7 @@ be a numerical constant or a constant element.
 
 .. code:: ipython3
 
-    closedTasks.initial_value = 0
+    closedTasks.initial_value = 0.0
     staff.initial_value = initialStaff
     openTasks.initial_value = initialOpenTasks 
 
@@ -145,10 +145,10 @@ Defining constants is particularly easy:
 
 .. code:: ipython3
 
-    deadline.equation = 100
-    effortPerTask.equation = 1
-    initialStaff.equation = 1
-    initialOpenTasks.equation = 100
+    deadline.equation = 100.0
+    effortPerTask.equation = 1.0
+    initialStaff.equation = 1.0
+    initialOpenTasks.equation = 100.0
 
 The ``currentTime`` variable tracks the simulation time, which is
 captured by the ``time`` function in the SD function library.
@@ -245,7 +245,7 @@ larger than the number of ``openTasks``, so we constrain it using the
 
 .. code:: ipython3
 
-    completionRate.equation = sd.max(0, sd.min(openTasks, staff*(productivity/effortPerTask)))
+    completionRate.equation = sd.max(0.0, sd.min(openTasks, staff*(productivity/effortPerTask)))
 
 Now that we have defined all necessary equations, we are ready to run
 the model. The easist way is to evaluate a model variable at a
@@ -270,7 +270,7 @@ Let's play with different settings for the deadline:
 
 .. code:: ipython3
 
-    deadline.equation = 120
+    deadline.equation = 120.0
 
 .. code:: ipython3
 
@@ -287,7 +287,7 @@ Let's play with different settings for the deadline:
 
 .. code:: ipython3
 
-    deadline.equation=80
+    deadline.equation=80.0
 
 .. code:: ipython3
 
@@ -334,15 +334,15 @@ scenario manager identifies the baseline constants of the model:
         
         "model": model,
         "base_constants": {
-            "deadline": 100,
-            "initialStaff": 1,
-            "effortPerTask": 1,
-            "initialOpenTasks": 100,
+            "deadline": 100.0,
+            "initialStaff": 1.0,
+            "effortPerTask": 1.0,
+            "initialOpenTasks": 100.0,
     
         },
         "base_points":{
                 "productivity": [
-                    [0,0.4],
+                    [0.0,0.4],
                     [0.25,0.444],
                     [0.5,0.506],
                     [0.75,0.594],
@@ -374,7 +374,7 @@ follows:
             {
                 "scenario80": {
                     "constants": {
-                        "initialOpenTasks": 80
+                        "initialOpenTasks": 80.0
                     }
                 }
             }
@@ -407,7 +407,7 @@ Let's register a few more scenarios:
             },
             "scenario120": {
                 "constants": {
-                    "initialOpenTasks" : 120
+                    "initialOpenTasks" : 120.0
                 }
             }
         },
@@ -436,22 +436,101 @@ Now we can easily compare the scenarios:
 .. image:: output_57_0.png
 
 
-This completes our quick tour of the SD DSL within the Business
-Prototyping Toolkit. The BPTK Framework is available under the MIT
-License on `PyPi <https://pypi.org/project/BPTK-Py/>`__, so you can
-start using it right away.
+Storing Models Created Using The SD DSL In A Python Class
+---------------------------------------------------------
 
-You can also clone or ownload our BPTK-Py tutorial (which includes this document as a Jupyter
-notebook) from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`__ on bitbucket.
+It is possible to take the code from above and store it in a Python code
+file. The JSON structure is exactly as you are used to from the
+generated models.
+`simulation\_models/simple\_project\_dsl\_class.py <simulation_models/simple_project_manual.py>`__
+is such a code file that implements the code. Let us walk through it.
+For readability, we omit a lot of code and only show the basic
+structure:
 
-The tutorial contains also illustrates some more advanced techniques, in
-particular also on how you can use the SD DSL in Python without using
-Jupyter.
+.. code:: python
+
+
+    class simulation_model(Model):
+
+        def __init__(self):
+
+            # Never forget calling the super method to initialize the main parameters
+            super().__init__(starttime=0,stoptime=120,dt=1,name ='SimpleProjectManagament_scenario80' )
+
+            # Stocks
+            openTasks = self.stock("openTasks")
+            closedTasks = self.stock("closedTasks")
+            staff = self.stock("staff")
+
+            # Flows
+            completionRate = self.flow("completionRate")
+
+            # Converters
+            currentTime = self.converter("currentTime")
+            remainingTime = self.converter("remainingTime")
+        
+           ...
+            # Constants
+            deadline = self.constant("deadline")
+            effortPerTask = self.constant("effortPerTask")
+            
+            ...
+
+            # Actual Logic
+
+            openTasks.initial_value = 100.0
+            closedTasks.initial_value = 0.0  # not really necessary, but I like to be explicit
+
+            ...
+
+            completionRate.equation = sd.max(0.0, sd.min(openTasks, staff * (productivity / effortPerTask)))
+
+First, the class's name has to be ``simulation_model`` and inherit from
+BPTK\_Py.Model, as we have done before. The call to the
+``super()._init__`` function configures the model's main parameters. And
+then only the code for your equations follows. Now you are done, the
+model is defined.
+
+In the next step, we need to write the JSON (the full file is available
+here: `scenarios/dsl\_class.json <scenarios/manual.json>`__:
+
+.. code:: json
+
+    {
+      "smSimpleProjectManagementDslClass": {
+        "model": "simulation_models/simple_project_dsl_class",
+        "base_constants": {
+          "deadline": 100.0,
+          "initialOpenTasks": 100.0
+        },
+        "base_points": {
+          "productivity":  [ [0,0.4],[0.25,0.444],[0.5,0.506],[0.75,0.594],[1,1],[1.25,1.119],[1.5,1.1625],[1.75,1.2125],[2,1.2375],[2.25,1.245],[2.5,1.25] ]
+        },
+        "scenarios": {
+          "scenario100": {
+            "constants": {
+              "initialOpenTasks": 100.0
+            }
+          }
+        }
+      }
+    }
+
+Note that this is exactly the structure we used for linking to the
+generated SD models. As long as the model has an ``equations`` and
+``memo`` field and its name is ``simulation_model``, BPTK-Py is agnostic
+of the code inside.
+
+We can easily plot the scenario and see that it the same model as we
+defined interactively:
 
 Conclusion
-==========
+~~~~~~~~~~
 
-This document introduced a simple domain-specific language for System
+This completes our quick tour of the SD DSL within the Business
+Prototyping Toolkit.
+
+This post introduced a simple domain-specific language for System
 Dynamics, implemented in Python. It let's you create System Dynamics in
 Python and supports interactive modeling in Jupyter.
 
