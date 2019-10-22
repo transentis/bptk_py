@@ -30,6 +30,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.0.0
+* Removed dependency to JavaScript SD Compiler! We programmed a whole new transpiler XMILE --> Python in Python to obtain large performance increases and stability when working with XMILE models
+
 ### 0.8.9
 
 * Added new operators for the SD DSL along with in depth documentation that shows how to use the functions: DELAY, EXP, SMOOTH, STEP, TREND.
