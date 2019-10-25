@@ -7,7 +7,8 @@ import logging
 
 test_result = pytest.main(["./test/"])
 
-if test_result.TESTS_FAILED > 0:
+if hasattr(test_result,"TESTS_FAILED"):
+
     logging.error("Test failed! Please check the report! Cancelling build")
 
     class TestsFailedException(Exception):
