@@ -17,7 +17,7 @@ from threading import Thread
 
 import BPTK_Py.config.config as config
 from ..logger import log
-from BPTK_Py.sdcompiler.sd_compiler.compile import compile_xmile as compile
+from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 
 ########################
 ## ClASS MODELMONITOR ##

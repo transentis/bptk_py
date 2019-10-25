@@ -1,5 +1,19 @@
 from setuptools import setup
-import conf
+import conf, pytest
+import logging
+################
+## RUN TESTS ##
+###############
+
+test_result = pytest.main(["./test/"])
+
+if hasattr(test_result,"TESTS_FAILED"):
+
+    logging.error("Test failed! Please check the report! Cancelling build")
+
+    class TestsFailedException(Exception):
+        pass
+    raise TestsFailedException("{} tests failed. Build is cancelled.".format(test_result.TESTS_FAILED))
 
 #########################
 ### LOAD REQUIREMENTS ###
@@ -47,7 +61,15 @@ setup(name='BPTK_Py',
                 "BPTK_Py.systemdynamics",
                 "BPTK_Py.exceptions",
                 "BPTK_Py.util",
-                "BPTK_Py.modelparser"],
+                "BPTK_Py.modelparser",
+                "BPTK_Py.sdcompiler",
+                "BPTK_Py.sdcompiler.generator",
+                "BPTK_Py.sdcompiler.generator.py",
+                "BPTK_Py.sdcompiler.parsers",
+                "BPTK_Py.sdcompiler.parsers.smile",
+                "BPTK_Py.sdcompiler.parsers.xmile",
+                "BPTK_Py.sdcompiler.plugins"
+                ],
 
       install_requires=requirements,
       setup_requires=["pytest-runner"],

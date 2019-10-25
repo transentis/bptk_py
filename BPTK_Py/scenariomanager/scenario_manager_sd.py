@@ -18,7 +18,7 @@ import BPTK_Py.config.config as config
 from ..logger import log
 from .scenario_manager import ScenarioManager
 from .scenario import SimulationScenario
-from BPTK_Py.sdcompiler.sd_compiler.compile import compile_xmile as compile
+from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 
 
 #############################
@@ -198,19 +198,6 @@ class ScenarioManagerSD(ScenarioManager):
         if isinstance(self.model, Model):
             return
 
-        #if not os.path.isdir(config.configuration["sd_py_compiler_root"] + "/node_modules"):
-            #print("[INFO] Stella Architect compiler dependencies missing. Attempting npm install")
-            #current_dir = os.getcwd()
-            #cwd_folder = str(config.configuration["sd_py_compiler_root"])
-            #os.chdir(cwd_folder)
-
-            #x = os.system("npm install")
-            #os.chdir(current_dir)
-
-            #if x == 0:
-                #print("[SUCCESS] Done downloading dependencies. Continuing initialization.")
-            #else:
-                #print("[ERROR] Problem downloading the dependencies. Most likely, node is not available. If you want to convert Stella Architect Models, please install node.js. Otherwise ignore this warning: {}".format(str(x)))
 
         # Check if the source file changed in the meantime (newer version saved outside Jupyter/Bptk)
         if os.path.isfile(self.model_file + ".py") and not self.source == "":
