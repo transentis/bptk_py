@@ -30,6 +30,7 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties={}, agent_type=1)
         self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type=1)
 
+
     def testAgentSerialize(self):
         model = Model()
         self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").serialize(), {'id': 1, 'state': 'active', 'type': 'testAgent'})
