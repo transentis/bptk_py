@@ -15,8 +15,8 @@ import pandas as pd
 import numpy as np
 import itertools
 import sys
-
-import BPTK_Py.config.config as config
+import BPTK_Py.logger.logger as logmod
+import BPTK_Py.config.config as default_config
 from .logger import log
 from .modelchecker import ModelChecker
 from .scenariomanager import ScenarioManagerFactory
@@ -37,6 +37,13 @@ from IPython.display import display
 plt.interactive(True)
 
 
+class conf:
+    loglevel = default_config.loglevel
+    matplotlib_rc_settings = default_config.matplotlib_rc_settings
+    colors = default_config.transentis_colors
+    configuration = default_config.configuration
+
+
 ##################
 ### CLASS BPTK ###
 ##################
@@ -45,24 +52,43 @@ plt.interactive(True)
 ### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
 
-    def __init__(self,loglevel="WARN"):
+    def __init__(self, loglevel="WARN", configuration=None):
         """
         Configures the matplotlib config and instantiates the scenario manager factory and visualizer
         """
+        config = conf()
+        if configuration and type(configuration) is dict:
+
+                for key in config.configuration.keys():
+                    if key in configuration.keys():
+                        config.configuration[key] = configuration[key]
+
+                if "matplotlib_rc_settings" in configuration.keys():
+                    config.matplotlib_rc_settings = configuration["matplotlib_rc_settings"]
+                else:
+                    configuration["matplotlib_rc_settings"] = default_config.matplotlib_rc_settings
+                    config.matplotlib_rc_settings =  default_config.matplotlib_rc_settings
+
+        self.config = config
+
 
         if loglevel in ["WARN", "ERROR", "INFO"]:
-            config.loglevel = loglevel
+            self.config.loglevel = loglevel
         else:
             log("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: {}".format(
                 str(["INFO", "WARN", "ERROR"])))
 
+        logmod.logmodes = self.config.configuration["log_modes"]
+        logmod.loglevel = self.config.loglevel
+        logmod.logfile =self.config.configuration["log_file"]
+
         # Setup matplotlib
-        for key, value in config.configuration["matplotlib_rc_settings"].items():
+        for key, value in self.config.matplotlib_rc_settings.items():
             plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
-        self.visualizer = visualizer()
+        self.visualizer = visualizer(config=self.config)
         self.abmrunner = AbmSimulationRunner(self.scenario_manager_factory, self)
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
@@ -206,10 +232,10 @@ class bptk():
                                         return_df=return_df,
                                         visualize_from_period=0,
                                         visualize_to_period=0,
-                                        stacked=config.configuration["stacked"],
-                                        kind=config.configuration["kind"],
+                                        stacked=self.config.configuration["stacked"],
+                                        kind=self.config.configuration["kind"],
                                         title="Training Results",
-                                        alpha=config.configuration["alpha"],
+                                        alpha=self.config.configuration["alpha"],
                                         x_label="Episodes",
                                         y_label="Results",
                                         start_date="",
@@ -251,8 +277,8 @@ class bptk():
                                       )
 
     def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
-                       kind=config.configuration["kind"],
-                       alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                       kind=None,
+                       alpha=None, stacked=None,
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
                        series_names={}, strategy=False,
@@ -282,6 +308,9 @@ class bptk():
             :param return_df: set True if you want to receive a dataFrame instead of the plot
             :return: dataFrame with simulation results if return_df=True
          """
+        if not kind: kind = self.config.configuration["kind"]
+        if not alpha : alpha=self.config.configuration["alpha"]
+        if not stacked: stacked=self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -321,7 +350,7 @@ class bptk():
         scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
         if len(scenario_managers) == 0:
-            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: {}".format(config.configuration["scenario_storage"]))
+            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: {}".format(self.config.configuration["scenario_storage"]))
             import pandas as pd
             return pd.DataFrame() if return_df else None
 
@@ -387,7 +416,7 @@ class bptk():
                                         series_names=series_names
                                         )
 
-    def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=config.configuration["stacked"], title="", alpha=config.configuration["alpha"], x_label="", y_label="", start_date="", freq="D", series_names={}, kind=config.configuration["kind"]):
+    def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="", freq="D", series_names={}, kind=None):
         """
         Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
             :param scenarios:  List of scenarios with names
@@ -409,6 +438,9 @@ class bptk():
         """
 
         from .util import lookup_data
+        if not kind: kind = self.config.configuration["kind"]
+        if not alpha : alpha=self.config.configuration["alpha"]
+        if not stacked: stacked=self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -457,9 +489,9 @@ class bptk():
                                          series_names=series_names)
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the Dashboard class to decorate the plot with the sliders
-    def dashboard(self, scenarios, scenario_managers, kind=config.configuration["kind"], agents=[], agent_states=[],
+    def dashboard(self, scenarios, scenario_managers, kind=None, agents=[], agent_states=[],
                   equations=[],
-                  alpha=config.configuration["alpha"], stacked=config.configuration["stacked"],
+                  alpha=None, stacked=None,
                   freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                   y_label="",
                   series_names={}, strategy=False,
@@ -490,6 +522,9 @@ class bptk():
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
         widget_decorator = Dashboard(self)
+        if not kind: kind = self.config.configuration["kind"]
+        if not alpha : alpha=self.config.configuration["alpha"]
+        if not stacked: stacked=self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")

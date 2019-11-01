@@ -9,28 +9,29 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
-
-
-import BPTK_Py.config.config as config
 import datetime
+
+loglevel = "WARN"
+logfile = "bptk_py.log"
+logmodes = ["logfile"]
+
 
 
 def log(message):
     """logs all log messages either to file or stdout"""
     message = message.replace("\n", "")
 
-    if config.loglevel == "ERROR":
+    if loglevel == "ERROR":
         if not "ERROR" in message:
             return
 
-    if config.loglevel == "WARN":
+    if loglevel == "WARN":
         if not "ERROR" in message and not "WARN" in message:
             return
 
-
-    if "logfile" in config.configuration["log_modes"]:
-        with open(config.configuration["log_file"], "a", encoding="UTF-8") as myfile:
+    if "logfile" in logmodes:
+        with open(logfile, "a", encoding="UTF-8") as myfile:
             myfile.write(str(datetime.datetime.now()) + ", " + message + "\n")
 
-    if "print" in config.configuration["log_modes"] or "[ERROR]" in message:
+    if "print" in logmodes or "[ERROR]" in message:
         print(str(datetime.datetime.now()) + ", " + message)

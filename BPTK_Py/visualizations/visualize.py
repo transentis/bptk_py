@@ -10,7 +10,7 @@
 # MIT License
 
 
-import BPTK_Py.config.config as config
+
 import statistics
 import pandas as pd
 
@@ -20,6 +20,9 @@ class visualizer():
     Class for building plots from dataframes. Includes capabilities to produce time series data.
     Can also only modify dataframes to generate time series and return the modified dataframe
     """
+
+    def __init__(self,config=None):
+        self.config = config
 
     def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
              y_label, start_date="1/1/2018", freq="D", series_names={}):
@@ -64,10 +67,10 @@ class visualizer():
             if visualize_to_period == 0:
 
                 ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
-                                                          figsize=config.configuration["figsize"],
+                                                          figsize=self.config.configuration["figsize"],
                                                           title=title,
-                                                          alpha=alpha, color=config.configuration["colors"],
-                                                          lw=config.configuration["linewidth"])
+                                                          alpha=alpha, color=self.config.configuration["colors"],
+                                                          lw=self.config.configuration["linewidth"])
 
             elif visualize_from_period == visualize_to_period:
                 print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
@@ -79,11 +82,11 @@ class visualizer():
                     visualize_to_period = len(df)
 
                 ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
-                                                                             figsize=config.configuration["figsize"],
+                                                                             figsize=self.config.configuration["figsize"],
                                                                              title=title,
                                                                              alpha=alpha,
-                                                                             color=config.configuration["colors"],
-                                                                             lw=config.configuration["linewidth"])
+                                                                             color=self.config.configuration["colors"],
+                                                                             lw=self.config.configuration["linewidth"])
                 ### Set axes labels and set the formats
             if (len(x_label) > 0):
                 ax.set_xlabel(x_label)

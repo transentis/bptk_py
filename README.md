@@ -30,8 +30,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
-### 1.0.0
-* Removed dependency to JavaScript SD Compiler! We programmed a whole new transpiler XMILE --> Python in Python to obtain large performance increases and stability when working with XMILE models
+### 0.9.0
+We removed the JavaScript SD Compiler and programmed a whole new transpiler XMILE --> Python in Python to obtain large performance increases and stability when working with XMILE models
+* Thanks to the new XMILE Transpiler, we added conversion for the following operators: SMTH1, TREND
+
 
 ### 0.8.9
 

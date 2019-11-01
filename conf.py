@@ -23,9 +23,9 @@ copyright = '2019, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version
-version = '1.0'
+version = '0.9'
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
+release = '0.9.0'
 
 
 # -- General configuration ---------------------------------------------------

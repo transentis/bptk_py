@@ -3,7 +3,7 @@ import pkg_resources
 
 import BPTK_Py.systemdynamics.functions as sd_functions
 from .abm import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler
-from .bptk import bptk
+from .bptk import bptk, conf
 from .config import config
 from .logger import log
 
@@ -18,5 +18,5 @@ except:
 name = "BPTK_Py"
 
 
-def instantiate(loglevel="WARN"):
-    return bptk(loglevel)
+def instantiate(loglevel="WARN",configuration=None):
+    return bptk(loglevel,configuration=configuration)
