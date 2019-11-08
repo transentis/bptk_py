@@ -6,8 +6,7 @@ The Business Prototyping Toolkit for Python (BPTK-Py) provides you with a comput
  
 It gives you the power to quickly build simulation models in Python. If you use the framework with Jupyter Notebooks, you to create beautiful plots of the simulation results - or just run the simulation in Python and use the results however you wish.
 
-
-The framework also includes our *sdcc parser*  for transpiling  System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as [iseesystems Stella]( http://www.iseesystems.com) and then experiment with them in [Juypter](http://www.jupyter.org).
+The framework also ships with our SD Compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as [iseesystems Stella]( http://www.iseesystems.com) and then experiment with them in [Juypter](http://www.jupyter.org).
 
 
 ## Main Features
@@ -31,9 +30,8 @@ For questions regarding installation, usage and other help please contact us at:
 ## Changelog
 
 ### 0.9.0
-We removed the JavaScript SD Compiler and programmed a whole new transpiler XMILE --> Python in Python to obtain large performance increases and stability when working with XMILE models
-* Thanks to the new XMILE Transpiler, we added conversion for the following operators: SMTH1, TREND
-
+We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
+* With the new XMILE Transpiler, we also ship support for the following XMILE operators: SMTH1, TREND
 
 ### 0.8.9
 
