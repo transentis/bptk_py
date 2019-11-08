@@ -68,6 +68,7 @@ if ! twine upload --repository-url https://test.pypi.org/legacy/ dist/* ; then
   exit 1
 fi
 
+
 ####################################
 ## Run tests against PyPi version ##
 ####################################
@@ -76,6 +77,8 @@ echo "-------------------------------------"
 echo "Running tests against PyPi Version"
 echo "-------------------------------------"
 cd ./tests
+echo "Waiting a few seconds so PyPi can index the new version"
+sleep 8
 rm models/*.py
 python3 -m venv ./venv
 source ./venv/bin/activate
