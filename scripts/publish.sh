@@ -28,6 +28,7 @@ echo "Running tests on local version"
 echo "-------------------------------------"
 
 cd ../tests
+rm models/*.py
 python3 -m venv ./venv
 source ./venv/bin/activate
 pip install -r ../requirements.txt
@@ -75,6 +76,7 @@ echo "-------------------------------------"
 echo "Running tests against PyPi Version"
 echo "-------------------------------------"
 cd ./tests
+rm models/*.py
 python3 -m venv ./venv
 source ./venv/bin/activate
 pip install -r ../requirements.txt
@@ -98,7 +100,7 @@ echo "-------------------------"
 ## Push to official PyPi Mirror ##
 ##################################
 
-
+echo ""
 echo "Login to PyPi Please"
 
 if ! twine upload dist/* ; then
