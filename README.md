@@ -30,6 +30,11 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 0.9.0
+We removed the JavaScript SD Compiler and programmed a whole new transpiler XMILE --> Python in Python to obtain large performance increases and stability when working with XMILE models
+* Thanks to the new XMILE Transpiler, we added conversion for the following operators: SMTH1, TREND
+
+
 ### 0.8.9
 
 * Added new operators for the SD DSL along with in depth documentation that shows how to use the functions: DELAY, EXP, SMOOTH, STEP, TREND.

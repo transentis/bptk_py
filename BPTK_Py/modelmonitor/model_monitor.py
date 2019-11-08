@@ -17,7 +17,7 @@ from threading import Thread
 
 import BPTK_Py.config.config as config
 from ..logger import log
-
+from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 
 ########################
 ## ClASS MODELMONITOR ##
@@ -89,12 +89,13 @@ class ModelMonitor():
                     # File has changed, so parse model again
                     # Store current directory and chdir to sd compiler dir
                     current_dir = str(os.getcwd())
-                    os.chdir(config.configuration["sd_py_compiler_root"])
+                    #os.chdir(config.configuration["sd_py_compiler_root"])
+                    print(self.source_file)
 
-                    output = os.popen(self.execute_script).read()
+                    output = compile(target="py",src=self.source_file,dest=self.dest + ".py")
 
                     # Go back to working dir
-                    os.chdir(current_dir)
+                    #os.chdir(current_dir)
 
                     ## Check if everything went well, i.e. exit status of the script = 0
                     if "error" in str(output).lower():
