@@ -89,11 +89,13 @@ pip install -U --index-url https://test.pypi.org/simple/ bptk_py
 if ! python ./run_pytests.py; then
     echo "Tests failed! Not continuing. Please fix your code"
     deactivate
+
     rm -rf venv/
     exit 1
 fi
 deactivate
 rm -rf venv/
+rm models/*.py
 cd ..
 echo "-------------------------"
 echo "All tests successful!"
