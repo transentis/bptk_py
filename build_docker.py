@@ -52,6 +52,6 @@ def build_container(ver=release,tag="transentis/bptk_py"):
         except KeyError:
             print(line)
 
-build_container(tag="transentis/bptk_py")
+build_container(tag="transentis/bptk-py")
 
 sys.exit(os.EX_OK)
