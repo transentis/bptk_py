@@ -1,10 +1,13 @@
-FROM ubuntu:18.04
-MAINTAINER transentis 
-RUN apt-get update && apt-get install -y apt-transport-https
-RUN apt-get update && apt-get install python3-pip python3 nodejs npm -y
-RUN mkdir /bptk-py
-WORKDIR /bptk-py 
-RUN pip3 install scipy numpy matplotlib statsmodels boto3 BPTK-Py sklearn pyzmq>=17 tornado jupyterlab elasticsearch keras tensorflow nodejs
-RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
+FROM jupyter/base-notebook
+
+USER root
+RUN apt-get update
+RUN apt-get install npm git -y
+
+CMD ["start.sh","jupyter","lab","--LabApp.token=''","--ip=0.0.0.0"]
+
+USER $NB_UID
+
+RUN pip install scipy numpy matplotlib statsmodels boto3 BPTK-Py sklearn pyzmq>=17 tornado jupyterlab elasticsearch keras tensorflow nodejs
 RUN jupyter nbextension enable --py widgetsnbextension
-CMD /usr/local/bin/jupyter lab --NotebookApp.token='' --allow-root --ip=0.0.0.0
+RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
