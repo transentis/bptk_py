@@ -12,9 +12,9 @@ Once you know what you are doing and yo already have a running Python environmen
 
 If you are not an advanced user, it is best to start with our BPTK-Py tutorial, which you can clone or download from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on Bitbucket.
 
-************************************
-Installing Our Tutorial Using Docker
-************************************
+********************************************
+Installing the BPTK-Py Tutorial Using Docker
+********************************************
 
 If you have Docker installed (e.g. Docker Desktop on MacOS or on Windows), follow these steps:
 
@@ -25,9 +25,9 @@ If you have Docker installed (e.g. Docker Desktop on MacOS or on Windows), follo
 5. Open the notebook ``readme.ipynb`` from within JupyterLab.
 6. When you are finished, close your browser and call ``docker-compose down`` from within your directory. This will stop and remove the container.
 
-*********************************************
-Installing Our Tutorial Starting From Scratch
-*********************************************
+*****************************************************
+Installing The BPTK-Py Tutorial Starting From Scratch
+*****************************************************
 
 Assuming you are starting from scratch, you need to perform the following steps:
 
