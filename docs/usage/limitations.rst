@@ -8,4 +8,5 @@ Here are the known limitations:
 
 * Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
 * The SD model transpiler for XMILE models only supports stocks, flows/biflows and converters. The other modeling elements (such as ovens and conveyors) are not supported.
-* The SD model transpiler for XMILE currently only supports the following builtin functions: size, stddev, sum, mean, rank, previous, abs, max, min, int, sin, cos, round, savediv, if, delay, init, normal, random, pulse, step.
+* Arrayed variables in XMILE models are not supported.
+* The SD model transpiler for XMILE currently only supports the following builtin functions: abs, cos, delay, exp, if, init, int, max, mean, min, normal, previous, pulse, random, rank, round, savediv, sin, size, smth1, stddev, step, sum, trend.
