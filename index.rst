@@ -7,31 +7,27 @@
 BPTK-Py: System Dynamics and Agent-based Modeling In Python
 ###########################################################
 
-The Business Prototyping Toolkit for Python (BPTK-Py) provides you with a computational modeling framework that allows you to build and run simulation models using System Dynamics and/or agent-based modeling and manage simulation scenarios with ease.
+The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) and manage simulation scenarios with ease.
 
-It gives you the power to quickly build simulation models in Python. If you use the framework with Jupyter Notebooks, you to create beautiful plots of the simulation results - or just run the simulation in Python and use the results however you wish.
+Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
 
-The framework also includes our *sdcc parser*  for transpiling  System Dynamics models conforming to the XMILE standard into Python code. This means you can build models using your favorite XMILE environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then experiment with them in `Juypter <http://www.jupyter.org>`_.
+This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them _independently_ in an Python enviroment.
 
-Our tutorial contains a number of models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on bitbucket.
+The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on Bitbucket.
 
 Main Features
 =============
 
-* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
-* The objective of the framework is to provide the infrastructure for managing model settings and scenarios and for running and plotting simulation results, so that the modeller can concentrate on modelling.
-* The framework automatically collect statistics on agents, their states and their properties, which makes plotting simulation results very easy.
+* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
+* The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
 * All plotting is done using `Matplotlib <http://www.matplotlib.org>`_.
-* Simulation results can also be returned as `Pandas dataframes <http://pandas.pydata.org>`_.
-* The framework uses some advanced Python metaprogramming techniques to ensure the amount of boilerplate code the modeler has to write is kept to a minimum.
+* Simulation results are returned as `Pandas dataframes <http://pandas.pydata.org>`_.
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 Getting Help
 ============
 
 BPTK-Py is developed and maintained by `transentis labs <http://www.transentis.com>`_. For questions regarding installation or usage and for feature requests, please  contact us at: `support@transentis.com <mailto:support@transentis.com>`_.
-
-
 
 .. toctree::
    :maxdepth: 2
