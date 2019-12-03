@@ -781,7 +781,7 @@ In such a case, your data needs to be structured a little differently -
 essential we then want a table with a column for each scenario, indexed
 by the indicator.
 
-Do achieve this, we need to loop through the scenarios again:
+To achieve this, we need to loop through the scenarios again:
 
 .. code:: ipython3
 

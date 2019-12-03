@@ -4,21 +4,38 @@ Installation
 
 Like every piece of software, BPTK-Py and its dependencies have to be installed correctly.
 
-If you already have a running Python and Jupyter environment, ``pip install BPTK-Py`` or ``pip3 install BPTK-Py`` will do!
+******************
+For Advanced Users
+******************
 
+Once you know what you are doing and yo already have a running Python environment, you only need to call ``pip install BPTK-Py`` or ``pip3 install BPTK-Py``.
 
-*********************
-Starting From Scratch
-*********************
+If you are not an advanced user, it is best to start with our BPTK-Py tutorial, which you can clone or download from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on Bitbucket.
+
+********************************************
+Installing the BPTK-Py Tutorial Using Docker
+********************************************
+
+If you have Docker installed (e.g. Docker Desktop on MacOS or on Windows), follow these steps:
+
+1. On the command line, move into a directory where you would like to store the BPTK-Py tutorial.
+2. Clone the BPTK-Py tutorial repository using git clone: ``git clone https://bitbucket.org/transentis/bptk_py_tutorial.git``
+3. Run ``docker-compose up``
+4. Point your browser at `http://localhost:8888 <http://localhost:8888>`_ – this will open JupyterLab showing the contents of your directory.
+5. Open the notebook ``readme.ipynb`` from within JupyterLab.
+6. When you are finished, close your browser and call ``docker-compose down`` from within your directory. This will stop and remove the container.
+
+*****************************************************
+Installing The BPTK-Py Tutorial Starting From Scratch
+*****************************************************
 
 Assuming you are starting from scratch, you need to perform the following steps:
 
 1. Install Python
-2. Install Node and npm
-3. Install BPTK-Py using pip
-4. Install JupyterLab (optional)
-5. Set up a virtual environment (optional)
-6. Read our quickstart document
+2. Clone the BPTK-Py tutorial
+3. Set up a virtual environment
+4. Install BPTK-Py and JupyterLab
+5. Start JupyterLab
 
 Install Python
 ==============
@@ -27,89 +44,50 @@ First of all, you need `Python <https://www.python.org/>`_. Download the latest 
 
 BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
 
-Install Node and npm
-====================
+Clone the BPTK-Py tutorial
+==========================
 
-Both for our sdcc compiler and also for displaying interactive widgets in Jupyter you need to install `Node.js <https://nodejs.org/en/>`_ for your operating system.
-Make sure you install npm (the node.js package manager) along with node.js. This should be done automatically when downloading and installing from the official site.
+On the command line, move into a directory where you would like to store the BPTK-Py tutorial.
 
+Clone the BPTK-Py tutorial repository using ``git clone``::
 
-Python and Node on your favorite Linux Distribution
----------------------------------------------------
+    git clone https://bitbucket.org/transentis/bptk_py_tutorial.git
 
-If you are using a Linux Distribution, you may want to use your preferred package manager for downloading Python and node.
-
-For Ubuntu using ``apt``::
-
-    commandline
-    sudo apt update
-    sudo apt install nodejs python3 python3-pip npm
-
-Other Linux distributions should have similar packages.
-
-You may always refer to the official websites of `Python <https://www.python.org/>`_ and `Node.js <https://nodejs.org/en/>`_ for help on installing the dependencies for your specific operating system.
-
-Install BPTK-Py using Pip
-=========================
-
-After the prerequisites, we have to install ``BPTK_Py`` into our python environment.
-This requires you to use the command shell. In windows, press ``windows + R`` and type "powershell". In Mac OS X run the Terminal app.
-Linux users may use their preferred terminal emulator.
-
-To install the package, just type ``pip install BPTK-Py`` or ``pip3 install BPTK-Py``. Pip is a package manager that keeps Python packages up-to-date.
-
-Pip installs the package and makes it available system-wide. It downloads all dependencies for the package automatically.
-
-After Pip finished successfully, you are ready for working with the framework.
-
-If for some reason Pip is not available on your system, first download it. Regardless the operating system, this should do:
-1. Download `get-pip.py<https://bootstrap.pypa.io/get-pip.py>. The file may open in your browser tab. Make sure to save it on your hard drive.
-2. Install pip: in a terminal, go to the directory of the downloaded script and issue ``python3 ./get-pip.py`` and wait a minute or two.
-
-Linux/UNIX shorthand::
-
-    commandline
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    python3 ./get-pip.py
-
-Install JupyterLab
-==================
-
-Additionally, you may want to use Jupyter Lab to work interactively on the simulations - just as we do.::
-
-    pip install jupyterlab
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager
-
-Now you have a functioning version of jupyter lab and can start working  interactively using jupyter notebooks.
-
-Just type ``jupyter lab`` in the terminal to get started.
-
-In order to keep your system clean, you may want to use a `virtual environment <https://docs.python-guide.org/dev/virtualenvs/>`_ instead of installing Python system-wide.
 
 Set up a virtual environment
 ============================
 
 A virtual environment is a local copy of your Python distribution that stores all packages required and does not interfere with your system's packages.
 
-Following steps are required to set up the venv and and install BPTK_Py into it:::
+Following steps are required to set up a virtual environment in a folder called ``venv``::
 
-    pip install virtualenv
-    virtualenv bptk_test
+    python3 -m venv venv
 
-Enter the virtual environment. In the beginning of your prompt you should see "(bptk_test)"::
+Enter the virtual environment using one of the following commands appropriate:::
 
-    source bptk_test/bin/activate  #  For UNIX/Linux/Mac OS X
-    bptk_test\Scripts\activate.bat # For Windows
+    source venv/bin/activate  #  For UNIX/Linux/Mac OS X
+    venv\Scripts\activate.bat # For Windows
 
-    pip install BPTK-Py
-    pip install jupyterlab
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager
+Now you should see "(venv)" at the beginning of your command prompt.
 
+Install BPTK-Py and JupyterLab
+==============================
 
-Read the quickstart
-===================
+Now we have a virtual environment, we can install BPTK-Py and JupyterLab::
 
-To get started, read our :doc:`quickstart <quickstart>` document.
+    pip install -r requirements.txt #installs BPTK-Py and JupyterLab
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager #installs some extensions for JupyterLab
+
+Start JupyterLab
+================
+
+Now you have a functioning version of JupyterLab and can start working  interactively using jupyter notebooks.
+
+Just type ``jupyter lab`` in the terminal to get started. This will automatically open your browser with JupyterLab running in it, pointing at the directory of the tutorial
+
+Open the notebook ``readme.ipynb`` from within JupyterLab.
+
+Once you are finished, close your browser and kill the JupyterLab process in your terminal.
 
 ********************
 Package dependencies
@@ -121,14 +99,19 @@ If you observe malfunctions in the framework and believe the reason may be incom
 
 We have tested the framework with Python 3.4, 3.6 and 3.7. It should work fine with other Python 3.x versions.
 
-============ ============================================= =====================
-Package name What we use it for                            Latest tested version
-============ ============================================= =====================
-pandas       DataFrames and internal results storage       0.23.4
-matplotlib   Plotting environment                          2.2.2
-ipywidgets   Widget environment for notebooks              7.4.0
-scipy        Linear interpolation for graphical functions  1.1.0
-numpy        Linear interpolation and required by pandas   1.15.0
-============ ============================================= =====================
+============ ================================================
+Package name What we use it for
+============ ================================================
+pandas       DataFrames and internal results storage
+matplotlib   Plotting environment
+ipywidgets   Widget environment for notebooks
+jinja2       Generating python classes for XMILE SD models
+parsimonious Parsing XMILE models
+pyyaml       Using YAML to specify scenarios (instead of JSON)
+scipy        Linear interpolation for graphical functions
+numpy        Linear interpolation and required by pandas
+xlsxwriter   Exporting simulation results to CSV files
+xmltodict    Reading XMILE files
+============ ================================================
 
-If you are using `Jupyter Lab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.
+If you are using `JupyterLab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.
