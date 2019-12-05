@@ -138,7 +138,7 @@ class Simulator():
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in np.arange(start, until + self.mod.dt, self.mod.dt):
-            result = self.mod.memoize(equation, i)
+            result = self.mod.equation(equation, i)
 
             if not equation in self.results.keys():
                 self.results[equation] = {}
