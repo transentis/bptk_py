@@ -556,6 +556,17 @@ class Model:
         self.equation_id += 1
         return "bptk_"+str(self.equation_id)+"_"
 
+    def equation(self,equation, arg):
+        """
+        This method only exists for making SD-DSL models compatible with the new SDModel equation API.
+        In later steps, we might want to extend this method to allow for arrayed equations as well! However, first the DSL needs to support arrays as well!
+
+            :param equation: equaiton name
+            :param arg: t
+        """
+
+        return self.memoize(equation,arg)
+
     def memoize(self, equation, arg):
         """
         Memoize method - used by the system dynamics equations to remember values that have already been calculated.

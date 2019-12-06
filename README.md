@@ -36,7 +36,7 @@ We removed the JavaScript SD Compiler and programmed a whole new transpiler that
 
 * Added new operators for the SD DSL along with in depth documentation that shows how to use the functions: DELAY, EXP, SMOOTH, STEP, TREND.
 * The SD DSL is now stricter, all constant values must be floats, ints are no longer accepted.
-* Added a new register_model method to bptk, to ensure quick setup of scenario managers and scenarios.
+* Added a new ``register_model`` method to bptk, to ensure quick setup of scenario managers and scenarios.
 * Internal optimizations and bug fixes.
 
 ### 0.8.8
