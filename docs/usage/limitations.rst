@@ -48,6 +48,7 @@ INIT           x
 INT            x
 INVNORM
 IRR
+INT            x
 LOG10
 LOGISTIC
 LOGNORMAL
@@ -58,7 +59,7 @@ LN
 MAX            x                    MAX
 MEAN           x
 MIN            x                    MIN
-MOD
+MOD            x
 MONTECARLO
 NAN
 NEGBINOMIAL
@@ -66,11 +67,11 @@ NORMAL         x
 NORMALCDF
 NOT
 NPV
-OR
+OR             x
 PARETO
 PERCENT
 PERMUTATIONS
-PI
+PI             x
 PMT
 POISSON
 PREVIOUS       x
@@ -85,7 +86,7 @@ ROUND          x
 ROOTN
 RUNCOUNT
 SAFEDIV        x
-SELF
+SELF           x
 SENSIRUNCOUNT
 SIN            x
 SINWAVE
@@ -94,13 +95,13 @@ SMTH1          x                    SMOOTH
 SMTH3
 SMTHN
 SQRT
-STARTTIME
+STARTTIME      x
 STDDEV         x
 STEP           x                    STEP
-STOPTIME
+STOPTIME       x
 SUM            x
-TAN
-THEN
+TAN            x
+THEN           x
 TIME           x                    TIME
 TREND          x                    TREND
 TRIANGULAR
