@@ -33,12 +33,12 @@ DERIVN
 DT             x                    dt
 ELSE
 EXP            x                    exp
-EXPRND
+EXPRND         x
 ENDVAL
 FACTORIAL      x
 FORCST
 FV
-GAMMA
+GAMMA          x
 GAMMALN
 HISTORY
 IF             x
