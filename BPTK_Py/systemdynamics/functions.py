@@ -13,6 +13,17 @@ from .operators import MaxOperator, MinOperator, Lookup, Trend, Smooth, Step, Ex
 from .constant import Constant
 from .element import Element
 
+def abs(x):
+    return AbsOperator(x)
+
+def dt(model):
+    return DT(model)
+
+def starttime(model):
+    return Starttime(model)
+
+def stoptime(model):
+    return Stoptime(model)
 
 def time():
     return Time()
@@ -29,6 +40,8 @@ def min(x, y):
 def lookup(element, points):
     return Lookup(element, points)
 
+def pulse(model, volume, first_pulse=0, interval=0):
+    return Pulse(model, volume, first_pulse, interval)
 
 def trend(model, input_function,averaging_time,initial_value):
     if isinstance(initial_value, (float, Constant)):
@@ -50,6 +63,7 @@ def step(height, timestep):
 
 def exp(x):
     return Exp(x)
+
 
 
 def delay(model, input_function, delay_duration, initial_value=None):

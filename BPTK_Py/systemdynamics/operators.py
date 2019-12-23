@@ -146,6 +146,12 @@ class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
         return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
 
+class AbsOberator(UnaryOperator):
+    """
+    Abs Function
+    """
+    def term(self, time="t"):
+        return "abs("+self.element.term(time)+")"
 
 class MaxOperator(BinaryOperator):
 
@@ -167,10 +173,43 @@ class Exp(UnaryOperator):
         return "np.exp("+self.element.term(time)+")"
 
 
+class DT(Function):
+    """
+    DT function
+    """
+    def __init__(self, model):
+        self.model=model
+
+    def term(self, time="t"):
+        return self.model.dt
+
+
+class Starttime(Function):
+    """
+    DT function
+    """
+    def __init__(self, model):
+        self.model=model
+
+    def term(self, time="t"):
+        return self.model.starttime
+
+
+class Stoptime(Function):
+    """
+    DT function
+    """
+
+    def __init__(self, model):
+        self.model = model
+
+    def term(self, time="t"):
+        return self.model.stoptime
+
+
 class Time(Function):
     """
     Time function
-
     """
 
     def term(self, time="t"):
@@ -211,9 +250,26 @@ class Step(Function):
         return "({} if {}>{} else 0.0)".format(self.height.term(time), time, self.timestep.term(time))
 
 
+class Pulse(Function):
+    """
+    Pulse class, which represents the pulse function as a SD DSL operator.
+    """
+
+    def __init__(self, model, volume, first_pulse=0, interval=0):
+        self.model = model
+        self.volume = volume
+        self.first_pulse = first_pulse
+        self.interval = interval
+
+    def term(self, time="t"):
+        if self.interval == 0:
+            return "(if {}=={} then ({}/{}) else 0.0".format(time, self.first_pulse, self.volume.term(time), self.model.dt)
+        else:
+            return "(if mod({}-{},{})==0 then ({}/{}) else 0.0".format(time, self.first_pulse, self.interval, self.volume.term(time), self.model.dt)
+
 class Trend(Function):
     """
-    Trend Class, which represens the trend function as a SD DSL operator.
+    Trend class, which represents the trend function as a SD DSL operator.
     """
 
     def __init__(self, model, input_function, averaging_time, initial_value):
