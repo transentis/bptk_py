@@ -31,7 +31,7 @@ For questions regarding installation, usage and other help please contact us at:
 ### 1.0.0
 1.0 Release! Lots of new features, especially for the SD component
 
-* SD Compiler: Arrays and Array Operators (MIN,MAX,SUM,MEAN,SELF,SIZE) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS,BETA,BINOMIAL,FACTORIAL, GAMMA, GAMMALN, EXPRND) and mathematical operators (ARCSIN,ARCCOS,ARCTAN)
+* SD Compiler: Arrays and Array Operators (MIN, MAX, SUM, MEAN, SELF, SIZE, PROD) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS, BETA, BINOMIAL, FACTORIAL, GAMMA, GAMMALN, EXPRND, GEOMETRIC) and mathematical operators (ARCSIN, ARCCOS, ARCTAN)
 * The ``plot_scenarios`` API now supports array calls such as ``stock[*]`` or ``stock[dim1,dim2]``
 * Added operators to the SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
 

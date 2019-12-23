@@ -31,7 +31,7 @@ DELAY3
 DELAYN
 DERIVN
 DT             x                    dt
-ELSE
+ELSE           x
 EXP            x                    exp
 EXPRND         x
 ENDVAL
@@ -39,7 +39,8 @@ FACTORIAL      x
 FORCST
 FV
 GAMMA          x
-GAMMALN
+GAMMALN        x
+GEOMETRIC      x
 HISTORY
 IF             x
 INF
@@ -76,7 +77,7 @@ POISSON
 PREVIOUS       x
 PULSE          x                    pulse
 PV
-PROD
+PROD           x
 RANDOM         x
 RANK           x
 RAMP
