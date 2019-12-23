@@ -28,6 +28,11 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.0.0
+1.0 Release! Lots of new features, especially for the SD component
+
+* SD Compiler: Arrays and Array Operators (MIN,MAX,SUM,MEAN,SELF,SIZE) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS,BETA,BINOMIAL,FACTORIAL) and mathematical operators (ARCSIN,ARCCOS,ARCTAN)
+
 ### 0.9.0
 We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
 * With the new XMILE Transpiler, we also ship support for the following XMILE operators: SMTH1, TREND

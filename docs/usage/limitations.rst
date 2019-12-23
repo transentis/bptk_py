@@ -18,9 +18,9 @@ AND
 ARCCOS         x
 ARCSIN         x
 ARCTAN         x
-BETA
-BINOMIAL
-COMBINATIONS
+BETA           x
+BINOMIAL       x
+COMBINATIONS   x
 COS            x
 CGROWTH
 CLOCKTIME
@@ -35,7 +35,7 @@ ELSE
 EXP            x                    exp
 EXPRND
 ENDVAL
-FACTORIAL
+FACTORIAL      x
 FORCST
 FV
 GAMMA
