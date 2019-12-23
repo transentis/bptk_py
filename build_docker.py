@@ -3,7 +3,7 @@ import docker
 import time
 from conf import release
 
-def build_container(ver=release,tag="transentis/bptk_py"):
+def build_container(ver=release,tag="transentis/bptk-py"):
 
     build_tag = "{}:{}".format(tag,ver)
     latest_tag = "{}:latest".format(tag)

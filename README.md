@@ -28,6 +28,13 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.0.0
+1.0 Release! Lots of new features, especially for the SD component
+
+* SD Compiler: Arrays and Array Operators (MIN, MAX, SUM, MEAN, SELF, SIZE, PROD) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS, BETA, BINOMIAL, FACTORIAL, GAMMA, GAMMALN, EXPRND, GEOMETRIC) and mathematical operators (ARCSIN, ARCCOS, ARCTAN)
+* The ``plot_scenarios`` API now supports array calls such as ``stock[*]`` or ``stock[dim1,dim2]``
+* Added operators to the SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
+
 ### 0.9.0
 We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
 * With the new XMILE Transpiler, we also ship support for the following XMILE operators: SMTH1, TREND
@@ -36,7 +43,7 @@ We removed the JavaScript SD Compiler and programmed a whole new transpiler that
 
 * Added new operators for the SD DSL along with in depth documentation that shows how to use the functions: DELAY, EXP, SMOOTH, STEP, TREND.
 * The SD DSL is now stricter, all constant values must be floats, ints are no longer accepted.
-* Added a new register_model method to bptk, to ensure quick setup of scenario managers and scenarios.
+* Added a new ``register_model`` method to bptk, to ensure quick setup of scenario managers and scenarios.
 * Internal optimizations and bug fixes.
 
 ### 0.8.8
