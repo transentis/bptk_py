@@ -33,6 +33,7 @@ For questions regarding installation, usage and other help please contact us at:
 
 * SD Compiler: Arrays and Array Operators (MIN,MAX,SUM,MEAN,SELF,SIZE) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS,BETA,BINOMIAL,FACTORIAL, GAMMA) and mathematical operators (ARCSIN,ARCCOS,ARCTAN)
 * The ``plot_scenarios`` API now supports array calls such as ``stock[*]`` or ``stock[dim1,dim2]``
+* Added operators to the SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
 
 ### 0.9.0
 We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
