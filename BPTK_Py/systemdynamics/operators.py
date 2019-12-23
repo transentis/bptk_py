@@ -146,7 +146,7 @@ class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
         return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
 
-class AbsOberator(UnaryOperator):
+class AbsOperator(UnaryOperator):
     """
     Abs Function
     """
@@ -181,7 +181,7 @@ class DT(Function):
         self.model=model
 
     def term(self, time="t"):
-        return self.model.dt
+        return "{}".format(self.model.dt)
 
 
 class Starttime(Function):
@@ -192,7 +192,7 @@ class Starttime(Function):
         self.model=model
 
     def term(self, time="t"):
-        return self.model.starttime
+        return "{}".format(self.model.starttime)
 
 
 class Stoptime(Function):
@@ -204,7 +204,7 @@ class Stoptime(Function):
         self.model = model
 
     def term(self, time="t"):
-        return self.model.stoptime
+        return "{}".format(self.model.stoptime)
 
 
 class Time(Function):
@@ -255,17 +255,17 @@ class Pulse(Function):
     Pulse class, which represents the pulse function as a SD DSL operator.
     """
 
-    def __init__(self, model, volume, first_pulse=0, interval=0):
+    def __init__(self, model, volume, first_pulse=0.0, interval=0.0):
         self.model = model
-        self.volume = volume
-        self.first_pulse = first_pulse
-        self.interval = interval
+        self.volume = UnaryOperator(volume)
+        self.first_pulse = UnaryOperator(first_pulse)
+        self.interval = UnaryOperator(interval)
 
     def term(self, time="t"):
-        if self.interval == 0:
-            return "(if {}=={} then ({}/{}) else 0.0".format(time, self.first_pulse, self.volume.term(time), self.model.dt)
+        if self.interval.element == 0.0:
+            return "(({}/{}) if {}=={} else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse)
         else:
-            return "(if mod({}-{},{})==0 then ({}/{}) else 0.0".format(time, self.first_pulse, self.interval, self.volume.term(time), self.model.dt)
+            return "(({}/{}) if (({}-{})%({}))==0 else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse, self.interval)
 
 class Trend(Function):
     """
