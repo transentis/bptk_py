@@ -13,7 +13,7 @@ Here are the known limitations:
 =============  ===================  =================
 Built-In       SD model transpiler  SD DSL equivalent
 -------------  -------------------  -----------------
-ABS            x
+ABS            x                    abs
 AND
 ARCCOS
 ARCSIN
@@ -25,14 +25,14 @@ COS            x
 CGROWTH
 CLOCKTIME
 COUNTER
-DELAY          x                    DELAY
+DELAY          x                    delay
 DELAY1
 DELAY3
 DELAYN
 DERIVN
-DT             x
+DT             x                    dt
 ELSE
-EXP            x                    EXP
+EXP            x                    exp
 EXPRND
 ENDVAL
 FACTORIAL
@@ -48,17 +48,16 @@ INIT           x
 INT            x
 INVNORM
 IRR
-INT            x
 LOG10
 LOGISTIC
 LOGNORMAL
-LOOKUP         x                    LOOKUP
+LOOKUP         x                    lookup
 LOOKUPAREA
 LOOKUPINV
 LN
-MAX            x                    MAX
+MAX            x                    max
 MEAN           x
-MIN            x                    MIN
+MIN            x                    min
 MOD            x
 MONTECARLO
 NAN
@@ -75,7 +74,7 @@ PI             x
 PMT
 POISSON
 PREVIOUS       x
-PULSE          x
+PULSE          x                    pulse
 PV
 PROD
 RANDOM         x
@@ -91,19 +90,19 @@ SENSIRUNCOUNT
 SIN            x
 SINWAVE
 SIZE           x
-SMTH1          x                    SMOOTH
+SMTH1          x                    smooth
 SMTH3
 SMTHN
 SQRT
-STARTTIME      x
+STARTTIME      x                    starttime
 STDDEV         x
-STEP           x                    STEP
-STOPTIME       x
+STEP           x                    step
+STOPTIME       x                    stoptime
 SUM            x
 TAN            x
 THEN           x
-TIME           x                    TIME
-TREND          x                    TREND
+TIME           x                    time
+TREND          x                    trend
 TRIANGULAR
 UNIFORM
 WEIBULL
