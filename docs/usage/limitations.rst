@@ -15,9 +15,9 @@ Built-In       SD model transpiler  SD DSL equivalent
 -------------  -------------------  -----------------
 ABS            x                    abs
 AND
-ARCCOS
-ARCSIN
-ARCTAN
+ARCCOS         x
+ARCSIN         x
+ARCTAN         x
 BETA
 BINOMIAL
 COMBINATIONS
