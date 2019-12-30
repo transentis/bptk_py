@@ -36,8 +36,10 @@ BPTK-Py is developed and maintained by `transentis labs <http://www.transentis.c
    docs/usage/installation
    docs/usage/quickstart
    docs/usage/limitations
-   docs/how_to/how_to_overview
-   docs/in_depth/in_depth_overview
+   docs/general/general
+   docs/abm/abm
+   docs/xmile/xmile
+   docs/sd-dsl/sd-dsl
    docs/api/api_overview
 
 Indices and tables

@@ -94,7 +94,7 @@ Implementing The Simple Project Management Model In Python Using BPTK-Py
 
 You can find the code for this model in the `/abm/spm` directory of the BPTK-Py tutorial.
 
-First let's take a look at the `act` method of the staff member agent, which implements the logic outline above (the `staffMember` is a subclass of the frameworks :doc:`Agent <../../api/api_agent>` class:
+First let's take a look at the `act` method of the staff member agent, which implements the logic outline above (the `staffMember` is a subclass of the frameworks :doc:`Agent <../../../api/api_agent>` class:
 
 Right at the beginning of the method the `work_capacity` for this time step is calculated. This represents the maximum amount of work the staffMember is able to do in this time step, given his current productivity - the actual amount of work performed may be less, because all tasks could be complete.
 
@@ -161,7 +161,7 @@ The initialize method of an agent is called by the framework right after an agen
 
 Properties set using the `set_property` method can be accessed using dot-notation – this saves a lot of boilerplate code. Also statistics are automatically collected for these properties, these statistics can then be output in a dataframe or plotted using the `plot_scenario` method. Currently the `total`, the `mean` value and `min` and `max` are collected for each agent property per agent state.
 
-Now let's take a look at how the `task` agent is implemented, task is also a subclass of the frameworks :doc:`Agent <../../api/api_agent>` class - the task doesn't actually do anything, so we don't need to implement an act method. All we need is handlers for the `taskStarted` and `taskProgress` events:
+Now let's take a look at how the `task` agent is implemented, task is also a subclass of the frameworks :doc:`Agent <../../../api/api_agent>` class - the task doesn't actually do anything, so we don't need to implement an act method. All we need is handlers for the `taskStarted` and `taskProgress` events:
 
 The handler for the started event just changes the tasks state from `open` to `inProgress`: ::
 
@@ -189,7 +189,7 @@ The only thing that remains to be done is to register the event handlers - this 
 
 We need to call the `register_event_handler` method for each event. We pass the handler as a function along with the event name and a list of states the handler is relevant for.
 
-The only remaing class we need to look at is the SPM model itself, which is a subclass of the frameworks :doc:`Model <../../api/api_model>` class. The key method in the model class is the `initialize_model` method - this method is called automatically by the framework, it is used to register the agent factories. Agent factories are simple, anonymous functions which instantiate agents by calling their constructors and passing an agent id, the model the agent is part of and the agent properties (which are defined in the scenarios config file).
+The only remaing class we need to look at is the SPM model itself, which is a subclass of the frameworks :doc:`Model <../../../api/api_model>` class. The key method in the model class is the `initialize_model` method - this method is called automatically by the framework, it is used to register the agent factories. Agent factories are simple, anonymous functions which instantiate agents by calling their constructors and passing an agent id, the model the agent is part of and the agent properties (which are defined in the scenarios config file).
 
 Here is what the `initialize_model` method in the SPM class, which derived from the Model class in the BPTK PY framework: ::
 
@@ -698,4 +698,4 @@ This was a brief introduction to agent-based modeling and simulation using the B
 * The framework uses some advanced Python metaprogramming techniques to ensure the amount of boilerplate code the modeler has to write is kept to a minimum.
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing using the Jupyter environment very painless.
 
-Sample code for the model described here is provides as part of the `Business Prototyping Toolkit Tutorials <https://www.transentis.com/products/business-prototyping-toolkit/>`_, which you can download from our website.
+You can find the code for the model described here in the  `BPTK-Py Tutorial <https://github.com/transentis/bptk_py_tutorial>`_, which you can download from Github.

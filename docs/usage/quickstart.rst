@@ -2,28 +2,20 @@
 Quickstart
 ##########
 
-The best way to get started is to download our tutorial. Our tutorial contains Jupyter notebooks and example models that illustrate how to use the BPTK_Py framework to build models in Python System Dynamics, agent-based modeling and how to transpile models in XMILE format.
+The best way to get started with the *Business Prototyping Toolkit for Python* (BPTK-Py) is to download the BPTK-Py Tutorial. The tutorial contains Jupyter notebooks and example models that illustrate how to use the BPTK_Py framework to build models in Python System Dynamics, agent-based modeling and how to transpile models in XMILE format.
 
+You can clone or download the tutorial from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 
-You can clone or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on bitbucket.
+The tutorial illustrates how to use the BPTK_PY framework, it contains interactive Jupyter notebooks for each of the documents in this documentation.
 
-The objective of the tutorial is to illustrate how to use the BPTK_PY framework, not to introduce System Dynamics modeling or Agent-based modeling in general.
-
-We illustrate the framework using a simple project management model and the Bass Diffusion model:
+The tutorial and this documentation illustrate the framework using two simulation models: the *Simple Project Management Model* and the *Customer Acquisition* model.
 
 * *Simple Project Management Model*. This model is an illustration of `Parkinson's law <https://en.wikipedia.org/wiki/Parkinson%27s_law>`_, which states that work expands so as to fill the time available for its completion.
-* *Bass Diffusion Model*. This model is an implementation of the `Bass Diffusion Model <https://en.wikipedia.org/wiki/Bass_diffusion_model>`__ originally created by `Frank Bass <https://en.wikipedia.org/wiki/Frank_Bass>`_ that describes the process of how new products get adopted in a population. The Bass model has been widely used in forecasting, especially new products' sales forecasting and technology forecasting.
+* *Customer Acquisition Model*. This model is an illustration of the `Bass Diffusion Model <https://en.wikipedia.org/wiki/Bass_diffusion_model>`_ that describes the process of how new products get adopted in a population. The Bass model has been widely used in forecasting, especially in new products’ sales forecasting and technology forecasting.
 
-You can learn more about these models on our blog:
+The logic of these models is not discussed in detail in this documentation, you can read more about them on our blog:
 
-* `Step-by-step introduction to System Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/>`_ using the simple project management model.
-* Introduction to the `Bass Diffusion Model <https://www.transentis.com/causal-loop-diagramming/>`_.
+* The simple project management model is explained in our `Step-by-step introduction to System Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/>`_.
+* The `Customer Acquisition Model <https://www.transentis.com/an-example-to-illustrate-the-business-prototyping-methodology/>`_ is discussed in a series of blog posts illustrating the Business Prototyping Methodology.
 
-Here is an overview of the documents contained in the tutorial:
-
-* *Writing Computational Essays Using Simulation Models.* Introduction to using simulation models built with ®Stella in Jupyter Notebooks using the BPTK_PY framework.
-* *A Simple Python Library for System Dynamics.* Introduction to using the BPTK_PY framework to built SD models directly in Juptyer Notebooks.
-* *Introduction to Agent Based Simulation Modeling with BPTK_PY.* This notebook illustrates how to create an agent-based implementation of a simple project management model.
-* *An Agent-based Implementation of the Bass Diffusion Model* A simple notebook to run an agent-based implementation of the Bass Diffusion model.
-* *In Depth Discussion Of The Business Prototyping Toolkit for Python.* A discussion of how the BPTK_PY framework works and some of the advanced API features not covered in the other notebooks.
 

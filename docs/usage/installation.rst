@@ -10,7 +10,7 @@ For Advanced Users
 
 Once you know what you are doing and yo already have a running Python environment, you only need to call ``pip install BPTK-Py`` or ``pip3 install BPTK-Py``.
 
-If you are not an advanced user, it is best to start with our BPTK-Py tutorial, which you can clone or download from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on Bitbucket.
+If you are not an advanced user, it is best to start with our BPTK-Py tutorial, which you can clone or download from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 
 ********************************************
 Installing the BPTK-Py Tutorial Using Docker
@@ -19,7 +19,7 @@ Installing the BPTK-Py Tutorial Using Docker
 If you have Docker installed (e.g. Docker Desktop on MacOS or on Windows), follow these steps:
 
 1. On the command line, move into a directory where you would like to store the BPTK-Py tutorial.
-2. Clone the BPTK-Py tutorial repository using git clone: ``git clone https://bitbucket.org/transentis/bptk_py_tutorial.git``
+2. Clone the BPTK-Py tutorial repository using git clone: ``git clone https://github.com/transentis/bptk_py_tutorial.git``
 3. Run ``docker-compose up``
 4. Point your browser at `http://localhost:8888 <http://localhost:8888>`_ – this will open JupyterLab showing the contents of your directory.
 5. Open the notebook ``readme.ipynb`` from within JupyterLab.
@@ -51,7 +51,7 @@ On the command line, move into a directory where you would like to store the BPT
 
 Clone the BPTK-Py tutorial repository using ``git clone``::
 
-    git clone https://bitbucket.org/transentis/bptk_py_tutorial.git
+    git clone https://github.com/transentis/bptk_py_tutorial.git
 
 
 Set up a virtual environment
