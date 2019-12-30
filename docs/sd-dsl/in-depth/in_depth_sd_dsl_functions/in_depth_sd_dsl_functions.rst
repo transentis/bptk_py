@@ -14,6 +14,32 @@ importing the ``Model`` class.
     import numpy as np
     bptk=bptk()
 
+ABS Function
+------------
+
+The ABSfunction returns the absolute value of its input.
+
+Signature: ``abs(input)``
+
+``input`` may be any model element.
+
+.. code:: ipython3
+
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.1,name='abs')
+
+    input_converter = model.converter("input_converter")
+
+    input_converter.equation=sd.time()-5
+
+    abs_converter = model.converter("abs_converter")
+
+    abs_converter.equation = sd.abs(input_converter)
+
+    bptk.register_model(model)
+    bptk.plot_scenarios(scenario_managers=["smAbs"],scenarios=["base"],equations=["input_converter","abs_converter"])
+
+.. image:: output_abs.png
+
 DELAY Function
 --------------
 
@@ -48,6 +74,25 @@ Signature:
 
 
 .. image:: output_5_0.png
+
+DT Function
+-----------
+
+The ``DT`` function returns the models dt..
+
+Signature: ``dt(model)``
+
+.. code:: ipython3
+
+    model = Model(starttime=5,stoptime=12,dt=0.25,name='dt')
+    dt = model.converter("dt")
+    dt.equation = sd.dt(model)
+    dt.plot()
+
+
+
+.. image:: output_dt.png
+
 
 
 EXP Function
@@ -175,6 +220,43 @@ Signature: ``min(element, element)``
 
 .. image:: output_23_0.png
 
+PULSE Function
+--------------
+
+The ``PULSE`` function generates a pulse input of a specified size
+(volume). When using the PULSE builtin, you have the option of setting
+the time at which the PULSE will first fire (first pulse), as well as
+the interval between subsequent PULSEs. Each time that it fires a pulse,
+the framework pulses the specified volume over a period of one time step
+(DT). Thus, the instantaneous value taken on by the PULSE function is
+volume/DT.
+
+Signature: ``pulse(model, volume, first_pulse=0, interval=0)``
+
+Setting ``interval`` to 0 yields a single pulse that doesn’t repeat
+
+``volume`` can be either a variable or a constant, ``first_pulse`` and
+``interval`` must be constants.
+
+.. code:: ipython3
+
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='pulse')
+
+    stock = model.stock("stock")
+    stock.initial_value=0.0
+
+    flow = model.flow("flow")
+    flow.equation=sd.pulse(model,10.0,2.0,2.0)
+
+    stock.equation = flow
+
+    bptk.register_model(model)
+    bptk.plot_scenarios(scenario_managers=["smPulse"],scenarios=["base"],equations=["stock","flow"])
+
+
+
+.. image:: output_pulse.png
+
 
 SMOOTH Function
 ---------------
@@ -214,6 +296,43 @@ structure and equations:
 
 
 .. image:: output_26_0.png
+
+STARTTIME Function
+------------------
+
+The ``STARTTIME`` function returns the models starttime.
+
+Signature: ``starttime(model)``
+
+.. code:: ipython3
+
+    model = Model(starttime=5,stoptime=12,dt=1,name='starttime')
+    starttime = model.converter("starttime")
+    starttime.equation = sd.starttime(model)
+    starttime.plot()
+
+
+
+.. image:: output_starttime.png
+
+
+STOPTIME Function
+-----------------
+
+The ``STOPTIME`` function returns the models starttime.
+
+Signature: ``stoptime(model)``
+
+.. code:: ipython3
+
+    model = Model(starttime=5,stoptime=12,dt=1,name='stoptime')
+    stoptime = model.converter("stoptime")
+    stoptime.equation = sd.stoptime(model)
+    stoptime.plot()
+
+
+
+.. image:: output_stoptime.png
 
 
 STEP Function
