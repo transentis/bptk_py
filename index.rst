@@ -13,7 +13,7 @@ Next to providing the necessary SD and ABM language constructs to build models d
 
 This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them _independently_ in an Python enviroment.
 
-The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://bitbucket.org/transentis/bptk_py_tutorial/>`_ on Bitbucket.
+The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 
 Main Features
 =============
