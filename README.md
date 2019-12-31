@@ -8,19 +8,19 @@ Next to providing the necessary SD and ABM language constructs to build models d
 
 This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them _independently_ in an Python enviroment.
 
-The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our [git repository](https://bitbucket.org/transentis/bptk_py_tutorial/>) on Bitbucket.
+The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/>) on Github.
 
 ## Main Features
-* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
+* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
 * The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
 * All plotting is done using [Matplotlib](http://www.matplotlib.org).
-* Simulation results are returned as [Pandas dataframes](http://pandas.pydata.org).
+* Simulation results are returned as [Pandas dataframes](http://pandas.pydata.org) and thus can easily be used for analytics.
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 # Getting Help
 The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis-labs.com).
 
-You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://bitbucket.org/transentis/bptk_py_tutorial/src/master/). 
+You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
 BPTK-Py is developed and maintained by transentis Labs GmbH. 
 
