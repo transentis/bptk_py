@@ -38,10 +38,12 @@ plt.interactive(True)
 
 
 class conf:
-    loglevel = default_config.loglevel
-    matplotlib_rc_settings = default_config.matplotlib_rc_settings
-    colors = default_config.transentis_colors
-    configuration = default_config.configuration
+
+    def __init__(self):
+        self.loglevel = default_config.loglevel
+        self.matplotlib_rc_settings = default_config.matplotlib_rc_settings
+        self.colors = default_config.transentis_colors
+        self.configuration = default_config.configuration
 
 
 ##################
@@ -57,6 +59,8 @@ class bptk():
         Configures the matplotlib config and instantiates the scenario manager factory and visualizer
         """
         config = conf()
+
+
         if configuration and type(configuration) is dict:
 
                 for key in config.configuration.keys():
@@ -69,8 +73,8 @@ class bptk():
                     configuration["matplotlib_rc_settings"] = default_config.matplotlib_rc_settings
                     config.matplotlib_rc_settings =  default_config.matplotlib_rc_settings
 
-        self.config = config
 
+        self.config = config
 
         if loglevel in ["WARN", "ERROR", "INFO"]:
             self.config.loglevel = loglevel

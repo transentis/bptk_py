@@ -515,17 +515,19 @@ class Model:
         return float(f(x))
 
 
-    def plot_lookup(self,lookup_names):
+    def plot_lookup(self,lookup_names,config=None):
         from ..util import lookup_data
         from ..visualizations import visualizer
-        from ..config import config
+
+        if not config:
+            from ..config import config
 
         lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
 
         df = lookup_data(self, lookup_names)
 
 
-        return visualizer().plot(df=df,
+        return visualizer(config).plot(df=df,
                                     return_df=False,
                                     visualize_from_period=0,
                                     visualize_to_period=0,
