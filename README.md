@@ -28,6 +28,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.0.2
+* Bugfix release: Better support for multidimensional arrays
+
 ### 1.0.1
 This is a bugfix release. Unfortunately, the ``plot_lookup`` function did not work anymore after some updates to the configuration backend. It should work again now.
 Furthermore, we made a few improvements for the XMILE compiler. It should work with 2-dimensional arrays now. However, this feature is still considered unstable. Feedback is welcome!
