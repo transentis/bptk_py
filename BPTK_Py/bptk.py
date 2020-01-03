@@ -276,7 +276,7 @@ class bptk():
 
 
         return self.abmrunner.run_simulation(scenarios=[scenario],
-                                      agents=agents, agent_states=agent_states, progressBar=False, widget=True,
+                                      agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
                                       scenario_managers=[manager.name]
                                       )
 
