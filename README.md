@@ -6,11 +6,12 @@ The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modelin
 
 Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them _independently_ in an Python enviroment.
+This means you can build models in a XMILE-compatible visual modeling environment (such as [iseesystems Stella](http://www.iseesystems.com) and then use them _independently_ in an Python environment.
 
-The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/>) on Github.
+The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/) on Github.
 
 ## Main Features
+
 * The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
 * The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
 * All plotting is done using [Matplotlib](http://www.matplotlib.org).
@@ -32,15 +33,17 @@ For questions regarding installation, usage and other help please contact us at:
 * Bugfix release: Better support for multidimensional arrays
 
 ### 1.0.1
-This is a bugfix release. Unfortunately, the ``plot_lookup`` function did not work anymore after some updates to the configuration backend. It should work again now.
-Furthermore, we made a few improvements for the XMILE compiler. It should work with 2-dimensional arrays now. However, this feature is still considered unstable. Feedback is welcome!
+
+* Bugfix release: Fixed an issue with plot_lookup 
 
 ### 1.0.0
-1.0 Release! Lots of new features, especially for the SD component
 
-* SD Compiler: Arrays and Array Operators (MIN, MAX, SUM, MEAN, SELF, SIZE, PROD) are fully supported now. Furthermore we added more statistical operators (COMBINATIONS, BETA, BINOMIAL, FACTORIAL, GAMMA, GAMMALN, EXPRND, GEOMETRIC) and mathematical operators (ARCSIN, ARCCOS, ARCTAN)
+* SD Compiler: Added new operators
+    * Arrays and Array Operators (MIN, MAX, SUM, MEAN, SELF, SIZE, PROD)
+    * Statistical operators (COMBINATIONS, BETA, BINOMIAL, FACTORIAL, GAMMA, GAMMALN, EXPRND, GEOMETRIC)
+    * Trigonometric operators (ARCSIN, ARCCOS, ARCTAN)
 * The ``plot_scenarios`` API now supports array calls such as ``stock[*]`` or ``stock[dim1,dim2]``
-* Added operators to the SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
+* SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
 
 ### 0.9.0
 We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
