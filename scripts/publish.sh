@@ -120,11 +120,11 @@ rm -rf dist/
 rm -rf build/
 rm -rf BPTK_Py.egg-info
 
-echo "-------------------------------------"
-echo "Docker publish"
-echo "-------------------------------------"
-python3 build_docker.py
+#echo "-------------------------------------"
+#echo "Docker publish"
+#echo "-------------------------------------"
+#python3 build_docker.py
 
-echo "-------------------------------------"
-echo "Publication done!"
-echo "-------------------------------------"
+#echo "-------------------------------------"
+#echo "Publication done!"
+#echo "-------------------------------------"
