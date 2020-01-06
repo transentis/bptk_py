@@ -82,10 +82,12 @@ class SDSimulationRunner(SimulationRunner):
 
         # Obtain simulation results
         if not strategy:
+
             scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations(scenarios=scenarios,
                                                                                                   equations=equations,
                                                                                                   output=["frame"],
                                                                                                   scenario_managers=scenario_managers)
+
         else:
             scenario_objects = SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(
                 scenarios=scenarios,

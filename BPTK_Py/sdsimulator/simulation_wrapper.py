@@ -65,10 +65,10 @@ class SDsimulationWrapper():
                     equations_to_simulate = []
                     for equation in equations:
 
-                        if equation in sc.model.equations.keys():
-                            equations_to_simulate += [equation]
+                        equations_to_simulate += [equation]
 
                     sc.result = simu.start(output=output, equations=equations_to_simulate)
+
                 else:
                     log("[ERROR] No equations to simulate given!")
                     return None
