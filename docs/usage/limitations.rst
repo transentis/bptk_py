@@ -49,13 +49,13 @@ INIT           x
 INT            x
 INVNORM
 IRR
-LOG10
+LOG10          x
 LOGISTIC
 LOGNORMAL
 LOOKUP         x                    lookup
 LOOKUPAREA
 LOOKUPINV
-LN
+LN             x
 MAX            x                    max
 MEAN           x
 MIN            x                    min
@@ -66,10 +66,10 @@ NEGBINOMIAL
 NORMAL         x
 NORMALCDF
 NOT
-NPV
+NPV            x
 OR             x
 PARETO
-PERCENT
+PERCENT        x
 PERMUTATIONS
 PI             x
 PMT
@@ -94,7 +94,7 @@ SIZE           x
 SMTH1          x                    smooth
 SMTH3
 SMTHN
-SQRT
+SQRT           x
 STARTTIME      x                    starttime
 STDDEV         x
 STEP           x                    step
