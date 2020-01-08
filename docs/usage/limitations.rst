@@ -23,8 +23,8 @@ BINOMIAL       x
 COMBINATIONS   x
 COS            x
 CGROWTH
-CLOCKTIME
-COUNTER
+CLOCKTIME      x
+COUNTER        x
 DELAY          x                    delay
 DELAY1
 DELAY3
@@ -41,7 +41,7 @@ FV
 GAMMA          x
 GAMMALN        x
 GEOMETRIC      x
-HISTORY
+HISTORY        x
 IF             x
 INF
 INTERPOLATE
