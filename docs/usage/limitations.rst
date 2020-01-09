@@ -37,7 +37,7 @@ EXPRND         x
 ENDVAL
 FACTORIAL      x
 FORCST
-FV
+FV             x
 GAMMA          x
 GAMMALN        x
 GEOMETRIC      x
@@ -48,7 +48,7 @@ INTERPOLATE
 INIT           x
 INT            x
 INVNORM
-IRR
+IRR            x
 LOG10          x
 LOGISTIC
 LOGNORMAL
@@ -61,7 +61,7 @@ MEAN           x
 MIN            x                    min
 MOD            x
 MONTECARLO
-NAN
+NAN            x
 NEGBINOMIAL
 NORMAL         x
 NORMALCDF
@@ -72,11 +72,11 @@ PARETO
 PERCENT        x
 PERMUTATIONS
 PI             x
-PMT
+PMT            x
 POISSON
 PREVIOUS       x
 PULSE          x                    pulse
-PV
+PV             x
 PROD           x
 RANDOM         x
 RANK           x
