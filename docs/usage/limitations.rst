@@ -60,7 +60,7 @@ MAX            x                    max
 MEAN           x
 MIN            x                    min
 MOD            x
-MONTECARLO
+MONTECARLO     x
 NAN            x
 NEGBINOMIAL
 NORMAL         x
