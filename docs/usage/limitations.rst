@@ -14,7 +14,7 @@ Here are the known limitations:
 Built-In       SD model transpiler  SD DSL equivalent
 -------------  -------------------  -----------------
 ABS            x                    abs
-AND
+AND            x
 ARCCOS         x
 ARCSIN         x
 ARCTAN         x
@@ -34,9 +34,9 @@ DT             x                    dt
 ELSE           x
 EXP            x                    exp
 EXPRND         x
-ENDVAL
+ENDVAL         x
 FACTORIAL      x
-FORCST
+FORCST         x
 FV             x
 GAMMA          x
 GAMMALN        x
@@ -50,11 +50,11 @@ INT            x
 INVNORM
 IRR            x
 LOG10          x
-LOGISTIC
-LOGNORMAL
+LOGISTIC       x
+LOGNORMAL      x
 LOOKUP         x                    lookup
-LOOKUPAREA
-LOOKUPINV
+LOOKUPAREA     x
+LOOKUPINV      x
 LN             x
 MAX            x                    max
 MEAN           x
@@ -62,25 +62,25 @@ MIN            x                    min
 MOD            x
 MONTECARLO     x
 NAN            x
-NEGBINOMIAL
+NEGBINOMIAL    x
 NORMAL         x
 NORMALCDF
-NOT
+NOT            x
 NPV            x
 OR             x
 PARETO
 PERCENT        x
-PERMUTATIONS
+PERMUTATIONS   x
 PI             x
 PMT            x
-POISSON
+POISSON        x
 PREVIOUS       x
 PULSE          x                    pulse
 PV             x
 PROD           x
 RANDOM         x
 RANK           x
-RAMP
+RAMP           x
 REWORK
 ROUND          x
 ROOTN
@@ -104,7 +104,7 @@ TAN            x
 THEN           x
 TIME           x                    time
 TREND          x                    trend
-TRIANGULAR
-UNIFORM
+TRIANGULAR     x
+UNIFORM        x
 WEIBULL
 =============  ===================  =================
