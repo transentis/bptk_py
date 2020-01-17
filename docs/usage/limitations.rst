@@ -22,14 +22,14 @@ BETA           x
 BINOMIAL       x
 COMBINATIONS   x
 COS            x
-CGROWTH
+CGROWTH        x
 CLOCKTIME      x
 COUNTER        x
 DELAY          x                    delay
-DELAY1
-DELAY3
-DELAYN
-DERIVN
+DELAY1         x
+DELAY3         x
+DELAYN         x
+DERIVN         x
 DT             x                    dt
 ELSE           x
 EXP            x                    exp
@@ -43,7 +43,7 @@ GAMMALN        x
 GEOMETRIC      x
 HISTORY        x
 IF             x
-INF
+INF            x
 INTERPOLATE
 INIT           x
 INT            x
@@ -68,7 +68,7 @@ NORMALCDF
 NOT            x
 NPV            x
 OR             x
-PARETO
+PARETO         x
 PERCENT        x
 PERMUTATIONS   x
 PI             x
@@ -83,17 +83,17 @@ RANK           x
 RAMP           x
 REWORK
 ROUND          x
-ROOTN
+ROOTN          x
 RUNCOUNT
 SAFEDIV        x
 SELF           x
 SENSIRUNCOUNT
 SIN            x
-SINWAVE
+SINWAVE        x
 SIZE           x
 SMTH1          x                    smooth
-SMTH3
-SMTHN
+SMTH3          x
+SMTHN          x
 SQRT           x
 STARTTIME      x                    starttime
 STDDEV         x
@@ -106,5 +106,5 @@ TIME           x                    time
 TREND          x                    trend
 TRIANGULAR     x
 UNIFORM        x
-WEIBULL
+WEIBULL        x
 =============  ===================  =================

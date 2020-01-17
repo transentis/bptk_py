@@ -8,3 +8,4 @@ xlsxwriter
 parsimonious==0.8.1
 xmltodict==0.12.0
 jinja2==2.10.3
+sympy
