@@ -8,6 +8,7 @@ Here are the known limitations:
 
 * Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
 * The SD model transpiler for XMILE models only supports stocks, flows/biflows and converters. The discrete modeling elements (such as ovens and conveyors) are not supported.
+* The random number operators (LOGNORMAL, LOGISTIC etc.) support seed but uses the Python seed and random number generator as the Stella Architect random number function is not open source. Secondly, these operators only support the mandatory arguments (usually mean/scale/stddev) as given in `in the official documentation <hhttps://www.iseesystems.com/resources/help/v1-9/default.htm#08-Reference/07-Builtins/Statistical_builtins.htm>`_
 * The following table gives an overview of all XMILE builtins, whether they are supported by the SD model transpiler for XMILE and their equivalent in the SD DSL library – blank cells indicate that the operator is currently not supported. We are working hard to ensure support for all operators is included ASAP. Built-ins pertaining to discrete elements are not listed.
 
 =============  ===================  =================
@@ -44,10 +45,10 @@ GEOMETRIC      x
 HISTORY        x
 IF             x
 INF            x
-INTERPOLATE
+INTERPOLATE    x
 INIT           x
 INT            x
-INVNORM
+INVNORM        x
 IRR            x
 LOG10          x
 LOGISTIC       x
@@ -64,7 +65,7 @@ MONTECARLO     x
 NAN            x
 NEGBINOMIAL    x
 NORMAL         x
-NORMALCDF
+NORMALCDF      x
 NOT            x
 NPV            x
 OR             x
