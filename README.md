@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.1.0
+* We are supporting all XMILE operators now. Note that random numbers with seed are **never** the same as when using Stella Architect's seed! This is due to different random number generators in Python and Stella. We neither support the min / max arguments for the random number operators. Refer to the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/limitations.html))
+* RUNCOUNT and SENSIRUNCOUNT are not supported and support is not planned.
+
 ### 1.0.2
 * Bugfix release: Better support for multidimensional arrays
 

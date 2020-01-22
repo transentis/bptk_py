@@ -248,13 +248,10 @@ class ScenarioManagerSD(ScenarioManager):
                     scenario.dt = scenario.model.dt
                     scenario.setup_constants()
                     scenario.setup_points()
-            #else:
-#               log(
-                    #"[ERROR] ABMModel manager: The python model for scenario manager \"{}\" does not exist: \"{}\". Will not be able to run simulations for this scenario manager!".format(
-                    #    str(self.name), str(self.model_file) + ".py"))
-                #self.scenarios = {}
+
 
         except Exception as e:
+
             log(
                 "[ERROR] Module not found Error when trying to load simulation class from external file. Only use relative paths and do not rename the class inside the generated class! Error Message: {}".format(
                     str(e)))
