@@ -124,7 +124,6 @@ class ScenarioManagerFactory():
 
                 # Start monitor for source file
                 if "source" in model_dictionary[scenario_manager_name].keys():
-
                     if not source in self.model_monitors.keys() and os.path.isfile(source):
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
@@ -261,7 +260,6 @@ class ScenarioManagerFactory():
                                                                          model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
 
-
         else:
             log("[WARN] Model Manager already existing. Not overwriting the model!")
             self.scenario_managers[scenario_manager].add_scenario(scenario)
@@ -317,9 +315,11 @@ class ScenarioManagerFactory():
         # Obtain all scenarios
         managers = self.get_scenario_managers()
 
+        from copy import deepcopy
+
         for manager_name, manager in managers.items():
             if manager.source == filename:
-                for scenario_name in manager.scenarios.keys():
+                for scenario_name in deepcopy(list(manager.scenarios.keys())):
                     self.reset_scenario(scenario=scenario_name, scenario_manager=manager_name)
 
         log("[INFO] Reset scenarios for all scenarios that require {}".format(filename))

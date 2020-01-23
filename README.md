@@ -29,6 +29,18 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.1.1 
+* The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT and ROUND. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
+    * RANDOM: ``converter.equation = sd.Random(<min>, <max>)`` draws a uniformly distributed float random number between <min> and <max>
+    * ROUND: ``converter.equation = sd.Round(sd.random(0,1),2))`` rounds a random number between 0 and 1 to a 2 digit float
+    * IF: ```converter.equation = sd.If( <condition>, <then> , <else> ) ``` corresponds to ```IF <condition> THEN <then> ELSE <else>```. Each term inside the IF clause can be a SD term again. Example for a valid If clause: ``equation = sd.If(sd.time()>10,sd.random(1,2), 100)`` 
+    * AND/OR: ```sd.Or(<left hand side>, <right hand side>)``` and ```sd.And(<left hand side>, <right hand side>)``` for multiple conditions
+    * NOT: Use ```sd.Not(<condition>)``` for "not" conditions, e.g:  ```sd.If(sd.Not(sd.time()>10), 1, 0 )``` 
+    * NAN: ``sd.nan()`` returns a NAN value.
+    * SQRT: ``sd.sqrt(<value of function>)`` computes the square root
+    * SIN / TAN / COS: ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians)
+* We fixed a bug that caused BPTK to crash when an XMILE model was updated while BPTK was monitoring it
+
 ### 1.1.0
 * We are supporting all XMILE operators now. Note that random numbers with seed are **never** the same as when using Stella Architect's seed! This is due to different random number generators in Python and Stella. We neither support the min / max arguments for the random number operators. Refer to the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/limitations.html))
 * RUNCOUNT and SENSIRUNCOUNT are not supported and support is not planned.

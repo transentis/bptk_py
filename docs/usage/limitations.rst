@@ -15,14 +15,14 @@ Here are the known limitations:
 Built-In       SD model transpiler  SD DSL equivalent
 -------------  -------------------  -----------------
 ABS            x                    abs
-AND            x
+AND            x                    And
 ARCCOS         x
 ARCSIN         x
 ARCTAN         x
 BETA           x
 BINOMIAL       x
 COMBINATIONS   x
-COS            x
+COS            x                    cos
 CGROWTH        x
 CLOCKTIME      x
 COUNTER        x
@@ -32,7 +32,7 @@ DELAY3         x
 DELAYN         x
 DERIVN         x
 DT             x                    dt
-ELSE           x
+ELSE           x                    If
 EXP            x                    exp
 EXPRND         x
 ENDVAL         x
@@ -43,7 +43,7 @@ GAMMA          x
 GAMMALN        x
 GEOMETRIC      x
 HISTORY        x
-IF             x
+IF             x                    If
 INF            x
 INTERPOLATE    x
 INIT           x
@@ -60,15 +60,15 @@ LN             x
 MAX            x                    max
 MEAN           x
 MIN            x                    min
-MOD            x
+MOD            x                    %
 MONTECARLO     x
-NAN            x
+NAN            x                    nan
 NEGBINOMIAL    x
 NORMAL         x
 NORMALCDF      x
-NOT            x
+NOT            x                    Not
 NPV            x
-OR             x
+OR             x                    Or
 PARETO         x
 PERCENT        x
 PERMUTATIONS   x
@@ -89,23 +89,23 @@ RUNCOUNT
 SAFEDIV        x
 SELF           x
 SENSIRUNCOUNT
-SIN            x
+SIN            x                    sin
 SINWAVE        x
 SIZE           x
 SMTH1          x                    smooth
 SMTH3          x
 SMTHN          x
-SQRT           x
+SQRT           x                    sqrt
 STARTTIME      x                    starttime
 STDDEV         x
 STEP           x                    step
 STOPTIME       x                    stoptime
 SUM            x
-TAN            x
-THEN           x
+TAN            x                    tan
+THEN           x                    if
 TIME           x                    time
 TREND          x                    trend
 TRIANGULAR     x
-UNIFORM        x
+UNIFORM        x                    uniform
 WEIBULL        x
 =============  ===================  =================

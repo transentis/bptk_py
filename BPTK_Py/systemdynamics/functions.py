@@ -32,10 +32,8 @@ def time():
 def max(x, y):
     return MaxOperator(x, y)
 
-
 def min(x, y):
     return MinOperator(x, y)
-
 
 def lookup(element, points):
     return Lookup(element, points)
@@ -81,4 +79,52 @@ def delay(model, input_function, delay_duration, initial_value=None):
         raise OperatorError("The initial value must be a floating point values or a constant")
 
     return Delay(model, input_function, delay_duration, initial_value)
+
+def uniform(min_value=0,max_value=1):
+    from .operators import Random
+    return Random(min_value,max_value)
+
+def random(min_value=0,max_value=1):
+    from .operators import Random
+    return Random(min_value,max_value)
+
+def round(operator, digits):
+    from .operators import Round
+    return Round(operator, digits)
+
+def If(if_,then_,else_):
+    from .operators import If
+    return If(if_,then_,else_)
+
+def And(lhs,rhs):
+    from .operators import And
+    return And(lhs,rhs)
+
+def Or(lhs,rhs):
+    from .operators import Or
+    return Or(lhs,rhs)
+
+def Not(condition):
+    from .operators import Not
+    return Not(condition)
+
+def nan():
+    from .operators import nan
+    return nan()
+
+def sqrt(x):
+    from .operators import sqrt
+    return sqrt(x)
+
+def sin(x):
+    from .operators import sin
+    return sin(x)
+
+def tan(x):
+    from .operators import tan
+    return tan(x)
+
+def cos(x):
+    from .operators import cos
+    return cos(x)
 

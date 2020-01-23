@@ -34,6 +34,9 @@ class Operator:
     def __rtruediv__(self, other):
         return DivisionOperator(other, self)
 
+    def __mod__(self, other):
+        return ModOperator(self, other)
+
     def __rmul__(self, other):
         return MultiplicationOperator(self, other)
 
@@ -54,6 +57,25 @@ class Operator:
 
     def __neg__(self):
         return NumericalMultiplicationOperator(self, (-1.0))
+
+    def __gt__(self,other):
+        return ComparisonOperator(self, other, ">")
+
+    def __lt__(self, other):
+        return ComparisonOperator(self, other, "<")
+
+    def __le__(self, other):
+        return ComparisonOperator(self, other, "<=")
+
+    def __ge__(self,other):
+        return ComparisonOperator(self, other, ">=")
+
+    def __eq__(self, other):
+        return ComparisonOperator(self, other, "==")
+
+    def __ne__(self, other):
+        return ComparisonOperator(self, other, "!=")
+    #def __le__(self,other):
 
 
 class Function(Operator):
@@ -76,7 +98,6 @@ class BinaryOperator(Operator):
         pass
 
 
-
 class UnaryOperator(Operator):
     """
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
@@ -90,7 +111,18 @@ class UnaryOperator(Operator):
         else:
             return self.element.term(time)
 
+class ComparisonOperator(BinaryOperator):
+    """
+    ComparisonOperators ("<",">",">=","<=","==", "!=")
+    """
+    def __init__(self, element_1, element_2,sign):
+        self.sign = sign
+        super().__init__(element_1, element_2)
 
+    def term(self, time="t"):
+        element_1 = extractTerm(self.element_1,time)
+        element_2 = extractTerm(self.element_2, time)
+        return str(element_1) + "{}".format(self.sign) + str(element_2)
 
 class NaryOperator(Operator):
 
@@ -116,6 +148,10 @@ class NaryOperator(Operator):
         fn_str += ")"
 
         return fn_str
+
+class ModOperator(BinaryOperator):
+    def term(self, time="t"):
+        return self.element_1.term(time) + "%" + self.element_2.term(time)
 
 class AdditionOperator(BinaryOperator):
 
@@ -326,4 +362,91 @@ class Delay(Function):
            str(self.model.starttime),
            self.initial_value.term(str(self.model.starttime)) if self.initial_value is not None else self.input_function.term(str(self.model.starttime))
        )
+
+def extractTerm(obj,time):
+    return obj.term(time) if isinstance(obj,Operator) else obj
+
+class Random(Function):
+    def __init__(self,min_value=0,max_value=1):
+        self.min_value= min_value
+        self.max_value = max_value
+
+    def term(self,time="t"):
+        return "(random.uniform({},{}) )".format(extractTerm(self.min_value,time),extractTerm(self.max_value,time))
+
+class Round(Function):
+    def __init__(self,operator, digits):
+        self.operator = operator
+        self.digits = digits
+
+    def term(self,time="t"):
+        return "(round( {}, {} ) )".format(extractTerm(self.operator,time),extractTerm(self.digits,time))
+
+class If(Function):
+    def __init__(self,if_, then_, else_=None ):
+        self.if_ = if_
+        self.then_ = then_
+        self.else_ = else_
+
+    def term(self,time="t"):
+        if_ = extractTerm(self.if_,time)
+        then_ = extractTerm(self.then_,time)
+        else_ = extractTerm(self.else_,time)
+        return "( ({}) if ({}) else ({})  )".format(then_,if_,else_)
+
+class And(Function):
+    def __init__(self,lhs,rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def term(self,time="t"):
+        lhs = extractTerm(self.lhs,time)
+        rhs = extractTerm(self.rhs,time)
+
+        return "( ({}) and ({}) )".format(lhs,rhs)
+
+class Or(Function):
+    def __init__(self,lhs,rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def term(self,time="t"):
+        lhs = extractTerm(self.lhs,time)
+        rhs = extractTerm(self.rhs,time)
+
+        return "( ({}) or ({}) )".format(lhs,rhs)
+
+class Not(Function):
+    def __init__(self,condition):
+        self.condition = condition
+
+    def term(self, time="t"):
+        condition = extractTerm(self.condition,time)
+
+        return "( not ({}) )".format(condition)
+
+class nan(Function):
+    def __init__(self):
+        pass
+    def term(self,time="t"): return "np.nan"
+
+class sqrt(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( ({})**(1/2) )".format(extractTerm(self.x,time))
+
+class sin(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.sin({})".format(extractTerm(self.x,time))
+
+class tan(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.tan({})".format(extractTerm(self.x,time))
+
+class cos(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.cos({})".format(extractTerm(self.x,time))
 
