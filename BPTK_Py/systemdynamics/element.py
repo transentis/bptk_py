@@ -78,8 +78,6 @@ class Element:
 
         self.model.reset_cache()
 
-
-
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
