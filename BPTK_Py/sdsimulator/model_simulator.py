@@ -72,8 +72,8 @@ class Simulator():
         """
 
         # Take Values from model if not given
-        if start == None: start = self.starttime
-        if until == None: until = self.until
+        if start == None: start = self.mod.starttime
+        if until == None: until = self.mod.stoptime
 
         if len(equations) == 0:
             log(
@@ -139,7 +139,7 @@ class Simulator():
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in np.arange(start, until + self.mod.dt, self.mod.dt):
-            result = self.mod.memoize(equation, i)
+            result = self.mod.equation(equation, i)
 
             if "*" in equation: # Fix for *: compute the sum
                 result = sum(result)

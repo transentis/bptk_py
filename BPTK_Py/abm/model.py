@@ -566,7 +566,6 @@ class Model:
             :param equation: equaiton name
             :param arg: t
         """
-
         return self.memoize(equation,arg)
 
     def memoize(self, equation, arg):
@@ -678,7 +677,7 @@ class Model:
             :param t: timestep to evaluate for
             :return: float of simulation result
         """
-        return self.equations[name](t)
+        return self.memoize(name,t)
 
     def reset_cache(self):
         """

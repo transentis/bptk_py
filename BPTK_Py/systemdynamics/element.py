@@ -78,6 +78,8 @@ class Element:
 
         self.model.reset_cache()
 
+
+
         self.function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
@@ -90,9 +92,9 @@ class Element:
         starttime = self.model.starttime if starttime is None else starttime
 
         try:
-            df = pd.DataFrame({self.name: {t: self(t) for t in np.arange(starttime,stoptime+dt,dt)}})
+            df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(starttime,stoptime+dt,dt)}})
         except:
-            df = pd.DataFrame({self.name: {t: self(t) for t in np.arange(self.model.starttime,self.model.stoptime+dt, dt)}})
+            df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(self.model.starttime,self.model.stoptime+dt, dt)}})
         # ensure column is of float type and not e.g. an integer
 
         if return_df:

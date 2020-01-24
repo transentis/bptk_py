@@ -50,14 +50,13 @@ class Stock(Element):
         self._equation = equation
 
         self.model.reset_cache()
-
         self.build_function_string()
         self.generate_function()
 
     def build_function_string(self):
         self.function_string = "lambda model, t : ( ("
         self.function_string += str(self.__initial_value)
-        self.function_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt)) ".format(self.name)
+        self.function_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
 
         if self._equation is not None:
             self.function_string += "+ model.dt*("
@@ -65,5 +64,6 @@ class Stock(Element):
             self.function_string += ") )"
         else:
             self.function_string += ")"
+
 
 
