@@ -478,3 +478,9 @@ class coswave(Function):
         self.period = period
 
     def term(self, time="t"): return "( np.cos(2*np.pi / {} * (t-model.starttime) ) * {} )".format(extractTerm(self.period, time), extractTerm(self.amplitude, time))
+
+class Inf(Function):
+    def term(self, time="t"): return "np.inf"
+
+class pi(Function):
+    def term(self, time="t"): return "np.pi"

@@ -16,15 +16,16 @@ Built-In       SD model transpiler  SD DSL equivalent
 -------------  -------------------  -----------------
 ABS            x                    abs
 AND            x                    And
-ARCCOS         x
-ARCSIN         x
-ARCTAN         x
+ARCCOS         x                    arccos
+ARCSIN         x                    arcsin
+ARCTAN         x                    arctan
 BETA           x
 BINOMIAL       x
 COMBINATIONS   x
 COS            x                    cos
 CGROWTH        x
 CLOCKTIME      x
+COSWAVE        x                    coswave
 COUNTER        x
 DELAY          x                    delay
 DELAY1         x
@@ -44,7 +45,7 @@ GAMMALN        x
 GEOMETRIC      x
 HISTORY        x
 IF             x                    If
-INF            x
+INF            x                    Inf
 INTERPOLATE    x
 INIT           x
 INT            x
@@ -60,7 +61,7 @@ LN             x
 MAX            x                    max
 MEAN           x
 MIN            x                    min
-MOD            x                    %
+MOD            x                    % (simply use the Python mod operator)
 MONTECARLO     x
 NAN            x                    nan
 NEGBINOMIAL    x
@@ -72,7 +73,7 @@ OR             x                    Or
 PARETO         x
 PERCENT        x
 PERMUTATIONS   x
-PI             x
+PI             x                    pi
 PMT            x
 POISSON        x
 PREVIOUS       x
@@ -90,7 +91,7 @@ SAFEDIV        x
 SELF           x
 SENSIRUNCOUNT
 SIN            x                    sin
-SINWAVE        x
+SINWAVE        x                    sinwave
 SIZE           x
 SMTH1          x                    smooth
 SMTH3          x

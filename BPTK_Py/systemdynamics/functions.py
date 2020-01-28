@@ -148,3 +148,10 @@ def coswave(amplitude,period):
     from .operators import coswave
     return coswave(amplitude,period)
 
+def Inf():
+    from .operators import Inf
+    return Inf()
+
+def pi():
+    from .operators import pi
+    return pi()
