@@ -37,7 +37,7 @@ For questions regarding installation, usage and other help please contact us at:
     * IF: ```converter.equation = sd.If( <condition>, <then> , <else> ) ``` corresponds to ```IF <condition> THEN <then> ELSE <else>```. Each term inside the IF clause can be a SD term again. Example for a valid If clause: ``equation = sd.If(sd.time()>10,sd.random(1,2), 100)`` 
     * AND/OR: ```sd.Or(<left hand side>, <right hand side>)``` and ```sd.And(<left hand side>, <right hand side>)``` for multiple conditions
     * NOT: Use ```sd.Not(<condition>)``` for "not" conditions, e.g:  ```sd.If(sd.Not(sd.time()>10), 1, 0 )``` 
-    * NAN /INF: ``sd.nan()`` returns a NAN value, ``sd.Inf()`` gives you the infinity value.
+    * NAN / INF / PI: ``sd.nan()`` returns a NAN value, ``sd.Inf()`` gives you the infinity value, ```sd.pi()``` returns the number pi.
     * SQRT: ``sd.sqrt(<value of function>)`` computes the square root
     * SIN / TAN / COS: ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians) and of course we also support ARCCOS, ARCSIN, ARCTAN with the same syntax
     * SINWAVE / COSWAVE: ``sd.sinwave(amplitude,period)`` / ``sd.coswave(amplitude,period)`` to generate sine / cosine waves with given amplitude and period
