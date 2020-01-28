@@ -18,3 +18,19 @@ class Flow(Element):
     Flow in a SD model
     """
     type = "Flow"
+
+    @property
+    def equation(self):
+        return super().equation
+
+    @equation.setter
+    def equation(self, equation):
+        self._equation = equation
+        self.model.reset_cache()
+        self.build_function_string()
+        self.generate_function()
+
+    def build_function_string(self):
+        from .operators import Operator
+        right_term = self._equation.term("t-model.dt") if type(self._equation) is Operator else self._equation
+        self.function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative

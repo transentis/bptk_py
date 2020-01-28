@@ -20,11 +20,7 @@ from scipy.interpolate import interp1d
 from .event import Event, DelayedEvent
 from .agent import Agent
 from ..logger import log
-from ..systemdynamics import Constant
-from ..systemdynamics import Converter
-from ..systemdynamics import Flow
-from ..systemdynamics import NaryOperator
-from ..systemdynamics import Stock
+from ..systemdynamics import Constant, Converter, Flow, Biflow, NaryOperator, Stock
 
 
 ###################
@@ -69,6 +65,7 @@ class Model:
         self.equations = {}
         self.stocks = {}
         self.flows = {}
+        self.biflows = {}
         self.converters = {}
         self.constants = {}
         self.points = {}
@@ -607,7 +604,7 @@ class Model:
     def stock(self, name):
         """
         Create a SD stock
-            :param name: name of the flow
+            :param name: name of the stock
             :return: Stock object
         """
         if name in self.stocks:
@@ -630,6 +627,19 @@ class Model:
             self.fn[name] = fn
 
         return self.functions[name]
+
+    def biflow(self, name):
+        """
+        Create a SD biflow
+            :param name: Name of the biflow
+            :return: Biflow object
+        """
+        if name in self.biflows:
+            return self.biflows[name]
+        else:
+            flow = Biflow(self, name)
+            self.biflows[name] = flow
+            return flow
 
     def flow(self, name):
         """
