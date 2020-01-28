@@ -43,6 +43,7 @@ For questions regarding installation, usage and other help please contact us at:
     * SINWAVE / COSWAVE: ``sd.sinwave(amplitude,period)`` / ``sd.coswave(amplitude,period)`` to generate sine / cosine waves with given amplitude and period
 * We fixed a bug that caused BPTK to crash when an XMILE model was updated while BPTK was monitoring it
 * We fixed SINWAVE in the XMILE transpiler and added support for COSWAVE
+
 ### 1.1.0
 * We are supporting all XMILE operators now. Note that random numbers with seed are **never** the same as when using Stella Architect's seed! This is due to different random number generators in Python and Stella. We neither support the min / max arguments for the random number operators. Refer to the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/limitations.html))
 * RUNCOUNT and SENSIRUNCOUNT are not supported and support is not planned.
