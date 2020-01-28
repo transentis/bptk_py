@@ -30,6 +30,7 @@ For questions regarding installation, usage and other help please contact us at:
 ## Changelog
 
 ### 1.1.1 
+* The SD DSL now differentiates flows and biflows. Simply add a biflow using ```biflow = model.biflow(<name>)```.
 * The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT and ROUND. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
     * RANDOM: ``converter.equation = sd.Random(<min>, <max>)`` draws a uniformly distributed float random number between <min> and <max>
     * ROUND: ``converter.equation = sd.Round(sd.random(0,1),2))`` rounds a random number between 0 and 1 to a 2 digit float
