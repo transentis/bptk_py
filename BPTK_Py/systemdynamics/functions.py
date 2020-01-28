@@ -128,3 +128,23 @@ def cos(x):
     from .operators import cos
     return cos(x)
 
+def arccos(x):
+    from .operators import arccos
+    return arccos(x)
+
+def arcsin(x):
+    from .operators import arcsin
+    return arcsin(x)
+
+def arctan(x):
+    from .operators import arctan
+    return arctan(x)
+
+def sinwave(amplitude,period):
+    from .operators import sinwave
+    return sinwave(amplitude,period)
+
+def coswave(amplitude,period):
+    from .operators import coswave
+    return coswave(amplitude,period)
+

@@ -438,15 +438,43 @@ class sqrt(Function):
 class sin(Function):
     def __init__(self,x):
         self.x = x
-    def term(self,time="t"): return "( np.sin({})".format(extractTerm(self.x,time))
+    def term(self,time="t"): return "( np.sin({}) )".format(extractTerm(self.x,time))
 
 class tan(Function):
     def __init__(self,x):
         self.x = x
-    def term(self,time="t"): return "( np.tan({})".format(extractTerm(self.x,time))
+    def term(self,time="t"): return "( np.tan({}) )".format(extractTerm(self.x,time))
 
 class cos(Function):
     def __init__(self,x):
         self.x = x
-    def term(self,time="t"): return "( np.cos({})".format(extractTerm(self.x,time))
+    def term(self,time="t"): return "( np.cos({}) )".format(extractTerm(self.x,time))
 
+class arccos(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.arccos({}) )".format(extractTerm(self.x,time))
+
+class arctan(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.arctan({}) )".format(extractTerm(self.x,time))
+
+class arcsin(Function):
+    def __init__(self,x):
+        self.x = x
+    def term(self,time="t"): return "( np.arcsin({}) )".format(extractTerm(self.x,time))
+
+class sinwave(Function):
+    def __init__(self,amplitude,period):
+        self.amplitude = amplitude
+        self.period = period
+
+    def term(self, time="t"): return "( np.sin(2*np.pi / {} * (t-model.starttime) ) * {} )".format(extractTerm(self.period,time),extractTerm(self.amplitude,time))
+
+class coswave(Function):
+    def __init__(self,amplitude,period):
+        self.amplitude = amplitude
+        self.period = period
+
+    def term(self, time="t"): return "( np.cos(2*np.pi / {} * (t-model.starttime) ) * {} )".format(extractTerm(self.period, time), extractTerm(self.amplitude, time))
