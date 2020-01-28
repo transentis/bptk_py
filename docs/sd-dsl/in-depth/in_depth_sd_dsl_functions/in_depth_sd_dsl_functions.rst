@@ -40,6 +40,56 @@ Signature: ``abs(input)``
 
 .. image:: output_abs.png
 
+ARCCOS Function
+------------
+
+The ARCCOS builtin gives the arccosine. The arccosine is the angle, in radians, whose cosine is the input expression.
+
+Signature:
+``arccos(expression)``
+
+``expression`` must be a float or a model element that returns a float
+
+ARCSIN Function
+---------------
+
+ARCSIN gives the arcsine. The arcsine is the angle, in radians, whose sine is expression.
+
+Signature:
+``arcsin(expression)``
+
+``expression`` must be a float or a model element that returns a float
+
+ARCTAN Function
+---------------
+
+ARCTAN gives the arctangent. The arctangent is the angle, in radians, whose tangent is input expression.
+Signature:
+``arctan(expression)``
+
+``expression`` must be a float or a model element that returns a float
+
+COS Function
+------------
+
+COS  gives the cosine of radians, where radians is an angle in radians.
+
+Signature:
+``cos(radians)``
+
+``radians`` must be a float or a model element that returns a float
+
+COSWAVE Function
+----------------
+
+The COSWAVE builtin returns a time-dependent cosine wave, with the specified amplitude and period. To generate the cosine wave, the COSWAVE builtin uses the absolute value of the amplitude you specify. To produce meaningful wave results, choose a DT that's significantly smaller than the period of the wave. A DT equal to a quarter of the period gives triangle waves. A smaller DT gives results which better approximate a continuous curve.
+
+Signature:
+``coswave(amplitude,period)``
+
+``amplitude`` : Amplitude of the cosine wave
+``period`` : Period of the cosine wave
+
 DELAY Function
 --------------
 
@@ -297,6 +347,27 @@ structure and equations:
 
 .. image:: output_26_0.png
 
+SIN Function
+------------
+
+SIN gives the sine of radians, where radians is an angle in radians.
+
+Signature:
+``sin(radians)``
+
+``radians`` can be any model element that returns a float
+
+SINWAVE Function
+----------------
+
+SINWAVE returns a time-dependent sine wave, with the specified amplitude and period. To generate the sine wave, the SINWAVE builtin uses the absolute value of the amplitude you specify. To produce meaningful wave results, choose a DT that's significantly smaller than the period of the wave. A DT equal to a quarter of the period gives triangle waves. A smaller DT gives results which better approximate a continuous curve.
+
+Signature:
+``sinwave(amplitude,period)``
+
+``amplitude`` : Amplitude of the sine wave
+``period`` : Period of the sine wave
+
 STARTTIME Function
 ------------------
 
@@ -364,6 +435,15 @@ Signature: ``step(height, timestep)``
 
 .. image:: output_30_0.png
 
+TAN Function
+------------
+
+TAN gives the tangent of radians, where radians is an angle in radians
+
+Signature:
+``tan(radians)``
+
+``radians`` can be any model element that returns a float
 
 TIME Function
 -------------
