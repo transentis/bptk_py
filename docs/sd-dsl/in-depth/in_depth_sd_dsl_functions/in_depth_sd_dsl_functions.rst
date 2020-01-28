@@ -14,10 +14,66 @@ importing the ``Model`` class.
     import numpy as np
     bptk=bptk()
 
+IF / THEN / ELSE / AND /NOT / OR
+-------------------------
+
+It is possible to write up if clauses. We even support NOT and AND / OR operators.
+
+Please note that these function names begin with a capital letter. This is because the actual words ``if, and, or`` etc. are protected in Python and cannot / should not be overwritten.
+
+An if clause requires 3 arguments: ``If ( <condition> , <then>, <else>)``
+
+``condition``: Must be a boolean expression, e.g. ``sd.time() > 1`` is true iff the simulation time is larger than 1
+``then`` : Any expression that returns a float value if the condition is true
+``else`` : Any expression that returns a float value if the condition is false
+
+A simple if clause may look like this:
+
+.. code:: ipython3
+    converter = model.converter("converter")
+    converter.equation = sd.If( sd.time()>5, 10, 5 )
+
+When we plot this converter, its value is 5 until ``t`` reaches 6:
+
+.. image:: output_simple_if.png
+
+You can add ``and`` / ``or`` / ``not`` conditions easily:
+
+Signature:
+``And(<condition1>, <condition2>)`` : Logical and between 2 conditions
+``Or(<condition1>, <condition2>)`` : Logical or between 2 conditions
+``Not(<condition>)`` : Logical not: True if condition is False
+
+Each condition within the operators has to return a boolean value. Nesting of the operators is easily possible,-
+
+.. code:: ipython3
+    converter.equation = sd.If( sd.And(sd.time()>5,sd.time()>10), 10, 5 ) # 5 (else case) as long as t <= 10, then 10
+    converter.equation = sd.If( sd.Or( sd.And(sd.time()>5,sd.time()>10), True), 10, 5 ) # Always 10 (then condition, because Or always evaluates to True)
+
+NAN, INF AND PI
+----------------
+
+The SD DSL also supports special numbers:
+
+``pi()``: Returns the number pi
+``nan()``: Returns the "not a number" value, useful for representing invalid inputs or undefined value ranges for a function
+``inf()``: Returns the "infinity" value to represent (positive or negative) infinite values.
+
+You can use these values in any equation.
+
+A simple example where we use pi inside a sine function:
+
+.. code:: ipython3
+    model = Model(starttime=1.0,stoptime=20,dt=0.25,name='pi')
+    flow = model.flow("pi")
+    flow.equation = sd.sin(  2* sd.pi() / sd.time()  )
+
+.. image:: pi.png
+
 ABS Function
 ------------
 
-The ABSfunction returns the absolute value of its input.
+The ABS function returns the absolute value of its input.
 
 Signature: ``abs(input)``
 
@@ -307,6 +363,44 @@ Setting ``interval`` to 0 yields a single pulse that doesn’t repeat
 
 .. image:: output_pulse.png
 
+RANDOM Function
+---------------
+
+This function returns a randomly distributed uniform number between a minimum and maximum value.
+
+Signature:
+``random(min, max)``
+
+``min`` and ``max`` can be any element that returns a float value
+
+A minimal example:
+
+.. code::ipython3
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='random')
+    flow = model.flow("randomnumber")
+    flow.equation = sd.random(0, 1)
+
+.. image:: random.png
+
+ROUND Function
+--------------
+
+This function rounds any input to a specified number of digits.
+
+Signature:
+``round(expression, digits)``
+
+``expression`` can be any float input by any expression.
+``digits`` must be an int value
+
+A minimal example that rounds random numbers between 0 and 2 to 0 digits (int number):
+
+.. code::ipython3
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='round')
+    flow = model.flow("randomnumber")
+    flow.equation = sd.round( sd.random(0, 2), 0 )
+.. image:: round.png
+
 
 SMOOTH Function
 ---------------
@@ -555,3 +649,21 @@ growth rate:
 
 .. image:: output_42_0.png
 
+UNIFORM Function
+---------------
+
+This function returns a randomly distributed uniform number between a minimum and maximum value. It is the same as the RANDOM function.
+
+Signature:
+``uniform(min, max)``
+
+``min`` and ``max`` can be any element that returns a float value
+
+A minimal example:
+
+.. code::ipython3
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='random')
+    flow = model.flow("randomnumber")
+    flow.equation = sd.uniform(0, 1)
+
+.. image:: random.png
