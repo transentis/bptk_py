@@ -462,6 +462,17 @@ Signature:
 ``amplitude`` : Amplitude of the sine wave
 ``period`` : Period of the sine wave
 
+
+SQRT Function
+-------------
+
+Computes the Square root of an input expression.
+
+Signature:
+``sqrt(expression)``
+
+``expression`` can be any element that returns a float value.
+
 STARTTIME Function
 ------------------
 
