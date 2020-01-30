@@ -15,7 +15,7 @@ importing the ``Model`` class.
     bptk=bptk()
 
 IF / THEN / ELSE / AND /NOT / OR
--------------------------
+--------------------------------
 
 It is possible to write up if clauses. We even support NOT and AND / OR operators.
 
@@ -30,6 +30,7 @@ An if clause requires 3 arguments: ``If ( <condition> , <then>, <else>)``
 A simple if clause may look like this:
 
 .. code:: ipython3
+
     converter = model.converter("converter")
     converter.equation = sd.If( sd.time()>5, 10, 5 )
 
@@ -47,6 +48,7 @@ Signature:
 Each condition within the operators has to return a boolean value. Nesting of the operators is easily possible,-
 
 .. code:: ipython3
+
     converter.equation = sd.If( sd.And(sd.time()>5,sd.time()>10), 10, 5 ) # 5 (else case) as long as t <= 10, then 10
     converter.equation = sd.If( sd.Or( sd.And(sd.time()>5,sd.time()>10), True), 10, 5 ) # Always 10 (then condition, because Or always evaluates to True)
 
@@ -97,7 +99,7 @@ Signature: ``abs(input)``
 .. image:: output_abs.png
 
 ARCCOS Function
-------------
+---------------
 
 The ARCCOS builtin gives the arccosine. The arccosine is the angle, in radians, whose cosine is the input expression.
 
@@ -661,7 +663,7 @@ growth rate:
 .. image:: output_42_0.png
 
 UNIFORM Function
----------------
+----------------
 
 This function returns a randomly distributed uniform number between a minimum and maximum value. It is the same as the RANDOM function.
 
