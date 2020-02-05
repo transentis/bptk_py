@@ -66,6 +66,7 @@ You can use these values in any equation.
 A simple example where we use pi inside a sine function:
 
 .. code:: ipython3
+
     model = Model(starttime=1.0,stoptime=20,dt=0.25,name='pi')
     flow = model.flow("pi")
     flow.equation = sd.sin(  2* sd.pi() / sd.time()  )
