@@ -19,11 +19,24 @@ To make sure all requirements are sufficient and all tests pass in a fresh Pytho
 3. Upload to test.pypi.org (Login required)
 4. Install into a venv from test.pypi.org and run tests
 5. Upload to official PyPi (Login required)
-6. Create docker image with current version and tag the latest version
 
-## How to start
+Just execute ``make publish_bptk`` inthe root directory of the repo.
 
-Just execute [publish.sh](publish.sh) in this directory. During execution you will be asked for login data for the different services.
+## Publish to Docker
+
+For building the docker container, we are now providing a new Python script. It uses Python's lowlevel API for Docker. 
+Hence, for building, tagging and publishing to docker, run ``make publish_docker`` in the root directory of the repo
+
+## Build and Publish documentation
+
+To build the documentation, run ``make html`` in the root directory of the repository. 
+A subsequent ```make publish_docu``` publishes it to S3
+
+
+```
+make html
+make publish_docu
+```
 
 
 

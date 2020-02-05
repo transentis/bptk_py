@@ -13,6 +13,15 @@ help:
 
 .PHONY: help Makefile
 
+publish_bptk:
+	cd scripts && ./publish.sh
+
+publish_docker:
+	python3 ./build_docker.py
+
+publish_docu:
+	cd scripts && ./push_docs_s3.sh
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
