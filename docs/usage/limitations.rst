@@ -19,9 +19,9 @@ AND            x                    And
 ARCCOS         x                    arccos
 ARCSIN         x                    arcsin
 ARCTAN         x                    arctan
-BETA           x
-BINOMIAL       x
-COMBINATIONS   x
+BETA           x                    beta
+BINOMIAL       x                    binomial
+COMBINATIONS   x                    combinations
 COS            x                    cos
 CGROWTH        x
 CLOCKTIME      x
@@ -35,14 +35,14 @@ DERIVN         x
 DT             x                    dt
 ELSE           x                    If
 EXP            x                    exp
-EXPRND         x
+EXPRND         x                    exprnd
 ENDVAL         x
-FACTORIAL      x
+FACTORIAL      x                    factorial
 FORCST         x
 FV             x
-GAMMA          x
-GAMMALN        x
-GEOMETRIC      x
+GAMMA          x                    gamma
+GAMMALN        x                    gammaln
+GEOMETRIC      x                    geometric
 HISTORY        x
 IF             x                    If
 INF            x                    Inf
@@ -52,8 +52,8 @@ INT            x
 INVNORM        x
 IRR            x
 LOG10          x
-LOGISTIC       x
-LOGNORMAL      x
+LOGISTIC       x                    logistic
+LOGNORMAL      x                    lognormal
 LOOKUP         x                    lookup
 LOOKUPAREA     x
 LOOKUPINV      x
@@ -62,7 +62,7 @@ MAX            x                    max
 MEAN           x
 MIN            x                    min
 MOD            x                    % (simply use the Python mod operator)
-MONTECARLO     x
+MONTECARLO     x                    montecarlo
 NAN            x                    nan
 NEGBINOMIAL    x
 NORMAL         x
@@ -70,21 +70,21 @@ NORMALCDF      x
 NOT            x                    Not
 NPV            x
 OR             x                    Or
-PARETO         x
+PARETO         x                    pareto
 PERCENT        x
-PERMUTATIONS   x
+PERMUTATIONS   x                    permutations
 PI             x                    pi
 PMT            x
-POISSON        x
+POISSON        x                    poisson
 PREVIOUS       x
 PULSE          x                    pulse
 PV             x
 PROD           x
-RANDOM         x
+RANDOM         x                    random
 RANK           x
 RAMP           x
 REWORK
-ROUND          x
+ROUND          x                    round
 ROOTN          x
 RUNCOUNT
 SAFEDIV        x
@@ -106,7 +106,7 @@ TAN            x                    tan
 THEN           x                    if
 TIME           x                    time
 TREND          x                    trend
-TRIANGULAR     x
+TRIANGULAR     x                    triangular
 UNIFORM        x                    uniform
-WEIBULL        x
+WEIBULL        x                    weibull
 =============  ===================  =================

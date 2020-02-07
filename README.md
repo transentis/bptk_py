@@ -31,7 +31,7 @@ For questions regarding installation, usage and other help please contact us at:
 
 ### 1.1.1 
 * The SD DSL now differentiates flows and biflows. Simply add a biflow using ```biflow = model.biflow(<name>)```.
-* The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT, ROUND and all trigonometric builtins you know from XMILE. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
+* The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT, ROUND and all trigonometric and statistical builtins you know from XMILE. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
     * RANDOM: ``converter.equation = sd.Random(<min>, <max>)`` draws a uniformly distributed float random number between <min> and <max>
     * ROUND: ``converter.equation = sd.Round(sd.random(0,1),2))`` rounds a random number between 0 and 1 to a 2 digit float
     * IF: ```converter.equation = sd.If( <condition>, <then> , <else> ) ``` corresponds to ```IF <condition> THEN <then> ELSE <else>```. Each term inside the IF clause can be a SD term again. Example for a valid If clause: ``equation = sd.If(sd.time()>10,sd.random(1,2), 100)`` 
@@ -41,6 +41,7 @@ For questions regarding installation, usage and other help please contact us at:
     * SQRT: ``sd.sqrt(<value of function>)`` computes the square root
     * SIN / TAN / COS: ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians) and of course we also support ARCCOS, ARCSIN, ARCTAN with the same syntax
     * SINWAVE / COSWAVE: ``sd.sinwave(amplitude,period)`` / ``sd.coswave(amplitude,period)`` to generate sine / cosine waves with given amplitude and period
+    * More documentation and how to use the __statistical (random numbers from various distributions) and trigonometric operators__ can be found in our [online documentation](https://bptk.transentis-labs.com/en/latest/docs/sd-dsl/in-depth/in_depth_sd_dsl_functions/in_depth_sd_dsl_functions.html)
 * We fixed a bug that caused BPTK to crash when an XMILE model was updated while BPTK was monitoring it
 * We fixed SINWAVE in the XMILE transpiler and added support for COSWAVE
 

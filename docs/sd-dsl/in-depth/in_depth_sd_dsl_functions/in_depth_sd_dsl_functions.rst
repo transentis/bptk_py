@@ -1,10 +1,9 @@
-
 SD DSL Functions
 ================
 
-This document illustrates how to use the operators for the SD DSL. To use
-the operators, you need to import the ``sd_functions``, in addition to
-importing the ``Model`` class.
+This document illustrates how to use the operators for the SD DSL. To
+use the operators, you need to import the ``sd_functions``, in addition
+to importing the ``Model`` class.
 
 .. code:: ipython3
 
@@ -17,66 +16,62 @@ importing the ``Model`` class.
 IF / THEN / ELSE / AND /NOT / OR
 --------------------------------
 
-It is possible to write up if clauses. We even support NOT and AND / OR operators.
+It is possible to write up if clauses. We even support NOT and AND / OR
+operators.
 
-Please note that these function names begin with a capital letter. This is because the actual words ``if, and, or`` etc. are protected in Python and cannot / should not be overwritten.
+Please note that these function names begin with a capital letter. This
+is because the actual words ``if, and, or`` etc. are protected in Python
+and cannot / should not be overwritten.
 
-An if clause requires 3 arguments: ``If ( <condition> , <then>, <else>)``
+An if clause requires 3 arguments:
+``If ( <condition> , <then>, <else>)``
 
-``condition``: Must be a boolean expression, e.g. ``sd.time() > 1`` is true iff the simulation time is larger than 1
-``then`` : Any expression that returns a float value if the condition is true
-``else`` : Any expression that returns a float value if the condition is false
+``condition``: Must be a boolean expression, e.g. ``sd.time() > 1`` is
+true iff the simulation time is larger than 1 ``then`` : Any expression
+that returns a float value if the condition is true ``else`` : Any
+expression that returns a float value if the condition is false
 
 A simple if clause may look like this:
 
 .. code:: ipython3
 
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.1,name='if')
     converter = model.converter("converter")
     converter.equation = sd.If( sd.time()>5, 10, 5 )
+    converter.plot()
 
-When we plot this converter, its value is 5 until ``t`` reaches 6:
 
-.. image:: output_simple_if.png
 
-You can add ``and`` / ``or`` / ``not`` conditions easily:
+.. image:: in_depth_sd_dsl_functions_4_0.png
 
-Signature:
-``And(<condition1>, <condition2>)`` : Logical and between 2 conditions
-``Or(<condition1>, <condition2>)`` : Logical or between 2 conditions
-``Not(<condition>)`` : Logical not: True if condition is False
 
-Each condition within the operators has to return a boolean value. Nesting of the operators is easily possible,-
+You see that its value is 5 until ``t`` reaches 6.
+
+You can also add ``and`` / ``or`` / ``not`` conditions easily:
+
+Signature: ``And(<condition1>, <condition2>)`` : Logical and between 2
+conditions ``Or(<condition1>, <condition2>)`` : Logical or between 2
+conditions ``Not(<condition>)`` : Logical not: True if condition is
+False
+
+Each condition within the operators has to return a boolean value.
+Nesting of the operators is easily possible!
 
 .. code:: ipython3
 
     converter.equation = sd.If( sd.And(sd.time()>5,sd.time()>10), 10, 5 ) # 5 (else case) as long as t <= 10, then 10
     converter.equation = sd.If( sd.Or( sd.And(sd.time()>5,sd.time()>10), True), 10, 5 ) # Always 10 (then condition, because Or always evaluates to True)
+    converter.plot()
 
-NAN, INF AND PI
-----------------
 
-The SD DSL also supports special numbers:
 
-``pi()``: Returns the number pi
-``nan()``: Returns the "not a number" value, useful for representing invalid inputs or undefined value ranges for a function
-``inf()``: Returns the "infinity" value to represent (positive or negative) infinite values.
+.. image:: in_depth_sd_dsl_functions_6_0.png
 
-You can use these values in any equation.
-
-A simple example where we use pi inside a sine function:
-
-.. code:: ipython3
-
-    model = Model(starttime=1.0,stoptime=20,dt=0.25,name='pi')
-    flow = model.flow("pi")
-    flow.equation = sd.sin(  2* sd.pi() / sd.time()  )
-
-.. image:: pi.png
 
 ABS Function
 ------------
 
-The ABS function returns the absolute value of its input.
+The ``ABS``\ function returns the absolute value of its input.
 
 Signature: ``abs(input)``
 
@@ -85,76 +80,29 @@ Signature: ``abs(input)``
 .. code:: ipython3
 
     model = Model(starttime=0.0,stoptime=10.0,dt=0.1,name='abs')
-
+    
     input_converter = model.converter("input_converter")
-
+    
     input_converter.equation=sd.time()-5
-
+    
     abs_converter = model.converter("abs_converter")
-
+    
     abs_converter.equation = sd.abs(input_converter)
-
+    
     bptk.register_model(model)
     bptk.plot_scenarios(scenario_managers=["smAbs"],scenarios=["base"],equations=["input_converter","abs_converter"])
 
-.. image:: output_abs.png
 
-ARCCOS Function
----------------
 
-The ARCCOS builtin gives the arccosine. The arccosine is the angle, in radians, whose cosine is the input expression.
+.. image:: in_depth_sd_dsl_functions_9_0.png
 
-Signature:
-``arccos(expression)``
-
-``expression`` must be a float or a model element that returns a float
-
-ARCSIN Function
----------------
-
-ARCSIN gives the arcsine. The arcsine is the angle, in radians, whose sine is expression.
-
-Signature:
-``arcsin(expression)``
-
-``expression`` must be a float or a model element that returns a float
-
-ARCTAN Function
----------------
-
-ARCTAN gives the arctangent. The arctangent is the angle, in radians, whose tangent is input expression.
-Signature:
-``arctan(expression)``
-
-``expression`` must be a float or a model element that returns a float
-
-COS Function
-------------
-
-COS  gives the cosine of radians, where radians is an angle in radians.
-
-Signature:
-``cos(radians)``
-
-``radians`` must be a float or a model element that returns a float
-
-COSWAVE Function
-----------------
-
-The COSWAVE builtin returns a time-dependent cosine wave, with the specified amplitude and period. To generate the cosine wave, the COSWAVE builtin uses the absolute value of the amplitude you specify. To produce meaningful wave results, choose a DT that's significantly smaller than the period of the wave. A DT equal to a quarter of the period gives triangle waves. A smaller DT gives results which better approximate a continuous curve.
-
-Signature:
-``coswave(amplitude,period)``
-
-``amplitude`` : Amplitude of the cosine wave
-``period`` : Period of the cosine wave
 
 DELAY Function
 --------------
 
 The DELAY function returns a delayed value of input, using a fixed lag
 time of delay duration, and an optional initial value initial for the
-delay. If you don't specify an initial value initial, DELAY assumes the
+delay. If you don’t specify an initial value initial, DELAY assumes the
 value to be the initial value of input. If you specify delay duration as
 a variable, the DELAY function uses the initial value for its fixed lag
 time
@@ -182,7 +130,8 @@ Signature:
 
 
 
-.. image:: output_5_0.png
+.. image:: in_depth_sd_dsl_functions_12_0.png
+
 
 DT Function
 -----------
@@ -200,8 +149,7 @@ Signature: ``dt(model)``
 
 
 
-.. image:: output_dt.png
-
+.. image:: in_depth_sd_dsl_functions_15_0.png
 
 
 EXP Function
@@ -229,7 +177,7 @@ Signature: ``exp(element)``
 
 
 
-.. image:: output_8_0.png
+.. image:: in_depth_sd_dsl_functions_18_0.png
 
 
 MAX Function
@@ -259,7 +207,7 @@ Signature: ``max(element, element)``
 
 
 
-.. image:: output_14_0.png
+.. image:: in_depth_sd_dsl_functions_24_0.png
 
 
 .. code:: ipython3
@@ -276,7 +224,7 @@ Signature: ``max(element, element)``
 
 
 
-.. image:: output_17_0.png
+.. image:: in_depth_sd_dsl_functions_27_0.png
 
 
 .. code:: ipython3
@@ -294,7 +242,7 @@ Signature: ``max(element, element)``
 
 
 
-.. image:: output_20_0.png
+.. image:: in_depth_sd_dsl_functions_30_0.png
 
 
 MIN Function
@@ -327,7 +275,8 @@ Signature: ``min(element, element)``
 
 
 
-.. image:: output_23_0.png
+.. image:: in_depth_sd_dsl_functions_33_0.png
+
 
 PULSE Function
 --------------
@@ -350,59 +299,21 @@ Setting ``interval`` to 0 yields a single pulse that doesn’t repeat
 .. code:: ipython3
 
     model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='pulse')
-
+    
     stock = model.stock("stock")
     stock.initial_value=0.0
-
+    
     flow = model.flow("flow")
     flow.equation=sd.pulse(model,10.0,2.0,2.0)
-
+    
     stock.equation = flow
-
+    
     bptk.register_model(model)
     bptk.plot_scenarios(scenario_managers=["smPulse"],scenarios=["base"],equations=["stock","flow"])
 
 
 
-.. image:: output_pulse.png
-
-RANDOM Function
----------------
-
-This function returns a randomly distributed uniform number between a minimum and maximum value.
-
-Signature:
-``random(min, max)``
-
-``min`` and ``max`` can be any element that returns a float value
-
-A minimal example:
-
-.. code::ipython3
-    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='random')
-    flow = model.flow("randomnumber")
-    flow.equation = sd.random(0, 1)
-
-.. image:: random.png
-
-ROUND Function
---------------
-
-This function rounds any input to a specified number of digits.
-
-Signature:
-``round(expression, digits)``
-
-``expression`` can be any float input by any expression.
-``digits`` must be an int value
-
-A minimal example that rounds random numbers between 0 and 2 to 0 digits (int number):
-
-.. code::ipython3
-    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='round')
-    flow = model.flow("randomnumber")
-    flow.equation = sd.round( sd.random(0, 2), 0 )
-.. image:: round.png
+.. image:: in_depth_sd_dsl_functions_36_0.png
 
 
 SMOOTH Function
@@ -442,39 +353,8 @@ structure and equations:
 
 
 
-.. image:: output_26_0.png
+.. image:: in_depth_sd_dsl_functions_39_0.png
 
-SIN Function
-------------
-
-SIN gives the sine of radians, where radians is an angle in radians.
-
-Signature:
-``sin(radians)``
-
-``radians`` can be any model element that returns a float
-
-SINWAVE Function
-----------------
-
-SINWAVE returns a time-dependent sine wave, with the specified amplitude and period. To generate the sine wave, the SINWAVE builtin uses the absolute value of the amplitude you specify. To produce meaningful wave results, choose a DT that's significantly smaller than the period of the wave. A DT equal to a quarter of the period gives triangle waves. A smaller DT gives results which better approximate a continuous curve.
-
-Signature:
-``sinwave(amplitude,period)``
-
-``amplitude`` : Amplitude of the sine wave
-``period`` : Period of the sine wave
-
-
-SQRT Function
--------------
-
-Computes the Square root of an input expression.
-
-Signature:
-``sqrt(expression)``
-
-``expression`` can be any element that returns a float value.
 
 STARTTIME Function
 ------------------
@@ -492,7 +372,7 @@ Signature: ``starttime(model)``
 
 
 
-.. image:: output_starttime.png
+.. image:: in_depth_sd_dsl_functions_42_0.png
 
 
 STOPTIME Function
@@ -511,7 +391,7 @@ Signature: ``stoptime(model)``
 
 
 
-.. image:: output_stoptime.png
+.. image:: in_depth_sd_dsl_functions_45_0.png
 
 
 STEP Function
@@ -541,17 +421,8 @@ Signature: ``step(height, timestep)``
 
 
 
-.. image:: output_30_0.png
+.. image:: in_depth_sd_dsl_functions_49_0.png
 
-TAN Function
-------------
-
-TAN gives the tangent of radians, where radians is an angle in radians
-
-Signature:
-``tan(radians)``
-
-``radians`` can be any model element that returns a float
 
 TIME Function
 -------------
@@ -578,7 +449,7 @@ Signature: ``time()``
 
 
 
-.. image:: output_33_0.png
+.. image:: in_depth_sd_dsl_functions_52_0.png
 
 
 TREND Function
@@ -638,7 +509,7 @@ Here is a plot of the growth rate, which is constant:
 
 
 
-.. image:: output_38_0.png
+.. image:: in_depth_sd_dsl_functions_57_0.png
 
 
 This gives an input function which doubles in value on every timestep:
@@ -649,7 +520,7 @@ This gives an input function which doubles in value on every timestep:
 
 
 
-.. image:: output_40_0.png
+.. image:: in_depth_sd_dsl_functions_59_0.png
 
 
 As expexted, the plot of the trend function converges to the input
@@ -661,23 +532,656 @@ growth rate:
 
 
 
-.. image:: output_42_0.png
+.. image:: in_depth_sd_dsl_functions_61_0.png
 
-UNIFORM Function
+
+ROUND Function
+--------------
+
+This function rounds any input to a specified number of digits.
+
+Signature: ``round(expression, digits)``
+
+``expression`` can be any float input by any expression. ``digits`` must
+be an int value
+
+A minimal example that rounds random numbers between 0 and 2 to 0 digits
+(int number):
+
+.. code:: ipython3
+
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='round')
+    flow = model.flow("round")
+    flow.equation = sd.round( sd.random(0, 2), 0 )
+    flow.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_63_0.png
+
+
+Computes the Square root of an input expression.
+
+Signature: ``sqrt(expression)``
+
+``expression`` can be any element that returns a float value.
+
+Simple Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=1)
+    f = m.flow(name="sqrt")
+    
+    val = sd.time() 
+    
+    f.equation = sd.sqrt(val)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_65_0.png
+
+
+NAN / INF / PI
+--------------
+
+``sd.nan()`` returns a NAN value, ``sd.Inf()`` gives you the infinity
+value, ``sd.pi()`` returns the number pi.
+
+SIN / TAN / COS and ARCCOS / ARCSIN / ARCTAN
+--------------------------------------------
+
+The SD DSl supports all trigonometric that you are also used to from
+other SD simulation / modelling tools
+
+Use ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent
+of x (radians) and ``sd.arcsin(x) / sd.arctan(x) / sd.arccos(x)`` for
+the respective arctan / arccos and arcsine operators.
+
+Let’s easily plot sin / cos and tan for the current simulation time:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    sin = m.flow(name="sin")
+    tan = m.flow(name="tan")
+    cos = m.flow(name="cos")
+    x = sd.time() 
+    
+    sin.equation = sd.sin(x)
+    tan.equation = sd.tan(x)
+    cos.equation = sd.cos(x)
+    
+    sin.plot()
+    tan.plot()
+    cos.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_68_0.png
+
+
+
+.. image:: in_depth_sd_dsl_functions_68_1.png
+
+
+
+.. image:: in_depth_sd_dsl_functions_68_2.png
+
+
+SINWAVE and COSWAVE function
+----------------------------
+
+SINWAVE returns a time-dependent sine wave, with the specified amplitude
+and period. To generate the sine wave, the SINWAVE builtin uses the
+absolute value of the amplitude you specify. To produce meaningful wave
+results, choose a DT that’s significantly smaller than the period of the
+wave. A DT equal to a quarter of the period gives triangle waves. A
+smaller DT gives results which better approximate a continuous curve.
+
+COSWAVE generates a time-dependent **cosine** wave. It uses the same
+arguments
+
+Signature: ``sinwave(amplitude,period)``
+
+``amplitude`` : Amplitude of the sine wave ``period`` : Period of the
+sine wave
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="sinwave")
+    g = m.flow("coswave")
+    amplitude = 10
+    period = 5
+    
+    f.equation = sd.sinwave(amplitude, period)
+    g.equation = sd.coswave(amplitude, period)
+    f.plot()
+    g.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_70_0.png
+
+
+
+.. image:: in_depth_sd_dsl_functions_70_1.png
+
+
+BETA Function
+-------------
+
+The BETA operator generates a series of random numbers that conforms to
+a beta distribution defined by two shape arguments, ``alpha`` and
+``beta``.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="beta")
+    alpha = 1
+    beta = 2
+    f.equation = sd.beta(alpha, beta)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_72_0.png
+
+
+BINOMIAL
+--------
+
+This operator generates a series of random numbers from a discrete
+probability distribution of the number of successes in a sequence of
+trials with a given success probability. The success probability should
+be a number between 0 and 1.
+
+Arguments are ``number of trials (n)`` and ``success probability (p)``.
+
+A quick example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="binomial")
+    n = 100
+    p = 0.1
+    f.equation = sd.binomial(n, p)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_74_0.png
+
+
+COMBINATIONS
+------------
+
+The COMBINATIONS operator calculates the number of r-element subsets (or
+r-combinations) of an n-element set.
+
+Arguments are ``n`` and ``r``.
+
+Example with ``time`` as ``n``:
+
+.. code:: ipython3
+
+    m= Model(starttime=3,stoptime=10,dt=1)
+    f = m.flow(name="combinations")
+    n = sd.time()
+    r = 1
+    f.equation = sd.combinations(n,r)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_76_0.png
+
+
+EXPRND Function
+---------------
+
+This operator generates a series of exponentially distributed random
+numbers with a given ``mean``.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="exprnd")
+    
+    mean = sd.time()
+    f.equation = sd.exprnd(mean)
+    f.plot()
+
+
+
+
+.. image:: in_depth_sd_dsl_functions_78_0.png
+
+
+FACTORIAL Function
+------------------
+
+The FACTORIAL function calculates the factorial of the single argument
+``n`` (traditionally noted as n!). ``n`` must be an integer value,
+decimal values are not allowed.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="factorial")
+    
+    n = 5
+    
+    f.equation = sd.factorial(n)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_80_0.png
+
+
+GAMMA Function
+--------------
+
+The GAMMA builtin generates a series of random numbers that conforms to
+a gamma distribution with the specified ``shape`` and ``scale``. If
+unspecified, ``scale`` uses the value 1.0
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="gamma")
+    
+    shape = 10
+    scale = sd.time()
+    
+    f.equation = sd.gamma(shape, scale)
+    f.plot()
+
+
+
+
+.. image:: in_depth_sd_dsl_functions_82_0.png
+
+
+GAMMALN Function
 ----------------
 
-This function returns a randomly distributed uniform number between a minimum and maximum value. It is the same as the RANDOM function.
+The GAMMALN operator returns the natural log of the GAMMA function,
+given input n. The GAMMA function is a continuous version of the
+FACTORIAL builtin, with GAMMA(n) the same as FACTORIAL(n-1).
 
-Signature:
-``uniform(min, max)``
+Only argument is ``n``
 
-``min`` and ``max`` can be any element that returns a float value
+.. code:: ipython3
 
-A minimal example:
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="gammaln")
+    
+    n = sd.time()
+    f.equation = sd.gammaln(n)
+    f.plot()
 
-.. code::ipython3
-    model = Model(starttime=0.0,stoptime=10.0,dt=0.25,name='random')
-    flow = model.flow("randomnumber")
-    flow.equation = sd.uniform(0, 1)
 
-.. image:: random.png
+
+.. image:: in_depth_sd_dsl_functions_84_0.png
+
+
+GEOMETRIC Function
+------------------
+
+The GEOMETRIC operator generates a series of random numbers from a
+discrete probability distribution of the number of trials before the
+first success with a given ``success probability (p)``.
+
+``p`` is the only parameter. It should be any value between 0 and 1.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="geometric")
+    
+    p = 0.1
+    
+    f.equation = sd.geometric(p)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_86_0.png
+
+
+INVNORM Function
+----------------
+
+The INVNORM operator calculates the inverse of the NORMALCDF function
+(see below).
+
+Parameter is the ``probability p`` (any value between 0 and 1).
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=-0.5,stoptime=1,dt=0.1)
+    f = m.flow(name="invnorm")
+    
+    p = sd.time()
+    
+    f.equation = sd.invnorm(p)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_88_0.png
+
+
+LOGISTIC Function
+-----------------
+
+The LOGISTIC operator generates a series of random numbers that conforms
+to a logistic distribution with a specified ``mean`` and ``scale``.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=-1,stoptime=10,dt=0.1)
+    f = m.flow(name="logistic")
+    
+    mean = 0
+    scale = 1
+    
+    f.equation = sd.logistic(mean, scale)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_90_0.png
+
+
+LOGNORMAL Function
+------------------
+
+The LOGNORMAL operator generates a series of random numbers that conform
+to a Log-Normal distribution (that is, the log of the independent
+variable follows a normal distribution) with a specified mean and stddev
+(standard deviation). LOGNORMAL samples a new random number in each
+iteration of a simulation.
+
+Arguments are ``mean`` and ``standard deviation``
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="lognormal")
+    
+    mean = 0
+    stdev = 1
+    f.equation = sd.lognormal(mean, stdev)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_92_0.png
+
+
+MONTECARLO Function
+-------------------
+
+The MONTECARLO operator randomly generates a series of zeros and ones
+from a Bernoulli distribution based on the probability you’ve provided.
+The probability is the percentage probability of an event happening per
+unit of simulation time. The probability value can be either a variable
+or a constant, but should evaluate to a number between 0 and 100.
+
+MONTECARLO is equivalent to the following logic:
+
+IF (RANDOM(0,100,) < probability*DT THEN 1 ELSE 0
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=0.1)
+    f = m.flow(name="montecarlo")
+    
+    probability = 50
+    f.equation = sd.montecarlo(probability)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_94_0.png
+
+
+NORMAL Function
+---------------
+
+The NORMAL operator generates a series of normally distributed random
+numbers with a specified mean and stddev (standard deviation).
+
+Arguments are ``mean`` and the ``standard deviation`` of the underlying
+normal distribution.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=0,stoptime=10,dt=1)
+    f = m.flow(name="normal")
+    
+    mean = 0
+    stdev = 1
+    f.equation = sd.normal(mean, stdev)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_96_0.png
+
+
+NORMALCDF Function
+------------------
+
+The NORMALCDF operator calculates the cumulative Normal distribution
+function between the specified z-scores, or, when the mean and stddev
+(standard deviation) are given, between two data values.
+
+Arguments are the ``left`` and ``right`` boundaries and optionally
+``mean`` and ``stddev``. If not given, mean will be set to 0, stddev to
+1.
+
+A really simple example:
+
+.. code:: ipython3
+
+    m= Model(starttime=-4,stoptime=4,dt=0.1)
+    f = m.flow(name="normalCDF")
+    left = -4
+    right = sd.time()
+    mean = 0
+    stddev = 1
+    f.equation = sd.normalcdf(left, right, mean, stddev)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_98_0.png
+
+
+PARETO Function
+---------------
+
+The PARETO operator generates a series of random numbers that conforms
+to a distribution whose log is exponentially distributed with a
+specified shape and scale
+
+Arguments are ``shape`` and ``scale``.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="pareto")
+    shape = 1
+    scale = 1
+    
+    f.equation = sd.pareto(shape, scale)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_100_0.png
+
+
+PERMUTATIONS
+------------
+
+The PERMUTATIONS operator calculates the number of permutations of an
+n-element set with r-element subsets.
+
+Arguments are ``n`` and ``r``. Note that both numbers should be integer
+values.
+
+Example:
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="permutations")
+    n = 7.0
+    r = 3
+    
+    f.equation = sd.permutations(n, r)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_102_0.png
+
+
+POISSON Function
+----------------
+
+The POISSON operator generates a series of random numbers that conform
+to a Poisson distribution. The mean value of the output is mu \* DT.
+
+Only argument is ``mu``, a float or integer number or any operator that
+returns a number.
+
+Example (with an increasing ``mu`` expressed as the current simulation
+time):
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="poisson")
+    mu = sd.time()
+    
+    f.equation = sd.poisson(mu)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_104_0.png
+
+
+RANDOM / UNIFORM Function
+-------------------------
+
+RANDOM and UNIFORM both draw a random number between a minimum and
+maximum value that conforms to a uniform distribution. For compatibility
+to modelling practices, we included both into the SD DSL (just as the
+Stella Architect builtins).
+
+Arguments are the ``min_value`` and ``max_value`` between which the
+random number should lie. If not given, the random number is between 0
+and 1.
+
+Simple example where the number always lies between DT and the current
+simulation time:
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="uniform / random")
+    min_value = 0.1
+    max_value = sd.time()
+    
+    f.equation = sd.random(min_value, max_value)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_106_0.png
+
+
+TRIANGULAR Function
+-------------------
+
+The TRIANGULAR operator generates a series of random numbers that
+conforms to a triangular distribution with a specified ``lower bound``,
+``mode``, and ``upper bound``.
+
+A simple example with the current simulation time as upper bound:
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="triangular")
+    lower_bound = 0
+    mode = 1
+    upper_bound = sd.time()
+    
+    f.equation = sd.triangular(lower_bound, mode, upper_bound)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_108_0.png
+
+
+WEIBULL Function
+----------------
+
+The WEIBULL operator generates a series of random numbers that conforms
+to a Weibull distribution with the specified ``shape`` and ``scale``.
+
+Let’s create a quick example with ``scale`` set to the current
+simulation time:
+
+.. code:: ipython3
+
+    m= Model(starttime=1,stoptime=10,dt=0.1)
+    f = m.flow(name="weibull")
+    shape = 1
+    scale = sd.time()
+    
+    f.equation = sd.weibull(shape, scale)
+    f.plot()
+
+
+
+.. image:: in_depth_sd_dsl_functions_110_0.png
+
+

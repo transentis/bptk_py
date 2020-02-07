@@ -14,11 +14,12 @@ import random
 
 import ipywidgets as widgets
 import numpy as np
+import math
 from IPython.display import display
 from scipy.interpolate import interp1d
 
-from .event import Event, DelayedEvent
 from .agent import Agent
+from .event import Event
 from ..logger import log
 from ..systemdynamics import Constant, Converter, Flow, Biflow, NaryOperator, Stock
 

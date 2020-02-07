@@ -17,7 +17,10 @@ import statistics
 import pandas as pd
 import numpy as np
 import random
-
+import math
+import scipy
+import scipy.stats
+from scipy.stats import norm
 
 import matplotlib as plt
 
@@ -135,6 +138,9 @@ class Element:
 
     def __neg__(self):
         return NumericalMultiplicationOperator(self, (-1))
+
+    def __pow__(self, power, modulo=None):
+        return PowerOperator(self,power)
 
     def update_plot_formats(self, ax):
         """

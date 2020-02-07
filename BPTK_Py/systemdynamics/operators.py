@@ -111,6 +111,20 @@ class UnaryOperator(Operator):
         else:
             return self.element.term(time)
 
+
+class PowerOperator(Operator):
+    def __init__(self, element, power):
+        self.element = element
+        self.power = power
+
+    def term(self, time="t"):
+
+        element = extractTerm(self.element, time)
+        power = extractTerm(self.power, time)
+
+        return "({} ** {} )".format(element, power)
+
+
 class ComparisonOperator(BinaryOperator):
     """
     ComparisonOperators ("<",">",">=","<=","==", "!=")
@@ -175,6 +189,8 @@ class NumericalMultiplicationOperator(BinaryOperator):
 
     def term(self, time="t"):
         return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
+
+
 
 
 class MultiplicationOperator(BinaryOperator):
@@ -425,54 +441,54 @@ class Not(Function):
 
         return "( not ({}) )".format(condition)
 
-class nan(Function):
+class Nan(Function):
     def __init__(self):
         pass
     def term(self,time="t"): return "np.nan"
 
-class sqrt(Function):
+class Sqrt(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( ({})**(1/2) )".format(extractTerm(self.x,time))
 
-class sin(Function):
+class Sin(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.sin({}) )".format(extractTerm(self.x,time))
 
-class tan(Function):
+class Tan(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.tan({}) )".format(extractTerm(self.x,time))
 
-class cos(Function):
+class Cos(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.cos({}) )".format(extractTerm(self.x,time))
 
-class arccos(Function):
+class Arccos(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.arccos({}) )".format(extractTerm(self.x,time))
 
-class arctan(Function):
+class Arctan(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.arctan({}) )".format(extractTerm(self.x,time))
 
-class arcsin(Function):
+class Arcsin(Function):
     def __init__(self,x):
         self.x = x
     def term(self,time="t"): return "( np.arcsin({}) )".format(extractTerm(self.x,time))
 
-class sinwave(Function):
+class Sinwave(Function):
     def __init__(self,amplitude,period):
         self.amplitude = amplitude
         self.period = period
 
     def term(self, time="t"): return "( np.sin(2*np.pi / {} * (t-model.starttime) ) * {} )".format(extractTerm(self.period,time),extractTerm(self.amplitude,time))
 
-class coswave(Function):
+class Coswave(Function):
     def __init__(self,amplitude,period):
         self.amplitude = amplitude
         self.period = period
@@ -482,5 +498,149 @@ class coswave(Function):
 class Inf(Function):
     def term(self, time="t"): return "np.inf"
 
-class pi(Function):
+class Pi(Function):
     def term(self, time="t"): return "np.pi"
+
+class Beta(Function):
+    def __init__(self,a,b):
+        self.a = a
+        self.b = b
+
+    def term(self, time="t"): return  'np.random.beta({},{})'.format(extractTerm(self.a, time),extractTerm(self.b, time))
+
+class Binomial(Function):
+    def __init__(self,n,p):
+        self.n = n
+        self.p = p
+
+    def term(self, time="t"): return 'np.random.binomial({},min(1, {}))'.format(extractTerm(self.n,time),extractTerm(self.p, time))
+
+class Combinations(Function):
+    def __init__(self,n,r):
+        self.n = n
+        self.r = r
+
+    def term(self, time="t"):
+        n = extractTerm(self.n, time)
+        r = extractTerm(self.r, time)
+
+        return '(math.factorial({}) / (math.factorial({}) * math.factorial( {}-{})))'.format(n,r,n,r)
+
+class Exprnd(Function):
+    def __init__(self,l):
+        self.l = l
+
+    def term(self, time="t"): return 'np.random.exponential({})'.format(extractTerm(self.l, time))
+
+class Factorial(Function):
+    def __init__(self,n):
+        self.n = n
+
+    def term(self, time="t"): return "math.factorial({})".format(extractTerm(self.n, time))
+
+class Gamma(Function):
+    def __init__(self,shape, scale=1):
+        self.shape = shape
+        self.scale = scale
+
+    def term(self, time="t"): return 'np.random.gamma({},{})'.format(extractTerm(self.shape, time), extractTerm(self.scale, time))
+
+class GammaLN(Function):
+    def __init__(self, n):
+        self.n = n
+
+    def term(self, time="t"): return "( scipy.special.gammaln({}) )".format(extractTerm(self.n, time))
+
+class Geometric(Function):
+    def __init__(self, p):
+        self.p = p
+
+    def term(self, time="t"): return '(1 if ( {}<=0 or {}>1 ) else (np.random.geometric(max(0, min(1,{})))))'.format(extractTerm(self.p, time),extractTerm(self.p, time),extractTerm(self.p, time))
+
+class Invnorm(Function):
+    def __init__(self,p, mean=None, stddev=None):
+        self.p = p
+        self.mean = mean
+        self.stddev = stddev
+
+    def term(self, time="t"):
+        if self.mean and self.stddev:
+            return "(norm.ppf({},{},{} ))".format(extractTerm(self.p,time), extractTerm(self.mean,time),extractTerm(self.stddev, time))
+        if self.mean:
+            return "(norm.ppf({},{}) )".format(extractTerm(self.p, time), extractTerm(self.mean, time))
+        return "(norm.ppf({}) )".format(extractTerm(self.p, time))
+
+class Logistic(Function):
+    def __init__(self, mean, scale):
+        self.mean = mean
+        self.scale = scale
+
+    def term(self, time="t"): return '(np.random.logistic({}, {}) )'.format(extractTerm(self.mean, time), extractTerm(self.scale, time))
+
+class Lognormal(Function):
+    def __init__(self, mean, stddev):
+        self.stddev = stddev
+        self.mean = mean
+
+    def term(self, time="t"): return '(np.random.lognormal({}, {}) )'.format(extractTerm(self.mean, time), extractTerm(self.stddev, time))
+
+class Montecarlo(Function):
+    def __init__(self, p):
+        self.p = p
+
+    def term(self, time="t"): return "(1 if random.uniform(0,100) < ({}*model.dt) else 0)".format(extractTerm(self.p, time))
+
+class Normal(Function):
+    def __init__(self, mean, stddev):
+        self.mean = mean
+        self.stddev = stddev
+
+    def term(self, time="t"): return "(np.random.normal({},{}) )".format(extractTerm(self.mean, time), extractTerm(self.stddev, time))
+
+
+class NormalCDF(Function):
+    def __init__(self,left, right, mean=0, stddev=1):
+        self.left = left
+        self.right = right
+        self.mean = mean
+        self.stddev = stddev
+
+    def term(self, time="t"):
+        right = "scipy.stats.norm(float({}), float({})).cdf(float({}))".format(extractTerm(self.mean, time),extractTerm(self.stddev, time),extractTerm(self.right, time))
+        left = "scipy.stats.norm(float({}), float({})).cdf(float({}))".format(extractTerm(self.mean, time),extractTerm(self.stddev, time),extractTerm(self.left, time))
+        return "({} - {})".format(right, left)
+
+class Pareto(Function):
+    def __init__(self, shape, scale):
+        self.shape = shape
+        self.scale = scale
+
+    def term(self, time="t"): return '(np.nan if ({} == 0) else (np.random.pareto({}) * {} ) )'.format(extractTerm(self.scale, time),extractTerm(self.shape, time),extractTerm(self.scale, time))
+
+class Permutations(Function):
+    def __init__(self, n, r):
+        self.n = n
+        self.r = r
+
+    def term(self, time="t"): return "( math.factorial( {} ) / math.factorial( {} - {} ) )".format(extractTerm(self.n, time),extractTerm(self.n, time),extractTerm(self.r, time))
+
+class Poisson(Function):
+    def __init__(self, mu):
+        self.mu = mu
+
+    def term(self, time="t"): return '(np.random.poisson({}) )'.format(extractTerm(self.mu, time))
+
+class Triangular(Function):
+    def __init__(self,lower_bound, mode, upper_bound):
+        self.lower_bound = lower_bound
+        self.mode = mode
+        self.upper_bound = upper_bound
+
+    def term(self, time="t"):return "(np.random.triangular({}, {}, {}) ) ".format(extractTerm(self.lower_bound, time), extractTerm(self.mode, time), extractTerm(self.upper_bound, time))
+
+class Weibull(Function):
+    def __init__(self, shape, scale):
+        self.shape = shape
+        self.scale = scale
+
+    def term(self, time="t"): return '(np.random.weibull({}) * {} )'.format(extractTerm(self.shape, time),extractTerm(self.scale, time))
