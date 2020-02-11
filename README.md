@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.2
+* Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
+* Improvement to (XMILE) SD Compiler: Removed replacement of currency symbols (``€``, ``$`` etc.) and percentage signs with abbreviations. We had implemented this in earlier releases but figured it leads to confusion with modellers.
+
 ### 1.1.1 
 * The SD DSL now differentiates flows and biflows. Simply add a biflow using ```biflow = model.biflow(<name>)```.
 * The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT, ROUND and all trigonometric and statistical builtins you know from XMILE. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
