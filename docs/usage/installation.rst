@@ -27,6 +27,12 @@ In your favorite Python environment (we suggest Jupyter Notebook), simply run th
 
 The update mechanism automatically checks for a newer version and (if necessary) downloads and installs it.
 
+To check for the currently installed version, simple run these commands::
+
+    from BPTK_Py import bptk
+    bptk = bptk()
+    print(bptk.version)
+
 ********************************************
 Installing the BPTK-Py Tutorial Using Docker
 ********************************************

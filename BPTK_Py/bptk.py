@@ -80,7 +80,7 @@ class bptk():
                 break
 
         print(
-            "Available version from the internet: {}. Your version is: {}".format(package_version, BPTK_Py.__version__))
+            "Available version from Python Packaging Index (PyPI): {}. Your version is: {}".format(package_version, BPTK_Py.__version__))
 
         if version(BPTK_Py.__version__) < version(package_version):
             print("Attempting to update to newer version. This may take a little while.")
@@ -88,7 +88,7 @@ class bptk():
             if errorCode == 0:
                 print("Update successfully completed!")
                 if isnotebook():
-                    print( "Note that when you are running in a Jupyter Notebook environment, restart your kernel now to use the newest version!")
+                    print( "It seems like you are working in a Jupyter Notebook/Lab environment. Please restart your kernel now to use the newest version!")
             else:
                 print("Error Updating!")
         else:
