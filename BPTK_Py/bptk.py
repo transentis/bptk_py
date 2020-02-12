@@ -54,11 +54,53 @@ class conf:
 ### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
 
+    def update(self):
+        def isnotebook():
+            try:
+                shell = get_ipython().__class__.__name__
+                if shell == 'ZMQInteractiveShell':
+                    return True  # Jupyter notebook or qtconsole
+                elif shell == 'TerminalInteractiveShell':
+                    return False  # Terminal running IPython
+                else:
+                    return False  # Other type (?)
+            except NameError:
+                return False  # Probably standard Python interpreter
+        from distlib.index import PackageIndex
+        index = PackageIndex()
+        from distlib.version import NormalizedVersion as version
+        import BPTK_Py
+        import subprocess, sys
+        results = index.search('bptk-py')
+        package_version = ""
+
+        for res in results:
+            if res["name"] == "BPTK-Py":
+                package_version = res["version"]
+                break
+
+        print(
+            "Available version from the internet: {}. Your version is: {}".format(package_version, BPTK_Py.__version__))
+
+        if version(BPTK_Py.__version__) < version(package_version):
+            print("Attempting to update to newer version. This may take a little while.")
+            errorCode = subprocess.check_call([sys.executable, '-m', 'pip', 'install', "-U", 'BPTK-Py'])
+            if errorCode == 0:
+                print("Update successfully completed!")
+                if isnotebook():
+                    print( "Note that when you are running in a Jupyter Notebook environment, restart your kernel now to use the newest version!")
+            else:
+                print("Error Updating!")
+        else:
+            print("Nothing to do. BPTK_Py is up to date!")
+
     def __init__(self, loglevel="WARN", configuration=None):
         """
         Configures the matplotlib config and instantiates the scenario manager factory and visualizer
         """
         config = conf()
+        import BPTK_Py
+        self.version = BPTK_Py.__version__
 
 
         if configuration and type(configuration) is dict:
