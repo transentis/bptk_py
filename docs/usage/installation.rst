@@ -12,6 +12,21 @@ Once you know what you are doing and yo already have a running Python environmen
 
 If you are not an advanced user, it is best to start with our BPTK-Py tutorial, which you can clone or download from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 
+**************************
+Keeping BPTK-Py up-to-date
+**************************
+
+Software evolves. We regularly release new versions to add functionality, improve the code and fix bugs.
+Since version 1.1.2, we offer a seamless way for checking for updates and installing new ones.
+
+In your favorite Python environment (we suggest Jupyter Notebook), simply run the following code::
+
+    from BPTK_Py import bptk
+    bptk = bptk()
+    bptk.update()
+
+The update mechanism automatically checks for a newer version and (if necessary) downloads and installs it.
+
 ********************************************
 Installing the BPTK-Py Tutorial Using Docker
 ********************************************
@@ -112,6 +127,7 @@ scipy        Linear interpolation for graphical functions
 numpy        Linear interpolation and required by pandas
 xlsxwriter   Exporting simulation results to CSV files
 xmltodict    Reading XMILE files
+distlib      Update checks
 ============ ================================================
 
 If you are using `JupyterLab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.

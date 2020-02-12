@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.3
+We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is 
+why we decided to implement an update mechanism.
+
 ## 1.1.2
 * Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
 * Improvement to (XMILE) SD Compiler: Removed replacement of currency symbols (``€``, ``$`` etc.) and percentage signs with abbreviations. We had implemented this in earlier releases but figured it leads to confusion with modellers.
