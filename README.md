@@ -29,9 +29,13 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.4
+XMILE equations make use of double-quote enclosed identifiers in case it actually looks like a function call. For example, ``100*"Identifier(enclosed)"`` is a valid equation where one element (stock/flow) is called ``Identifier(enclosed)``. However, we were not able to parse this, until now.
+Update BPTK-Py using the new update mechanism: [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
+
 ## 1.1.3
 We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is 
-why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html)
+why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
 ## 1.1.2
 * Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
