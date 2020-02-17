@@ -891,7 +891,7 @@ class bptk():
         import os
         # Check whether model is a string and looks like a path
         if type(model) is str:
-            tmp_dir="bptk_tmp"
+            tmp_dir="tmp"
             import os
             if not os.path.isdir(tmp_dir): os.mkdir(tmp_dir)
 
