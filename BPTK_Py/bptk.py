@@ -393,17 +393,21 @@ class bptk():
 
         dfs = []
         scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
-        scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
+        #scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
         if len(scenario_managers) == 0:
-            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: {}".format(self.config.configuration["scenario_storage"]))
+            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(self.config.configuration["scenario_storage"]))
             import pandas as pd
-            return pd.DataFrame() if return_df else None
+            return None
+
+        consumed_scenarios = []
+        consumed_scenario_managers = []
 
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+                consumed_scenario_managers += [manager.name]
 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
 
@@ -417,7 +421,10 @@ class bptk():
 
             # Handle SD models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
+                consumed_scenario_managers += [manager.name]
                 runner = SDSimulationRunner(self.scenario_manager_factory, self)
+
+                consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
@@ -425,6 +432,16 @@ class bptk():
 
                     strategy=strategy,
                     )]
+
+        ## Check whether one or many scenarios / scenario managers were not simulated. This means, they were not defined!
+        for scenario_m in scenario_managers:
+            if scenario_m not in consumed_scenario_managers:
+                log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
+
+        for scenario in scenarios:
+            if scenario not in consumed_scenarios:
+                log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
+
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
@@ -440,11 +457,16 @@ class bptk():
                 df = dfs.pop(0)
                 for tmp_df in dfs:
                     df = df.join(tmp_df)
+
             elif len(dfs) == 1:
                 df = dfs[0]
 
             else:
                 log("[ERROR] No results produced. Check your parameters!")
+                return None
+
+            if len(df)== 0:
+                log("[ERROR] No output data produced.")
                 return None
 
             return self.visualizer.plot(df=df,
@@ -764,6 +786,41 @@ class bptk():
             scenarios=scenarios,
             scenario_manager_type=scenario_manager_type
         )
+
+    def list_equations(self,scenario_managers=[], scenarios=[] ):
+
+
+        result = {}
+
+        if scenario_managers == []:
+            result = {k : v for k, v in self.scenario_manager_factory.scenario_managers.items() if v.type == "sd"}
+        else:
+            for scenario_manager, manager in self.scenario_manager_factory.scenario_managers.items():
+                if scenario_manager in scenario_managers:
+                    result[scenario_manager] = manager
+
+        print("Available Equations:\n")
+
+        for key, scenariomanager in result.items():
+            print("Scenario Manager: {}".format(key))
+            if (scenarios==[]): searched_scenarios = list(scenariomanager.scenarios.keys())
+            else: searched_scenarios = scenarios
+
+            for scenario_name, scenario in scenariomanager.scenarios.items():
+
+                if scenario.name in searched_scenarios:
+                    print("Scenario: {}".format(scenario.name))
+                    print("" + "-" * len(key))
+
+                    for equation in sorted(scenario.model.stocks):
+                        print("\tstock: \t\t\t{}".format(equation))
+                    for equation in sorted(scenario.model.flows):
+                        print("\tflow: \t\t\t{}".format(equation))
+                        for equation in sorted(scenario.model.converters):
+                            print("\tconverter: \t\t{}".format(equation))
+                        for equation in sorted(scenario.model.constants):
+                            print("\tconverter: \t\t{}".format(equation))
+                    print(" ")
 
     def add_scenario(self, dictionary):
         """

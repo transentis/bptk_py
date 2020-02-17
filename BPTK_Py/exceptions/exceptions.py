@@ -8,3 +8,9 @@ class WrongTypeException(Exception):
 
 class NoAgentAvailableException(Exception):
     pass
+
+class NoSuchEquationException(Exception):
+    pass
+
+class NoDataProducedException(Exception):
+    pass

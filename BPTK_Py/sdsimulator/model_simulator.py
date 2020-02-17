@@ -135,11 +135,15 @@ class Simulator():
         :param start: starttime
         :return:
         """
-
+        if not equation in self.mod.equations.keys():
+            #log("[ERROR] Equation {} unknown for this model!".format(equation))
+            return {}
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in np.arange(start, until + self.mod.dt, self.mod.dt):
+
             result = self.mod.equation(equation, i)
+
 
             if "*" in equation: # Fix for *: compute the sum
                 result = sum(result)
@@ -152,7 +156,7 @@ class Simulator():
             ## On parsing, Pandas will use the structure to automatically set the index.
             dic_t[i] = result
 
-            self.finished_simulations_count += 1
+        self.finished_simulations_count += 1
         log("[INFO] Finished simulation of stock {} for t={} to {}".format(str(equation), str(start), str(until)))
 
     def __write_results_to_csv(self, df):

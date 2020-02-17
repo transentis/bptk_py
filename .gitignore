@@ -1,3 +1,4 @@
+buildx
 *.DS_Store
 .eggs/
 *.*pyc

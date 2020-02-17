@@ -50,6 +50,9 @@ class SDsimulationWrapper():
 
         #### Run the simulation scenarios
 
+        if len(scenario_objects) == 0 :
+            log("[ERROR] No scenarios found for scenario managers \"{}\" and scenarios \"{}\"".format(",".join(scenario_managers),",".join(scenarios)))
+
         for key in scenario_objects.keys():
             if key in scenarios:
                 sc = scenario_objects[key]

@@ -114,6 +114,8 @@ class SDSimulationRunner(SimulationRunner):
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
 
-
+        for equation,scenario in dict_equations.items():
+            if scenario == []:
+                log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
         return self.__generate_df(scenario_objects, dict_equations,
                                 )
