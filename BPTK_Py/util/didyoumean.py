@@ -19,3 +19,10 @@ def distance(s1, s2):
         previous_row = current_row
 
     return previous_row[-1]
+
+def didyoumean(term, other_terms, number_of_hints):
+    import collections
+    nearest_terms = collections.OrderedDict(
+        sorted({distance(term, s): s for s in [x for x in other_terms if x != term]}.items()))
+
+    return list(nearest_terms.values())[0:number_of_hints]

@@ -119,11 +119,10 @@ class SDSimulationRunner(SimulationRunner):
 
         for equation,scenario in dict_equations.items():
             if scenario == []:
-                from ..util.levenshtein import distance as levenshtein
-                import collections
-                nearest_equations = collections.OrderedDict(sorted({levenshtein(equation, s): s for s in [x for x in all_equations if x != equation] }.items()))
+                from ..util.didyoumean import didyoumean
+                nearest_equations = didyoumean(equation, all_equations, 3)
 
-                if len(nearest_equations) > 0:log("[ERROR] No simulation model containing equation \"{}\". Did you maybe mean one of: \"{}\"?".format(equation,", ".join(list(nearest_equations.values())[0:3])))
+                if len(nearest_equations) > 0:log("[ERROR] No simulation model containing equation \"{}\". Did you maybe mean one of \"{}\"?".format(equation,", ".join(nearest_equations)))
                 else: log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
         return self.__generate_df(scenario_objects, dict_equations,
                                 )

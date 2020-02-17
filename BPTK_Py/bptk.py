@@ -9,14 +9,19 @@
 # Copyright (c) 2019 transentis labs GmbH
 # MIT License
 
-import collections
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 import itertools
 import sys
-import BPTK_Py.logger.logger as logmod
+# neded for the progress widget in train_simulations
+import threading
+
+import ipywidgets as widgets
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from IPython.display import display
+
 import BPTK_Py.config.config as default_config
+import BPTK_Py.logger.logger as logmod
 from .logger import log
 from .modelchecker import ModelChecker
 from .scenariomanager import ScenarioManagerFactory
@@ -25,15 +30,10 @@ from .scenariomanager import SimulationScenario
 from .sdsimulator import SDsimulationWrapper
 from .simulationrunners import AbmSimulationRunner
 from .simulationrunners import SDSimulationRunner
+from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 from .widgets import Dashboard
 from .widgets import PulseDashboard
-from .util.levenshtein import distance as levenshtein
-
-# neded for the progress widget in train_simulations
-import threading
-import ipywidgets as widgets
-from IPython.display import display
 
 plt.interactive(True)
 
@@ -67,6 +67,7 @@ class bptk():
                     return False  # Other type (?)
             except NameError:
                 return False  # Probably standard Python interpreter
+
         from distlib.index import PackageIndex
         index = PackageIndex()
         from distlib.version import NormalizedVersion as version
@@ -81,7 +82,8 @@ class bptk():
                 break
 
         print(
-            "Available version from Python Packaging Index (PyPI): {}. Your version is: {}".format(package_version, BPTK_Py.__version__))
+            "Available version from Python Packaging Index (PyPI): {}. Your version is: {}".format(package_version,
+                                                                                                   BPTK_Py.__version__))
 
         if version(BPTK_Py.__version__) < version(package_version):
             print("Attempting to update to newer version. This may take a little while.")
@@ -89,7 +91,8 @@ class bptk():
             if errorCode == 0:
                 print("Update successfully completed!")
                 if isnotebook():
-                    print( "It seems like you are working in a Jupyter Notebook/Lab environment. Please restart your kernel now to use the newest version!")
+                    print(
+                        "It seems like you are working in a Jupyter Notebook/Lab environment. Please restart your kernel now to use the newest version!")
             else:
                 print("Error Updating!")
         else:
@@ -103,19 +106,17 @@ class bptk():
         import BPTK_Py
         self.version = BPTK_Py.__version__
 
-
         if configuration and type(configuration) is dict:
 
-                for key in config.configuration.keys():
-                    if key in configuration.keys():
-                        config.configuration[key] = configuration[key]
+            for key in config.configuration.keys():
+                if key in configuration.keys():
+                    config.configuration[key] = configuration[key]
 
-                if "matplotlib_rc_settings" in configuration.keys():
-                    config.matplotlib_rc_settings = configuration["matplotlib_rc_settings"]
-                else:
-                    configuration["matplotlib_rc_settings"] = default_config.matplotlib_rc_settings
-                    config.matplotlib_rc_settings =  default_config.matplotlib_rc_settings
-
+            if "matplotlib_rc_settings" in configuration.keys():
+                config.matplotlib_rc_settings = configuration["matplotlib_rc_settings"]
+            else:
+                configuration["matplotlib_rc_settings"] = default_config.matplotlib_rc_settings
+                config.matplotlib_rc_settings = default_config.matplotlib_rc_settings
 
         self.config = config
 
@@ -127,7 +128,7 @@ class bptk():
 
         logmod.logmodes = self.config.configuration["log_modes"]
         logmod.loglevel = self.config.loglevel
-        logmod.logfile =self.config.configuration["log_file"]
+        logmod.logfile = self.config.configuration["log_file"]
 
         # Setup matplotlib
         for key, value in self.config.matplotlib_rc_settings.items():
@@ -156,7 +157,9 @@ class bptk():
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
 
-    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progress_bar = False):
+    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
+                          agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
+                          progress_bar=False):
         """
         Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
             :param episodes: the number of episodes to run
@@ -171,10 +174,9 @@ class bptk():
             :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
 
-
         log("[INFO] Starting model training")
 
-        progress_widget=None
+        progress_widget = None
         if progress_bar:
             progress_widget = widgets.FloatProgress(
                 value=0.0,
@@ -185,15 +187,19 @@ class bptk():
                 orientation='horizontal'
             )
 
-            thread = threading.Thread(target=self._train_simulations, args=(scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types, series_names, return_df, progress_widget))
+            thread = threading.Thread(target=self._train_simulations, args=(
+            scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types,
+            series_names, return_df, progress_widget))
             display(progress_widget)
             thread.start()
             thread.join()
         else:
-            return self._train_simulations(scenarios, scenario_managers, episodes, agents, agent_states,agent_properties, agent_property_types, series_names, return_df)
+            return self._train_simulations(scenarios, scenario_managers, episodes, agents, agent_states,
+                                           agent_properties, agent_property_types, series_names, return_df)
 
-
-    def _train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], series_names = {}, return_df=False, progress_widget = None):
+    def _train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
+                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
+                           progress_widget=None):
         """
         Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
             :param episodes: the number of episodes to run
@@ -207,7 +213,6 @@ class bptk():
             :param progressBar: shows a progress bar that tracks the epsiode number
             :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
-
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -234,7 +239,8 @@ class bptk():
             sys.exit
 
         if len(agent_property_types) > 0 and len(agent_properties) == 0:
-            log("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            log(
+                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
             sys.exit
 
         dfs = []
@@ -242,15 +248,14 @@ class bptk():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 dfs += [runner.train_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_widget=progress_widget,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties,
+                    agent_property_types=agent_property_types, progress_widget=progress_widget,
                     scenario_managers=[manager.name],
                     episodes=episodes
-                    )]
-
+                )]
 
         if len(agents) == 0:
             log("[ERROR] No agents given, aborting!")
@@ -289,10 +294,10 @@ class bptk():
                                         series_names=series_names
                                         )
 
-
-    def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
-                       series_names={}, strategy=False,progressBar=False
-                       ):
+    def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                        agent_property_types=[], equations=[],
+                        series_names={}, strategy=False, progressBar=False
+                        ):
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
             :param scenarios: names of scenarios to simulate
@@ -306,9 +311,13 @@ class bptk():
         equations = equations if type(equations) is list else equations.split(",")
         agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
         agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
-        agent_property_types = agent_property_types if type(agent_property_types) is list else agent_property_types.split(",")
+        agent_property_types = agent_property_types if type(
+            agent_property_types) is list else agent_property_types.split(",")
 
-        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names, strategy=strategy, scenario_managers=scenario_managers, agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progressBar)
+        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names,
+                                   strategy=strategy, scenario_managers=scenario_managers, agents=agents,
+                                   agent_states=agent_states, agent_properties=agent_properties,
+                                   agent_property_types=agent_property_types, progress_bar=progressBar)
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
 
@@ -317,13 +326,13 @@ class bptk():
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-
         return self.abmrunner.run_simulation(scenarios=[scenario],
-                                      agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
-                                      scenario_managers=[manager.name]
-                                      )
+                                             agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
+                                             scenario_managers=[manager.name]
+                                             )
 
-    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[], agent_property_types=[], equations=[],
+    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                       agent_property_types=[], equations=[],
                        kind=None,
                        alpha=None, stacked=None,
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
@@ -356,8 +365,8 @@ class bptk():
             :return: dataFrame with simulation results if return_df=True
          """
         if not kind: kind = self.config.configuration["kind"]
-        if not alpha : alpha=self.config.configuration["alpha"]
-        if not stacked: stacked=self.config.configuration["stacked"]
+        if not alpha: alpha = self.config.configuration["alpha"]
+        if not stacked: stacked = self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -387,17 +396,19 @@ class bptk():
             log("[ERROR] You must set the relevant property types if you specify an agent_property!")
             sys.exit()
 
-
         if len(agent_property_types) > 0 and len(agent_properties) == 0:
-            log("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            log(
+                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
             sys.exit()
 
         dfs = []
         scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
-        #scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
+        # scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
         if len(scenario_managers) == 0:
-            log("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(self.config.configuration["scenario_storage"]))
+            log(
+                "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
+                    self.config.configuration["scenario_storage"]))
             import pandas as pd
             return None
 
@@ -414,11 +425,12 @@ class bptk():
 
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties, agent_property_types=agent_property_types, progress_bar=progress_bar,
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties,
+                    agent_property_types=agent_property_types, progress_bar=progress_bar,
                     scenario_managers=[manager.name],
 
                     strategy=strategy,
-                    )]
+                )]
 
             # Handle SD models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
@@ -432,25 +444,34 @@ class bptk():
                     scenario_managers=[manager.name],
 
                     strategy=strategy,
-                    )]
+                )]
 
         ## Check whether one or many scenarios / scenario managers were not simulated. This means, they were not defined!
         ## Finding the most similar scenarios (managers) for giving hints: "Did you maybe mean one of xyz, abc,..."?
         for scenario_m in scenario_managers:
             if scenario_m not in consumed_scenario_managers:
-                all_managers =  [x for x in self.scenario_manager_factory.scenario_managers.keys() if x != scenario_m]
-                nearest_managers = collections.OrderedDict(sorted({levenshtein(scenario_m, s): s for s in [x for x in all_managers if x != scenario_m] }.items()))
+                all_managers = [x for x in self.scenario_manager_factory.scenario_managers.keys() if x != scenario_m]
 
-                if len(nearest_managers) > 0:   log("[ERROR] Scenario manager \"{}\" not found! Did you maybe mean one of: \"{}\"?".format(scenario_m,", ".join(list(nearest_managers.values())[0:3])))
-                else: log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
+                nearest_managers = didyoumean(scenario_m, all_managers, 3)
+
+                if len(nearest_managers) > 0:
+                    log("[ERROR] Scenario manager \"{}\" not found! Did you maybe mean one of \"{}\"?".format(
+                        scenario_m, ", ".join(nearest_managers)))
+                else:
+                    log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
 
         for scenario in scenarios:
             if scenario not in consumed_scenarios:
-                all_scenarios =  [x for x in self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers) if x != scenario]
-                nearest_scenarios = collections.OrderedDict(sorted({levenshtein(scenario_m, s): s for s in [x for x in all_scenarios if x != scenario] }.items()))
-                if len(nearest_scenarios) > 0: log("[ERROR] Scenario \"{}\" not found in any scenario manager! Did you maybe mean one of: \"{}\"?".format(scenario,", ".join(list(nearest_scenarios.values())[0:2])))
-                else: log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
-
+                all_scenarios = [x for x in
+                                 self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers) if
+                                 x != scenario]
+                nearest_scenarios = didyoumean(scenario, all_scenarios, 3)
+                if len(nearest_scenarios) > 0:
+                    log(
+                        "[ERROR] Scenario \"{}\" not found in any scenario manager! Did you maybe mean one of \"{}\"?".format(
+                            scenario, ", ".join(nearest_scenarios)))
+                else:
+                    log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
@@ -475,7 +496,7 @@ class bptk():
             log("[ERROR] No results produced. Check your parameters!")
             return None
 
-        if len(df)== 0:
+        if len(df) == 0:
             log("[ERROR] No output data produced.")
             return None
 
@@ -494,8 +515,9 @@ class bptk():
                                     series_names=series_names
                                     )
 
-
-    def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="", freq="D", series_names={}, kind=None):
+    def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
+                    visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
+                    freq="D", series_names={}, kind=None):
         """
         Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
             :param scenarios:  List of scenarios with names
@@ -518,14 +540,15 @@ class bptk():
 
         from .util import lookup_data
         if not kind: kind = self.config.configuration["kind"]
-        if not alpha : alpha=self.config.configuration["alpha"]
-        if not stacked: stacked=self.config.configuration["stacked"]
+        if not alpha: alpha = self.config.configuration["alpha"]
+        if not stacked: stacked = self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
 
-        managers = [manager for name, manager in self.scenario_manager_factory.scenario_managers.items() if name in scenario_managers]
+        managers = [manager for name, manager in self.scenario_manager_factory.scenario_managers.items() if
+                    name in scenario_managers]
         models = []
 
         dfs = []
@@ -533,12 +556,12 @@ class bptk():
             for manager in managers:
                 if scenario in manager.scenarios.keys():
                     models += [manager.scenarios[scenario].model]
-                    df = lookup_data(manager.scenarios[scenario].model,lookup_names)
+                    df = lookup_data(manager.scenarios[scenario].model, lookup_names)
                     columns = {}
                     for column in df.columns:
                         columns[column] = manager.name + "_" + scenario + "_" + column
 
-                    df.rename(columns=columns,inplace=True)
+                    df.rename(columns=columns, inplace=True)
 
                     dfs += [df]
 
@@ -550,22 +573,21 @@ class bptk():
         else:
             df = dfs.pop(0)
 
-        df= df.fillna(0)
-
+        df = df.fillna(0)
 
         return self.visualizer.plot(df=df,
-                                         return_df=return_df,
-                                         visualize_from_period=visualize_from_period,
-                                         visualize_to_period=visualize_to_period,
-                                         stacked=stacked,
-                                         kind=kind,
-                                         title=title,
-                                         alpha=alpha,
-                                         x_label=x_label,
-                                         y_label=y_label,
-                                         start_date=start_date,
-                                         freq=freq,
-                                         series_names=series_names)
+                                    return_df=return_df,
+                                    visualize_from_period=visualize_from_period,
+                                    visualize_to_period=visualize_to_period,
+                                    stacked=stacked,
+                                    kind=kind,
+                                    title=title,
+                                    alpha=alpha,
+                                    x_label=x_label,
+                                    y_label=y_label,
+                                    start_date=start_date,
+                                    freq=freq,
+                                    series_names=series_names)
 
     ## Method for plotting scenarios with sliders. A more generic method that uses the Dashboard class to decorate the plot with the sliders
     def dashboard(self, scenarios, scenario_managers, kind=None, agents=[], agent_states=[],
@@ -602,8 +624,8 @@ class bptk():
             scenarios, str(constants)))
         widget_decorator = Dashboard(self)
         if not kind: kind = self.config.configuration["kind"]
-        if not alpha : alpha=self.config.configuration["alpha"]
-        if not stacked: stacked=self.config.configuration["stacked"]
+        if not alpha: alpha = self.config.configuration["alpha"]
+        if not stacked: stacked = self.config.configuration["stacked"]
 
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
@@ -679,6 +701,8 @@ class bptk():
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
 
+
+
     def reset_simulation_model(self, scenario_manager="", scenario=""):
         """
         Resets only the memo (equation results) of a scenario, does not re-read from storage
@@ -744,19 +768,18 @@ class bptk():
             :param scenario_managers: The list of scenario managers whose scenarios you want to list. Default is an empty list.
             :param scenario_manager_type: The type of scenario manager you want to list your scenarios for ("abm"|"sd"|""), default is an empty string, which returns scenario managers of both types.
         """
-        managers = self.scenario_manager_factory.\
-                get_scenario_managers(
-                    scenario_managers_to_filter=scenario_managers,
-                    scenario_manager_type=scenario_manager_type
-                )
+        managers = self.scenario_manager_factory. \
+            get_scenario_managers(
+            scenario_managers_to_filter=scenario_managers,
+            scenario_manager_type=scenario_manager_type
+        )
         for key, manager in managers.items():
             print("")
             print("*** {} ***".format(key))
             for name in manager.get_scenario_names():
                 print("\t {}".format(name))
 
-
-    def get_scenario(self, scenario_manager,scenario):
+    def get_scenario(self, scenario_manager, scenario):
         """
         Get a scenario object from a scenario manager
             :param scenario_manager: Name of the scenario manager
@@ -798,13 +821,12 @@ class bptk():
             scenario_manager_type=scenario_manager_type
         )
 
-    def list_equations(self,scenario_managers=[], scenarios=[] ):
-
+    def list_equations(self, scenario_managers=[], scenarios=[]):
 
         result = {}
 
         if scenario_managers == []:
-            result = {k : v for k, v in self.scenario_manager_factory.scenario_managers.items() if v.type == "sd"}
+            result = {k: v for k, v in self.scenario_manager_factory.scenario_managers.items() if v.type == "sd"}
         else:
             for scenario_manager, manager in self.scenario_manager_factory.scenario_managers.items():
                 if scenario_manager in scenario_managers:
@@ -814,8 +836,10 @@ class bptk():
 
         for key, scenariomanager in result.items():
             print("Scenario Manager: {}".format(key))
-            if (scenarios==[]): searched_scenarios = list(scenariomanager.scenarios.keys())
-            else: searched_scenarios = scenarios
+            if (scenarios == []):
+                searched_scenarios = list(scenariomanager.scenarios.keys())
+            else:
+                searched_scenarios = scenarios
 
             for scenario_name, scenario in scenariomanager.scenarios.items():
 
@@ -841,7 +865,7 @@ class bptk():
             :return: Nothing is return from this method
             :rtype:
         """
-        #TODO this is probably redundant because we have register_scenario now ...
+        # TODO this is probably redundant because we have register_scenario now ...
         for scenario_manager_name in dictionary.keys():
             source = ""
             if "source" in dictionary[scenario_manager_name].keys():
@@ -864,10 +888,27 @@ class bptk():
             :param scenario_manager: A scenario manager in the dictionary format (see the examples in the In Depth section). This parameter is optional.
             :param scenario: A scenario in the dictionary format (see the examples in the InDepth section)
         """
-        scenario_manager = scenario_manager if scenario_manager is not None else "sm{}".format(model.name.capitalize())
-        scenario = scenario if scenario is not None else {"base": {}}
-        self.register_scenario_manager({scenario_manager: {"model": model}})
-        self.register_scenarios(scenario, scenario_manager)
+        import os
+        # Check whether model is a string and looks like a path
+        if type(model) is str:
+            tmp_dir="bptk_tmp"
+            import os
+            if not os.path.isdir(tmp_dir): os.mkdir(tmp_dir)
+
+            if not scenario_manager:
+                log("[ERROR] Please define a name for the new scenario manager. The command should look like this: bptk.register_model(\"{}\",\"The Name\")".format(model))
+                return
+
+            self.register_scenario_manager({scenario_manager: {"model": "{}/{}".format(tmp_dir, scenario_manager),"source": model}})
+            scenario = scenario if scenario is not None else {"base": {}}
+            self.register_scenarios(scenario, scenario_manager)
+
+            print("Successfully registered a new scenario manager {} with a scenario \"base\". To add new scenarios, use \"bptk.add_scenario\"".format(scenario_manager))
+        else:
+            scenario_manager = scenario_manager if scenario_manager is not None else "sm{}".format(model.name.capitalize())
+            scenario = scenario if scenario is not None else {"base": {}}
+            self.register_scenario_manager({scenario_manager: {"model": model}})
+            self.register_scenarios(scenario, scenario_manager)
 
     def register_scenario_manager(self, scenario_manager):
         """
@@ -875,11 +916,12 @@ class bptk():
             :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
         """
 
-        #TODO refactoring - much of this code should be part of scenario_manager_factory
+        # TODO refactoring - much of this code should be part of scenario_manager_factory
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
-                log("[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
+                log(
+                    "[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
 
             else:
                 model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
@@ -916,7 +958,6 @@ class bptk():
 
         else:
             log("[ERROR] Scenario manager not found. Did you register it?")
-
 
     def export_scenarios(
             self,
@@ -1011,8 +1052,8 @@ class bptk():
                 for setting_index, key in enumerate(interactive_settings):
                     scenario.set_property_value(key, setting[setting_index])
                 self.reset_simulation_model(
-                        scenario_manager=scenario_manager,
-                        scenario=interactive_scenario)
+                    scenario_manager=scenario_manager,
+                    scenario=interactive_scenario)
                 df = self.plot_scenarios(
                     scenario_managers=[scenario_manager],
                     scenarios=[interactive_scenario],
@@ -1024,6 +1065,7 @@ class bptk():
                     df[key] = [setting[setting_index]] * len(df.index)
                 # explicitly set a time column
                 df["time"] = df.index
+                interactive_dfs += [df]
                 interactive_dfs += [df]
             # concatenate the interactive scenarios
             interactive_tab = pd.concat(interactive_dfs, ignore_index=True, sort=False)
@@ -1037,4 +1079,8 @@ class bptk():
                 interactive_tab.to_excel(writer, sheet_name=interactive_df_name)
             return None
         else:
-            return {scenario_df_name: scenarios_tab, indicator_df_name: indicators_tab, interactive_df_name: interactive_tab}
+            return {scenario_df_name: scenarios_tab, indicator_df_name: indicators_tab,
+                    interactive_df_name: interactive_tab}
+
+
+
