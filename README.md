@@ -30,12 +30,9 @@ For questions regarding installation, usage and other help please contact us at:
 ## Changelog
 
 ## 1.1.5
-The XMILE compiler is a great tool that handles model conversion from XMILE SD Models to Python. 
-However, for compatibility and readability, we like to change the equation names to camelCasing upon conversion. 
-This might be confusing for some users, who enjoy the freedom of XMILE when it comes to naming. 
-That's why we decided to give you a new function call that lists all equations for System Dynamics Models.
-
-Simply run ``bptk.list_euqations()`` and optionally the scenario manager(s) and scenario(s) you'd like to see the available equations for.
+* The XMILE compiler is a great tool that handles model conversion from XMILE SD Models to Python. For compatibility and readability, we change the equation names to camelCasing upon conversion. This might be confusing for some users. That's why we decided to give you a new function call that lists all equations for System Dynamics Models. Simply run ``bptk.list_equations()`` (optionally add scenario manager(s) and scenario(s)) and get an overview over available model elements. More details [in our documentation](https://bptk.transentis-labs.com/en/latest/docs/xmile/how-to/how_to_working_with_XMILE/how_to_working_with_XMILE.html).
+* Improved error messages. In previous versions, a long error trace was printed when an equation was not found. Now you get a neat error message output wiht hints as to why the plotting failed.
+* If an equation / scenario / scenario manager is not found, ``BPTK_Py`` gives hints on which similar equations / scenarios / scenario managers might be available for use.
 
 ## 1.1.4
 XMILE equations make use of double-quote enclosed identifiers in case it actually looks like a function call. For example, ``100*"Identifier(enclosed)"`` is a valid equation where one element (stock/flow) is called ``Identifier(enclosed)``. However, we were not able to parse this, until now.

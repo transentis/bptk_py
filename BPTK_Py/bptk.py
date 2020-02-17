@@ -9,7 +9,7 @@
 # Copyright (c) 2019 transentis labs GmbH
 # MIT License
 
-
+import collections
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -28,6 +28,7 @@ from .simulationrunners import SDSimulationRunner
 from .visualizations import visualizer
 from .widgets import Dashboard
 from .widgets import PulseDashboard
+from .util.levenshtein import distance as levenshtein
 
 # neded for the progress widget in train_simulations
 import threading
@@ -434,13 +435,21 @@ class bptk():
                     )]
 
         ## Check whether one or many scenarios / scenario managers were not simulated. This means, they were not defined!
+        ## Finding the most similar scenarios (managers) for giving hints: "Did you maybe mean one of xyz, abc,..."?
         for scenario_m in scenario_managers:
             if scenario_m not in consumed_scenario_managers:
-                log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
+                all_managers =  [x for x in self.scenario_manager_factory.scenario_managers.keys() if x != scenario_m]
+                nearest_managers = collections.OrderedDict(sorted({levenshtein(scenario_m, s): s for s in [x for x in all_managers if x != scenario_m] }.items()))
+
+                if len(nearest_managers) > 0:   log("[ERROR] Scenario manager \"{}\" not found! Did you maybe mean one of: \"{}\"?".format(scenario_m,", ".join(list(nearest_managers.values())[0:3])))
+                else: log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
 
         for scenario in scenarios:
             if scenario not in consumed_scenarios:
-                log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
+                all_scenarios =  [x for x in self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers) if x != scenario]
+                nearest_scenarios = collections.OrderedDict(sorted({levenshtein(scenario_m, s): s for s in [x for x in all_scenarios if x != scenario] }.items()))
+                if len(nearest_scenarios) > 0: log("[ERROR] Scenario \"{}\" not found in any scenario manager! Did you maybe mean one of: \"{}\"?".format(scenario,", ".join(list(nearest_scenarios.values())[0:2])))
+                else: log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
 
 
         if len(agents) == len(equations) == 0:
@@ -448,41 +457,43 @@ class bptk():
             return None
 
         # prepare dataframes
+
+        if len(dfs) == 0:
+            log("[WARN] No output data produced. Hopefully this was your intention.")
+            return None
+
+        # Concatenate DataFrames
+        if len(dfs) > 1:
+            df = dfs.pop(0)
+            for tmp_df in dfs:
+                df = df.join(tmp_df)
+
+        elif len(dfs) == 1:
+            df = dfs[0]
+
         else:
-            if len(dfs) == 0:
-                log("[WARN] No output data produced. Hopefully this was your intention.")
-                return None
+            log("[ERROR] No results produced. Check your parameters!")
+            return None
 
-            if len(dfs) > 1:
-                df = dfs.pop(0)
-                for tmp_df in dfs:
-                    df = df.join(tmp_df)
+        if len(df)== 0:
+            log("[ERROR] No output data produced.")
+            return None
 
-            elif len(dfs) == 1:
-                df = dfs[0]
+        return self.visualizer.plot(df=df,
+                                    return_df=return_df,
+                                    visualize_from_period=visualize_from_period,
+                                    visualize_to_period=visualize_to_period,
+                                    stacked=stacked,
+                                    kind=kind,
+                                    title=title,
+                                    alpha=alpha,
+                                    x_label=x_label,
+                                    y_label=y_label,
+                                    start_date=start_date,
+                                    freq=freq,
+                                    series_names=series_names
+                                    )
 
-            else:
-                log("[ERROR] No results produced. Check your parameters!")
-                return None
-
-            if len(df)== 0:
-                log("[ERROR] No output data produced.")
-                return None
-
-            return self.visualizer.plot(df=df,
-                                        return_df=return_df,
-                                        visualize_from_period=visualize_from_period,
-                                        visualize_to_period=visualize_to_period,
-                                        stacked=stacked,
-                                        kind=kind,
-                                        title=title,
-                                        alpha=alpha,
-                                        x_label=x_label,
-                                        y_label=y_label,
-                                        start_date=start_date,
-                                        freq=freq,
-                                        series_names=series_names
-                                        )
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0, visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="", freq="D", series_names={}, kind=None):
         """

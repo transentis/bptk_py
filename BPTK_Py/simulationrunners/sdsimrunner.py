@@ -105,6 +105,9 @@ class SDSimulationRunner(SimulationRunner):
         # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
         scenarios = [key for key in scenario_objects.keys()]
 
+        all_equations = [item for sublist in [list(mod.model.equations.keys()) for mod in scenario_objects.values()] for item in sublist]
+        all_equations = list(dict.fromkeys(all_equations))
+
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
         for scenario_name in scenarios:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
@@ -116,6 +119,11 @@ class SDSimulationRunner(SimulationRunner):
 
         for equation,scenario in dict_equations.items():
             if scenario == []:
-                log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
+                from ..util.levenshtein import distance as levenshtein
+                import collections
+                nearest_equations = collections.OrderedDict(sorted({levenshtein(equation, s): s for s in [x for x in all_equations if x != equation] }.items()))
+
+                if len(nearest_equations) > 0:log("[ERROR] No simulation model containing equation \"{}\". Did you maybe mean one of: \"{}\"?".format(equation,", ".join(list(nearest_equations.values())[0:3])))
+                else: log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
         return self.__generate_df(scenario_objects, dict_equations,
                                 )
