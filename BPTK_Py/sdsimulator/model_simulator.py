@@ -140,9 +140,13 @@ class Simulator():
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in np.arange(start, until + self.mod.dt, self.mod.dt):
+            try:
+                result = self.mod.equation(equation, i)
+            except KeyError:
+                log("[WARN] Unable to simulate equation \"{}\". Doesn't seem like it's part of the model.".format(equation))
 
-            result = self.mod.equation(equation, i)
-
+                break
+                pass
 
             if "*" in equation: # Fix for *: compute the sum
                 result = sum(result)

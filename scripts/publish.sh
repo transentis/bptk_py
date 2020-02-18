@@ -64,6 +64,7 @@ if ! twine upload --repository-url https://test.pypi.org/legacy/ dist/* ; then
   echo "Upload to Test PyPi failed! Aborting"
   rm -rf dist/
   rm -rf build/
+  rm build
   rm -rf BPTK_Py.egg-info
   exit 1
 fi

@@ -42,8 +42,6 @@ class SDSimulationRunner(SimulationRunner):
         ## Generate empty df to plot
         plot_df = pd.DataFrame()
 
-
-
         for scenario in scenarios.keys():
             df = scenarios[scenario].result
 
@@ -109,15 +107,29 @@ class SDSimulationRunner(SimulationRunner):
         all_equations = list(dict.fromkeys(all_equations))
 
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
-
+        # We are checking which scenarios can handle which equation
+        import re
         for scenario_name in scenarios:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
-                if equation not in dict_equations.keys():
-                    dict_equations[equation] = []
-                if equation in sc.model.equations.keys():
+
+                # Looking for patterns that refer to an arrayed variable. "*"-Equations are not really equations for us. Hence, removing array notation to find the raw name of the equation
+                if "*" in equation:
+                    re_find_indices = r'\[([^)]+)\]'
+                    search = re.search(re_find_indices, equation)  # .group(0)#.replace("[", "").replace("]", "")
+                    if search:
+                        group = search.group(0)
+                        cleaned_equation =equation.replace(group, "")
+                    else: cleaned_equation = equation
+
+                else: # Not an array variable
+                    cleaned_equation = equation
+                if cleaned_equation not in dict_equations.keys(): dict_equations[equation] = []
+
+                if cleaned_equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
-        dict_equations["inventory[*,*]"] = ["base"]
+
+        # Search whether we found a match for all equations. Otherwise "did you mean" support
         for equation,scenario in dict_equations.items():
             if scenario == []:
                 from ..util.didyoumean import didyoumean
