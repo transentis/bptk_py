@@ -99,6 +99,7 @@ class Simulator():
             thread.join()
 
         ## Results stored in a dataFrame in case the user decided to
+
         if not output is None:
             self.result_frame = pd.DataFrame(self.results)
             self.result_frame.index.name = "t"
@@ -135,9 +136,7 @@ class Simulator():
         :param start: starttime
         :return:
         """
-        if not equation in self.mod.equations.keys():
-            #log("[ERROR] Equation {} unknown for this model!".format(equation))
-            return {}
+
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in np.arange(start, until + self.mod.dt, self.mod.dt):

@@ -109,6 +109,7 @@ class SDSimulationRunner(SimulationRunner):
         all_equations = list(dict.fromkeys(all_equations))
 
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
+
         for scenario_name in scenarios:
             sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
             for equation in equations:
@@ -116,7 +117,7 @@ class SDSimulationRunner(SimulationRunner):
                     dict_equations[equation] = []
                 if equation in sc.model.equations.keys():
                     dict_equations[equation] += [scenario_name]
-
+        dict_equations["inventory[*,*]"] = ["base"]
         for equation,scenario in dict_equations.items():
             if scenario == []:
                 from ..util.didyoumean import didyoumean
