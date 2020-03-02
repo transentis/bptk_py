@@ -423,7 +423,9 @@ class bptk():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+
                 consumed_scenario_managers += [manager.name]
+                consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
 
