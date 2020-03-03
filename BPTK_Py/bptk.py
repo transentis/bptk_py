@@ -388,7 +388,7 @@ class bptk():
                 for equation in equations:
                     if not scenario_managers[0] + "_" + scenarios[0] + "_" + equation in series_names.keys():
                         series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + equation] = equation
-        print(series_names)
+
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
