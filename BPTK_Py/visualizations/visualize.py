@@ -50,6 +50,7 @@ class visualizer():
         series_names_keys = series_names.keys()
 
         if len(series_names) > 0:
+            print(series_names)
 
             new_columns = {}
             for column in df.columns:
