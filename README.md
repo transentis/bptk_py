@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+# 1.1.7
+* Bugfix for ``plot_scenarios``: The ``series_names`` replacer did not work properly for when only one scenario manager / scenario is given.
+
 ## 1.1.6
 * Bugfix for XMILE compiler: A little error in the parser prevented certain models being parsed correctly
 * Bugfix for ``plot_scenarios``: The new error messages showed up for Agent based models although the scenarios were present
