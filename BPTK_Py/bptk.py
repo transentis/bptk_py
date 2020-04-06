@@ -508,6 +508,8 @@ class bptk():
             log("[ERROR] No output data produced.")
             return None
 
+
+
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     visualize_from_period=visualize_from_period,
@@ -583,10 +585,12 @@ class bptk():
 
         df = df.fillna(0)
 
+        t = df.loc[df["t"]==visualize_to_period ].index[0]
+
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     visualize_from_period=visualize_from_period,
-                                    visualize_to_period=visualize_to_period,
+                                    visualize_to_period=t,
                                     stacked=stacked,
                                     kind=kind,
                                     title=title,

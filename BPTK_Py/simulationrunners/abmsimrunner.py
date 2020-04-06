@@ -141,6 +141,7 @@ class AbmSimulationRunner(SimulationRunner):
 
             data = scenario.statistics()
 
+
             if len(data) == 0:
                 log("[WARN] No output data produced. Hopefully this was your intention.")
                 return pd.DataFrame()
@@ -150,6 +151,7 @@ class AbmSimulationRunner(SimulationRunner):
                 new_df = pd.DataFrame()
 
                 df = self.get_df_for_agent(data, agent, agent_states, agent_properties, agent_property_types)
+
 
                 if agent_properties:
                     for state in agent_states:
