@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+# 1.1.8 
+* Another bugfix for series renaming. Simplified the code for renaming by using Pandas' standard method ``rename``
+
 # 1.1.7
 * Bugfix for ``plot_scenarios``: The ``series_names`` replacer did not work properly for when only one scenario manager / scenario is given.
 

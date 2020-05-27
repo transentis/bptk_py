@@ -508,7 +508,10 @@ class bptk():
             log("[ERROR] No output data produced.")
             return None
 
-
+        try:
+            df = df.rename(columns=series_names)
+        except:
+            pass
 
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
