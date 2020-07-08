@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.9
+* SD-DSL: System Dynamics element such as converters did not implement comparison operators (">", "<", ">=", "==", "!="). They have been added
+
 ## 1.1.8 
 * Another bugfix for series renaming. Simplified the code for renaming by using Pandas' standard method ``rename``
 

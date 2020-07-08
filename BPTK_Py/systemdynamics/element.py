@@ -139,6 +139,24 @@ class Element:
     def __neg__(self):
         return NumericalMultiplicationOperator(self, (-1))
 
+    def __gt__(self,other):
+        return ComparisonOperator(self, other, ">")
+
+    def __lt__(self, other):
+        return ComparisonOperator(self, other, "<")
+
+    def __le__(self, other):
+        return ComparisonOperator(self, other, "<=")
+
+    def __ge__(self, other):
+        return ComparisonOperator(self, other, ">=")
+
+    def __eq__(self, other):
+        return ComparisonOperator(self, other, "==")
+
+    def __ne__(self, other):
+        return ComparisonOperator(self, other, "!=")
+
     def __pow__(self, power, modulo=None):
         return PowerOperator(self,power)
 
