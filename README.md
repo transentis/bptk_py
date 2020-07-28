@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.10
+* Visualisation using matplotlib now follows conventions to work properly with Matplotlib 3.3+ 
+
 ## 1.1.9
 * SD-DSL: System Dynamics element such as converters did not implement comparison operators (">", "<", ">=", "==", "!="). They have been added
 

@@ -123,14 +123,23 @@ class visualizer():
         """
         ylabels_mean = statistics.mean(ax.get_yticks())
 
+
         # Override the format based on the mean values
-        if ylabels_mean <= 2.0 and ylabels_mean >= -2.0:
-            ylabels = [format(label, ',.2f') for label in ax.get_yticks()]
 
-        elif ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
-            ylabels = [format(label, ',.1f') for label in ax.get_yticks()]
+        import matplotlib.ticker as ticker
 
-        else:
-            ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
+        def label_format(x,pos):
+            if ylabels_mean <= 2.0 and ylabels_mean >= -2.0:
+                label = format(x, ',.2f')
 
-        ax.set_yticklabels(ylabels)
+            elif ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
+                label = format(x, ',.1f')
+
+            else:
+                label = format(x, ',.0f')
+
+            return label
+
+        ax.ticklabel_format(style='plain')
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(func=label_format))
+
