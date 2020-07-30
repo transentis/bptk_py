@@ -46,14 +46,14 @@ class Operator:
     def __add__(self, other):
         return AdditionOperator(self, other)
 
+    def __radd__(self, other):
+        return AdditionOperator(self, other)
+
     def __sub__(self, other):
         return SubtractionOperator(self, other)
 
     def __rsub__(self, other):
         return SubtractionOperator(other, self)
-
-    def __radd__(self, other):
-        return AdditionOperator(self, other)
 
     def __neg__(self):
         return NumericalMultiplicationOperator(self, (-1.0))
@@ -75,7 +75,6 @@ class Operator:
 
     def __ne__(self, other):
         return ComparisonOperator(self, other, "!=")
-    #def __le__(self,other):
 
 
 class Function(Operator):

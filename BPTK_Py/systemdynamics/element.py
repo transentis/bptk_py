@@ -130,10 +130,19 @@ class Element:
     def __add__(self, other):
         return AdditionOperator(self, other)
 
+    def __radd__(self, other):
+        return AdditionOperator(self, other)
+
     def __sub__(self, other):
         return SubtractionOperator(self, other)
 
+    def __rsub__(self, other):
+        return SubtractionOperator(self, other)
+
     def __truediv__(self, other):
+        return DivisionOperator(self, other)
+
+    def __rtruediv__(self, other):
         return DivisionOperator(self, other)
 
     def __neg__(self):
@@ -160,25 +169,16 @@ class Element:
     def __pow__(self, power, modulo=None):
         return PowerOperator(self,power)
 
+
     def update_plot_formats(self, ax):
         """
         Configure the plot formats for the labels. Generates the formatting for y labels
         :param ax:
         :return:
         """
-        ylabels_mean = statistics.mean(ax.get_yticks())
 
-        # Override the format based on the mean values
-        if ylabels_mean <= 2.0 and ylabels_mean >= -2.0:
-            ylabels = [format(label, ',.2f') for label in ax.get_yticks()]
-
-        elif ylabels_mean <= 10.0 and ylabels_mean >= -10.0:
-            ylabels = [format(label, ',.1f') for label in ax.get_yticks()]
-
-        else:
-            ylabels = [format(label, ',.0f') for label in ax.get_yticks()]
-
-        ax.set_yticklabels(ylabels)
+        from BPTK_Py.visualizations import visualizer
+        return visualizer().update_plot_formats(ax)
 
 
 class ElementError(Exception):
