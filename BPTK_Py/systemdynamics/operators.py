@@ -38,7 +38,7 @@ class Operator:
         return ModOperator(self, other)
 
     def __rmul__(self, other):
-        return MultiplicationOperator(self, other)
+        return MultiplicationOperator(other, self)
 
     def __mul__(self, other):
         return MultiplicationOperator(self, other)
@@ -47,7 +47,7 @@ class Operator:
         return AdditionOperator(self, other)
 
     def __radd__(self, other):
-        return AdditionOperator(self, other)
+        return AdditionOperator(other, self)
 
     def __sub__(self, other):
         return SubtractionOperator(self, other)

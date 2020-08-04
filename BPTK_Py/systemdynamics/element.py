@@ -125,25 +125,25 @@ class Element:
         return MultiplicationOperator(self, other)
 
     def __rmul__(self, other):
-        return NumericalMultiplicationOperator(self, other)
+        return NumericalMultiplicationOperator(other, self)
 
     def __add__(self, other):
         return AdditionOperator(self, other)
 
     def __radd__(self, other):
-        return AdditionOperator(self, other)
+        return AdditionOperator(other, self)
 
     def __sub__(self, other):
         return SubtractionOperator(self, other)
 
     def __rsub__(self, other):
-        return SubtractionOperator(self, other)
+        return SubtractionOperator(other, self)
 
     def __truediv__(self, other):
         return DivisionOperator(self, other)
 
     def __rtruediv__(self, other):
-        return DivisionOperator(self, other)
+        return DivisionOperator(other, self)
 
     def __neg__(self):
         return NumericalMultiplicationOperator(self, (-1))

@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.12
+* SD-DSL: Fixed a bug that caused converter equations (subtraction and division) to be computed incorrectly.
+
 ## 1.1.11
 * SD-DSL: Added support for right-hand side addition and subtraction to support equations such as ``converter.equation = 1 - b``
 * Visualisation for SD-DSL elements now follows conventions to work properly with Matplotlib 3.3+ 
