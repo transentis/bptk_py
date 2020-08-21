@@ -56,6 +56,10 @@ class conf:
 class bptk():
 
     def update(self):
+        """
+        This method updates BPTK to the newest version that's available on PyPi.
+            :return: This method only prints information on the latest version and possibly the update progess directly to terminal / notebook
+        """
         def isnotebook():
             try:
                 shell = get_ipython().__class__.__name__
@@ -837,6 +841,12 @@ class bptk():
         )
 
     def list_equations(self, scenario_managers=[], scenarios=[]):
+        """
+        This method lists (prints) all available equations for the given scenario manager(s) and scenario(s)
+            :param scenario_managers: List of scenario managers to pull the scenarios' equations for. If empty, list for all scenario managers (default)
+            :param scenarios: List of scenarios to pull the equations for. If empty, list for all scenarios of the given scenario managers(s) (default)
+            :return: This method only prints the equation(s)
+        """
 
         result = {}
 
