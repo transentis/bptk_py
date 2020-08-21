@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.13
+* Fixed a bug in the XMILE Converter that prevented the SAFEDIV operator to be parsed correctly
+
 ## 1.1.12
 * SD-DSL: Fixed a bug that caused converter equations (subtraction and division) to be computed incorrectly.
 
