@@ -198,7 +198,7 @@ We removed the JavaScript SD Compiler and programmed a whole new transpiler that
 
 ### 0.5.3
 
-* First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis.com
+* First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis-labs.com
 * You can now run AB models with a custom data_collector without plotting using "run_simulations()". This allows you to create custom data collectors that do not emit data back to BPTK, e.g. a streaming data collector
 * Fixed an issue regarding absolute and relative imports in the Model class
 * Various improvements to ABM module
