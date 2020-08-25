@@ -6,7 +6,7 @@ from .abm import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, Si
 from .bptk import bptk, conf
 from .config import config
 from .logger import log
-
+from .remote import connect
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version
 

@@ -10,3 +10,4 @@ xmltodict>=0.12.0
 jinja2>=2.11.2
 sympy
 distlib
+cachetools

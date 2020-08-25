@@ -44,6 +44,15 @@ class visualizer():
         :return: DataFrame or Matplotlib Subplot, depends on return_df flag
         """
 
+        if not kind:
+            kind=self.config.configuration["kind"]
+
+        if not stacked:
+            stacked = self.config.configuration["stacked"]
+
+        if not alpha:
+            alpha = self.config.configuration["alpha"]
+
         if not start_date == "":
             df.index = pd.date_range(start_date, periods=len(df), freq=freq)
 
