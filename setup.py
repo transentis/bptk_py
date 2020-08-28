@@ -54,7 +54,8 @@ setup(name='BPTK_Py',
                 "BPTK_Py.sdcompiler.parsers",
                 "BPTK_Py.sdcompiler.parsers.smile",
                 "BPTK_Py.sdcompiler.parsers.xmile",
-                "BPTK_Py.sdcompiler.plugins"
+                "BPTK_Py.sdcompiler.plugins",
+                "BPTK_Py.remote"
                 ],
 
       install_requires=requirements,
