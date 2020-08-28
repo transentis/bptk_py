@@ -13,7 +13,7 @@ cache = TTLCache(maxsize=1024, ttl=100)
 
 
 class bptk_remote:
-    jobs = None
+    jobs = []
 
     def __init__(self, token, url):
         self.headers = {"Authorization": 'Bearer ' + token}
@@ -21,6 +21,10 @@ class bptk_remote:
 
     @cached(cache=cache)
     def list_equations(self, scenario_managers=[]):
+        if len(self.jobs) == 0:
+            logging.warning("Please initialize a simulation job first!")
+            return
+
         if len(scenario_managers) == 0:
             scenario_managers = [m["sm"] for m in self.jobs]
 
@@ -73,14 +77,14 @@ class bptk_remote:
                       series_names=series_names
                       )
 
-    @cached(cache=cache)
+
     def __get_results(self, scenarios, scenario_managers,
                       equations):
         scenarios = eval(scenarios)
         scenario_managers = eval(scenario_managers)
         equations = eval(equations)
         data = []
-        if not self.jobs:
+        if len(self.jobs)==0:
             logging.error("Please create a job first by using 'submit()' or 'initialize()'")
             return
 
@@ -89,7 +93,7 @@ class bptk_remote:
 
         for job in self.jobs:
             if job["sm"] in scenario_managers:
-                data += [self.get_results_for_job(job_id=job["job_id"],equations=str(equations))]
+                data += [self.__get_results_for_job(job_id=job["job_id"], equations=str(equations))]
 
         # Convert format to be readable for Pandas!
         result = {"t": []}
@@ -123,6 +127,30 @@ class bptk_remote:
 
         return df
 
+    def delete_model(self,model_id):
+        url = self.base_url + "/api/models/xmile/{}".format(model_id)
+
+        try:
+            response = requests.delete(url, headers=self.headers)
+        except Exception as e:
+            logging.error("Unable to delete model. Error: '{}'".format(str(e)))
+            return False
+
+        if response.status_code != 204:
+            if response.status_code == 404:
+                logging.error("The model with the given ID does not seem to exists!")
+                return False
+            if response.status_code == 401:
+                logging.error("You do not seem to be authorized for this action!")
+                return False
+
+            logging.error("Problem deleting model. Status Code: '{}', Message: '{}'".format(response.status_code,response.text))
+            return False
+
+        print("Successfully deleted model!")
+        return True
+
+
     def upload_xmile(self,file, config):
         """
         Upload a simulation model along with its config to share it with others or initialize later
@@ -132,45 +160,93 @@ class bptk_remote:
         """
         url = self.base_url + "/api/models/xmile/upload/"
 
-        files = {"stmx": file, "config": config}
+        files = {"stmx": open(file,"rb"), "config": open(config,"rb")}
         try:
             response = requests.post(url, headers=self.headers, files=files)
             x = json.loads(response.text)
             model_id = x["id"]
 
             print("Successfully stored the model and configured it. Please note down this Model ID to access it later: '{}'".format(model_id))
-        except:
-            if response.status_code != 201:
-                logging.error("There was a problem uploading the model: '{}', '{}'".format(response.status_code,response.text))
+        except Exception as e:
+            logging.error("Problem uploading the model: '{}'".format(str(e)))
+            return ""
+
+        if response.status_code != 201:
+            logging.error("There was a problem uploading the model: '{}', '{}'".format(response.status_code,response.text))
+
+        return model_id
 
 
-    def initialize_sd(self, model_id):
+    def initialize_sd(self, model_id,scenarios,name="undefined"):
         """
         Initialize a given model using its model_id
         :param model_id: Model ID
         :return:
         """
-        url = self.base_url + "/api/xmile/{}/initialize/".format(model_id)
+        url = self.base_url + "/api/xmile/{}/initialize/?name={}".format(model_id,name)
 
-        response = requests.get(url, headers=self.headers)
 
-        if response.status_code == 201:
-            print("Successfully initialized!")
-            try:
-                response = json.loads(response.text)
-            except Exception as e:
-                logging.error("Problem parsing server response: '{}'".format(response.text))
-                return
+        try:
+            file = {"scenario": open(scenarios,"rb")}
+            response = requests.post(url, headers=self.headers,files=file)
+        except Exception as e:
+            logging.error("Problem initializing model. Error: '{}'".format(str(e)))
+            return False
 
-            self.jobs = []
+        if response.status_code != 200:
+            logging.error("Error uploading model. Server status: '{}', Message: '{}'".format(response.status_code,response.text))
+            return False
 
-            for job in response:
-                self.jobs += [{"job_id": job["job_id"], "sm": job["sm"]}]
-                logging.info("Successfully created a new job. Job ID: '{}'".format(self.jobs))
 
-            print("{} new job(s) created, one for each scenario manager.".format(len(self.jobs)))
-        else:
-            logging.error("Error initializing the model. Error code: {}, '{}'".format(response.status_code,response.text))
+        print("Successfully initialized!")
+        try:
+            response = json.loads(response.text)
+        except Exception as e:
+            logging.error("Problem parsing server response: '{}'".format(response.text))
+            return False
+
+        self.jobs = []
+
+        for job in response:
+            self.jobs += [{"job_id": job["job_id"], "sm": job["sm"]}]
+            logging.info("Successfully created a new job. Job ID: '{}'".format(self.jobs))
+
+        print("{} new job(s) created, one for each scenario manager.".format(len(self.jobs)))
+        return True
+
+    def modify_equation(self,equation,value,scenario_managers=[]):
+        if len(scenario_managers) == 0:
+            scenario_managers = [m["sm"] for m in self.jobs]
+
+        for job in self.jobs:
+            url = self.base_url + "/api/xmile/{}/?equation={}&value={}".format(job["job_id"],equation,value)
+
+            response = requests.post(url,headers=self.headers)
+
+            if response.status_code != 200:
+                logging.error("Problem modifying equation for scenario manager '{}': '{}'".format(job["sm"],response.text))
+                return False
+            else:
+                print("Modified equation for scenario manager '{}'".format(job["sm"]))
+
+        cache.clear()
+        return True
+
+    def share_model(self,model_id, user):
+        url = self.base_url + "/api/models/{}/share/{}".format(model_id,user)
+
+        try:
+            response = requests.post(url,headers=self.headers)
+
+            if response.status_code != 200:
+                logging.error("Problem sharing the model with user '{}' : '{}', Server message: '{}'".format(model_id,user,response.text))
+                return False
+        except Exception as e:
+            logging.error("This model could not be shared with the given user. Error: '{}'".format(str(e)))
+            return False
+
+        print("Success sharing the model!")
+        return True
 
     def submit(self, stmx, scenarios, name="undefined"):
         """
@@ -205,27 +281,31 @@ class bptk_remote:
         pass
 
     @cached(cache=cache)
-    def get_results_for_job(self, job_id, equations="[]"):
-        response = requests.get(self.base_url + "/api/xmile/{}/run/".format(job_id))
+    def __get_results_for_job(self, job_id, equations="[]"):
+        response = requests.get(self.base_url + "/api/xmile/{}/run/".format(job_id), headers=self.headers)
 
         equations = eval(equations)
         status = json.loads(response.text)["status"]
 
         while status != "SUCCESS":
-            logging.warning("Waiting for Job to finish. Current status: '{}'".format(status))
+            print("Waiting for Job to finish. Current status: '{}'".format(status))
             ur = self.base_url + "/api/xmile/{}/status/".format(job_id)
 
             if len(equations) > 0:
                 ur += "?equations=" + ",".join(equations)
-            response = requests.get(self.base_url + "/api/xmile/{}/status/".format(job_id))
+            response = requests.get(self.base_url + "/api/xmile/{}/status/".format(job_id), headers=self.headers)
 
             status = json.loads(response.text)["status"]
+
+            if status == "ERROR":
+                logging.error("An error occured. Status code: '{}', Server Message: '{}'".format(response.status_code,response.text))
 
             if status == "FAIL":
                 logging.error(
                     "Job failed. Please retry or try locally using the offline API (maybe only for a few periods to check for errors in the model!)")
                 return
             if status == "SUCCESS":
+                print("Job finished. Obtaining results and generating plot(s)...")
                 break
             sleep(1)
 
