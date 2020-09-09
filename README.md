@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.14
+* Fixed a bug in the interactive scenario component that caused scenarios being plotted multiple times
+* Fixed a bug that caused the SD operator ``delay`` to not accept floating point values and fixed a bug that caused the same function to delay one step too far.
+
 ## 1.1.13
 * Fixed a bug in the XMILE Converter that prevented the SAFEDIV operator to be parsed correctly
 

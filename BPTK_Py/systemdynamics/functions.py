@@ -82,7 +82,7 @@ def delay(model, input_function, delay_duration, initial_value=None):
         raise OperatorError("The input function must be a model element")
     if not isinstance(delay_duration, (Element, float)):
         raise OperatorError("The delay duration must be a model element or a floating point value")
-    if initial_value is not None and isinstance(initial_value, (float, Constant)):
+    if initial_value is not None and not isinstance(initial_value, (float, Constant)):
         raise OperatorError("The initial value must be a floating point values or a constant")
 
     return Delay(model, input_function, delay_duration, initial_value)
