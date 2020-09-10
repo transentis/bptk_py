@@ -343,10 +343,10 @@ def connect(url, token):
     headers = {
         'Authorization': 'Bearer ' + token}
     try:
-        x = requests.get(url + "/login_token", headers=headers)
+        response = requests.get(url + "/login_token", headers=headers)
 
-        if x.status_code != 200:
-            logging.error("Problem establishing connection to remote BPTK backend: '{}'".format(x.text))
+        if response.status_code != 200:
+            logging.error("Problem establishing connection to remote BPTK backend: '{}'".format(response.text))
             return
 
         # bptk_remote object has to be instantiated by submitting a stmx and configuration
