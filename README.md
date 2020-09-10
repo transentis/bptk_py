@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.16
+* Bugfix for the plotting component that solves compatibility issues with newer versions of matplotlib
+
 ## 1.1.15
 * New dataCollector for retrieving agent-wise data (Refer to [bptk-py Tutorial](https://github.com/transentis/bptk_py_tutorial) for more info)
 
