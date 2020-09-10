@@ -370,8 +370,8 @@ class Delay(Function):
        self.initial_value = UnaryOperator(initial_value) if initial_value is not None else initial_value
 
    def term(self, time="t"):
-       delayed_time = "{} - {}".format(time, self.delay_duration.term(str(self.model.starttime)))
-       return "{} if {}>{} else {}".format(
+       delayed_time = "{} - {}".format("int(" + str(time) + ")", self.delay_duration.term(str(self.model.starttime)))
+       return "({} if {}>{} else {})".format(
            self.input_function.term(delayed_time),
            delayed_time,
            str(self.model.starttime),

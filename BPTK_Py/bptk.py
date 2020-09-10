@@ -1092,7 +1092,7 @@ class bptk():
                 # explicitly set a time column
                 df["time"] = df.index
                 interactive_dfs += [df]
-                interactive_dfs += [df]
+
             # concatenate the interactive scenarios
             interactive_tab = pd.concat(interactive_dfs, ignore_index=True, sort=False)
             interactive_tab.index.name = "id"

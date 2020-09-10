@@ -8,8 +8,8 @@
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
-
-
+import logging
+from time import sleep
 #########################
 ## DATACOLLECTOR CLASS ##
 #########################
@@ -39,7 +39,7 @@ class CSVDataCollector:
 
         self.column_names = None
 
-        self.csvwriters = {}
+        self.observed_ids = []
 
         self.headlines = None
 
@@ -60,6 +60,8 @@ class CSVDataCollector:
 
         self.event_statistics[time][event.name] += 1
 
+        self.cache = {}
+
     def reset(self):
         self.agent_statistics = {}
 
@@ -71,6 +73,7 @@ class CSVDataCollector:
         :param agents: list of Agent
         :return: None
         """
+
         for agent in agents:
 
             agent_type = agent.agent_type
@@ -85,14 +88,19 @@ class CSVDataCollector:
 
                 stats[agent_property_name] = agent_property_value['value']
 
-            if not id in self.csvwriters.keys():
-                outfile = open(self.prefix + "/" + str(id) + "_" + str(agent_type) + ".csv","w")
-                writer = csv.writer(outfile,delimiter=";")
-                self.csvwriters[id] = writer
-                writer.writerow(list(stats.keys()))
+            filename = self.prefix + "/" + str(id) + "_" + str(agent_type) + ".csv"
+            if os.path.isfile(filename):
+                logging.warning("CSVDataCollector: Overwriting '{}'".format(filename))
+                os.remove(filename)
 
-            writer = self.csvwriters[id]
-            writer.writerow(list(stats.values()))
+            with open(filename, "a") as outfile:
+
+                if not id in self.observed_ids:
+                    self.observed_ids[id] = ""
+                    outfile.write(";".join(stats.keys()))
+
+                self.cache[filename] += [stats.values()]
+                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
 
     def statistics(self):

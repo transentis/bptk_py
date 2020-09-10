@@ -29,6 +29,16 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.16
+* Bugfix for the plotting component that solves compatibility issues with newer versions of matplotlib
+
+## 1.1.15
+* New dataCollector for retrieving agent-wise data (Refer to [bptk-py Tutorial](https://github.com/transentis/bptk_py_tutorial) for more info)
+
+## 1.1.14
+* Fixed a bug in the interactive scenario component that caused scenarios being plotted multiple times
+* Fixed a bug that caused the SD operator ``delay`` to not accept floating point values and fixed a bug that caused the same to be parsed incorrectly in some cases.
+
 ## 1.1.13
 * Fixed a bug in the XMILE Converter that prevented the SAFEDIV operator to be parsed correctly
 

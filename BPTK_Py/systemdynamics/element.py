@@ -55,6 +55,7 @@ class Element:
         Generate the function using the function_string value and eval()
         :return: None
         """
+
         fn = eval(self.function_string)
         self.model.equations[self.name] = lambda t: fn(self.model, t)
         self.model.memo[self.name] = {}

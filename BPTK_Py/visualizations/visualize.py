@@ -149,6 +149,12 @@ class visualizer():
 
             return label
 
-        ax.ticklabel_format(style='plain')
+
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(func=label_format))
+
+        ## Quick fix for incompatibility of scientific notation and ticklabels
+        try:
+            ax.ticklabel_format(style='plain')
+        except:
+            pass
 
