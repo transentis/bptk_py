@@ -20,7 +20,7 @@ import BPTK_Py.config as config
 import pandas as pd
 
 
-class ExtendedDataCollector(DataCollector):
+class AgentDataCollector(DataCollector):
 
     def collect_agent_statistics(self, time, agents):
         """
