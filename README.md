@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.17
+* Improvement of Extended Data Collector: Renamed to Agent Data Collector and code optimizations
+
 ## 1.1.16
 * Bugfix for the plotting component that solves compatibility issues with newer versions of matplotlib
 
