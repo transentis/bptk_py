@@ -1,0 +1,18 @@
+# enable Docker for your repository
+options:
+  docker: true
+image: atlassian/default-image:2
+pipelines:
+  branches:
+    release/*:
+      - step:
+          #python image with aws-cli installed
+          image: python:3.8
+          name :  "Run tests"
+          script:
+            # aws login
+            - pip install -r ./requirements-dev.txt
+            - pip install .
+            # docker
+            - git submodule update --init --recursive
+            - cd tests/ && pytest -x
