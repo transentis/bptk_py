@@ -11,8 +11,7 @@ pipelines:
           name :  "Run tests"
           script:
             # aws login
-            - pip install -r ./requirements-dev.txt
-            - pip install .
-            # docker
+            - pip install pytest
             - git submodule update --init --recursive
+            - pip install .
             - cd tests/ && pytest -x
