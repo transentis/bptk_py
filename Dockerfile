@@ -13,5 +13,7 @@ COPY ./README.md /home/jovyan/bptk/
 RUN pip install tornado nodejs widgetsnbextension && pip install -r /home/jovyan/bptk/requirements-dev.txt && pip install /home/jovyan/bptk
 RUN jupyter nbextension enable --py widgetsnbextension && jupyter labextension install @jupyter-widgets/jupyterlab-manager
 USER root
+
 RUN rm -rf /home/jovyan/bptk/
+
 USER $NB_UID
