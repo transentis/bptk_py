@@ -11,3 +11,4 @@ jinja2>=2.11.2
 sympy
 distlib
 cachetools
+requests
