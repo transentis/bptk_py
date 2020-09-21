@@ -4,7 +4,7 @@ options:
 image: atlassian/default-image:2
 pipelines:
   branches:
-    release/*:
+    feature/*:
       - step:
           #python image with aws-cli installed
           image: python:3.8
