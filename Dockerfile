@@ -15,5 +15,4 @@ RUN jupyter nbextension enable --py widgetsnbextension && jupyter labextension i
 USER root
 
 RUN rm -rf /home/jovyan/bptk/
-
 USER $NB_UID
