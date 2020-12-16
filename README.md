@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.18
+* Improvement of SD compiler: Support for empty initial value of ``DELAY`` function. Support for dimension names as arguments for functions (e.g. ``SIZE(<dimension>)``)
+
 ## 1.1.17
 * Improvement of Extended Data Collector: Renamed to Agent Data Collector and code optimizations
 
