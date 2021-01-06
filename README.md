@@ -29,8 +29,11 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.21
+* Improve handling of SAFEDIV in SD compiler
+
 ## 1.1.20
-* Fix for the SD Compiler regarding Dimension names usage
+* Fix for the SD compiler regarding dimension names usage
 
 ## 1.1.19
 * Little fix regarding the SD-Compiler
