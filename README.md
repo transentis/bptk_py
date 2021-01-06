@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.20
+* Fix for the SD Compiler regarding Dimension names usage
+
 ## 1.1.19
 * Little fix regarding the SD-Compiler
 

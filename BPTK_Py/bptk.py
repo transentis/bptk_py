@@ -1083,6 +1083,7 @@ class bptk():
                 df = self.plot_scenarios(
                     scenario_managers=[scenario_manager],
                     scenarios=[interactive_scenario],
+                    scenarios=[interactive_scenario],
                     equations=interactive_equations,
                     return_df=True
                 )
