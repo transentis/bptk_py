@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = 'BPTK_PY'
-copyright = '2020, transentis labs GmbH'
+copyright = '2021, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version

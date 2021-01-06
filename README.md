@@ -19,7 +19,7 @@ The best way to get started with BPTK-Py is our tutorial, which contains a numbe
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 # Getting Help
-The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis-labs.com).
+The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com).
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
@@ -78,18 +78,18 @@ For questions regarding installation, usage and other help please contact us at:
 * Bugfix for ``plot_scenarios``: The new error messages showed up for Agent based models although the scenarios were present
 
 ## 1.1.5
-* The XMILE compiler is a great tool that handles model conversion from XMILE SD Models to Python. For compatibility and readability, we change the equation names to camelCasing upon conversion. This might be confusing for some users. That's why we decided to give you a new function call that lists all equations for System Dynamics Models. Simply run ``bptk.list_equations()`` (optionally add scenario manager(s) and scenario(s)) and get an overview over available model elements. More details [in our documentation](https://bptk.transentis-labs.com/en/latest/docs/xmile/how-to/how_to_working_with_XMILE/how_to_working_with_XMILE.html).
+* The XMILE compiler is a great tool that handles model conversion from XMILE SD Models to Python. For compatibility and readability, we change the equation names to camelCasing upon conversion. This might be confusing for some users. That's why we decided to give you a new function call that lists all equations for System Dynamics Models. Simply run ``bptk.list_equations()`` (optionally add scenario manager(s) and scenario(s)) and get an overview over available model elements. More details [in our documentation](https://bptk.transentis.com/en/latest/docs/xmile/how-to/how_to_working_with_XMILE/how_to_working_with_XMILE.html).
 * Improved error messages. In previous versions, a long error trace was printed when an equation was not found. Now you get a neat error message output wiht hints as to why the plotting failed.
     * If an equation / scenario / scenario manager is not found, ``BPTK_Py`` gives hints on which similar equations / scenarios / scenario managers might be available for use.
 * Register XMILE models without having to follow the directory structure: ``BPTK_PY`` scans the ``scenarios`` folder upon startup to find new scenario managers and XMILE / ABM models. We developed a simpler way to add simulation models during runtime without having to add scenarios beforehand: ``bptk.register_model("<path_to_itmx_stmx>","<modelname>")``. You can then easily simulate the model just as you're used to.
 
 ## 1.1.4
 XMILE equations make use of double-quote enclosed identifiers in case it actually looks like a function call. For example, ``100*"Identifier(enclosed)"`` is a valid equation where one element (stock/flow) is called ``Identifier(enclosed)``. However, we were not able to parse this, until now.
-Update BPTK-Py using the new update mechanism: [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
+Update BPTK-Py using the new update mechanism: [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
 ## 1.1.3
 We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is 
-why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
+why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
 ## 1.1.2
 * Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
@@ -107,12 +107,12 @@ why we decided to implement an update mechanism. Details are available in the [d
     * SQRT: ``sd.sqrt(<value of function>)`` computes the square root
     * SIN / TAN / COS: ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians) and of course we also support ARCCOS, ARCSIN, ARCTAN with the same syntax
     * SINWAVE / COSWAVE: ``sd.sinwave(amplitude,period)`` / ``sd.coswave(amplitude,period)`` to generate sine / cosine waves with given amplitude and period
-    * More documentation and how to use the __statistical (random numbers from various distributions) and trigonometric operators__ can be found in our [online documentation](https://bptk.transentis-labs.com/en/latest/docs/sd-dsl/in-depth/in_depth_sd_dsl_functions/in_depth_sd_dsl_functions.html)
+    * More documentation and how to use the __statistical (random numbers from various distributions) and trigonometric operators__ can be found in our [online documentation](https://bptk.transentis.com/en/latest/docs/sd-dsl/in-depth/in_depth_sd_dsl_functions/in_depth_sd_dsl_functions.html)
 * We fixed a bug that caused BPTK to crash when an XMILE model was updated while BPTK was monitoring it
 * We fixed SINWAVE in the XMILE transpiler and added support for COSWAVE
 
 ### 1.1.0
-* We are supporting all XMILE operators now. Note that random numbers with seed are **never** the same as when using Stella Architect's seed! This is due to different random number generators in Python and Stella. We neither support the min / max arguments for the random number operators. Refer to the [documentation](https://bptk.transentis-labs.com/en/latest/docs/usage/limitations.html))
+* We are supporting all XMILE operators now. Note that random numbers with seed are **never** the same as when using Stella Architect's seed! This is due to different random number generators in Python and Stella. We neither support the min / max arguments for the random number operators. Refer to the [documentation](https://bptk.transentis.com/en/latest/docs/usage/limitations.html))
 * RUNCOUNT and SENSIRUNCOUNT are not supported and support is not planned.
 
 ### 1.0.2
@@ -220,7 +220,7 @@ We removed the JavaScript SD Compiler and programmed a whole new transpiler that
 
 ### 0.5.3
 
-* First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis-labs.com
+* First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis.com
 * You can now run AB models with a custom data_collector without plotting using "run_simulations()". This allows you to create custom data collectors that do not emit data back to BPTK, e.g. a streaming data collector
 * Fixed an issue regarding absolute and relative imports in the Model class
 * Various improvements to ABM module
