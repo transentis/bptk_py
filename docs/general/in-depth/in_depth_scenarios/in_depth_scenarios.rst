@@ -320,7 +320,7 @@ also be parsed at ``t=0`` for initial modifications of the strategies.
 
 This strategy reduces the deadline for the project to 120 at the 20th
 period. The full scenario for this strategy is available in
-`scenarios/intro.json) <scenarios/make_your_startup_grow_with_strategy.json>`__
+`scenarios/intro.json <https://github.com/transentis/bptk_py_tutorial/blob/master/scenarios/intro.json>`__
 in the scenario "scenario120". To apply a strategy for a scenario, use
 the parameter ``strategy=True``.Keep in mind that if you defined a
 strategy in the JSON file and set ``strategy=True`` in the dashboard

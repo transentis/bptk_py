@@ -67,7 +67,7 @@ The following piece of code lists all the scenarios that have been loaded::
         for name in manager.get_scenario_names():
             print("\t {}".format(name))
 
-If you do this in a Jupyter notebook created within our `BPTK tutorial <http://www.transentis.com/business-prototyping-toolkit>`_, you should get a result similar to this one::
+If you do this in a Jupyter notebook created within our `BPTK tutorial <https://www.transentis.com/business-prototyping-toolkit/en>`_, you should get a result similar to this one::
 
     Available Scenario Managers and Scenarios:
 

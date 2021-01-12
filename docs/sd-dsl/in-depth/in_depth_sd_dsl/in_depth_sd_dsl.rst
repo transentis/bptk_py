@@ -16,7 +16,7 @@ currently supports System Dynamics and Agent-based modeling.
 
 We first introduced the BPTK PY libary in our recent post `Writing
 Computational Essays Based On Simulation
-Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/>`__.
+Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/en>`__.
 
 Since then we've created some new functionality that allows you to build
 System Dynamics models and Agent-based models interactively in Jupyter
@@ -48,14 +48,14 @@ framework, I will take a look at Agent-based modeling in a future post.
 
 The post is also available as a Jupyter notebook in our BPTK PY
 Tutorial, which is available for `download
-here <https://www.transentis.com/products/business-prototyping-toolkit/>`__.
+here <https://www.transentis.com/business-prototyping-toolkit/en>`__.
 
 A simple model to demonstrate the library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To illustrate the DSL, we will build the simple project management model
 we introduced in our `step-by-step tutorial on System
-Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/>`__.
+Dynamics <https://www.transentis.com/introduction-to-system-dynamics/en>`__.
 
 The project management model is really simple and just containts a few
 stocks, flows and converters, as you can see in the following diagram:
@@ -442,7 +442,7 @@ Storing Models Created Using The SD DSL In A Python Class
 It is possible to take the code from above and store it in a Python code
 file. The JSON structure is exactly as you are used to from the
 generated models.
-`simulation\_models/simple\_project\_dsl\_class.py <simulation_models/simple_project_manual.py>`__
+`sd_simple_project.py <https://github.com/transentis/bptk_py_tutorial/blob/master/simulation_models/sd_simple_project.py>`__
 is such a code file that implements the code. Let us walk through it.
 For readability, we omit a lot of code and only show the basic
 structure:
@@ -492,7 +492,7 @@ then only the code for your equations follows. Now you are done, the
 model is defined.
 
 In the next step, we need to write the JSON (the full file is available
-here: `scenarios/dsl\_class.json <scenarios/manual.json>`__:
+here: `dsl_class.json <https://github.com/transentis/bptk_py_tutorial/blob/master/scenarios/dsl_class.json>`__:
 
 .. code:: json
 
