@@ -36,7 +36,7 @@ To illustrate the process, let’s assume you want to work with the
 ``sd_simple_project.itmx`` model for the first time. You have set up
 your Python environment and installed all the necessary packages (read
 our `installation
-instructions <https://bptk.transentis-labs.com/en/latest/docs/usage/installation.html>`__
+instructions <https://bptk.transentis.com/en/latest/docs/usage/installation.html>`__
 if you haven’t done this yet)
 
 Once you have your working enviornment, setting up your first notebook
