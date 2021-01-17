@@ -1,6 +1,10 @@
 Working with Arrayed Variables in XMILE Models
 ==============================================
 
+.. meta::
+   :description: How to use arrayed variables in XMILE models within the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, xmile, bptk, bptk-py, python, business simulation
+
 This document illustrates how to work with XMILE models that contain
 arrays.
 

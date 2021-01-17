@@ -2,6 +2,11 @@
 A Simple Python Library For System Dynamics
 ===========================================
 
+ .. meta::
+   :description: Introduction to the python library for system dynamics, that is part of the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, sd dsl, xmile, bptk, bptk-py, python, business simulation
+
+
 Build System Dynamics simulations interactively in Jupyter using Python
 -----------------------------------------------------------------------
 

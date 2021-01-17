@@ -2,6 +2,11 @@
 Advanced Plotting Features
 ==========================
 
+.. meta::
+   :description: Using advanced plotting features in the BPTK-Py simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python
+
+
 Plotting Multiple Equations
 ---------------------------
 

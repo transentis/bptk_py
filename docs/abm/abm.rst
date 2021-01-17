@@ -2,8 +2,11 @@
 Agent-based Modeling
 ####################
 
-This section explains how to use the domain specific language for System Dynamics (SD DSL) that is part of the BPTK-Py framework.
+This section gives an in-depth explanation of agent-based modeling.
 
+.. meta::
+   :description: In-depth explanation of agent-based modeling
+   :keywords: agent-based modeling, abm, bptk, python
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

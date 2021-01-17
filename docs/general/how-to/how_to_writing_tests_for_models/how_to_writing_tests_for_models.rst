@@ -2,6 +2,11 @@
 Writing Tests For Models
 ========================
 
+.. meta::
+   :description: How to write model test in the BPTK-Py business simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation, model testing
+
+
 To verify the behavior of the simulator and of the simulation model, it
 is important to check certain assertions. ``bptk_py`` comes with a
 simple model checker to verify ``lambda`` functions.

@@ -1,6 +1,10 @@
-
 Creating User-defined Functions in SD Models
 ============================================
+
+.. meta::
+   :description: Creating user-defined functions in the SD DSL that is part of the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, sd dsl, bptk, bptk-py, python, business simulation
+
 
 One of the benefits of creating System Dynamics models in Python is that
 we can use the full power of Python to create our own functions, which

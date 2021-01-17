@@ -2,6 +2,11 @@
 System Dynamics using SD DSL
 ############################
 
+.. meta::
+   :description: Introduction to building models using the domain specific language for System Dynamics (SD DSL) that is part of the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, sd dsl, bptk, bptk-py, python, business simulation
+
+
 This section explains how to use the domain specific language for System Dynamics (SD DSL) that is part of the BPTK-Py framework.
 
 .. toctree::

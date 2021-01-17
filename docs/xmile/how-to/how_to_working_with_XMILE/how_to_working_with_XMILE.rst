@@ -1,6 +1,10 @@
 Working With XMILE System Dynamics Models
 =========================================
 
+.. meta::
+   :description: Working with XMILE models using the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, xmile, bptk, bptk-py, python, business simulation, stella
+
 In this brief document we take a look at the quickest route to importing
 a System Dynamics model stored in the XMILE format, such as those
 created with ®Stella (``*.stmx``) or ®iThink (``*.itmx``).

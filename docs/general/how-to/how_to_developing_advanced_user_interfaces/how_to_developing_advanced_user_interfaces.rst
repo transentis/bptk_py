@@ -2,6 +2,11 @@
 Developing Advanced User Interfaces
 ===================================
 
+.. meta::
+   :description: Developing advanced user interfaces using the BPTK-Py business simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation, Jupyter, Pandaas, Matplotlib
+
+
 *Using Jupyter Widgets, Pandas Dataframes and Matplotlib to create advanced user interfaces.*
 
 While BPTK-Py offers a number of high-level functions to quickly plot

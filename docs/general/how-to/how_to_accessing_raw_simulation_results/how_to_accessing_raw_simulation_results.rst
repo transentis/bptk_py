@@ -2,6 +2,11 @@
 Accessing Raw Simulation Results
 ================================
 
+.. meta::
+   :description: How to access raw results in the BPTK-Py simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python
+
+
 As we saw in the model checking section, you may obtain the raw
 simulation results rather than the plot. To activate this feature, use
 the ``return_df`` flag and set it to ``True``. The following cell

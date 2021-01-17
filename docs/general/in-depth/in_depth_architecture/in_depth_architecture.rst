@@ -2,6 +2,10 @@
 The Architecture of The BPTK Framework
 **************************************
 
+.. meta::
+   :description: Explains the architecture of the BPTK-Py business simulation framework, as it applies to Agent-based modeling and System Dynamics.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation
+
 This document explains the overall architecture of the BPTK framework.
 
 BPTK Building Blocks

@@ -2,6 +2,11 @@
 Modifying Models At Runtime
 ===========================
 
+.. meta::
+   :description: How to modify xmile models at runtime using the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, xmile, bptk, bptk-py, python, business simulation
+
+
 Now it gets really interesting and rather complex. The goal is to
 replace certain equations of the model with custom lambda functions at
 runtime.

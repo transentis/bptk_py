@@ -2,6 +2,11 @@
 Building Interactive Dashboards
 ===============================
 
+.. meta::
+   :description: Building interactive dashboards using the BPTK-Py business simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation, dashboard
+
+
 An important part of modelling is to modify values on-the-fly,
 interactively with the customer. The API function ``bptk.dashboard`` has
 this functionality. It comes with a field "constants" that contains a

@@ -2,6 +2,11 @@
 Exporting Simulation Results
 ============================
 
+.. meta::
+   :description: How to export simulation results from the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, xmile, bptk, bptk-py, python, business simulation
+
+
 *Exporting Scenario Data For Further Analysis In High-End Business Intelligence Tools*
 
 Jupyter Notebooks are a perfect environment to create System Dynamics

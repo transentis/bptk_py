@@ -2,6 +2,11 @@
 Installation
 ############
 
+.. meta::
+   :description: Explains how to install the BPTK-Py business simulation framework.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation
+
+
 Like every piece of software, BPTK-Py and its dependencies have to be installed correctly.
 
 ******************

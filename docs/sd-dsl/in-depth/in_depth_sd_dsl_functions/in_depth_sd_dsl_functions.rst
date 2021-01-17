@@ -1,6 +1,10 @@
 SD DSL Functions
 ================
 
+.. meta::
+   :description: Overview of the SD DSL functions that are part of the BPTK-Py business simulation framework.
+   :keywords: system dynamics, systemdynamics, sd dsl, bptk, bptk-py, python, business simulation
+
 This document illustrates how to use the operators for the SD DSL. To
 use the operators, you need to import the ``sd_functions``, in addition
 to importing the ``Model`` class.

@@ -2,6 +2,11 @@
 Agent-based Modeling With BPTK-Py
 *********************************
 
+.. meta::
+   :description: Introduction to Agent-based modeling with BPTK-Py
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python
+
+
 This document explains how to build agent-based models using BPTK-Py. It uses the simple project management model from our tutorial as an illustration. You can download the tutorial from our website, the classes are in in the /abm/spm folder. The tutorial also contains an interactive Jupyter notebook corresponding to this document.
 
 This model is an illustration of `Parkinson's law <https://en.wikipedia.org/wiki/Parkinson%27s_law>`_, which states that work expands so as to fill the time available for its completion - Parkinson's law is particularly relevant in projects, where we need to set milestones judiciously to ensure that schedule pressure remains at an acceptable rate.

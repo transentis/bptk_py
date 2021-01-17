@@ -2,6 +2,11 @@
 Scenarios In Depth
 ==================
 
+.. meta::
+   :description: In depth description of scenario management in the BPTK-Py business simulation framework, as it applies to Agent-based modeling and System Dynamics.
+   :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation
+
+
 Scenarios are the heart of each simulation. A scenario defines which
 simulation model to use, optionally points to a source model and has a
 name. It may override model constants and define execution strategies.

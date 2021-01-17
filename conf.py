@@ -45,6 +45,8 @@ extensions = [
     'sphinx.ext.ifconfig',
 ]
 
+
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -86,7 +88,11 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+
+html_theme_options = {
+    'analytics_id': 'UA-29198054-1',  #  Google Analytics
+    'canonical_url': 'https://bptk.transentis.com/'
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -108,6 +114,7 @@ html_theme = 'sphinx_rtd_theme'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'bptk_pydoc'
+html_baseurl = 'https://bptk.transentis.com/'
 
 
 # -- Options for LaTeX output ------------------------------------------------
