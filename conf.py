@@ -91,7 +91,7 @@ html_theme = 'sphinx_rtd_theme'
 
 html_theme_options = {
     'analytics_id': 'UA-29198054-1',  #  Google Analytics
-    'canonical_url': 'https://bptk.transentis.com/'
+    'canonical_url': 'https://bptk.transentis.com/en/latest'
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -114,7 +114,7 @@ html_theme_options = {
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'bptk_pydoc'
-html_baseurl = 'https://bptk.transentis.com/'
+html_baseurl = 'https://bptk.transentis.com/en/latest'
 
 
 # -- Options for LaTeX output ------------------------------------------------

@@ -20,7 +20,7 @@ The tutorial and this documentation illustrate the framework using two simulatio
 
 The logic of these models is not discussed in detail in this documentation, you can read more about them on our blog:
 
-* The simple project management model is explained in our `Step-by-step introduction to System Dynamics <https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/>`_.
-* The `Customer Acquisition Model <https://www.transentis.com/an-example-to-illustrate-the-business-prototyping-methodology/>`_ is discussed in a series of blog posts illustrating the Business Prototyping Methodology.
+* The simple project management model is explained in our `Step-by-step introduction to System Dynamics <https://www.transentis.com/introduction-to-system-dynamics/en/>`_.
+* The `Customer Acquisition Model <https://www.transentis.com/an-example-to-illustrate-the-business-prototyping-methodology/en/>`_ is discussed in a series of blog posts illustrating the Business Prototyping Methodology.
 
 

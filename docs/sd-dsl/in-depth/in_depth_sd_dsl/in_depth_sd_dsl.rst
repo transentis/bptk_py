@@ -21,7 +21,7 @@ currently supports System Dynamics and Agent-based modeling.
 
 We first introduced the BPTK PY libary in our recent post `Writing
 Computational Essays Based On Simulation
-Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/en>`__.
+Models <https://www.transentis.com/writing-computational-essays-based-simulation-models/en/>`__.
 
 Since then we've created some new functionality that allows you to build
 System Dynamics models and Agent-based models interactively in Jupyter
@@ -53,14 +53,14 @@ framework, I will take a look at Agent-based modeling in a future post.
 
 The post is also available as a Jupyter notebook in our BPTK PY
 Tutorial, which is available for `download
-here <https://www.transentis.com/business-prototyping-toolkit/en>`__.
+here <https://www.transentis.com/business-prototyping-toolkit/en/>`__.
 
 A simple model to demonstrate the library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To illustrate the DSL, we will build the simple project management model
 we introduced in our `step-by-step tutorial on System
-Dynamics <https://www.transentis.com/introduction-to-system-dynamics/en>`__.
+Dynamics <https://www.transentis.com/introduction-to-system-dynamics/en/>`__.
 
 The project management model is really simple and just containts a few
 stocks, flows and converters, as you can see in the following diagram:

@@ -31,7 +31,7 @@ Main Features
 Getting Help
 ============
 
-BPTK-Py is developed and maintained by `transentis labs <https://www.transentis.com/business-prototyping-toolkit/en>`_. For questions regarding installation or usage and for feature requests, please  contact us at: `support@transentis.com <mailto:support@transentis.com>`_.
+BPTK-Py is developed and maintained by `transentis labs <https://www.transentis.com/business-prototyping-toolkit/en/>`_. For questions regarding installation or usage and for feature requests, please  contact us at: `support@transentis.com <mailto:support@transentis.com>`_.
 
 .. toctree::
    :maxdepth: 2
