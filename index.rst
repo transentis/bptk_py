@@ -15,7 +15,7 @@ The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modelin
 
 Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them _independently_ in a Python environment such as `JupyterLabs <https://jupyter.org>`_.
+This means you can build models in a XMILE-compatible visual modeling environment (such as `iseesystems Stella <http://www.iseesystems.com>`_) and then use them *independently* in a Python environment such as `JupyterLabs <https://jupyter.org>`_.
 
 The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 

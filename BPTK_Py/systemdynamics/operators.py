@@ -43,6 +43,9 @@ class Operator:
     def __mul__(self, other):
         return MultiplicationOperator(self, other)
 
+    def __pow__(self, power):
+        return PowerOperator(self,power)
+
     def __add__(self, other):
         return AdditionOperator(self, other)
 

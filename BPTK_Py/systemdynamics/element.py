@@ -167,7 +167,7 @@ class Element:
     def __ne__(self, other):
         return ComparisonOperator(self, other, "!=")
 
-    def __pow__(self, power, modulo=None):
+    def __pow__(self, power):
         return PowerOperator(self,power)
 
 

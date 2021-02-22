@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.22
+* SD DSL: Add python power operator (**) to all SD DSL operators
+* XMILE: Ensure SAFEDIV works in complex expressions
+
 ## 1.1.21
 * Improve handling of SAFEDIV in SD compiler
 
