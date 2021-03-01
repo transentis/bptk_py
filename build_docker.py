@@ -24,7 +24,8 @@ def build_container(ver=release,tag="transentis/bptk-py"):
     from io import BytesIO
     i = 0
     dockerfile = open("Dockerfile", "r").read()
-    for line in client.build(fileobj=BytesIO(dockerfile.encode('utf-8')), rm=True, tag=build_tag, decode=True):
+    fileobj=BytesIO(dockerfile.encode('utf-8'))
+    for line in client.build(path=".", rm=True, tag=build_tag, decode=True):
         try:
             print(line["stream"])
         except KeyError:
