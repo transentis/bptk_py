@@ -29,6 +29,10 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+
+## 1.1.23
+* Add a new experimental feature that allows REST APIs for simulation models to be set up easily.
+
 ## 1.1.22
 * SD DSL: Add python power operator (**) to all SD DSL operators
 * XMILE: Ensure SAFEDIV works in complex expressions
