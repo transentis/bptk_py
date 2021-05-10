@@ -7,6 +7,8 @@ from .bptk import bptk, conf
 from .config import config
 from .logger import log
 from .remote import connect
+from .server import BptkServer
+
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version
 
