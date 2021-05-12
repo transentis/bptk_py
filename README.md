@@ -23,12 +23,14 @@ The first place to go to for help and installation instructions is the [online d
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
-BPTK-Py is developed and maintained by transentis Labs GmbH. 
+BPTK-Py is developed and maintained by transentis labs GmbH. 
 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
 
+## 1.1.24
+* Update to BptkServer internals
 
 ## 1.1.23
 * Add a new experimental feature that allows REST APIs for simulation models to be set up easily.
