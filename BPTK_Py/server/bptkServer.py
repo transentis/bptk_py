@@ -34,7 +34,7 @@ class BptkServer(Flask):
         self.bptk = bptk
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self.home)
-        self.route("/run", methods=['POST', 'PUT'])(self.run)
+        self.route("/run", methods=['POST', 'PUT'])(self.run2)
         self.route("/scenarios", methods=['GET'])(self.scenarios)
         self.route("/equations", methods=['POST'])(self.equations)
         self.route("/agents", methods=['POST', 'PUT'])(self.agents)
@@ -42,62 +42,61 @@ class BptkServer(Flask):
         
     def home(self):
         return "<h1>BPTK-Py Simulation Service</h1>"
-    
-    def run(self):
-        with self.test_request_context("/run"):
-            
-            self.logger.info("Request is JSON: {}".format(request.is_json))
-            self.logger.info("Request is JSON: {}".format(request.data))
 
-            if not request.is_json:
-                resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
-                resp.headers['Content-Type'] = 'application/json'
-                resp.headers['Access-Control-Allow-Origin']='*'
-                return resp
+    def run2(self):
+        
+        self.logger.info("Request is JSON: {}".format(request.is_json))
+        self.logger.info("Request is JSON: {}".format(request.data))
 
-            content = request.get_json()
+        if not request.is_json:
+            resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
 
-            try:
-                settings = content["settings"]
+        content = request.get_json()
 
-                for scenario_manager_name, scenario_manager_data in settings.items():
-                    for scenario_name, scenario_settings in scenario_manager_data.items():
-                        scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
-                        constants = scenario_settings["constants"]
-                        for constant_name, constant_settings in constants.items():
-                            scenario.constants[constant_name]=constant_settings
-                        points = scenario_settings["points"]
-                        for points_name, points_settings in points.items():
-                            scenario.points[points_name]=points_settings
-                        self.bptk.reset_simulation_model(scenario_manager=scenario_manager_name,scenario=scenario_name)
+        try:
+            settings = content["settings"]
 
-            except KeyError:
-                self.logger.info("Settings not specified")
-                pass
+            for scenario_manager_name, scenario_manager_data in settings.items():
+                for scenario_name, scenario_settings in scenario_manager_data.items():
+                    scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+                    constants = scenario_settings["constants"]
+                    for constant_name, constant_settings in constants.items():
+                        scenario.constants[constant_name]=constant_settings
+                    points = scenario_settings["points"]
+                    for points_name, points_settings in points.items():
+                        scenario.points[points_name]=points_settings
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_manager_name,scenario=scenario_name)
 
-            try:
-                scenario_managers=content["scenario_managers"]
-            except KeyError:
-                resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
-                resp.headers['Content-Type']='application/json'
-                resp.headers['Access-Control-Allow-Origin']='*'
-                return resp
+        except KeyError:
+            self.logger.info("Settings not specified")
+            pass
 
-            try:
-                scenarios=content["scenarios"]
-            except KeyError:
-                resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
-                resp.headers['Content-Type']='application/json'
-                resp.headers['Access-Control-Allow-Origin']='*'
-                return resp
+        try:
+            scenario_managers=content["scenario_managers"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
 
-            try:
-                equations=content["equations"]
-            except KeyError:
-                resp = make_response('{"error": "expecting equations to be set"}',500)
-                resp.headers['Content-Type']='application/json'
-                resp.headers['Access-Control-Allow-Origin']='*'
-                return resp
+        try:
+            scenarios=content["scenarios"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        try:
+            equations=content["equations"]
+        except KeyError:
+            resp = make_response('{"error": "expecting equations to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
 
 
         result = self.bptk.plot_scenarios(
@@ -115,7 +114,6 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
-
     
     def scenarios(self):
         """
