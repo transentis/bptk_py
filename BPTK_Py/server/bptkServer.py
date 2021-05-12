@@ -33,17 +33,17 @@ class BptkServer(Flask):
         super(BptkServer, self).__init__(import_name)
         self.bptk = bptk
         # specifying the routes and methods of the api
-        self.route("/", methods=['GET'])(self.home)
-        self.route("/run", methods=['POST', 'PUT'])(self.run2)
-        self.route("/scenarios", methods=['GET'])(self.scenarios)
-        self.route("/equations", methods=['POST'])(self.equations)
-        self.route("/agents", methods=['POST', 'PUT'])(self.agents)
+        self.route("/", methods=['GET'])(self.home_resource)
+        self.route("/run", methods=['POST', 'PUT'])(self.run_resource)
+        self.route("/scenarios", methods=['GET'])(self.scenarios_resource)
+        self.route("/equations", methods=['POST'])(self.equations_resource)
+        self.route("/agents", methods=['POST', 'PUT'])(self.agents_resource)
         
         
-    def home(self):
+    def home_resource(self):
         return "<h1>BPTK-Py Simulation Service</h1>"
 
-    def run2(self):
+    def run_resource(self):
         
         self.logger.info("Request is JSON: {}".format(request.is_json))
         self.logger.info("Request is JSON: {}".format(request.data))
@@ -115,7 +115,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
     
-    def scenarios(self):
+    def scenarios_resource(self):
         """
         The method gets all the available scenarios for the current simulation.
         """
@@ -131,7 +131,7 @@ class BptkServer(Flask):
 
         return resp
     
-    def equations(self):
+    def equations_resource(self):
         """
         Given a current scneario manager and a scenario_name, the equations method gets us all available equations for them.
         """
@@ -173,7 +173,7 @@ class BptkServer(Flask):
 
         return resp
     
-    def agents(self):
+    def agents_resource(self):
         content = request.get_json()
         scenario_manager_name = content["scenarioManager"]
         scenario_name = content["scenario"]
