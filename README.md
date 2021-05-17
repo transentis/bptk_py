@@ -29,6 +29,9 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+## 1.1.25
+* Improve error handling and fault tolerance on BptkServer
+
 ## 1.1.24
 * Update to BptkServer internals
 

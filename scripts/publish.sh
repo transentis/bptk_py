@@ -14,7 +14,6 @@
 ## MAGIC Build Script that also tests your code!
 
 
-deactivate # Leave VENV if we are in any
 pip3 install -r ../requirements-dev.txt
 
 git submodule update --remote --recursive
