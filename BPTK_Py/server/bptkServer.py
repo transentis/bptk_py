@@ -34,10 +34,10 @@ class BptkServer(Flask):
         self.bptk = bptk
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self.home_resource)
-        self.route("/run", methods=['POST', 'PUT'])(self.run_resource)
-        self.route("/scenarios", methods=['GET'])(self.scenarios_resource)
-        self.route("/equations", methods=['POST'])(self.equations_resource)
-        self.route("/agents", methods=['POST', 'PUT'])(self.agents_resource)
+        self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self.run_resource)
+        self.route("/scenarios", methods=['GET'], strict_slashes=False)(self.scenarios_resource)
+        self.route("/equations", methods=['POST'], strict_slashes=False)(self.equations_resource)
+        self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self.agents_resource)
         
         
     def home_resource(self):
@@ -120,6 +120,13 @@ class BptkServer(Flask):
         The method gets all the available scenarios for the current simulation.
         """
         scenarions = []
+        
+        if not self.bptk.get_scenarios():
+            resp = make_response('{"error": "expecting the model to have scenarios"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+            
         for scenario in self.bptk.get_scenarios():
             scenarions.append(scenario)
         scenarions = jsonify(scenarions)
@@ -135,10 +142,31 @@ class BptkServer(Flask):
         """
         Given a current scneario manager and a scenario_name, the equations method gets us all available equations for them.
         """
+        
+        if not request.is_json:
+            resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
     
         content = request.get_json()
-        scenario_manager_name = content["scenarioManager"]
-        scenario_name = content["scenario"]
+        
+        try:
+            scenario_manager_name = content["scenarioManager"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenarioManager to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
+        try:
+            scenario_name = content["scenario"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+            
   
         scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
 
@@ -147,7 +175,7 @@ class BptkServer(Flask):
         flows_names = set()
         converters_names = set()
         constants_names = set()
-        points_names = set()
+        points_names = set()        
 
         for equation in sorted(scenario.model.stocks):
             stocks_names.add(equation)
@@ -174,11 +202,37 @@ class BptkServer(Flask):
         return resp
     
     def agents_resource(self):
+        
+        if not request.is_json:
+            resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
         content = request.get_json()
-        scenario_manager_name = content["scenarioManager"]
-        scenario_name = content["scenario"]
+        try:
+            scenario_manager_name = content["scenarioManager"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenarioManager to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
+        try:
+            scenario_name = content["scenario"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
 
         scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+        
+        if not scenario.model.agents: # Checking if the model has agents
+            resp = make_response('{"error": "expecting the model to have agents"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
         
         agents_dict = dict()
 
