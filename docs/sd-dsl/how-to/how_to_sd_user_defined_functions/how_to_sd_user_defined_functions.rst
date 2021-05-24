@@ -10,9 +10,7 @@ One of the benefits of creating System Dynamics models in Python is that
 we can use the full power of Python to create our own functions, which
 we can then use in our models.
 
-This how to illustrates how to do this.
-
-First of all, lets set up our model:
+To illustrate how to do this, let's set up a simple model first:
 
 .. code:: ipython3
 
@@ -48,7 +46,7 @@ Next we set up a converter:
 
     converter = model.converter("converter")
 
-The converters equation calls the model function.
+The converter's equation calls the model function.
 
 .. code:: ipython3
 
@@ -66,7 +64,6 @@ We can test the function as follows:
 .. parsed-literal::
 
     25
-
 
 
 Let's plot the function over time:
@@ -99,7 +96,7 @@ We can also create a stock that has the converter as an inflow:
 .. image:: output_18_0.png
 
 
-We can do all the usual arithmethic:
+We can do all the usual arithmetic:
 
 .. code:: ipython3
 
