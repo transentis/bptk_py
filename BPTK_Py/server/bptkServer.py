@@ -13,6 +13,8 @@ from flask import Flask, redirect, url_for, request, make_response, jsonify
 from BPTK_Py.bptk import bptk 
 import pandas as pd
 import json
+import copy
+import uuid
 
 ######################
 ##  REST API CLASS  ##
@@ -32,12 +34,14 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self.bptk = bptk
+        self.instances_dict = dict()
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self.home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self.run_resource)
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self.scenarios_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self.equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self.agents_resource)
+        self.route("/start_instance", methods = ['POST'], strict_slashes=False)(self.start_instance_resource)
         
         
     def home_resource(self):
@@ -246,6 +250,19 @@ class BptkServer(Flask):
             
         if agents_dict is not None:
             resp = make_response(agents_dict, 200)
+        else:
+            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+
+        return resp
+    
+    def start_instance_resource(self):
+        
+        bptk_copy = copy.deepcopy(self.bptk)
+        
+        self.instances_dict[id(bptk_copy)] = uuid.uuid1().hex
+        
+        if self.instances_dict is not None:
+            resp = make_response(self.instances_dict, 200)
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
