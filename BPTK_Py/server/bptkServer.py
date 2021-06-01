@@ -13,6 +13,10 @@ from flask import Flask, redirect, url_for, request, make_response, jsonify
 from BPTK_Py.bptk import bptk 
 import pandas as pd
 import json
+import copy
+import uuid
+import jsonpickle
+from json import JSONEncoder
 
 ######################
 ##  REST API CLASS  ##
@@ -32,13 +36,16 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self.bptk = bptk
+        self.bptk_copy = copy.deepcopy(self.bptk)
+        self.instances_dict = dict()
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self.home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self.run_resource)
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self.scenarios_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self.equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self.agents_resource)
-        
+        self.route("/start_instance", methods=['POST'], strict_slashes=False)(self.start_instance_resource)
+        self.route("/<instance_id>/run_step", methods=['POST', 'PUT'], strict_slashes=False)(self.run_step_resource)
         
     def home_resource(self):
         return "<h1>BPTK-Py Simulation Service</h1>"
@@ -249,4 +256,85 @@ class BptkServer(Flask):
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
+        return resp
+ 
+    def start_instance_resource(self):
+        
+        cloned_bptk_uuid = uuid.uuid1().hex
+        
+        self.instances_dict[cloned_bptk_uuid] = self.bptk_copy
+        
+        if cloned_bptk_uuid is not None:
+            resp = make_response(cloned_bptk_uuid, 200)
+        else:
+            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+
+        return resp
+    
+    def run_step_resource(self, instance_id):
+        
+        if not request.is_json:
+            resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        content = request.get_json()
+
+        try:
+            settings = content["settings"]
+
+            for scenario_manager_name, scenario_manager_data in settings.items():
+                for scenario_name, scenario_settings in scenario_manager_data.items():
+                    scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+                    
+                    constants = scenario_settings["constants"]
+                    for constant_name, constant_settings in constants.items():
+                        scenario.constants[constant_name]=constant_settings
+                    points = scenario_settings["points"]
+                    for points_name, points_settings in points.items():
+                        scenario.points[points_name]=points_settings
+                    self.bptk.reset_simulation_model(scenario_manager=scenario_manager_name,scenario=scenario_name)
+        except KeyError:
+            self.logger.info("Settings not specified")
+            pass
+        
+        try:
+            scenario_managers=content["scenario_managers"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        try:
+            scenarios=content["scenarios"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        try:
+            equations=content["equations"]
+        except KeyError:
+            resp = make_response('{"error": "expecting equations to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        result = self.bptk.plot_scenarios(
+              scenario_managers=scenario_managers,
+              scenarios=scenarios,
+              equations=equations,
+              visualize_to_period = 1,
+              return_df=True
+            )
+        if result is not None:
+            resp = make_response(result.to_json(), 200)
+        else:
+            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
         return resp
