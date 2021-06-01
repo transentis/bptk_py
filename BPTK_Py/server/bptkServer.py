@@ -330,8 +330,6 @@ class BptkServer(Flask):
               visualize_to_period = 1,
               return_df=True
             )
-        print(scenario_managers[0], scenarios[0])
-
         if result is not None:
             resp = make_response(result.to_json(), 200)
         else:
