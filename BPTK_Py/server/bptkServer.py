@@ -133,13 +133,19 @@ class BptkServer(Flask):
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
-            
+        
+        scenarios_dict = dict()
         for scenario in self.bptk.get_scenarios():
-            scenarions.append(scenario)
-        scenarions = jsonify(scenarions)
+            underscore_index = scenario.index("_")
+            scneario_manager_name = scenario[:underscore_index]
+            scenario_name = scenario[underscore_index + 1:]
+            if scneario_manager_name not in scenarios_dict:
+                scenarios_dict[scneario_manager_name] = [scenario_name]
+            else:
+                scenarios_dict[scneario_manager_name].append(scenario_name)
 
-        if scenarions is not None:
-            resp = make_response(scenarions, 200)
+        if scenarios_dict is not None:
+            resp = make_response(scenarios_dict, 200)
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
@@ -330,6 +336,7 @@ class BptkServer(Flask):
               visualize_to_period = 1,
               return_df=True
             )
+
         if result is not None:
             resp = make_response(result.to_json(), 200)
         else:
