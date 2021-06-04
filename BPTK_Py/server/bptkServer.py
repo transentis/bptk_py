@@ -15,7 +15,6 @@ import pandas as pd
 import json
 import copy
 import uuid
-import jsonpickle
 from json import JSONEncoder
 
 ######################
@@ -65,21 +64,23 @@ class BptkServer(Flask):
 
         try:
             settings = content["settings"]
-
+        
             for scenario_manager_name, scenario_manager_data in settings.items():
                 for scenario_name, scenario_settings in scenario_manager_data.items():
                     scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
-                    constants = scenario_settings["constants"]
-                    for constant_name, constant_settings in constants.items():
-                        scenario.constants[constant_name]=constant_settings
-                    points = scenario_settings["points"]
-                    for points_name, points_settings in points.items():
-                        scenario.points[points_name]=points_settings
+                    if "constants" in scenario_settings:
+                        constants = scenario_settings["constants"]
+                        for constant_name, constant_settings in constants.items():
+                            scenario.constants[constant_name]=constant_settings
+                    if "points" in scenario_settings:
+                        points = scenario_settings["points"]
+                        for points_name, points_settings in points.items():
+                            scenario.points[points_name]=points_settings
                     self.bptk.reset_simulation_model(scenario_manager=scenario_manager_name,scenario=scenario_name)
-
         except KeyError:
             self.logger.info("Settings not specified")
             pass
+
 
         try:
             scenario_managers=content["scenario_managers"]
@@ -133,13 +134,20 @@ class BptkServer(Flask):
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
-            
+        
+        scenarios_dict = dict()
         for scenario in self.bptk.get_scenarios():
-            scenarions.append(scenario)
-        scenarions = jsonify(scenarions)
+            underscore_index = scenario.index("_") # reading the index of the underscore that splits the scenarioMnager from the scenario
+            scneario_manager_name = scenario[:underscore_index]
+            scenario_name = scenario[underscore_index + 1:]
+            if scneario_manager_name not in scenarios_dict: # check if the the scenario_manager_name not in our scenarios_dict
+                # add the new scenario manager name with its corresponding scenario
+                scenarios_dict[scneario_manager_name] = [scenario_name]
+            else:
+                scenarios_dict[scneario_manager_name].append(scenario_name) # append the new scenario to the list correlated with the scenario manager name.
 
-        if scenarions is not None:
-            resp = make_response(scenarions, 200)
+        if scenarios_dict is not None:
+            resp = make_response(scenarios_dict, 200)
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
@@ -209,6 +217,9 @@ class BptkServer(Flask):
         return resp
     
     def agents_resource(self):
+        """
+        The method returns all the agents in the model with their corresponding states and properties.
+        """
         
         if not request.is_json:
             resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
@@ -259,7 +270,11 @@ class BptkServer(Flask):
         return resp
  
     def start_instance_resource(self):
+        """
+        The method mainly stores a cloned copy of the previous bptk in a dictionary along with its key which is a unique key value in hexadecimal. It returns the uuid key of the copy.
+        """
         
+        # Create a universally unique identifier in hex to store 
         cloned_bptk_uuid = uuid.uuid1().hex
         
         self.instances_dict[cloned_bptk_uuid] = self.bptk_copy
@@ -272,6 +287,9 @@ class BptkServer(Flask):
         return resp
     
     def run_step_resource(self, instance_id):
+        """
+        Given the current_instance id, the method returns the first timestep of the simulation.
+        """
         
         if not request.is_json:
             resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
@@ -287,13 +305,14 @@ class BptkServer(Flask):
             for scenario_manager_name, scenario_manager_data in settings.items():
                 for scenario_name, scenario_settings in scenario_manager_data.items():
                     scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
-                    
-                    constants = scenario_settings["constants"]
-                    for constant_name, constant_settings in constants.items():
-                        scenario.constants[constant_name]=constant_settings
-                    points = scenario_settings["points"]
-                    for points_name, points_settings in points.items():
-                        scenario.points[points_name]=points_settings
+                    if "constants" in scenario_settings:
+                        constants = scenario_settings["constants"]
+                        for constant_name, constant_settings in constants.items():
+                            scenario.constants[constant_name]=constant_settings
+                    if "points" in scenario_settings:
+                        points = scenario_settings["points"]
+                        for points_name, points_settings in points.items():
+                            scenario.points[points_name]=points_settings
                     self.bptk.reset_simulation_model(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             self.logger.info("Settings not specified")
@@ -322,7 +341,8 @@ class BptkServer(Flask):
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
-
+        
+        # getting the results for the first time step only
         result = self.bptk.plot_scenarios(
               scenario_managers=scenario_managers,
               scenarios=scenarios,
@@ -330,6 +350,7 @@ class BptkServer(Flask):
               visualize_to_period = 1,
               return_df=True
             )
+
         if result is not None:
             resp = make_response(result.to_json(), 200)
         else:
