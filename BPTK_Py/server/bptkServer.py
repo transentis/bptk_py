@@ -43,8 +43,8 @@ class BptkServer(Flask):
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self.scenarios_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self.equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self.agents_resource)
-        self.route("/start_instance", methods=['POST'], strict_slashes=False)(self.start_instance_resource)
-        self.route("/<instance_id>/run_step", methods=['POST', 'PUT'], strict_slashes=False)(self.run_step_resource)
+        self.route("/start-instance", methods=['POST'], strict_slashes=False)(self.start_instance_resource)
+        self.route("/<instance_id>/run-step", methods=['POST', 'PUT'], strict_slashes=False)(self.run_step_resource)
         
     def home_resource(self):
         return "<h1>BPTK-Py Simulation Service</h1>"
