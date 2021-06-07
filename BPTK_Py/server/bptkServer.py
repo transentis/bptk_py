@@ -15,6 +15,7 @@ import pandas as pd
 import json
 import copy
 import uuid
+import jsonpickle
 from json import JSONEncoder
 
 ######################
@@ -277,10 +278,27 @@ class BptkServer(Flask):
         # Create a universally unique identifier in hex to store 
         cloned_bptk_uuid = uuid.uuid1().hex
         
-        self.instances_dict[cloned_bptk_uuid] = self.bptk_copy
+        try:
+            self.instances_dict[cloned_bptk_uuid] = self.bptk_copy
+        except:
+            resp = make_response('{"error": "expecting bptk to be cloned"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
         
-        if cloned_bptk_uuid is not None:
-            resp = make_response(cloned_bptk_uuid, 200)
+        instance_id_dict = dict()
+        
+        try:
+            instance_id_dict["instance_id"] =  cloned_bptk_uuid
+        except:
+            resp = make_response('{"error": "expecting a uuid value to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+            
+        
+        if instance_id_dict is not None:
+            resp = make_response(instance_id_dict, 200)
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
