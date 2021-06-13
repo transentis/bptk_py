@@ -423,6 +423,8 @@ to define any settings for it.
 
 Now we can easily compare the scenarios:
 
+
+
 .. code:: ipython3
 
     bptk.plot_scenarios(
@@ -436,10 +438,7 @@ Now we can easily compare the scenarios:
         }
     )
 
-
-
 .. image:: output_57_0.png
-
 
 Storing Models Created Using The SD DSL In A Python Class
 ---------------------------------------------------------
@@ -528,6 +527,29 @@ of the code inside.
 
 We can easily plot the scenario and see that it the same model as we
 defined interactively:
+
+.. code:: ipython3
+
+    import BPTK_Py
+    bptk = BPTK_Py.bptk()
+
+.. code:: ipython3
+
+    bptk.plot_scenarios(
+        scenarios="scenario80,scenario100,scenario120",
+        scenario_managers="smSimpleProjectManagementDslClass",
+        equations="openTasks",
+        series_names={
+            "smSimpleProjectManagementDSL_scenario80_openTasks":"scenario80",
+            "smSimpleProjectManagementDSL_scenario100_openTasks":"scenario100",
+            "smSimpleProjectManagementDSL_scenario120_openTasks":"scenario120"
+        }
+    )
+
+
+
+.. image:: output_60_0.png
+
 
 Conclusion
 ~~~~~~~~~~
