@@ -6,19 +6,19 @@ The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modelin
 
 Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as [iseesystems Stella](http://www.iseesystems.com) and then use them _independently_ in an Python environment.
+This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](http://www.iseesystems.com) or [iThink](http://www.iseesystems.com))) and then use them _independently_ in an Python environment.
 
-The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/) on Github.
+The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks that illustrate how to use BPTK. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/) on Github.
 
 ## Main Features
 
-* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
 * The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
+* The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
 * All plotting is done using [Matplotlib](http://www.matplotlib.org).
 * Simulation results are returned as [Pandas dataframes](http://pandas.pydata.org) and thus can easily be used for analytics.
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
-# Getting Help
+## Getting Help
 The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com).
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
@@ -29,85 +29,91 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
-## 1.1.25
+### 1.1.26
+
+* Fix bug in XMILE compiler that causes parsing of if/then/else structures to fail under some circumstances
+* Fix bug in XMILE pulse function that causes the function to misbehave in some circumstances
+* Fix bug in XMILE previous function that causes the function to misbehave in some circumstances
+
+### 1.1.25
 * Improve error handling and fault tolerance on BptkServer
 
-## 1.1.24
+### 1.1.24
 * Update to BptkServer internals
 
-## 1.1.23
+### 1.1.23
 * Add a new experimental feature that allows REST APIs for simulation models to be set up easily.
 
-## 1.1.22
+### 1.1.22
 * SD DSL: Add python power operator (**) to all SD DSL operators
 * XMILE: Ensure SAFEDIV works in complex expressions
 
-## 1.1.21
+### 1.1.21
 * Improve handling of SAFEDIV in SD compiler
 
-## 1.1.20
+### 1.1.20
 * Fix for the SD compiler regarding dimension names usage
 
-## 1.1.19
+### 1.1.19
 * Little fix regarding the SD-Compiler
 
-## 1.1.18
+### 1.1.18
 * Improvement of SD compiler: Support for empty initial value of ``DELAY`` function. Support for dimension names as arguments for functions (e.g. ``SIZE(<dimension>)``)
 
-## 1.1.17
+### 1.1.17
 * Improvement of Extended Data Collector: Renamed to Agent Data Collector and code optimizations
 
-## 1.1.16
+### 1.1.16
 * Bugfix for the plotting component that solves compatibility issues with newer versions of matplotlib
 
-## 1.1.15
-* New dataCollector for retrieving agent-wise data (Refer to [bptk-py Tutorial](https://github.com/transentis/bptk_py_tutorial) for more info)
+### 1.1.15
+* New dataCollector for retrieving agent-wise data (Refer to [BPTK-Py Tutorial](https://github.com/transentis/bptk_py_tutorial) for more info)
 
-## 1.1.14
+### 1.1.14
 * Fixed a bug in the interactive scenario component that caused scenarios being plotted multiple times
 * Fixed a bug that caused the SD operator ``delay`` to not accept floating point values and fixed a bug that caused the same to be parsed incorrectly in some cases.
 
-## 1.1.13
+### 1.1.13
 * Fixed a bug in the XMILE Converter that prevented the SAFEDIV operator to be parsed correctly
 
-## 1.1.12
+### 1.1.12
 * SD-DSL: Fixed a bug that caused converter equations (subtraction and division) to be computed incorrectly.
 
-## 1.1.11
+### 1.1.11
 * SD-DSL: Added support for right-hand side addition and subtraction to support equations such as ``converter.equation = 1 - b``
 * Visualisation for SD-DSL elements now follows conventions to work properly with Matplotlib 3.3+ 
 
-## 1.1.10
+### 1.1.10
 * Visualisation using matplotlib now follows conventions to work properly with Matplotlib 3.3+ 
 
-## 1.1.9
+### 1.1.9
 * SD-DSL: System Dynamics element such as converters did not implement comparison operators (">", "<", ">=", "==", "!="). They have been added
 
-## 1.1.8 
+### 1.1.8 
 * Another bugfix for series renaming. Simplified the code for renaming by using Pandas' standard method ``rename``
 
-## 1.1.7
+### 1.1.7
 * Bugfix for ``plot_scenarios``: The ``series_names`` replacer did not work properly for when only one scenario manager / scenario is given.
 
-## 1.1.6
+### 1.1.6
 * Bugfix for XMILE compiler: A little error in the parser prevented certain models being parsed correctly
 * Bugfix for ``plot_scenarios``: The new error messages showed up for Agent based models although the scenarios were present
 
-## 1.1.5
+### 1.1.5
 * The XMILE compiler is a great tool that handles model conversion from XMILE SD Models to Python. For compatibility and readability, we change the equation names to camelCasing upon conversion. This might be confusing for some users. That's why we decided to give you a new function call that lists all equations for System Dynamics Models. Simply run ``bptk.list_equations()`` (optionally add scenario manager(s) and scenario(s)) and get an overview over available model elements. More details [in our documentation](https://bptk.transentis.com/en/latest/docs/xmile/how-to/how_to_working_with_XMILE/how_to_working_with_XMILE.html).
 * Improved error messages. In previous versions, a long error trace was printed when an equation was not found. Now you get a neat error message output wiht hints as to why the plotting failed.
     * If an equation / scenario / scenario manager is not found, ``BPTK_Py`` gives hints on which similar equations / scenarios / scenario managers might be available for use.
 * Register XMILE models without having to follow the directory structure: ``BPTK_PY`` scans the ``scenarios`` folder upon startup to find new scenario managers and XMILE / ABM models. We developed a simpler way to add simulation models during runtime without having to add scenarios beforehand: ``bptk.register_model("<path_to_itmx_stmx>","<modelname>")``. You can then easily simulate the model just as you're used to.
 
-## 1.1.4
+### 1.1.4
 XMILE equations make use of double-quote enclosed identifiers in case it actually looks like a function call. For example, ``100*"Identifier(enclosed)"`` is a valid equation where one element (stock/flow) is called ``Identifier(enclosed)``. However, we were not able to parse this, until now.
 Update BPTK-Py using the new update mechanism: [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
-## 1.1.3
+### 1.1.3
 We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is 
 why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
-## 1.1.2
+### 1.1.2
 * Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
 * Improvement to (XMILE) SD Compiler: Removed replacement of currency symbols (``€``, ``$`` etc.) and percentage signs with abbreviations. We had implemented this in earlier releases but figured it leads to confusion with modellers.
 
