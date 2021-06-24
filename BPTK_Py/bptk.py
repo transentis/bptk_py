@@ -299,9 +299,15 @@ class bptk():
                                         )
 
     def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                        agent_property_types=[], equations=[],
-                        series_names={}, strategy=False, progressBar=False
+                       agent_property_types=[], equations=[],
+                       kind=None,
+                       alpha=None, stacked=None,
+                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
+                       y_label="",
+                       series_names={}, strategy=False,
+                       progress_bar=False
                         ):
+        
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
             :param scenarios: names of scenarios to simulate
@@ -317,57 +323,7 @@ class bptk():
         agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
-
-        return self.plot_scenarios(scenarios=scenarios, equations=equations, return_df=True, series_names=series_names,
-                                   strategy=strategy, scenario_managers=scenario_managers, agents=agents,
-                                   agent_states=agent_states, agent_properties=agent_properties,
-                                   agent_property_types=agent_property_types, progress_bar=progressBar)
-
-    def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
-
-        agents = agents if type(agents) is list else agents.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
-
-        manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
-
-        return self.abmrunner.run_simulation(scenarios=[scenario],
-                                             agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
-                                             scenario_managers=[manager.name]
-                                             )
-
-    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],
-                       kind=None,
-                       alpha=None, stacked=None,
-                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
-                       y_label="",
-                       series_names={}, strategy=False,
-                       progress_bar=False,
-                       return_df=False):
-
-        """
-         THE method for plotting scenarios for SD as well as Agent based models (ABM)
-            :param scenarios: names of scenarios to plot
-            :param equations:  names of equations to plot (System Dynamics, SD)
-            :param agents: List of agents to plot (Agent based modelling)
-            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
-            :param scenario_managers: names of scenario managers to plot
-            :param kind: type of graph to plot ("line" or "area")
-            :param alpha:  transparency 0 < x <= 1
-            :param stacked: if yes, use stacked (only with kind="bar")
-            :param freq: frequency of time series
-            :param start_date: start date for time series
-            :param title: title of plot
-            :param visualize_from_period: visualize from specific period onwards
-            :param visualize_to_period: visualize until a specific period
-            :param x_label: label for x axis
-            :param y_label: label for y axis
-            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-            :param strategy: set True if you want to use the scenarios' strategies
-            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
-            :param return_df: set True if you want to receive a dataFrame instead of the plot
-            :return: dataFrame with simulation results if return_df=True
-         """
+        
         if not kind: kind = self.config.configuration["kind"]
         if not alpha: alpha = self.config.configuration["alpha"]
         if not stacked: stacked = self.config.configuration["stacked"]
@@ -516,6 +472,77 @@ class bptk():
             df = df.rename(columns=series_names)
         except:
             pass
+        
+        return df
+
+    def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
+
+        agents = agents if type(agents) is list else agents.split(",")
+        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+
+        manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
+
+        return self.abmrunner.run_simulation(scenarios=[scenario],
+                                             agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
+                                             scenario_managers=[manager.name]
+                                             )
+
+    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                       agent_property_types=[], equations=[],
+                       kind=None,
+                       alpha=None, stacked=None,
+                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
+                       y_label="",
+                       series_names={}, strategy=False,
+                       progress_bar=False,
+                       return_df = False
+                      ):
+
+        """
+         THE method for plotting scenarios for SD as well as Agent based models (ABM)
+            :param scenarios: names of scenarios to plot
+            :param equations:  names of equations to plot (System Dynamics, SD)
+            :param agents: List of agents to plot (Agent based modelling)
+            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
+            :param scenario_managers: names of scenario managers to plot
+            :param kind: type of graph to plot ("line" or "area")
+            :param alpha:  transparency 0 < x <= 1
+            :param stacked: if yes, use stacked (only with kind="bar")
+            :param freq: frequency of time series
+            :param start_date: start date for time series
+            :param title: title of plot
+            :param visualize_from_period: visualize from specific period onwards
+            :param visualize_to_period: visualize until a specific period
+            :param x_label: label for x axis
+            :param y_label: label for y axis
+            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+            :param strategy: set True if you want to use the scenarios' strategies
+            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
+            :param return_df: set True if you want to receive a dataFrame instead of the plot
+            :return: dataFrame with simulation results if return_df=True
+         """
+        
+        df = self.run_simulations(scenarios=scenarios,
+                                  scenario_managers=scenario_managers,
+                                  agents=agents,
+                                  agent_states=agent_states,
+                                  agent_properties=agent_properties,
+                                  agent_property_types=agent_property_types,
+                                  equations=equations,
+                                  kind=kind,
+                                  alpha=alpha,
+                                  stacked=stacked,
+                                  freq=freq,
+                                  start_date=start_date,
+                                  title=title,
+                                  visualize_from_period=visualize_from_period,
+                                  visualize_to_period=visualize_to_period,
+                                  x_label=x_label,
+                                  y_label=y_label,
+                                  series_names=series_names,
+                                  strategy=strategy,
+                                  progress_bar=progress_bar
+                                 )
 
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
