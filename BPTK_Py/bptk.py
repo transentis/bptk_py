@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from IPython.display import display
+import pandas as pd
 
 import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod
@@ -34,6 +35,7 @@ from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 from .widgets import Dashboard
 from .widgets import PulseDashboard
+
 
 plt.interactive(True)
 
@@ -305,8 +307,9 @@ class bptk():
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
                        series_names={}, strategy=False,
-                       progress_bar=False
-                        ):
+                       progress_bar=False,
+                       return_format = "df"
+                       ):
         
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
@@ -317,22 +320,19 @@ class bptk():
             :return: dict of simulationScenarios
         """
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
+        print(scenarios)
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
         agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
         agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
+        print(agents)
         
         if not kind: kind = self.config.configuration["kind"]
         if not alpha: alpha = self.config.configuration["alpha"]
         if not stacked: stacked = self.config.configuration["stacked"]
-
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-        equations = equations if type(equations) is list else equations.split(",")
-        agents = agents if type(agents) is list else agents.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+            
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
@@ -380,17 +380,19 @@ class bptk():
 
         consumed_scenarios = []
         consumed_scenario_managers = []
-
+        
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-
+                
                 consumed_scenario_managers += [manager.name]
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
-
+                
+                # df_dict[name] = consumed_scenarios[0]
+                
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
-
+                
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
@@ -473,7 +475,11 @@ class bptk():
         except:
             pass
         
-        return df
+        if return_format == "df" or not return_format:
+            return df
+        elif return_format == "dict":
+            print(list(df.columns.values))
+            return df.to_dict()
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
 
@@ -494,8 +500,7 @@ class bptk():
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
                        series_names={}, strategy=False,
-                       progress_bar=False,
-                       return_df = False
+                       progress_bar=False
                       ):
 
         """
@@ -545,7 +550,6 @@ class bptk():
                                  )
 
         return self.visualizer.plot(df=df,
-                                    return_df=return_df,
                                     visualize_from_period=visualize_from_period,
                                     visualize_to_period=visualize_to_period,
                                     stacked=stacked,
@@ -563,7 +567,7 @@ class bptk():
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
                     freq="D", series_names={}, kind=None):
         """
-        Plot lookup functions. If they come with very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
+        Plot lookup functions. If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
             :param scenarios:  List of scenarios with names
             :param scenario_managers:
             :param lookup_names:
