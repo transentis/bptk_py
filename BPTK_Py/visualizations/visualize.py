@@ -24,7 +24,7 @@ class visualizer():
     def __init__(self,config=None):
         self.config = config
 
-    def plot(self, df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
+    def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
              y_label, start_date="1/1/2018", freq="D", series_names={}):
         """
         Plot method. Creates plots from dataframes
@@ -71,43 +71,56 @@ class visualizer():
             df.rename(columns=new_columns, inplace=True)
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
-        ### Get the plot object
-        if visualize_to_period == 0:
+        if not return_df:
 
-            ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
-                                                      figsize=self.config.configuration["figsize"],
-                                                      title=title,
-                                                      alpha=alpha, color=self.config.configuration["colors"],
-                                                      lw=self.config.configuration["linewidth"])
+            ### Get the plot object
+            if visualize_to_period == 0:
 
-        elif visualize_from_period == visualize_to_period:
-            print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
-                                                                          str(visualize_to_period)))
-            return None
+                ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
+                                                          figsize=self.config.configuration["figsize"],
+                                                          title=title,
+                                                          alpha=alpha, color=self.config.configuration["colors"],
+                                                          lw=self.config.configuration["linewidth"])
 
-        else:
-            if visualize_to_period + 1 > len(df):
-                visualize_to_period = len(df)
+            elif visualize_from_period == visualize_to_period:
+                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
+                                                                              str(visualize_to_period)))
+                return None
 
-            ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
-                                                                         figsize=self.config.configuration["figsize"],
-                                                                         title=title,
-                                                                         alpha=alpha,
-                                                                         color=self.config.configuration["colors"],
-                                                                         lw=self.config.configuration["linewidth"])
-            ### Set axes labels and set the formats
-        if (len(x_label) > 0):
-            ax.set_xlabel(x_label)
+            else:
+                if visualize_to_period + 1 > len(df):
+                    visualize_to_period = len(df)
 
-            # Set the y-axis label
-        if (len(y_label) > 0):
-            ax.set_ylabel(y_label)
+                ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
+                                                                             figsize=self.config.configuration["figsize"],
+                                                                             title=title,
+                                                                             alpha=alpha,
+                                                                             color=self.config.configuration["colors"],
+                                                                             lw=self.config.configuration["linewidth"])
+                ### Set axes labels and set the formats
+            if (len(x_label) > 0):
+                ax.set_xlabel(x_label)
 
-        for ymaj in ax.yaxis.get_majorticklocs():
-            ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+                # Set the y-axis label
+            if (len(y_label) > 0):
+                ax.set_ylabel(y_label)
 
-        self.update_plot_formats(ax)
-        return
+            for ymaj in ax.yaxis.get_majorticklocs():
+                ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+
+            self.update_plot_formats(ax)
+            return
+
+        ### If user wanted a dataframe instead, here it is!
+        elif return_df:
+            if visualize_to_period == 0:
+                return df.iloc[visualize_from_period:]
+            elif visualize_from_period == visualize_to_period:
+                print("[INFO] No data for period t={} to t={}".format(str(visualize_from_period + 1),
+                                                                      str(visualize_to_period + 1)))
+                return None
+            else:
+                return df.iloc[visualize_from_period:visualize_to_period]
 
     def update_plot_formats(self, ax):
         """
