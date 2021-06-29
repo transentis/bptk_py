@@ -319,11 +319,19 @@ class bptk():
             :param scenario_managers: names of scenario managers to select scenarios from
             :return: dict of simulationScenarios
         """
+        expected_agent_property_types = set(["mean", "max", "min", "total"])
+        
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
         agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
         agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
+            
+        if return_format=="dict" or return_format=="json":
+            for agent_property_type in agent_property_types:
+                expected_agent_property_types.add(agent_property_type)
+            agent_property_types=list(expected_agent_property_types)
+            
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
         
@@ -473,10 +481,8 @@ class bptk():
         except:
             pass
         
-        if return_format == "df" or not return_format:
-            return df
-        elif return_format == "dict":
-            return df
+       
+        return df
 
     def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
 

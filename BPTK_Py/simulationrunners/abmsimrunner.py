@@ -11,6 +11,7 @@
 
 
 import pandas as pd
+import json
 
 from .simrunner import SimulationRunner
 from ..logger import log
@@ -154,7 +155,7 @@ class AbmSimulationRunner(SimulationRunner):
                     for state in agent_states:
                         for agent_property in agent_properties:
                                 for property_type in agent_property_types:
-                                    if return_format == "dict":
+                                    if return_format == "dict" or return_format == "json":
                                     
                                         if scenario.scenario_manager not in new_dict:
                                             new_dict[scenario.scenario_manager] = dict()
@@ -172,24 +173,42 @@ class AbmSimulationRunner(SimulationRunner):
                                             new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state] = dict()
 
                                         if "count" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]:
-                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["count"] = df[state+"_"+agent_property + "_" + property_type].count()
+                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["count"] = int(df[state+"_"+agent_property + "_" + property_type].count())
 
                                         if "properties" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]:
                                             new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"] = dict()
 
                                         if agent_property not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"]:
                                             new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property] = dict()
-
-                                        if "mean" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
-                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["mean"] = df[state+"_"+agent_property + "_" + property_type].mean()
-
-                                        if "max" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
-                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["max"] = df[state+"_"+agent_property + "_" + property_type].max()
-                                        if "min" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
-                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["min"] = df[state+"_"+agent_property + "_" + property_type].min()
-
-                                        if "total" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
-                                            new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["total"] = df[state+"_"+agent_property + "_" + property_type].sum()
+                                        
+                                        if property_type=="mean":
+                                            if "mean" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
+                                                if return_format == "json":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["mean"] = df[state+"_"+agent_property + "_" + property_type].to_dict()
+                                                elif return_format=="dict":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["mean"] = df[state+"_"+agent_property + "_" + property_type]
+                                                    
+                                                
+                                        elif property_type=="max":
+                                            if "max" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
+                                                if return_format=="json":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["max"] = df[state+"_"+agent_property + "_" + property_type].to_dict()       
+                                                elif return_format=="dict":    
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["max"] = df[state+"_"+agent_property + "_" + property_type]
+                                                    
+                                        elif property_type=="min":    
+                                            if "min" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
+                                                if return_format=="json":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["min"] = df[state+"_"+agent_property + "_" + property_type].to_dict()
+                                                elif return_format=="dict":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["min"] = df[state+"_"+agent_property + "_" + property_type]
+                                        elif property_type=="total":
+                                            if "total" not in new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]:
+                                                if return_format=="json":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["total"] = df[state+"_"+agent_property + "_" + property_type].to_dict()
+                                                elif return_format=="dict":
+                                                    new_dict[scenario.scenario_manager][scenario.name]["agents"][agent][state]["properties"][agent_property]["total"] = df[state+"_"+agent_property + "_" + property_type]
+                                            
                                     elif return_format == "df":
                                         new_df[scenario.scenario_manager + "_" + scenario.name + "_" + agent + "_" + state+ "_" + agent_property+ "_" + property_type] = df[state+"_"+agent_property + "_" + property_type]
 
@@ -206,13 +225,21 @@ class AbmSimulationRunner(SimulationRunner):
             log("[ERROR] No data to plot found. It seems there is no scenario available.")
 
             return pd.DataFrame()
+        
+        
 
         df.index.name = "t"
         
-        if return_format == "dict":
-            return new_dict
-        elif return_format == "df":
-            return df
+        if return_format=="dict":
+            simulatoin_results=new_dict
+            
+        elif return_format=="json":
+            simulatoin_results=json.dumps(new_dict, indent=2)
+            
+        elif return_format=="df":
+            simulatoin_results=df
+            
+        return simulatoin_results
 
     def train_simulation(self, scenarios, agents, episodes = 1, scenario_managers=[], progress_widget=None, agent_states=[], agent_properties=[], agent_property_types=[]):
         """
