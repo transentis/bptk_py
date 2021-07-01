@@ -319,18 +319,11 @@ class bptk():
             :param scenario_managers: names of scenario managers to select scenarios from
             :return: dict of simulationScenarios
         """
-        expected_agent_property_types = set(["mean", "max", "min", "total"])
-        
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")
         agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
         agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
-            
-        if return_format=="dict" or return_format=="json":
-            for agent_property_type in agent_property_types:
-                expected_agent_property_types.add(agent_property_type)
-            agent_property_types=list(expected_agent_property_types)
             
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
@@ -373,7 +366,7 @@ class bptk():
                 "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
             return
 
-        dfs = []
+        simulation_results = []
         scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
         # scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
@@ -386,7 +379,8 @@ class bptk():
 
         consumed_scenarios = []
         consumed_scenario_managers = []
-        new_dict = dict()
+        abm_results_dict = dict()
+        sd_results_dict = dict()
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
@@ -397,14 +391,14 @@ class bptk():
                 
                 runner = AbmSimulationRunner(self.scenario_manager_factory, self)
                 
-                dfs += [runner.run_simulation(
+                simulation_results += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
                     agent_property_types=agent_property_types, progress_bar=progress_bar,
                     scenario_managers=[manager.name],
 
                     strategy=strategy,
-                    new_dict=new_dict,
+                    abm_results_dict=abm_results_dict,
                     return_format=return_format
                 )]
 
@@ -414,12 +408,13 @@ class bptk():
                 runner = SDSimulationRunner(self.scenario_manager_factory, self)
 
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
-                dfs += [runner.run_simulation(
+                simulation_results += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_managers=[manager.name],
-
                     strategy=strategy,
+                    sd_results_dict=sd_results_dict,
+                    return_format=return_format
                 )]
 
         ## Check whether one or many scenarios / scenario managers were not simulated. This means, they were not defined!
@@ -455,18 +450,18 @@ class bptk():
 
         # prepare dataframes
 
-        if len(dfs) == 0:
+        if len(simulation_results) == 0:
             log("[WARN] No output data produced. Hopefully this was your intention.")
             return None
 
         # Concatenate DataFrames
-        if len(dfs) > 1:
-            df = dfs.pop(0)
-            for tmp_df in dfs:
+        if len(simulation_results) > 1:
+            df = simulation_results.pop(0)
+            for tmp_df in simulation_results:
                 df = df.join(tmp_df)
 
-        elif len(dfs) == 1:
-            df = dfs[0]
+        elif len(simulation_results) == 1:
+            df = simulation_results[0]
 
         else:
             log("[ERROR] No results produced. Check your parameters!")
