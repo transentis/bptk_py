@@ -9,6 +9,7 @@ results/
 venv
 .idea/
 .ipynb_checkpoints/
+.vscode
 dist/
 *.egg-info
 build/
