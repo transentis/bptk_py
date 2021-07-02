@@ -6,7 +6,7 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2021 transentis labs GmbH
 # MIT License
 
 
@@ -21,16 +21,10 @@ from ..logger import log
 
 now = datetime.datetime.now()
 
-
-######################
-### SIMULATOR CLASS ##
-######################
-
-
-class Simulator():
+class XmileWrapper():
     """
-    Pretty simple SD simulator.
-    Will just run the given simulation model from start to the model's stoptime or any other specified stoptime
+    Wraps the SimulationModel class and provides the methods needed to run the simulation and collect data.
+    Run the given simulation model from start to the model's stoptime or any other specified stoptime
     Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant and continue running from 501 to 1000.
     You can then collect the whole results in a DataFrame using the output variable and adding "frame".Output as a DataFrame to external classes
     """

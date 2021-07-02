@@ -28,7 +28,6 @@ from .modelchecker import ModelChecker
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerSD
 from .scenariomanager import SimulationScenario
-from .sdsimulator import SDsimulationWrapper
 from .simulationrunners import ModelRunner
 from .simulationrunners import XmileRunner
 from .util.didyoumean import didyoumean
@@ -157,7 +156,7 @@ class bptk():
         equations = equations if type(equations) is list else equations.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
 
-        return SDsimulationWrapper(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
+        return XmileRunner(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)

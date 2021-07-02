@@ -17,14 +17,13 @@ class SimulationRunner():
     It handles the simulation running for simulation models with the specified scenarios
     """
 
-    def __init__(self, scenario_manager_factory, bptk):
+    def __init__(self, scenario_manager_factory):
         """
 
         :param scenario_manager_factory: the scenario manager factory of bptk
         :param bptk: A live bptk object
         """
         self.scenario_manager_factory = scenario_manager_factory
-        self.bptk = bptk
         self.df = pd.DataFrame()
 
     def run_simulation(self, scenarios, equations, agents, scenario_managers=[], strategy=False):
