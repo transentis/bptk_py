@@ -21,7 +21,7 @@ from scipy.interpolate import interp1d
 from .agent import Agent
 from .event import Event
 from ..logger import log
-from ..systemdynamics import Constant, Converter, Flow, Biflow, NaryOperator, Stock
+from ..sddsl import Constant, Converter, Flow, Biflow, NaryOperator, Stock
 
 
 ###################
