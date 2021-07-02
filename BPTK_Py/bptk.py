@@ -29,8 +29,8 @@ from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerSD
 from .scenariomanager import SimulationScenario
 from .sdsimulator import SDsimulationWrapper
-from .simulationrunners import AbmSimulationRunner
-from .simulationrunners import SDSimulationRunner
+from .simulationrunners import ModelRunner
+from .simulationrunners import XmileRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 from .widgets import Dashboard
@@ -142,7 +142,7 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = AbmSimulationRunner(self.scenario_manager_factory, self)
+        self.abmrunner = ModelRunner(self.scenario_manager_factory, self) #rename self.abmrunner if still needed
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -428,13 +428,13 @@ class bptk():
 
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
-            # Handle Agent based models (agents)
+            # Handle Models
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
 
                 consumed_scenario_managers += [manager.name]
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
 
-                runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+                runner = ModelRunner(self.scenario_manager_factory, self)
 
                 dfs += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
@@ -445,10 +445,10 @@ class bptk():
                     strategy=strategy,
                 )]
 
-            # Handle SD models
+            # Handle XMILE models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 consumed_scenario_managers += [manager.name]
-                runner = SDSimulationRunner(self.scenario_manager_factory, self)
+                runner = XmileRunner(self.scenario_manager_factory, self)
 
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 dfs += [runner.run_simulation(
