@@ -18,10 +18,10 @@ import BPTK_Py.config.config as config
 from ..modelmonitor import FileMonitor
 from ..logger import log
 from ..modelmonitor import ModelMonitor
-from ..scenariomanager import ScenarioManagerABM
+from ..scenariomanager import ScenarioManagerModel
 
 from .scenario import SimulationScenario
-from .scenario_manager_sd import ScenarioManagerSD
+from .scenario_manager_xmile import ScenarioManagerXmile
 
 
 ####################################
@@ -86,7 +86,7 @@ class ScenarioManagerFactory():
             if "type" in model_dictionary[scenario_manager_name].keys() and model_dictionary[scenario_manager_name][
                 "type"].lower() == "abm":
 
-                self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(
+                self.scenario_managers[scenario_manager_name] = ScenarioManagerModel(
                     model_dictionary[scenario_manager_name],
                     scenario_manager_name,
                     filenames=[filename], model=model)
@@ -95,7 +95,7 @@ class ScenarioManagerFactory():
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:
                 if scenario_manager_name not in self.scenario_managers.keys():
-                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points={},
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerXmile(base_points={},
                                                                                       base_constants={},
                                                                                       scenarios={},
                                                                                       name=scenario_manager_name)
@@ -255,7 +255,7 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = ScenarioManagerSD(scenarios={scenario.name: scenario},
+            self.scenario_managers[scenario_manager] = ScenarioManagerXmile(scenarios={scenario.name: scenario},
                                                                          name=scenario_manager,
                                                                          model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()

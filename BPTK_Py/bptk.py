@@ -27,7 +27,7 @@ import BPTK_Py.logger.logger as logmod
 from .logger import log
 from .modelchecker import ModelChecker
 from .scenariomanager import ScenarioManagerFactory
-from .scenariomanager import ScenarioManagerSD
+from .scenariomanager import ScenarioManagerXmile
 from .scenariomanager import SimulationScenario
 from .simulationrunners import ModelRunner
 from .simulationrunners import XmileRunner
@@ -1001,7 +1001,7 @@ class bptk():
             else:
                 model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
                 model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
-                manager = ScenarioManagerSD(
+                manager = ScenarioManagerXmile(
                     scenarios={},
                     model=model,
                     name=scenario_manager_name,

@@ -27,7 +27,7 @@ from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 #############################
 
 
-class ScenarioManagerSD(ScenarioManager):
+class ScenarioManagerXmile(ScenarioManager):
     """
     This class reads and writes scenarios and starts the file monitors for each scenario's model
     """

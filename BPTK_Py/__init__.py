@@ -6,7 +6,6 @@ from .modeling import Event, DelayedEvent, Agent, DataCollector, Model, Schedule
 from .bptk import bptk, conf
 from .config import config
 from .logger import log
-from .remote import connect
 from .server import BptkServer
 
 try:
