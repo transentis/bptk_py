@@ -248,12 +248,13 @@ class bptk():
                 "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
             sys.exit
 
+        #TODO: Add tests for training
         dfs = []
         for name, manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Agent based models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-                runner = AbmSimulationRunner(self.scenario_manager_factory, self)
+                runner = ModelRunner(self.scenario_manager_factory, self)
                 dfs += [runner.train_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
