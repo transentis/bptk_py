@@ -313,12 +313,28 @@ class bptk():
         
         """
         Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
-            :param scenarios: names of scenarios to simulate
-            :param equations: names of equations to simulate
-            :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario_name.csv
-            :param scenario_managers: names of scenario managers to select scenarios from
-            :return: dict of simulationScenarios
-        """
+            :param scenarios: names of scenarios to plot
+            :param equations:  names of equations to plot (System Dynamics, SD)
+            :param agents: List of agents to plot (Agent based modelling)
+            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
+            :param scenario_managers: names of scenario managers to plot
+            :param kind: type of graph to plot ("line" or "area")
+            :param alpha:  transparency 0 < x <= 1
+            :param stacked: if yes, use stacked (only with kind="bar")
+            :param freq: frequency of time series
+            :param start_date: start date for time series
+            :param title: title of plot
+            :param visualize_from_period: visualize from specific period onwards
+            :param visualize_to_period: visualize until a specific period
+            :param x_label: label for x axis
+            :param y_label: label for y axis
+            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
+            :param strategy: set True if you want to use the scenarios' strategies
+            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
+            :param return_format: the data type of the return.(can either be dataframe, dictionary or json)
+        
+            :return: based on the return_format value, the function would return the simulations results in the desired format(df, dict, or json).
+            """
         scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
         equations = equations if type(equations) is list else equations.split(",")

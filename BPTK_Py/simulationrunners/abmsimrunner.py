@@ -80,6 +80,8 @@ class AbmSimulationRunner(SimulationRunner):
     def run_simulation(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], strategy=False, progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
+        :param abm_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format.
+        :param return_format: the desired data structure of our simulation (can either be df, dict, or json).
         :param scenarios: scenarios to plot for
         :param agents: Agents to plot for
         :param scenario_managers: Scenario managers to plot for
