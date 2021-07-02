@@ -157,4 +157,3 @@ class visualizer():
             ax.ticklabel_format(style='plain')
         except:
             pass
-

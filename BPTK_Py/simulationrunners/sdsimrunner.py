@@ -11,6 +11,7 @@
 
 
 import pandas as pd
+import json
 
 from ..logger import log
 from .simrunner import SimulationRunner
@@ -28,9 +29,11 @@ class SDSimulationRunner(SimulationRunner):
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
-    def __generate_df(self, scenarios, equations):
+    def __generate_df(self, sd_results_dict, return_format, scenarios, equations):
         """
         Generates a dataFrame from simulation results. Generate series names and time series
+        :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
+        :param return_format: the data type of the return.(can either be dataframe, dictionary or json)
         :param scenarios: names of scenarios
         :param equations:  names of equations
         :param start_date: start date of the timeseries
@@ -38,9 +41,10 @@ class SDSimulationRunner(SimulationRunner):
         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
         :return:
         """
-
+        
         ## Generate empty df to plot
         plot_df = pd.DataFrame()
+
 
         for scenario in scenarios.keys():
             df = scenarios[scenario].result
@@ -50,15 +54,41 @@ class SDSimulationRunner(SimulationRunner):
 
                     if equation in df.columns:
                         series = df[equation]
-
+            
+                        if scenarios[scenario].scenario_manager not in sd_results_dict:
+                            sd_results_dict[scenarios[scenario].scenario_manager]=dict()
+                        
+                        if scenarios[scenario].name not in sd_results_dict[scenarios[scenario].scenario_manager]:
+                            sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]=dict()
+                            
+                        if "equations" not in sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]:
+                            sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]["equations"]=dict()
+                            
+                        if equation not in sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]["equations"]:
+                            if return_format == "json":
+                                sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]["equations"][equation]= df[equation].to_dict()
+                            else:
+                                sd_results_dict[scenarios[scenario].scenario_manager][scenarios[scenario].name]["equations"][equation]= df[equation]
+                                
+                            
                         series.name = scenarios[scenario].scenario_manager + "_" + scenarios[scenario].name + "_" + equation
                         plot_df[series.name] = series
+            
+            simulation_results=[]
+            if return_format=="dict":
+                simulation_results=sd_results_dict
+            elif return_format=="json":
+                simulation_results=json.dumps(sd_results_dict, indent=2)
+            elif return_format=="df":
+                simulation_results=plot_df
            
-        return plot_df
+        return simulation_results
 
-    def run_simulation(self, scenarios, equations, scenario_managers=[], strategy=False, ):
+    def run_simulation(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], strategy=False, ):
         """
          Generic method for plotting scenarios
+         :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
+        :param return_format: the data type of the return.(can either be dataframe, dictionary or json).
          :param scenarios: names of scenarios to plot
          :param equations:  names of equations to plot
          :param scenario_managers: names of scenario managers to plot
@@ -137,5 +167,5 @@ class SDSimulationRunner(SimulationRunner):
 
                 if len(nearest_equations) > 0:log("[ERROR] No simulation model containing equation \"{}\". Did you maybe mean one of \"{}\"?".format(equation,", ".join(nearest_equations)))
                 else: log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
-        return self.__generate_df(scenario_objects, dict_equations,
+        return self.__generate_df(sd_results_dict, return_format, scenario_objects, dict_equations,
                                 )
