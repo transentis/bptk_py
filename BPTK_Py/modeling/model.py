@@ -46,6 +46,7 @@ class Model:
 
         self._caching_on = False
 
+        # for ABM models
         self.properties = {}
         self.agents = []
         self.name = name

@@ -21,9 +21,9 @@ from ..logger import log
 ############################
 
 
-class AbmSimulationRunner(SimulationRunner):
+class ModelRunner(SimulationRunner):
     """
-    Similar to the visualizer class, this class makes sure to create a valid dataframe from the Agent based simulation results and plot them
+    This class runs agent-based, sd dsl and hybrid simulation models. 
     """
 
 

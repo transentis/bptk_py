@@ -22,9 +22,9 @@ from ..sdsimulator import SDsimulationWrapper
 ################################
 
 
-class SDSimulationRunner(SimulationRunner):
+class XmileRunner(SimulationRunner):
     """
-    This class runs System dynamics simulations
+    This class runs XMILE simulations
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}

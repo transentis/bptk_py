@@ -144,7 +144,7 @@ class ScenarioManagerSD(ScenarioManager):
             self.instantiate_model()
 
     def  get_cloned_model(self, model):
-        #TODO: looks like this should be a function of model, not of scenario manager sd
+        #TODO: clones a SimulatiomModel  - in principle this could also be part of SimulationModel
         if not model:
             return None
 
@@ -189,7 +189,7 @@ class ScenarioManagerSD(ScenarioManager):
 
     def instantiate_model(self):
         """
-        This method generates the model. Loads the model_file from disk. If the file is not available, it will first parse the source itmx file using sd-compiler
+        This method generates the XMILE model using the XMILE compiler. Loads the model_file from disk. If the file is not available, it will first parse the source file using the xmile compiler
         :return: None
         """
 

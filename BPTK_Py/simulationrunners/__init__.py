@@ -1,3 +1,3 @@
-from .abmsimrunner import AbmSimulationRunner
-from .sdsimrunner import SDSimulationRunner
+from .model_runner import ModelRunner
+from .xmile_runner import XmileRunner
 from .simrunner import SimulationRunner

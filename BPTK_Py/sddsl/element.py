@@ -13,26 +13,18 @@
 from .operators import *
 
 import BPTK_Py.config.config as config
-import statistics
 import pandas as pd
 import numpy as np
-import random
-import math
-import scipy
-import scipy.stats
 from scipy.stats import norm
 
-import matplotlib as plt
 
 class Element:
-    """
-    Generic element in a SD model. Other model elements implement concrete logic within
-    """
+    """Generic element in a SD model. Other model elements implement concrete logic within"""
 
     type = "Element"
 
     def __init__(self, model, name, function_string = None):
-
+        """Initialize the element."""
         self.model = model
         self.name = name
         self.converters = []
@@ -43,11 +35,9 @@ class Element:
         self._equation = None
         self.generate_function()
 
+    @classmethod
     def default_function_string(self):
-        """
-        Returns a stub lambda function as string: For each T, return 0
-        :return:
-        """
+        """Returns a stub lambda function as string: For each T, return 0"""
         return "lambda model, t: 0"
 
     def generate_function(self):
@@ -117,60 +107,78 @@ class Element:
     ### Operator overrides
 
     def __str__(self):
+        """Returns the term."""
         return self.term()
 
     def __call__(self, *args, **kwargs):
+        """Evalues the equation this element represents."""
         return self.model.evaluate_equation(self.name, args[0])
 
     def __mul__(self, other):
+        """Left Multiply with other operators"""
         return MultiplicationOperator(self, other)
 
     def __rmul__(self, other):
+        """Right multiply with other operators."""
         return NumericalMultiplicationOperator(other, self)
 
     def __add__(self, other):
+        """Left add with other operators."""
         return AdditionOperator(self, other)
 
     def __radd__(self, other):
+        """Right add with other operator"""
         return AdditionOperator(other, self)
 
     def __sub__(self, other):
+        """Substract other operator."""
         return SubtractionOperator(self, other)
 
     def __rsub__(self, other):
+        """Be substracted from another operator"""
         return SubtractionOperator(other, self)
 
     def __truediv__(self, other):
+        """Divide by another operator"""
         return DivisionOperator(self, other)
 
     def __rtruediv__(self, other):
+        """Divide another operator"""
         return DivisionOperator(other, self)
 
     def __neg__(self):
+        """Multiply with -1"""
         return NumericalMultiplicationOperator(self, (-1))
 
     def __gt__(self,other):
+        """Greather than another operator"""
         return ComparisonOperator(self, other, ">")
 
     def __lt__(self, other):
+        """Less than another operator"""
         return ComparisonOperator(self, other, "<")
 
     def __le__(self, other):
+        """Less than or equal to another operator"""
         return ComparisonOperator(self, other, "<=")
 
     def __ge__(self, other):
+        """Greater or equal to another operator"""
         return ComparisonOperator(self, other, ">=")
 
     def __eq__(self, other):
+        """Equal to another operator"""
         return ComparisonOperator(self, other, "==")
 
     def __ne__(self, other):
+        """Not equal to another operator"""
         return ComparisonOperator(self, other, "!=")
 
     def __pow__(self, power):
+        "Power Operator"
         return PowerOperator(self,power)
 
-
+    @classmethod
     def update_plot_formats(self, ax):
         """
         Configure the plot formats for the labels. Generates the formatting for y labels
@@ -184,7 +192,9 @@ class Element:
 
 class ElementError(Exception):
     def __init__(self, value):
+        """Initialize element"""
         self.value = value
 
     def __str__(self):
+        """Stringify itself."""
         return repr(self.value)
