@@ -19,15 +19,21 @@ The best way to get started with BPTK-Py is our tutorial, which contains a numbe
 * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 ## Getting Help
+
+BPTK-Py is developed and maintained by [transentis labs](http://www.transentis.com/business-prototyping-toolki/en/). 
+
 The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com).
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
-BPTK-Py is developed and maintained by transentis labs GmbH. 
+Recently we have also set up a [meetup group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) that gathers online monthly. This is a good place to see BPTK in action, ask questions and suggest new features.
 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 1.1.27
+* Fix bug in XMILE compiler regrading parsing of names that start with a keyword
 
 ### 1.1.26
 
