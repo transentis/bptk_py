@@ -732,7 +732,7 @@ class bptk():
 
             # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
             scenario = scenarios[scenario_name]
-            self.reset_simulation_model(scenario_manager=scenario.scenario_manager, scenario=scenario_name)
+            self.reset_simulation_cache(scenario_manager=scenario.scenario_manager, scenario=scenario_name)
 
             ## Points in time where the extended strategy makes changes
             points_to_change_at = list(extended_strategy[scenario_name].keys())
@@ -772,7 +772,7 @@ class bptk():
 
     def reset_simulation_model(self, scenario_manager="", scenario=""):
         print("Deprecateda and will be remove soon - please use reset_simulation_cache instead")
-        self.reset_simulation_cache(self,scenario_manager="",sceanrio="")
+        self.reset_simulation_cache(self,scenario_manager,scenario)
 
     def reset_simulation_cache(self, scenario_manager="", scenario=""):
         """
@@ -1131,7 +1131,7 @@ class bptk():
             for setting in settings:
                 for setting_index, key in enumerate(interactive_settings):
                     scenario.set_property_value(key, setting[setting_index])
-                self.reset_simulation_model(
+                self.reset_simulation_cache(
                     scenario_manager=scenario_manager,
                     scenario=interactive_scenario)
                 df = self.plot_scenarios(

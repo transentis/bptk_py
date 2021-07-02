@@ -160,7 +160,7 @@ class PulseDashboard():
             # Reset memo of simulations
             for manager in self.scenario_managers:
                 for scenario in self.scenarios:
-                    self.bptk.reset_simulation_model(scenario_manager=manager, scenario=scenario)
+                    self.bptk.reset_simulation_cache(scenario_manager=manager, scenario=scenario)
 
             # print output
             with self.output:
