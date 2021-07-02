@@ -2,7 +2,7 @@
 import pkg_resources
 
 import BPTK_Py.sddsl.functions as sd_functions
-from .abm import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler
+from .modeling import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler
 from .bptk import bptk, conf
 from .config import config
 from .logger import log

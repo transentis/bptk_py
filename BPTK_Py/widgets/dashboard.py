@@ -17,7 +17,7 @@ import numpy as np
 from ipywidgets import interact
 
 import BPTK_Py.config.config as config
-from ..abm import Model
+from ..modeling import Model
 from ..logger import log
 from ..scenariomanager import SimulationScenario
 

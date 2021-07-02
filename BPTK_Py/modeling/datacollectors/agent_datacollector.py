@@ -14,7 +14,7 @@
 ## DATACOLLECTOR CLASS ##
 #########################
 
-from BPTK_Py.abm import DataCollector
+from ..dataCollector import DataCollector
 from copy import deepcopy
 import BPTK_Py.config as config
 import pandas as pd

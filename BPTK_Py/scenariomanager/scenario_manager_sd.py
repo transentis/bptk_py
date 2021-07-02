@@ -18,6 +18,7 @@ import BPTK_Py.config.config as config
 from ..logger import log
 from .scenario_manager import ScenarioManager
 from .scenario import SimulationScenario
+from ..modeling.model import Model
 from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 
 
@@ -147,7 +148,6 @@ class ScenarioManagerSD(ScenarioManager):
         if not model:
             return None
 
-        from ..abm import Model
         new_mod = Model(starttime=model.starttime, stoptime=model.stoptime, dt=model.dt, name=model.name)
 
 
@@ -193,8 +193,7 @@ class ScenarioManagerSD(ScenarioManager):
         :return: None
         """
 
-        # do nothing if this is an ABM model
-        from ..abm import Model
+        # do nothing if this is a hybrid model
         if isinstance(self.model, Model):
             return
 

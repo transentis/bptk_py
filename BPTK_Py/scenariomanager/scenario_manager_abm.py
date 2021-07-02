@@ -13,8 +13,9 @@
 from ..logger import log
 import importlib
 
-from ..abm.simultaneousScheduler import SimultaneousScheduler
-from ..abm.dataCollector import DataCollector
+from ..modeling.simultaneousScheduler import SimultaneousScheduler
+from ..modeling.dataCollector import DataCollector
+from ..modeling.model import Model
 
 from .scenario_manager import ScenarioManager
 
@@ -36,7 +37,6 @@ class ScenarioManagerABM(ScenarioManager):
         :param name: name of scenario manager
         :param model: If this parameter contains an instance of BPTK_Py.Model, the scenario manager does not try to load an external code file
         """
-        from ..abm.model import Model
         if model and not isinstance(model, Model):
             raise ValueError("model param is not of type BPTK_Py.Model")
 
