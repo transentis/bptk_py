@@ -143,7 +143,7 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = ModelRunner(self.scenario_manager_factory, self) #rename self.abmrunner if still needed
+        self.abmrunner = ModelRunner(self.scenario_manager_factory) #rename self.abmrunner if still needed
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
@@ -407,7 +407,7 @@ class bptk():
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
 
                 
-                runner = ModelRunner(self.scenario_manager_factory, self)
+                runner = ModelRunner(self.scenario_manager_factory)
                 
                 simulation_results += [runner.run_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
@@ -423,7 +423,7 @@ class bptk():
             # Handle XMILE models
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 consumed_scenario_managers += [manager.name]
-                runner = XmileRunner(self.scenario_manager_factory, self)
+                runner = XmileRunner(self.scenario_manager_factory)
 
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 simulation_results += [runner.run_simulation(
