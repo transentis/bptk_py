@@ -19,12 +19,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from IPython.display import display
-<<<<<<< HEAD
 import pandas as pd
-||||||| 1eb11e7
-=======
 from IPython import get_ipython
->>>>>>> master
 
 import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod

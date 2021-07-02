@@ -122,6 +122,8 @@ class visualizer():
             else:
                 return df.iloc[visualize_from_period:visualize_to_period]
 
+
+
     def update_plot_formats(self, ax):
         """
         Configure the plot formats for the labels. Generates the formatting for y labels
@@ -155,4 +157,3 @@ class visualizer():
             ax.ticklabel_format(style='plain')
         except:
             pass
-
