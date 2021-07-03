@@ -11,13 +11,11 @@
 
 import itertools
 import sys
-# neded for the progress widget in train_simulations
-import threading
+import threading # needed for the progress widget in train_simulations
 
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from IPython.display import display
 import pandas as pd
 from IPython import get_ipython
@@ -43,6 +41,7 @@ plt.interactive(True)
 class conf:
 
     def __init__(self):
+        """Initialze config zu defaults."""
         self.loglevel = default_config.loglevel
         self.matplotlib_rc_settings = default_config.matplotlib_rc_settings
         self.colors = default_config.transentis_colors
@@ -57,6 +56,7 @@ class conf:
 ### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
 
+    @classmethod
     def update(self):
         """
         This method updates BPTK to the newest version that's available on PyPi.
@@ -78,7 +78,7 @@ class bptk():
         index = PackageIndex()
         from distlib.version import NormalizedVersion as version
         import BPTK_Py
-        import subprocess, sys
+        import subprocess
         results = index.search('bptk-py')
         package_version = ""
 
@@ -112,7 +112,7 @@ class bptk():
         import BPTK_Py
         self.version = BPTK_Py.__version__
 
-        if configuration and type(configuration) is dict:
+        if configuration and isinstance(configuration, dict):
 
             for key in config.configuration.keys():
                 if key in configuration.keys():
@@ -143,9 +143,19 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = ModelRunner(self.scenario_manager_factory) #rename self.abmrunner if still needed
+        self.abmrunner = ModelRunner(self.scenario_manager_factory) #rename self.abmrunner to self.model_runner if still needed
+
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+        print("Deprecated. Use run_scenarios_with_strategy")
+        self.run_scenarios_with_strategy(
+            scenarios=scenarios,
+            equations=equations,
+            output=output,
+            scenario_managers=scenario_managers
+        )
+
+    def run_scenarios_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         method to run raw simulations (if you want to omit plotting). Simulates with the strategies of the scenarios
             :param scenarios: names of scenarios to simulate
@@ -154,20 +164,43 @@ class bptk():
             :param scenario_managers: names of scenario managers to select scenarios from
             :return: dict of SimulationScenario
         """
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        equations = equations if type(equations) is list else equations.split(",")
+        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
+        equations = equations if isinstance(equations, list) else equations.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
 
         return XmileRunner(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
-
     def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                           progress_bar=False):
+        
+        print ("Deprecated. Use train scenarios instead.")
+        self.train_scenarios(
+            scenarios=scenarios,
+            scenario_managers=scenario_managers,
+            episodes=episodes,
+            agents=agents,
+            agent_states=agent_states,
+            agent_properties=agent_properties,
+            agent_property_types=agent_property_types,
+            series_names=series_names,
+            return_df=return_df,
+            progress_bar=progress_bar
+        )
+   
+    def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
+                          agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
+                          progress_bar=False):
         """
-        Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
+        Used to run a scenario repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methods are called on the underlying model.
+
+        The method plots the agent states and properties that are passed to the method ... this will typically be data used to evaluate whether training was successful.
+
+        Once the scenario has been trained, it can be used in plot_scenarios like any other scenario.
+        
+        This method doesn't work for XMILE models.
             :param episodes: the number of episodes to run
             :param scenarios: the scenarios to run
             :param scenario_managers: the scenario managers to select the scenarios from
@@ -176,9 +209,11 @@ class bptk():
             :param agent_properties: the agent property information we are interested in
             :param agent_property_types: the agent property type we are interested in
             :param series_names: allows renaming of variables in the plots
-            :param progressBar: shows a progress bar that tracks the epsiode number
+            :param progress_bar: shows a progress bar that tracks the epsiode number
             :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
+
+        #TODO: Add tests for train_scenarios
 
         log("[INFO] Starting model training")
 
@@ -200,10 +235,10 @@ class bptk():
             thread.start()
             thread.join()
         else:
-            return self._train_simulations(scenarios, scenario_managers, episodes, agents, agent_states,
+            return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
                                            agent_properties, agent_property_types, series_names, return_df)
 
-    def _train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
+    def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                            agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                            progress_widget=None):
         """
@@ -220,8 +255,8 @@ class bptk():
             :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
 
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
+        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
+        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
         agents = agents if type(agents) is list else agents.split(",")
         agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
 
@@ -251,11 +286,11 @@ class bptk():
 
         #TODO: Add tests for training
         dfs = []
-        for name, manager in self.scenario_manager_factory.scenario_managers.items():
+        for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle abm, sd-dsl and hybrid models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-                runner = ModelRunner(self.scenario_manager_factory, self)
+                runner = ModelRunner(self.scenario_manager_factory)
                 dfs += [runner.train_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
@@ -302,33 +337,37 @@ class bptk():
                                         )
 
     def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],
-                       kind=None,
-                       alpha=None, stacked=None,
-                       freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
-                       y_label="",
-                       series_names={}, strategy=False,
+                       agent_property_types=[], equations=[], series_names={},strategy=False,
+                       progress_bar=False
+                       ):
+        print("Deprecated and will be removed soon. Use run_scenarios instead")
+        self.run_scenarios(
+            scenarios=scenarios,
+            scenario_managers=scenario_managers,
+            agents=agents,
+            agent_states=agent_states,
+            agent_properties=agent_properties,
+            agent_property_types=agent_property_types,
+            equations=equations,
+            series_names=series_names,
+            strategy=strategy,
+            progress_bar=progress_bar,
+            return_format="df"
+        )
+
+    def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                       agent_property_types=[], equations=[], series_names={},strategy=False,
                        progress_bar=False,
                        return_format = "df"
                        ):
         
         """
-        Method to run simulations (if you want to omit plotting). Use it to bypass plotting and obtain raw results
+        Run a number of scenarios and return the results either as dictionaries or as a dataframe.
             :param scenarios: names of scenarios to plot
             :param equations:  names of equations to plot (System Dynamics, SD)
             :param agents: List of agents to plot (Agent based modelling)
             :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
             :param scenario_managers: names of scenario managers to plot
-            :param kind: type of graph to plot ("line" or "area")
-            :param alpha:  transparency 0 < x <= 1
-            :param stacked: if yes, use stacked (only with kind="bar")
-            :param freq: frequency of time series
-            :param start_date: start date for time series
-            :param title: title of plot
-            :param visualize_from_period: visualize from specific period onwards
-            :param visualize_to_period: visualize until a specific period
-            :param x_label: label for x axis
-            :param y_label: label for y axis
             :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
             :param strategy: set True if you want to use the scenarios' strategies
             :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
@@ -336,19 +375,15 @@ class bptk():
         
             :return: based on the return_format value, the function would return the simulations results in the desired format(df, dict, or json).
             """
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-        equations = equations if type(equations) is list else equations.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
-        agent_properties = agent_properties if type(agent_properties) is list else agent_properties.split(",")
+        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
+        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
+        equations = equations if isinstance(equations, list) else equations.split(",")
+        agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
+        agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
             
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
         
-        if not kind: kind = self.config.configuration["kind"]
-        if not alpha: alpha = self.config.configuration["alpha"]
-        if not stacked: stacked = self.config.configuration["stacked"]
-            
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
@@ -384,8 +419,6 @@ class bptk():
             return
 
         simulation_results = []
-        scenario_manager_names = list(self.scenario_manager_factory.scenario_managers.keys())
-        # scenario_managers = [x for x in scenario_managers if x in scenario_manager_names]
 
         if len(scenario_managers) == 0:
             log(
@@ -398,7 +431,7 @@ class bptk():
         consumed_scenario_managers = []
         abm_results_dict = dict()
         sd_results_dict = dict()
-        for name, manager in self.scenario_manager_factory.scenario_managers.items():
+        for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Models
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
@@ -544,23 +577,13 @@ class bptk():
             :return: dataFrame with simulation results if return_df=True
          """
         
-        df = self.run_simulations(scenarios=scenarios,
+        df = self.run_scenarios(scenarios=scenarios,
                                   scenario_managers=scenario_managers,
                                   agents=agents,
                                   agent_states=agent_states,
                                   agent_properties=agent_properties,
                                   agent_property_types=agent_property_types,
                                   equations=equations,
-                                  kind=kind,
-                                  alpha=alpha,
-                                  stacked=stacked,
-                                  freq=freq,
-                                  start_date=start_date,
-                                  title=title,
-                                  visualize_from_period=visualize_from_period,
-                                  visualize_to_period=visualize_to_period,
-                                  x_label=x_label,
-                                  y_label=y_label,
                                   series_names=series_names,
                                   strategy=strategy,
                                   progress_bar=progress_bar
@@ -771,16 +794,18 @@ class bptk():
 
 
     def reset_simulation_model(self, scenario_manager="", scenario=""):
-        print("Deprecateda and will be remove soon - please use reset_simulation_cache instead")
-        self.reset_simulation_cache(self,scenario_manager,scenario)
+        print("Deprecateda and will be remove soon - please use reset_scenario_cache instead")
+        self.reset_scenario_cache(self,scenario_manager,scenario)
 
-    def reset_simulation_cache(self, scenario_manager="", scenario=""):
+    def reset_scenario_cache(self, scenario_manager="", scenario=""):
         """
         Resets only the interal cache (equation results) of a scenario, does not re-read from storage
             :param scenario_manager: name of scenario manager for lookup
             :param scenario: name of scenario
             :return: None
         """
+        #TODO: add tests for reset_scenario_cache
+
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         try:
 
@@ -1058,7 +1083,7 @@ class bptk():
 
          The interactive scenarios are generated by the export function according to the interactive settings. If you provide a filename, the data will not be returned in a dictionary but will be writen directly to an Excel (.xlsx) file.
 
-         The data will be split into two tabs, one named <scenario_df_name> for the scenario data and one named <interactive_df_name> for the interactive data. Currently the export function only works for XMILE models.
+         The data will be split into two tabs, one named <scenario_df_name> for the scenario data and one named <interactive_df_name> for the interactive data. Currently the export function only works for System Dynamics models.
             :param scenario_manager:
             :param scenarios:
             :param equations:

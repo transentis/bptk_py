@@ -216,7 +216,7 @@ class XmileRunner(SimulationRunner):
 
         return scenario_objects
 
-    def _run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+    def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         Method to run simulations with strategies
 

@@ -76,7 +76,7 @@ class BptkServer(Flask):
                         points = scenario_settings["points"]
                         for points_name, points_settings in points.items():
                             scenario.points[points_name]=points_settings
-                    self.bptk.reset_simulation_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
+                    self.bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             self.logger.info("Settings not specified")
             pass
@@ -313,7 +313,7 @@ class BptkServer(Flask):
                         points = scenario_settings["points"]
                         for points_name, points_settings in points.items():
                             scenario.points[points_name]=points_settings
-                    self.bptk.reset_simulation_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
+                    self.bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             self.logger.info("Settings not specified")
             pass
