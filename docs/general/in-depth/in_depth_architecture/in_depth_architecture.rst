@@ -77,7 +77,6 @@ If you do this in a Jupyter notebook created within our `BPTK tutorial <https://
 
 
     *** smSimpleProjectManagementDslClass ***
-         scenario100_strategy
          scenario100
          scenario80
          scenario120
