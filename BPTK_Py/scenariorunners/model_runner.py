@@ -13,7 +13,7 @@
 import pandas as pd
 import json
 
-from .simrunner import SimulationRunner
+from .scenario_runner import ScenarioRunner
 from ..logger import log
 
 
@@ -22,7 +22,7 @@ from ..logger import log
 ############################
 
 
-class ModelRunner(SimulationRunner):
+class ModelRunner(ScenarioRunner):
     """
     This class runs agent-based, sd dsl and hybrid simulation models. 
     """
@@ -77,7 +77,7 @@ class ModelRunner(SimulationRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_simulation(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], strategy=False, progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], strategy=False, progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param abm_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format.
@@ -264,7 +264,7 @@ class ModelRunner(SimulationRunner):
             
         return simulation_results
 
-    def train_simulation(self, scenarios, agents, episodes = 1, scenario_managers=[], progress_widget=None, agent_states=[], agent_properties=[], agent_property_types=[]):
+    def train_scenario(self, scenarios, agents, episodes = 1, scenario_managers=[], progress_widget=None, agent_states=[], agent_properties=[], agent_property_types=[]):
         """
         Method that generates the required dataframe(s) for the simulations
         :param scenarios: scenarios to plot for

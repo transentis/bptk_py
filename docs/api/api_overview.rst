@@ -12,6 +12,7 @@ BPTK APIs
 
    ./api_agent
    ./api_bptk
+   ./api_bptk_server
    ./api_datacollector
    ./api_event
    ./api_model

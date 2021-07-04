@@ -142,7 +142,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'bptk_py.tex', 'bptk\\_py Documentation',
-     'transentis labs Gmbh', 'manual'),
+     'transentis labs GmbH', 'manual'),
 ]
 
 
@@ -163,7 +163,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'bptk_py', 'bptk_py Documentation',
-     author, 'bptk_py', 'One line description of project.',
+     author, 'bptk_py', 'Framework for Agent-based modeling and System Dynamics simulation.',
      'Miscellaneous'),
 ]
 

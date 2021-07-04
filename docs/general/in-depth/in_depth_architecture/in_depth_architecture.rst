@@ -116,7 +116,7 @@ If you do this in a Jupyter notebook created within our `BPTK tutorial <https://
 
 Back to our discussion of ``bptk.plot_scenario``: So far, the scenarios have been loaded, but not simulated yet (which is good, because there could potentially be very many scenarios and you probably don't want to run them all at once).
 
-To run a scenario, you could ``bptk.run_simulation`` with the appropriate parameters – this methods runs the given scenarios and returns a dataset. But in most cases you probably want to visualise the results directly, in which case ``bptk.plot_scenario`` is the method to use.
+To run a scenario, you could ``bptk.run_scenario`` with the appropriate parameters – this methods runs the given scenarios and returns a dataset. But in most cases you probably want to visualise the results directly, in which case ``bptk.plot_scenario`` is the method to use.
 
 Let's choose one of the scenarios from the list above, e.g. the ``scenario120`` from the ``smSimpleProjectManagement`` scenario manager. You can run the simulation and plot the behaviour of the open tasks and closed tasks using the following command::
 

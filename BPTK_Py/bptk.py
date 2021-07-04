@@ -23,12 +23,11 @@ from IPython import get_ipython
 import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod
 from .logger import log
-from .modelchecker import ModelChecker
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerXmile
 from .scenariomanager import SimulationScenario
-from .simulationrunners import ModelRunner
-from .simulationrunners import XmileRunner
+from .scenariorunners import ModelRunner
+from .scenariorunners import XmileRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 from .widgets import Dashboard
@@ -147,7 +146,8 @@ class bptk():
 
 
     def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        print("Deprecated. Use run_scenarios_with_strategy")
+        print("Deprecated, will be removed in future.")
+        #TODO remove
         self.run_scenarios_with_strategy(
             scenarios=scenarios,
             equations=equations,
@@ -156,27 +156,21 @@ class bptk():
         )
 
     def run_scenarios_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        """
-        method to run raw simulations (if you want to omit plotting). Simulates with the strategies of the scenarios
-            :param scenarios: names of scenarios to simulate
-            :param equations: names of equations to simulate
-            :param output: output types as list. Default: ["frame"], may add "csv" to store results in results/scenario.csv
-            :param scenario_managers: names of scenario managers to select scenarios from
-            :return: dict of SimulationScenario
-        """
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
         equations = equations if isinstance(equations, list) else equations.split(",")
         scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
 
-        return XmileRunner(self.scenario_manager_factory).run_simulations_with_strategy(scenarios=scenarios,
+        return XmileRunner(self.scenario_manager_factory).run_scenarios_with_strategy(scenarios=scenarios,
                                                                                                 equations=equations,
                                                                                                 output=output,
                                                                                                 scenario_managers=scenario_managers)
+
     def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                           progress_bar=False):
         
         print ("Deprecated. Use train scenarios instead.")
+        #TODO: remove
         self.train_scenarios(
             scenarios=scenarios,
             scenario_managers=scenario_managers,
@@ -341,6 +335,7 @@ class bptk():
                        progress_bar=False
                        ):
         print("Deprecated and will be removed soon. Use run_scenarios instead")
+        #TODO: remove
         self.run_scenarios(
             scenarios=scenarios,
             scenario_managers=scenario_managers,
@@ -442,7 +437,7 @@ class bptk():
                 
                 runner = ModelRunner(self.scenario_manager_factory)
                 
-                simulation_results += [runner.run_simulation(
+                simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
                     agent_property_types=agent_property_types, progress_bar=progress_bar,
@@ -459,7 +454,7 @@ class bptk():
                 runner = XmileRunner(self.scenario_manager_factory)
 
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
-                simulation_results += [runner.run_simulation(
+                simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_managers=[manager.name],
@@ -537,7 +532,7 @@ class bptk():
 
         manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
 
-        return self.abmrunner.run_simulation(scenarios=[scenario],
+        return self.abmrunner.run_scenario(scenarios=[scenario],
                                              agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
                                              scenario_managers=[manager.name]
                                              )
@@ -711,6 +706,7 @@ class bptk():
             :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
             :return: dataFrame with simulation results if return_df=True
         """
+        #TODO remove 
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
         widget_decorator = Dashboard(self)
@@ -744,12 +740,8 @@ class bptk():
                                           agent_states=agent_states)
 
     def modify_strategy(self, scenarios, extended_strategy):
-        """
-        Modifies a strategy during runtime. Experimental feature for now. You may even add lambdas to strategy
-            :param scenarios: names of scenarios to modify the strategies for
-            :param extended_strategy: the actual extended strategy as a dict. Consult the readme!
-            :return: None
-        """
+        print("DEPRECATED - will be removed in a future update.")
+        #TODO: remove
 
         for scenario_name in extended_strategy.keys():
 
@@ -795,6 +787,7 @@ class bptk():
 
     def reset_simulation_model(self, scenario_manager="", scenario=""):
         print("Deprecateda and will be remove soon - please use reset_scenario_cache instead")
+        #TODO: remove
         self.reset_scenario_cache(scenario_manager,scenario)
 
     def reset_scenario_cache(self, scenario_manager="", scenario=""):
@@ -838,23 +831,8 @@ class bptk():
         """
         return self.scenario_manager_factory.reset_all_scenarios()
 
-    def model_check(self, data, check, message):
-        """
-        Model checker
-            :param data: dataframe series or any data that the given check method can parse
-            :param check: lambda function of structure : lambda data : BOOLEAN CHECK ON DATA
-            :param message: Error message if test failed
-            :return: None
-        """
-        ModelChecker().model_check(data=data, check=check, message=message)
-
     def pulse_function_create(self, scenarios, scenario_managers):
-        """
-        Create a PULSE function using the PulseWidget interactively. This is a nice feature to create SD PULSE functions in interactive sessions. No need for re-modelling in Stella or SD DSL. Displays an interactive dashboard for selecting the equations/constants to define the PULSEs for (as many as possible).
-            :param scenarios: Name of scenarios to create the function(s) for
-            :param scenario_managers: Name of scenario managers to take the scenarios from
-            :return: None
-        """
+        print("DEPRECATED - will be removed in a future update")
         widget = PulseDashboard(scenarios=scenarios, scenario_managers=scenario_managers, bptk=self)
         widget.show()
 

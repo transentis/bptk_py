@@ -289,7 +289,7 @@ available: \* ``reset_scenario(scenario_manager, scenario)``: This
 deletes a specific scenario from memory and reloads it from file.
 Requires the scenario manager's name and the scenario name. \*
 ``reset_all_scenarios()``: Reset all scenarios and re-read from file \*
-``reset_simulation_model(scenario_manager, scenario="")``: For runtime
+``reset_scenario_cache(scenario_manager, scenario="")``: For runtime
 optimizations, the simulator will cache the simulation results. In some
 rare cases, this cache may not be flushed upon scenario modification.
 Hence, this method resets the simulation model's cache.
@@ -302,7 +302,7 @@ See the example usages below:
     
     bptk.reset_all_scenarios()
     
-    bptk.reset_simulation_model("smSimpleProjectManagement","scenario80")
+    bptk.reset_scenario_cache("smSimpleProjectManagement","scenario80")
 
 
 Defining Simulation Strategies

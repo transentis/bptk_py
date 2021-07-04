@@ -11,9 +11,9 @@
 
 import pandas as pd
 
-class SimulationRunner():
+class ScenarioRunner():
     """
-    Generic class for simulationRunners. A simulation runner implements the "run_sim" method and stores the scenario manager factory and a bptk instance.
+    Generic class for scenario unners. A scenario runner implements the "run_scenario" method and stores the scenario manager factory, so that it can access the scenario objects by name.
     It handles the simulation running for simulation models with the specified scenarios
     """
 
@@ -26,7 +26,7 @@ class SimulationRunner():
         self.scenario_manager_factory = scenario_manager_factory
         self.df = pd.DataFrame()
 
-    def run_simulation(self, scenarios, equations, agents, scenario_managers=[], strategy=False):
+    def run_scenario(self, scenarios, equations, agents, scenario_managers=[], strategy=False):
         """
         Run the simulation and return a DataFrame storing the simulation results
             :param scenarios:
@@ -40,7 +40,7 @@ class SimulationRunner():
         return pd.DataFrame()
 
 
-    def train_simulation(self, scenarios, agents, episodes=1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):
+    def train_scenario(self, scenarios, agents, episodes=1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):
         """
         Trains a simulation over the given number of episodes.
             :param scenarios:

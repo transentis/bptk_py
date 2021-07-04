@@ -15,7 +15,7 @@ import numpy as np
 import json
 
 from ..logger import log
-from .simrunner import SimulationRunner
+from .scenario_runner import ScenarioRunner
 from ..xmile_wrapper import XmileWrapper
 
 
@@ -24,7 +24,7 @@ from ..xmile_wrapper import XmileWrapper
 ################################
 
 
-class XmileRunner(SimulationRunner):
+class XmileRunner(ScenarioRunner):
     """
     This class runs XMILE simulations
     """
@@ -85,7 +85,7 @@ class XmileRunner(SimulationRunner):
            
         return simulation_results
 
-    def run_simulation(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], strategy=False, ):
+    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], strategy=False, ):
         """
          Generic method for plotting scenarios
          :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
@@ -112,13 +112,13 @@ class XmileRunner(SimulationRunner):
         # Obtain simulation results
         if not strategy:
 
-            scenario_objects = self._run_simulations(scenarios=scenarios,
+            scenario_objects = self._run_scenarios(scenarios=scenarios,
                                                                                                   equations=equations,
                                                                                                   output=["frame"],
                                                                                                   scenario_managers=scenario_managers)
 
         else:
-            scenario_objects = self.run_simulations_with_strategy(
+            scenario_objects = self.run_scenarios_with_strategy(
                 scenarios=scenarios,
                 equations=equations,
                 output=["frame"],
@@ -171,7 +171,7 @@ class XmileRunner(SimulationRunner):
         return self.__generate_df(sd_results_dict, return_format, scenario_objects, dict_equations,
                                 )
 
-    def _run_simulations(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+    def _run_scenarios(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         Method to run the simulations
         :param scenarios: names of scenarios to simulate
@@ -216,7 +216,7 @@ class XmileRunner(SimulationRunner):
 
         return scenario_objects
 
-    def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+    def run_scenarios_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
         """
         Method to run simulations with strategies
 
@@ -266,7 +266,7 @@ class XmileRunner(SimulationRunner):
                     "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
 
                 scenarios_objects[scenario.name] = \
-                    self.run_simulations(scenarios=[scenario.name], equations=equations, output=output,
+                    self.run_scenarios(scenarios=[scenario.name], equations=equations, output=output,
                                          scenario_managers=scenario_managers)[
                         scenario.name]
 

@@ -9,7 +9,7 @@ BPTK-Py: System Dynamics and Agent-based Modeling In Python
 
 .. meta::
    :description: In-depth explanation of agent-based modeling
-   :keywords: agent-based modeling, system dynamics, python, bptk, xmile, smile, stella
+   :keywords: agent-based modeling, system dynamics, python, bptk, sddsl, xmile, smile, stella, ithink
 
 The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) and manage simulation scenarios with ease.
 
