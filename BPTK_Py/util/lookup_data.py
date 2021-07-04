@@ -5,7 +5,7 @@ def lookup_data(model, names):
     :return: None
     """
 
-    from BPTK_Py.systemdynamics.functions import Lookup
+    from BPTK_Py import sd_functions as sd
     from scipy.interpolate import interp1d
     import numpy as np
     import pandas as pd
@@ -52,8 +52,8 @@ def lookup_data(model, names):
     return df
 
 def find_lookup(name,model):
-    from BPTK_Py.systemdynamics.functions import Lookup
-    for elem, value in model.converters.items():
-        if type(value._equation) is Lookup:
+    from BPTK_Py import sd_functions as sd
+    for _, value in model.converters.items():
+        if isinstance(value._equation,sd.Lookup):
             if value.name == name:
                 return value._equation.points

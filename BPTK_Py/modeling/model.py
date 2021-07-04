@@ -515,6 +515,7 @@ class Model:
 
 
     def plot_lookup(self,lookup_names,config=None):
+        #TODO write test for plot_lookup
         from ..util import lookup_data
         from ..visualizations import visualizer
 

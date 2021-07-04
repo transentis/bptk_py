@@ -232,7 +232,7 @@ class Dashboard():
                     else:
                         widget_val = widget
 
-                    for name, scenario_obj in self.scenarios.items():
+                    for _, scenario_obj in self.scenarios.items():
                         try:
 
                             scenario_obj.constants[widget_name] = widget_val
@@ -243,7 +243,7 @@ class Dashboard():
 
                         try:
                             scenario_obj.model.equations[widget_name] = lambda t: widget_val
-                            self.bptk.reset_simulation_cache(scenario_manager=scenario_obj.scenario_manager,
+                            self.bptk.reset_scenario_cache(scenario_manager=scenario_obj.scenario_manager,
                                                              scenario=scenario_obj.name)
 
                         except AttributeError as e:

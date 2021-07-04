@@ -118,7 +118,7 @@ class XmileRunner(SimulationRunner):
                                                                                                   scenario_managers=scenario_managers)
 
         else:
-            scenario_objects = self._run_simulations_with_strategy(
+            scenario_objects = self.run_simulations_with_strategy(
                 scenarios=scenarios,
                 equations=equations,
                 output=["frame"],
