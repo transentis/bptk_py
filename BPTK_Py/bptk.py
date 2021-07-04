@@ -683,29 +683,8 @@ class bptk():
                   y_label="",
                   series_names={}, strategy=False,
                   return_df=False, constants=[]):
-        """
-        Generic method for plotting with interactive widgets
-            :param scenarios: names of scenarios to plot
-            :param equations:  names of equations to plot
-            :param agents: Agents to plot
-            :param agent_states: States of agents to plot
-            :param scenario_managers: names of scenario managers to plot
-            :param kind: type of graph to plot
-            :param alpha:  transparency 0 < x <= 1
-            :param stacked: if yes, use stacked (only with kind="bar")
-            :param freq: frequency of time series
-            :param start_date: start date for time series
-            :param title: title of plot
-            :param visualize_from_period: visualize from specific period onwards
-            :param visualize_to_period: visualize until a specific period
-            :param x_label: label for x axis
-            :param y_label: label for y axis
-            :param series_names: names of series to modify
-            :param strategy: set True if you want to use the scenarios' strategies
-            :param return_df: set True if you want to receive a dataFrame instead of the plot
-            :param constants: constants to modify and type of widget (widget_type, equation_name, from, to ) --> from, to only for sliders
-            :return: dataFrame with simulation results if return_df=True
-        """
+
+        print("DEPRECATED. Will be removed soon. For alternatices check our documentation on building advanced user interfaces")
         #TODO remove 
         log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
             scenarios, str(constants)))
