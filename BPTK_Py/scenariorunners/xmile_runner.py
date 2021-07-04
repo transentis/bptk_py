@@ -85,7 +85,7 @@ class XmileRunner(ScenarioRunner):
            
         return simulation_results
 
-    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], strategy=False, ):
+    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
         """
          Generic method for plotting scenarios
          :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
@@ -104,25 +104,17 @@ class XmileRunner(ScenarioRunner):
          :param x_label: label for x axis
          :param y_label: label for y axis
          :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-         :param strategy: set True if you want to use the scenarios' strategies
          :param return_df: set True if you want to receive a dataFrame instead of the plot
          :return: None
          """
 
         # Obtain simulation results
-        if not strategy:
 
-            scenario_objects = self._run_scenarios(scenarios=scenarios,
+        scenario_objects = self._run_scenarios(scenarios=scenarios,
                                                                                                   equations=equations,
                                                                                                   output=["frame"],
                                                                                                   scenario_managers=scenario_managers)
 
-        else:
-            scenario_objects = self.run_scenarios_with_strategy(
-                scenarios=scenarios,
-                equations=equations,
-                output=["frame"],
-                scenario_managers=scenario_managers)
         if len(scenario_objects.keys()) == 0:
             log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(
                 str(scenario_managers), str(scenarios)))
@@ -216,78 +208,3 @@ class XmileRunner(ScenarioRunner):
 
         return scenario_objects
 
-    def run_scenarios_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        """
-        Method to run simulations with strategies
-
-        :param scenarios: names of scenarios to simulate
-        :param equations: equations to simulate
-        :param output: output type, default as a dataFrame
-        :param scenario_managers: scenario managers as a list of names of scenario managers
-        :return: dict of SimulationScenario
-        """
-
-        log("[INFO] Attempting to load scenarios from scenarios folder.")
-
-        scenarios_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers,
-                                                                        scenarios=scenarios, scenario_manager_type="sd")
-
-        #### Run the simulation scenarios
-
-        for key in scenarios_objects.keys():
-            scenario = scenarios_objects[key]
-
-            if len(equations) == 0:
-                log("[ERROR] No equation to simulate given. Simulation will fail!")
-
-            ## Read strategy from scenario
-            strategy = {}
-            if "strategy" in scenario.dictionary.keys():
-                strategy = scenario.dictionary["strategy"]
-
-            constants = {}
-            if '0' in strategy.keys():
-                constants = strategy.pop('0')
-
-            for constant_key, constant_value in constants.items():
-                scenarios_objects[key].constants[constant_key] = constant_value
-                scenarios_objects[key].dictionary[constant_key] = constant_value
-
-            ## Cast all keys to int (standard JSON does not allow int keys)
-            strategy = {float(k): v for k, v in strategy.items()}
-
-            simu = XmileWrapper(model=scenario.model, name=scenario.name)
-
-            # Get the strategy's points to change equations at and sort ascending.
-            points_to_change_at = sorted(list(strategy.keys()))
-
-            if len(points_to_change_at) == 0:
-                log(
-                    "[WARN] Strategy does not contain any modifications to constants (Empty strategy). Will run the given scenario without strategy!")
-
-                scenarios_objects[scenario.name] = \
-                    self.run_scenarios(scenarios=[scenario.name], equations=equations, output=output,
-                                         scenario_managers=scenario_managers)[
-                        scenario.name]
-
-            # Simulation with a strategy. Iterate the points of the simulation. Run one step at a time
-            else:
-                for i in np.arange(scenario.model.starttime, scenario.model.stoptime + scenario.model.dt,
-                                   scenario.model.dt):
-                    t = round(i, 2)
-
-                    if t == scenario.model.starttime:
-                        for equation in scenario.constants.keys():
-                            simu.change_equation(name=equation, value=scenario.constants[equation])
-                        for name, points in scenario.points.items():
-                            simu.change_points(name=name, value=points)
-
-                    if t in points_to_change_at:
-                        for equation in strategy[t]:
-                            log("[INFO] t={}: Changing value of {} to {}".format(str(t), str(equation),
-                                                                                 str(strategy[t][equation])))
-                            simu.change_equation(name=equation, value=strategy[t][equation])
-
-                    scenario.result = simu.start(equations=equations, output=output, start=t, until=t)
-
-        return scenarios_objects

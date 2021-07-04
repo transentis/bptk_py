@@ -26,13 +26,12 @@ class ScenarioRunner():
         self.scenario_manager_factory = scenario_manager_factory
         self.df = pd.DataFrame()
 
-    def run_scenario(self, scenarios, equations, agents, scenario_managers=[], strategy=False):
+    def run_scenario(self, scenarios, equations, agents, scenario_managers=[]):
         """
         Run the simulation and return a DataFrame storing the simulation results
             :param scenarios:
             :param agents:
             :param scenario_managers:
-            :param strategy:
             :return:
         """
         print("IMPLEMENT THIS METHOD IN A SUBCLASS")
@@ -46,7 +45,6 @@ class ScenarioRunner():
             :param scenarios:
             :param agents:
             :param scenario_managers:
-            :param strategy:
             :return:
         """
         print("IMPLEMENT THIS METHOD IN A SUBCLASS")

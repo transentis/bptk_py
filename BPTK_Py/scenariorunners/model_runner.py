@@ -77,7 +77,7 @@ class ModelRunner(ScenarioRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], strategy=False, progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param abm_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format.

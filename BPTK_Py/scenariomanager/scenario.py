@@ -52,11 +52,6 @@ class SimulationScenario():
         else:
             self.constants = {}
 
-        if "strategy" in dictionary.keys():
-            self.strategy = dictionary["strategy"]
-        else:
-            self.strategy = {}
-
         if "points" in dictionary.keys():
             self.points = dictionary["points"]
             if model is not None:

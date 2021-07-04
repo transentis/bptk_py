@@ -30,8 +30,6 @@ from .scenariorunners import ModelRunner
 from .scenariorunners import XmileRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
-from .widgets import Dashboard
-from .widgets import PulseDashboard
 
 
 plt.interactive(True)
@@ -144,46 +142,6 @@ class bptk():
         self.visualizer = visualizer(config=self.config)
         self.abmrunner = ModelRunner(self.scenario_manager_factory) #rename self.abmrunner to self.model_runner if still needed
 
-
-    def run_simulations_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        print("Deprecated, will be removed in future.")
-        #TODO remove
-        self.run_scenarios_with_strategy(
-            scenarios=scenarios,
-            equations=equations,
-            output=output,
-            scenario_managers=scenario_managers
-        )
-
-    def run_scenarios_with_strategy(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
-        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
-        equations = equations if isinstance(equations, list) else equations.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-
-        return XmileRunner(self.scenario_manager_factory).run_scenarios_with_strategy(scenarios=scenarios,
-                                                                                                equations=equations,
-                                                                                                output=output,
-                                                                                                scenario_managers=scenario_managers)
-
-    def train_simulations(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
-                          agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
-                          progress_bar=False):
-        
-        print ("Deprecated. Use train scenarios instead.")
-        #TODO: remove
-        self.train_scenarios(
-            scenarios=scenarios,
-            scenario_managers=scenario_managers,
-            episodes=episodes,
-            agents=agents,
-            agent_states=agent_states,
-            agent_properties=agent_properties,
-            agent_property_types=agent_property_types,
-            series_names=series_names,
-            return_df=return_df,
-            progress_bar=progress_bar
-        )
-   
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                           progress_bar=False):
@@ -222,7 +180,7 @@ class bptk():
                 orientation='horizontal'
             )
 
-            thread = threading.Thread(target=self._train_simulations, args=(
+            thread = threading.Thread(target=self._train_scenarios, args=(
             scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types,
             series_names, return_df, progress_widget))
             display(progress_widget)
@@ -330,28 +288,8 @@ class bptk():
                                         series_names=series_names
                                         )
 
-    def run_simulations(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[], series_names={},strategy=False,
-                       progress_bar=False
-                       ):
-        print("Deprecated and will be removed soon. Use run_scenarios instead")
-        #TODO: remove
-        self.run_scenarios(
-            scenarios=scenarios,
-            scenario_managers=scenario_managers,
-            agents=agents,
-            agent_states=agent_states,
-            agent_properties=agent_properties,
-            agent_property_types=agent_property_types,
-            equations=equations,
-            series_names=series_names,
-            strategy=strategy,
-            progress_bar=progress_bar,
-            return_format="df"
-        )
-
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[], series_names={},strategy=False,
+                       agent_property_types=[], equations=[], series_names={},
                        progress_bar=False,
                        return_format = "df"
                        ):
@@ -364,7 +302,6 @@ class bptk():
             :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
             :param scenario_managers: names of scenario managers to plot
             :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-            :param strategy: set True if you want to use the scenarios' strategies
             :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
             :param return_format: the data type of the return.(can either be dataframe, dictionary or json)
         
@@ -442,8 +379,6 @@ class bptk():
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
                     agent_property_types=agent_property_types, progress_bar=progress_bar,
                     scenario_managers=[manager.name],
-
-                    strategy=strategy,
                     abm_results_dict=abm_results_dict,
                     return_format=return_format
                 )]
@@ -458,7 +393,6 @@ class bptk():
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_managers=[manager.name],
-                    strategy=strategy,
                     sd_results_dict=sd_results_dict,
                     return_format=return_format
                 )]
@@ -543,7 +477,7 @@ class bptk():
                        alpha=None, stacked=None,
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
-                       series_names={}, strategy=False,
+                       series_names={},
                        progress_bar=False,
                        return_df=False
                       ):
@@ -566,7 +500,6 @@ class bptk():
             :param x_label: label for x axis
             :param y_label: label for y axis
             :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-            :param strategy: set True if you want to use the scenarios' strategies
             :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
             :param return_df: set True if you want to receive a dataFrame instead of the plot
             :return: dataFrame with simulation results if return_df=True
@@ -580,7 +513,6 @@ class bptk():
                                   agent_property_types=agent_property_types,
                                   equations=equations,
                                   series_names=series_names,
-                                  strategy=strategy,
                                   progress_bar=progress_bar
                                  )
 
@@ -675,86 +607,6 @@ class bptk():
                                     freq=freq,
                                     series_names=series_names)
 
-    ## Method for plotting scenarios with sliders. A more generic method that uses the Dashboard class to decorate the plot with the sliders
-    def dashboard(self, scenarios, scenario_managers, kind=None, agents=[], agent_states=[],
-                  equations=[],
-                  alpha=None, stacked=None,
-                  freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
-                  y_label="",
-                  series_names={}, strategy=False,
-                  return_df=False, constants=[]):
-
-        print("DEPRECATED. Will be removed soon. For alternatices check our documentation on building advanced user interfaces")
-        #TODO remove 
-        log("[INFO] Generating a plot with sliders. Scenarios: {}, Constants with slider and intervals: {}".format(
-            scenarios, str(constants)))
-        widget_decorator = Dashboard(self)
-        if not kind: kind = self.config.configuration["kind"]
-        if not alpha: alpha = self.config.configuration["alpha"]
-        if not stacked: stacked = self.config.configuration["stacked"]
-
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-        equations = equations if type(equations) is list else equations.split(",")
-        agents = agents if type(agents) is list else agents.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
-
-        return widget_decorator.dashboard(scenarios=scenarios,
-                                          equations=equations,
-                                          agents=agents,
-                                          scenario_managers=scenario_managers,
-                                          kind=kind,
-                                          alpha=alpha,
-                                          stacked=stacked,
-                                          freq=freq,
-                                          start_date=start_date, title=title,
-                                          visualize_from_period=visualize_from_period,
-                                          visualize_to_period=visualize_to_period,
-                                          x_label=x_label,
-                                          y_label=y_label,
-                                          series_names=series_names,
-                                          strategy=strategy,
-                                          return_df=return_df,
-                                          constants=constants,
-                                          agent_states=agent_states)
-
-    def modify_strategy(self, scenarios, extended_strategy):
-        print("DEPRECATED - will be removed in a future update.")
-        #TODO: remove
-
-        for scenario_name in extended_strategy.keys():
-
-            # Obtain scenario object (which actually IS A POINTER, NOT A COPY)
-            scenario = scenarios[scenario_name]
-            self.reset_scenario_cache(scenario_manager=scenario.scenario_manager, scenario=scenario_name)
-
-            ## Points in time where the extended strategy makes changes
-            points_to_change_at = list(extended_strategy[scenario_name].keys())
-
-            # If the scenario does not store an initial strategy in its JSON, create an empty one
-            if "strategy" not in scenario.dictionary.keys():
-                scenario.dictionary["strategy"] = {}
-            ## Points in time where the original strategy makes changes (if any): These are the constant changes from the JSON
-
-            # Store original lambda in strategy at starttime moment. Logic: Keep original method as constant so it will work until the first point in the strategy
-            first_t = points_to_change_at[0]
-
-            ## Extend existing strategy by the lambda methods
-            for t in points_to_change_at:
-                if str(t) not in scenario.dictionary["strategy"].keys():
-                    scenario.dictionary["strategy"][str(t)] = {}
-
-                for name, equation in extended_strategy[scenario_name][t].items():
-                    scenario.dictionary["strategy"][str(t)][name] = equation
-
-                    # Backup all original lambdas of modified equations as "constants" for the simulation model
-                    # --> whenever we inject another lambda at a point in time, we will use the original value until
-                    # the first occurence of the modified strategy
-                    if t == first_t and not name in scenario.dictionary["constants"].keys():
-                        scenario.dictionary["constants"][name] = scenario.model.equations[name]
-
-        log("[INFO] Added extended strategy for scenarios")
-
     def destroy(self):
         """
         When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this. It essentially only kills all the file monitors and makes sure the Python process can die happily.
@@ -762,12 +614,6 @@ class bptk():
         """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
-
-
-    def reset_simulation_model(self, scenario_manager="", scenario=""):
-        print("Deprecateda and will be remove soon - please use reset_scenario_cache instead")
-        #TODO: remove
-        self.reset_scenario_cache(scenario_manager,scenario)
 
     def reset_scenario_cache(self, scenario_manager="", scenario=""):
         """
@@ -809,11 +655,6 @@ class bptk():
             :return: All ABMModel Managers
         """
         return self.scenario_manager_factory.reset_all_scenarios()
-
-    def pulse_function_create(self, scenarios, scenario_managers):
-        print("DEPRECATED - will be removed in a future update")
-        widget = PulseDashboard(scenarios=scenarios, scenario_managers=scenario_managers, bptk=self)
-        widget.show()
 
     def list_scenarios(self, scenario_managers=[], scenario_manager_type=""):
         """
