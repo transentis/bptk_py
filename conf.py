@@ -23,9 +23,9 @@ copyright = '2021, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version
-version = '1.1'
+version = '2.0'
 # The full version, including alpha/beta/rc tags
-release = '1.1.27'
+release = '2.0.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,6 +43,9 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    'sphinxcontrib.httpdomain',
+    'sphinxcontrib.autohttp.flask',
+
 ]
 
 

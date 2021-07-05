@@ -23,26 +23,17 @@ class Constant(Element):
 
     @property
     def equation(self):
-        """
-        Equation
-        :return:
-        """
-        return super().equation
+       return super().equation
 
     @equation.setter
     def equation(self, equation):
-        """
-        Set the equation. Create a lambda function string
-        :param equation:
-        :return:
-        """
         self._equation = equation
 
         self.model.reset_cache()
 
 
         if isinstance(equation, (float)):
-            self.function_string = "lambda model, t: {}".format(equation)
+            self._function_string = "lambda model, t: {}".format(equation)
         else:
             raise ElementError("Constants can only contain floating point values")
 

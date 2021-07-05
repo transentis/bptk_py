@@ -30,4 +30,6 @@ This automatically starts a background process that scans your ``scenario`` dire
 .. autoclass:: BptkServer
    :members:
 
-
+.. autoflask:: BPTK_Py.server:BptkServer("test",None)
+   :undoc-static:
+   :order: path

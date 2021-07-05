@@ -21,7 +21,7 @@ class Flow(Element):
 
     @property
     def equation(self):
-        return super().equation
+       return super().equation
 
     @equation.setter
     def equation(self, equation):
@@ -33,4 +33,4 @@ class Flow(Element):
     def build_function_string(self):
         from .operators import Operator
         right_term = self._equation.term("t-model.dt") if type(self._equation) is Operator else self._equation
-        self.function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative
+        self._function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative

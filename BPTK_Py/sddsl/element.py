@@ -15,7 +15,6 @@ from .operators import *
 import BPTK_Py.config.config as config
 import pandas as pd
 import numpy as np
-from scipy.stats import norm
 
 
 class Element:
@@ -24,28 +23,22 @@ class Element:
     type = "Element"
 
     def __init__(self, model, name, function_string = None):
-        """Initialize the element."""
+        """Initialize the element. Pass the model the element belongs to and the name of the element. The name will be used to identify the underlying equations."""
         self.model = model
         self.name = name
         self.converters = []
         if function_string is None:
-            self.function_string = self.default_function_string()
+            self._function_string = self.default_function_string()
         else:
-            self.function_string = function_string
+            self._function_string = function_string
         self._equation = None
         self.generate_function()
 
     @classmethod
     def default_function_string(self):
-        """Returns a stub lambda function as string: For each T, return 0"""
         return "lambda model, t: 0"
 
     def generate_function(self):
-        """
-        Generate the function using the function_string value and eval()
-        :return: None
-        """
-
         fn = eval(self.function_string)
         self.model.equations[self.name] = lambda t: fn(self.model, t)
         self.model.memo[self.name] = {}
@@ -56,8 +49,8 @@ class Element:
     @property
     def equation(self):
         """
-
-        :return: self._equation
+        Returns the equation, which is stored internaly as a lambda function
+            :return: The equation as a series of operators
         """
         return self._equation
 
@@ -65,19 +58,38 @@ class Element:
     def equation(self, equation):
         """
         Set the equation
-        :param equation: equation as String
-        :return: None
+            :param equation: the equation as defined via a series of operators.
+            :return: None
         """
         self._equation = equation
 
         self.model.reset_cache()
 
-        self.function_string = "lambda model, t: {}".format(equation)
+        self._function_string = "lambda model, t: {}".format(equation)
         self.generate_function()
 
 
-    def plot(self,starttime = None, stoptime = None, dt = None, return_df=False):
 
+    @property
+    def function_string(self):
+        """
+        Returns a string representation of the underlying function.
+        """
+        return self._function_string
+
+    @function_string.setter
+    def function_string(self,function_string):
+        self._function_string=function_string
+
+    def plot(self,starttime = None, stoptime = None, dt = None, return_df=False):
+        """
+        Plot the equation
+            :param starttime: Where to begin the plot
+            :param stoptime: Where to end the plot
+            :param dt: the timestep to plot
+            :return: The plot (via matplotlib) or a Pandas dataframe if return_df=True
+        """
+ 
         ## Equation von start bis stop
         dt = self.model.dt if dt is None else dt
         stoptime = self.model.stoptime if stoptime is None else stoptime
@@ -182,8 +194,8 @@ class Element:
     def update_plot_formats(self, ax):
         """
         Configure the plot formats for the labels. Generates the formatting for y labels
-        :param ax:
-        :return:
+            :param ax:
+            :return:
         """
 
         from BPTK_Py.visualizations import visualizer
