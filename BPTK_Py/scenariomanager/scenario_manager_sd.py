@@ -21,15 +21,9 @@ from .scenario import SimulationScenario
 from ..modeling.model import Model
 from BPTK_Py.sdcompiler.compile import compile_xmile as compile
 
-
-#############################
-## ClASS ScenarioManagerSD ##
-#############################
-
-
-class ScenarioManagerXmile(ScenarioManager):
+class ScenarioManagerSd(ScenarioManager):
     """
-    This class reads and writes scenarios and starts the file monitors for each scenario's model
+    This class reads and writes pure sd scenarios and starts the file monitors for each scenario's model
     """
 
     def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=[],

@@ -18,10 +18,10 @@ import BPTK_Py.config.config as config
 from ..modelmonitor import FileMonitor
 from ..logger import log
 from ..modelmonitor import ModelMonitor
-from ..scenariomanager import ScenarioManagerModel
+from ..scenariomanager import ScenarioManagerHybrid
 
 from .scenario import SimulationScenario
-from .scenario_manager_xmile import ScenarioManagerXmile
+from .scenario_manager_sd import ScenarioManagerSd
 
 
 ####################################
@@ -82,11 +82,11 @@ class ScenarioManagerFactory():
 
         for scenario_manager_name in model_dictionary.keys():
 
-            # HANDLE ABM SCENARIOS
+            # HANDLE Hybrid SCENARIOS
             if "type" in model_dictionary[scenario_manager_name].keys() and model_dictionary[scenario_manager_name][
                 "type"].lower() == "abm":
 
-                self.scenario_managers[scenario_manager_name] = ScenarioManagerModel(
+                self.scenario_managers[scenario_manager_name] = ScenarioManagerHybrid(
                     model_dictionary[scenario_manager_name],
                     scenario_manager_name,
                     filenames=[filename], model=model)
@@ -95,7 +95,7 @@ class ScenarioManagerFactory():
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:
                 if scenario_manager_name not in self.scenario_managers.keys():
-                    self.scenario_managers[scenario_manager_name] = ScenarioManagerXmile(base_points={},
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSd(base_points={},
                                                                                       base_constants={},
                                                                                       scenarios={},
                                                                                       name=scenario_manager_name)

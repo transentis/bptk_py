@@ -24,8 +24,8 @@ import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod
 from .logger import log
 from .scenariomanager import ScenarioManagerFactory
-from .scenariomanager import ScenarioManagerXmile
-from .scenariomanager import ScenarioManagerModel
+from .scenariomanager import ScenarioManagerSd
+from .scenariomanager import ScenarioManagerHybrid
 from .scenariomanager import SimulationScenario
 from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
@@ -829,13 +829,13 @@ class bptk():
                 model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
                 model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
                 if "type" in values.keys() and values["type"]=="abm":
-                    manager = ScenarioManagerModel(
+                    manager = ScenarioManagerHybrid(
                         json_config=values,
                         name=scenario_manager_name,
                         model=model
                     )
                 else:    
-                    manager = ScenarioManagerXmile(
+                    manager = ScenarioManagerSd(
                         scenarios={},
                         model=model,
                         name=scenario_manager_name,

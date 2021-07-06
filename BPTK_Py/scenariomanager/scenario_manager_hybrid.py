@@ -20,12 +20,7 @@ from ..modeling.model import Model
 from .scenario_manager import ScenarioManager
 
 
-##############################
-## ClASS ScenarioManagerABM ##
-##############################
-
-
-class ScenarioManagerModel(ScenarioManager):
+class ScenarioManagerHybrid(ScenarioManager):
     """
     This class reads hybrid ABM/SD-DSL models and manages them
     """
