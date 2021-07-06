@@ -138,7 +138,6 @@ class HybridRunner(ScenarioRunner):
             thread.join()
             
         for scenario in scenario_objects:
-
             ## IGNORE UNFINISHED ABM SCENARIOS. E.G. if it was cancelled before completion
             if hasattr(scenario,"scheduler"):
                 if scenario.scheduler.progress < 1.0 :
@@ -153,7 +152,6 @@ class HybridRunner(ScenarioRunner):
             
             for agent in agents:
                 new_df = pd.DataFrame()
-
                 df = self.get_df_for_agent(data, agent, agent_states, agent_properties, agent_property_types)
     
                 if agent_properties:
@@ -243,8 +241,7 @@ class HybridRunner(ScenarioRunner):
         try:
             df = pd.concat(dfs, axis=1, sort=True).fillna(0)
         except ValueError as e:
-            log("[ERROR] No data to plot found. It seems there is no scenario available.")
-
+            log("[ERROR] No data to plot found. It seems there is no scenario available. Resetting the scenario cache or model might help if you are trying to rerun a scenario.")
             return pd.DataFrame()
         
         df.index.name = "t"

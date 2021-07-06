@@ -193,7 +193,7 @@ class Model:
 
     def get_property(self, name):
         """
-        Get a property of the model ny name.
+        Get a property of the model by name. Model properties can also be accessed directly as object attributes, i.e. as self.name
             :param name: Name of property
             :return: Dictionary for property
         """
@@ -206,7 +206,7 @@ class Model:
 
     def set_property_value(self, name, value):
         """
-        Get the value of a model property by name.
+        Get the value of a model property by name. Model properties can also be accessed directly as object attributes, i.e. as self.name
         """
         self.properties[name]["value"] = value
 
@@ -413,7 +413,6 @@ class Model:
             :config(dictionary): {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
             :return: None
         """
-        #TODO document the dictionary structure better
         self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
 
         properties = config["properties"]
@@ -569,15 +568,14 @@ class Model:
         self.equation_id += 1
         return "bptk_"+str(self.equation_id)+"_"
 
-    def equation(self,equation, arg):
+    def equation(self,equation, t):
         """
-        This method only exists for making SD-DSL models compatible with the new SDModel equation API.
-        In later steps, we might want to extend this method to allow for arrayed equations as well! However, first the DSL needs to support arrays as well!
+        Evaluates the SD equation at time t
 
             :param equation: equaiton name
-            :param arg: t
+            :param t: t
         """
-        return self.memoize(equation,arg)
+        return self.memoize(equation,t)
 
     def memoize(self, equation, arg):
         """
