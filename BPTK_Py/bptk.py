@@ -27,8 +27,8 @@ from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerXmile
 from .scenariomanager import ScenarioManagerModel
 from .scenariomanager import SimulationScenario
-from .scenariorunners import ModelRunner
-from .scenariorunners import XmileRunner
+from .scenariorunners import HybridRunner
+from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 
@@ -141,7 +141,7 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = ModelRunner(self.scenario_manager_factory) #rename self.abmrunner to self.model_runner if still needed
+        self.abmrunner = HybridRunner(self.scenario_manager_factory) #rename self.abmrunner to self.model_runner if still needed
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
@@ -153,7 +153,7 @@ class bptk():
 
         Once the scenario has been trained, it can be used in plot_scenarios like any other scenario.
         
-        This method doesn't work for XMILE models.
+        This method only works for agent-based and hybrid models.
             :param episodes: the number of episodes to run
             :param scenarios: the scenarios to run
             :param scenario_managers: the scenario managers to select the scenarios from
@@ -243,7 +243,7 @@ class bptk():
 
             # Handle abm, sd-dsl and hybrid models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-                runner = ModelRunner(self.scenario_manager_factory)
+                runner = HybridRunner(self.scenario_manager_factory)
                 dfs += [runner.train_simulation(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
@@ -373,7 +373,7 @@ class bptk():
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
 
                 
-                runner = ModelRunner(self.scenario_manager_factory)
+                runner = HybridRunner(self.scenario_manager_factory)
                 
                 simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
@@ -387,7 +387,7 @@ class bptk():
             # Handle SD sceanrios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 consumed_scenario_managers += [manager.name]
-                runner = XmileRunner(self.scenario_manager_factory)
+                runner = SdRunner(self.scenario_manager_factory)
 
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 simulation_results += [runner.run_scenario(
