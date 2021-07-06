@@ -19,9 +19,9 @@ from ..logger import log
 
 
 
-class ModelRunner(ScenarioRunner):
+class HybridRunner(ScenarioRunner):
     """
-    This class runs agent-based, sd dsl and hybrid simulation models. 
+    This class runs agent-based and hybrid simulation models that are built using the Model class. 
     """
 
 

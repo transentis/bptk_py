@@ -6,7 +6,7 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2021 transentis labs GmbH
 # MIT License
 
 
@@ -19,14 +19,9 @@ from .scenario_runner import ScenarioRunner
 from ..xmile_wrapper import XmileWrapper
 
 
-################################
-### Class XmileRunner ###
-################################
-
-
-class XmileRunner(ScenarioRunner):
+class SdRunner(ScenarioRunner):
     """
-    This class runs XMILE simulations
+    This class runs pure SD simulations created with XMILE or with SD DSL.
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
