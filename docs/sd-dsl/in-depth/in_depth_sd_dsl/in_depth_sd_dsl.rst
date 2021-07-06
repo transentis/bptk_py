@@ -446,8 +446,7 @@ Storing Models Created Using The SD DSL In A Python Class
 It is possible to take the code from above and store it in a Python code
 file. The JSON structure is exactly as you are used to from the
 generated models.
-`sd_simple_project.py <https://github.com/transentis/bptk_py_tutorial/blob/master/simulation_models/sd_simple_project.py>`__
-is such a code file that implements the code. Let us walk through it.
+
 For readability, we omit a lot of code and only show the basic
 structure:
 
@@ -495,8 +494,7 @@ BPTK\_Py.Model, as we have done before. The call to the
 then only the code for your equations follows. Now you are done, the
 model is defined.
 
-In the next step, we need to write the JSON (the full file is available
-here: `dsl_class.json <https://github.com/transentis/bptk_py_tutorial/blob/master/scenarios/dsl_class.json>`__:
+In the next step, we need to write the JSON:
 
 .. code:: json
 

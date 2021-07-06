@@ -128,7 +128,7 @@ class ScenarioManagerFactory():
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
                         log(
-                            "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
+                            "[ERROR] Scenario monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
 
                 manager.instantiate_model()
@@ -188,7 +188,7 @@ class ScenarioManagerFactory():
         for filename in manager_filenames:
             self.__readScenario(filename=filename)
 
-        log("[INFO] Successfully reloaded scenario {} for ABMModel Manager {}".format(scenario, scenario_manager))
+        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
 
     def reset_all_scenarios(self):
         """
@@ -294,7 +294,7 @@ class ScenarioManagerFactory():
 
         self.model_monitors = {}
 
-    def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",
+    def create_scenario(self, filename="",
                         dictionary={}):
         """
         Method for writing scenarios to JSON file
@@ -357,7 +357,6 @@ class ScenarioManagerFactory():
                 parser_class = ParserFactory(filename)
 
                 if parser_class:
-
                     meta_model = parser_class().parse_model(filename, silent=True)
                     model, model_dictionary = meta_model.create_model()
 

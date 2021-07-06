@@ -90,7 +90,7 @@ class Model:
 
     def set_scenario_manager(self, scenario_manager):
         """
-        Set the scenario manager name
+        Set the name of the scenario manager that is handling this model. Used by bptk during scenario registration.
             :param scenario_manager: String
             :return: None
         """
@@ -102,7 +102,7 @@ class Model:
 
     def register_agent_factory(self, agent_type, agent_factory):
         """
-        Register an agent factory
+        Agent factories are used at run-time to populate the model with agents. This method is used to register an agent factory, which is typically just a lambda function which returns an agent.
             :param agent_type: Type of agent to register
             :param agent_factory: Function (typically lambda, but not limited to). Input: agent_id, model -> Output: Agent of agent_type
             :return: None
@@ -119,18 +119,18 @@ class Model:
 
     def reset(self):
         """
-        Reset simulation
+        Reset the model, clearing out all agents, agent and event statistics and resets the cache of SD equations.
             :return:  None
         """
-
         for agent_type in self.agent_type_map:
             self.agent_type_map[agent_type] = []
-
 
         self.agents = []
 
         self.data_collector.agent_statistics = {}
         self.data_collector.event_statistics = {}
+
+        self.reset_cache()
 
     def agent_ids(self, agent_type):
         """
@@ -152,8 +152,8 @@ class Model:
 
     def create_agents(self, agent_spec):
         """
-        Create agents
-            :param agent_spec: Specification of Agent (dictionary)
+        Create agents according to the agent specificaction, which is a dictionary containing the agent name and properties. Internally, this method then uses the agent factories to actually create the agents.
+            :agent_spec(dictionary): Specification of an agent using a dictionary with format {"name":<agent name>, "count": <initial count>}
             :return: None
         """
         log("[INFO] Creating {} agents of type {}".format(agent_spec["count"], agent_spec["name"]))
@@ -163,8 +163,9 @@ class Model:
 
     def create_agent(self, agent_type, agent_properties):
         """
-        Create one agent
+        Create one agent of the given type and with the given properties. Internally this method then uses the agent factories to actually create an agent.
             :param agent_type: Type of agent
+            :param agent_properties: The properties to initialize the agent with.
             :return: None
         """
 
@@ -183,7 +184,8 @@ class Model:
 
     def set_property(self, name, property_spec):
         """
-        Configure a property of the simulation
+        Configure a property of the model itself, as opposed to the properties of individual agents.
+            :param name: Name of the property to set.
             :param property_spec: Specification of property (dictionary)
             :return:
         """
@@ -191,7 +193,7 @@ class Model:
 
     def get_property(self, name):
         """
-        Get one property
+        Get a property of the model ny name.
             :param name: Name of property
             :return: Dictionary for property
         """
@@ -203,6 +205,9 @@ class Model:
             return None
 
     def set_property_value(self, name, value):
+        """
+        Get the value of a model property by name.
+        """
         self.properties[name]["value"] = value
 
     def get_property_value(self, name):
@@ -320,9 +325,10 @@ class Model:
 
     def instantiate_model(self):
         """
-        Instantiate model stub. Called directly after the model is instantiated. Implement this method in your model to perform any kind of initialization you may need.
+        This method does nothing in the parent class and can be overriden in child classes. It is called by the frame directly after the model is instantiated. Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories hier and set up model properties.
             :return: None
         """
+        pass
 
     def enqueue_event(self, event):
         """
@@ -340,8 +346,8 @@ class Model:
     def next_agent(self, agent_type, state):
         """
         Get the next agent by type and state.
-            :param agent_type: Agent type
-            :param state: State the agent is in
+            :agent_type String: Agent type
+            :state String: State the agent is in
             :return: Agent object
         """
 
@@ -402,11 +408,12 @@ class Model:
 
     def configure(self, config):
         """
-        Called to configure the model using a dictionary, which itself typically comes from a config file.
-            :param config: Configuration dictionary
+        Called to configure the model using a dictionary. This method is called by the framework if you instantiate models from scenario files. But you can also call the method directly.
+
+            :config(dictionary): {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
             :return: None
         """
-
+        #TODO document the dictionary structure better
         self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
 
         properties = config["properties"]
@@ -515,6 +522,10 @@ class Model:
 
 
     def plot_lookup(self,lookup_names,config=None):
+        """
+        Plots lookup functions for the given list of lookup names
+            :param lookup_names: A name or list of names of lookup functions. The list can be passed as a Python list or a comma separated string.
+        """
         #TODO write test for plot_lookup
         from ..util import lookup_data
         from ..visualizations import visualizer
@@ -619,7 +630,7 @@ class Model:
 
     def function(self, name, fn):
         """
-        Create a user defined function for SD models.
+        Create a user defined function for SD and hybrid models.
         :param name:  name of the function
         :param fn: returns
         :return: a nary function that creates a NaryFunction class
@@ -672,7 +683,7 @@ class Model:
 
     def converter(self, name):
         """
-        Create a converter
+        Create an SD converter
             :param name: Name of the converter
             :return: Converter object
         """
@@ -685,7 +696,7 @@ class Model:
 
     def evaluate_equation(self, name, t):
         """
-        Evaluate an element's equation
+        Evaluate an SD element's equation at timestep t.
             :param name: Name of the equation
             :param t: timestep to evaluate for
             :return: float of simulation result

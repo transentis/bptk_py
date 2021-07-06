@@ -6,7 +6,7 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2019 transentis labs GmbH
+# Copyright (c) 2021 transentis labs GmbH
 # MIT License
 
 
@@ -17,9 +17,6 @@ from .scenario_runner import ScenarioRunner
 from ..logger import log
 
 
-############################
-### Class abmVisualizer  ###
-############################
 
 
 class ModelRunner(ScenarioRunner):
@@ -101,7 +98,7 @@ class ModelRunner(ScenarioRunner):
         # Obtain simulation results
         scenario_objects = []
         if widget and len(scenarios) > 1:
-            log("[ERROR] Currently, we can only spawn a widget for exactly one ABM simulation! Try to run for only one scenario")
+            log("[ERROR] Currently, we can only spawn a widget for exactly one ABM/hybrid simulation! Try to run for only one scenario")
             
         for manager_name in scenario_managers:
             manager = self.scenario_manager_factory.scenario_managers[manager_name]

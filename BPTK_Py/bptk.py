@@ -25,6 +25,7 @@ import BPTK_Py.logger.logger as logmod
 from .logger import log
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerXmile
+from .scenariomanager import ScenarioManagerModel
 from .scenariomanager import SimulationScenario
 from .scenariorunners import ModelRunner
 from .scenariorunners import XmileRunner
@@ -365,7 +366,7 @@ class bptk():
         sd_results_dict = dict()
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
-            # Handle Models
+            # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
                 
                 consumed_scenario_managers += [manager.name]
@@ -383,7 +384,7 @@ class bptk():
                     return_format=return_format
                 )]
 
-            # Handle XMILE models
+            # Handle SD sceanrios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 consumed_scenario_managers += [manager.name]
                 runner = XmileRunner(self.scenario_manager_factory)
@@ -785,7 +786,7 @@ class bptk():
         """
         Registers the given model with bptk and automatically creates both a scenario manager and an initial scenario. If no scenario manager or scenario is passed, a scenario manager is created whose name is "sm<Model.name>" along with a scenario named "base". Internally, this method calls register_scenario_manager and then register_scenarios.
             :param model: The model that is registered.
-            :param scenario_manager: A scenario manager in the dictionary format (see the examples in the In Depth section). This parameter is optional.
+            :param scenario_manager: The name of the scenario manager
             :param scenario: A scenario in the dictionary format (see the examples in the InDepth section)
         """
         import os
@@ -827,15 +828,22 @@ class bptk():
             else:
                 model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
                 model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
-                manager = ScenarioManagerXmile(
-                    scenarios={},
-                    model=model,
-                    name=scenario_manager_name,
-                    base_constants=values["base_constants"] if "base_constants" in values.keys() else {},
-                    base_points=values["base_points"] if "base_points" in values.keys() else {},
-                    source=values["source"] if "source" in values.keys() else "",
-                    model_file=model_file
-                )
+                if "type" in values.keys() and values["type"]=="abm":
+                    manager = ScenarioManagerModel(
+                        json_config=values,
+                        name=scenario_manager_name,
+                        model=model
+                    )
+                else:    
+                    manager = ScenarioManagerXmile(
+                        scenarios={},
+                        model=model,
+                        name=scenario_manager_name,
+                        base_constants=values["base_constants"] if "base_constants" in values.keys() else {},
+                        base_points=values["base_points"] if "base_points" in values.keys() else {},
+                        source=values["source"] if "source" in values.keys() else "",
+                        model_file=model_file
+                    )
 
             # Add scenario if any in the dictionary is found
             if "scenarios" in values.keys():
