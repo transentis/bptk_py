@@ -21,15 +21,21 @@ from ..logger import log
 class SimulationScenario():
     """
     This class stores the settings for each scenario
+
+    Args:
+        dictionary:
+            Scenario dictionary from the source JSON file
+        name:
+            Name of the scenario
+        model:
+            Simulation_model object
+        scenario_manager_name:
+            Name of scenario manager
+
     """
 
     def __init__(self, dictionary, name, model, scenario_manager_name):
-        """
-        :param dictionary: scenario dictionary from the source JSON file
-        :param name: name of the scenario
-        :param model: simulation_model object
-        :param scenario_manager_name: name of scenario manager
-        """
+        
 
         self.dictionary = dictionary
         self.scenario_manager = scenario_manager_name

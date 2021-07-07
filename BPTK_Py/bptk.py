@@ -11,7 +11,7 @@
 
 import itertools
 import sys
-import threading # needed for the progress widget in train_simulations
+import threading 
 
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
@@ -46,19 +46,30 @@ class conf:
         self.configuration = default_config.configuration
 
 
-##################
-### CLASS BPTK ###
-##################
-
-
-### The Main API entry point for simulating System Dynamics models using python. This class is not supposed to store logic, just call methods in child objects
 class bptk():
+    """
+    The Main entry point for managing simulation scenarios for Agent-based models, hybrid models, SD-DSL models and XMILE models.
+
+    Upon instantiation, the class automatically reads all scenario files located in the scenarios folder and instantiates the scenarios defined there. The location of the scenarios folder can be set via the configuration passed to the initializer, default is "./scenarios".
+
+    The class also provides methods to register new scenario managers and scenarios dynamically.
+
+    Once all scenarios are set up, you can run them and plot the results.
+
+    Args:
+        loglevel: String.
+            Configures the loglevel, which can be either ERROR, WARN (Default) or INFO. Logfile is stored in the root directory under bptk_py.log
+        configuration: Conf.
+            Defaults to None. Containts settings for loglevels, maplotlib and colors.
+
+    """
 
     @classmethod
     def update(self):
-        """
+        """Update BPTK to latest version
+
         This method updates BPTK to the newest version that's available on PyPi.
-            :return: This method only prints information on the latest version and possibly the update progess directly to terminal / notebook
+        
         """
         def isnotebook():
             try:
@@ -103,8 +114,15 @@ class bptk():
             print("Nothing to do. BPTK_Py is up to date!")
 
     def __init__(self, loglevel="WARN", configuration=None):
-        """
-        Configures the matplotlib config and instantiates the scenario manager factory and visualizer
+        """Initialize BPTK.
+        
+        Configures the loglevel and the matplotlib config. Set up the scenario manager factory and instantiates the scenario manager factory and visualizer
+
+        Args:
+            loglevel: String.
+                Configures the loglevel, which can be either ERROR, WARN (Default) or INFO. Logfile is stored in the root directory under bptk_py.log
+            configuration: Conf.
+                Defaults to None. Containts settings for loglevels, maplotlib and colors.
         """
         config = conf()
         import BPTK_Py
@@ -141,29 +159,45 @@ class bptk():
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = HybridRunner(self.scenario_manager_factory) #rename self.abmrunner to self.model_runner if still needed
+        self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                           progress_bar=False):
-        """
-        Used to run a scenario repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methods are called on the underlying model.
+        """Used to run a scenario repeatedly in episodes.
+        
+        Ensures that the begin_epsiode and end_epsisode methods are called on the underlying model.
 
         The method plots the agent states and properties that are passed to the method ... this will typically be data used to evaluate whether training was successful.
 
         Once the scenario has been trained, it can be used in plot_scenarios like any other scenario.
         
         This method only works for agent-based and hybrid models.
-            :param episodes: the number of episodes to run
-            :param scenarios: the scenarios to run
-            :param scenario_managers: the scenario managers to select the scenarios from
-            :param agents: the agents containing the results we want to measure.
-            :param agent_states: the agent state information we are interested in
-            :param agent_properties: the agent property information we are interested in
-            :param agent_property_types: the agent property type we are interested in
-            :param series_names: allows renaming of variables in the plots
-            :param progress_bar: shows a progress bar that tracks the epsiode number
-            :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
+
+        Args:
+            scenarios: List.
+                The scenarios to run.
+            scenario_managers: List. 
+                The scenario managers to select the scenarios from
+            episodes: Integer (Default=1).
+                The number of episodes to run
+            agents: List (Default=[]).
+                The agents containing the results we want to measure.
+            agent_states: List (Default=[]).
+                The agent state information we are interested in.
+            agent_properties: List (Default=[]).
+                The agent property information we are interested in.
+            agent_property_types: List (Default=[]).
+                The agent property type we are interested in.
+            series_names: Dictionary (Default={}).
+                Allows renaming of variables in the plots
+            return_df: Boolean (Default=False).
+                Defines whether to plot the results (default) or return results as a dataframe.
+            progress_bar: Boolean (Default=False).
+                If true, display a progress bar that tracks the epsiode number.
+
+        Returns:
+            dataframe: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
 
         #TODO: Add tests for train_scenarios
@@ -294,20 +328,35 @@ class bptk():
                        progress_bar=False,
                        return_format = "df"
                        ):
+
+        """Run a set of scenarios.
+
+        Return the results either as dictionaries or as a dataframe.
+
+        Args:
+            scenarios: List.
+                Names of scenarios to plot
+            scenario_managers: List.
+                Names of scenario managers to plot
+            agents: List.
+                List of agents to plot (Agent based modelling)
+            agent_states: List.
+                List of agent states to plot, REQUIRES "AGENTS" param
+            agent_properties: List.
+                List of agent properties to plot, REQUIRES "AGENTS" param
+            equations: list.
+                Names of equations to plot (System Dynamics).
+            series_names: Dict.
+                Names of series to rename to, using a dict: {equation_name : rename_to}
+            progress_bar: Boolean.
+                Set True if you want to show a progress bar (useful for ABM simulations)
+            return_format: String.
+                The data type of the return.(can either be dataframe, dictionary or json)
         
+        Returns:
+            Based on the return_format value, results are returned as df, dict, or json.
         """
-        Run a number of scenarios and return the results either as dictionaries or as a dataframe.
-            :param scenarios: names of scenarios to plot
-            :param equations:  names of equations to plot (System Dynamics, SD)
-            :param agents: List of agents to plot (Agent based modelling)
-            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
-            :param scenario_managers: names of scenario managers to plot
-            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
-            :param return_format: the data type of the return.(can either be dataframe, dictionary or json)
-        
-            :return: based on the return_format value, the function would return the simulations results in the desired format(df, dict, or json).
-            """
+
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
         scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
         equations = equations if isinstance(equations, list) else equations.split(",")
@@ -460,18 +509,6 @@ class bptk():
        
         return df
 
-    def run_abm_with_widget(self, scenario_manager, scenario, agents=[], agent_states=[]):
-
-        agents = agents if type(agents) is list else agents.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
-
-        manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
-
-        return self.abmrunner.run_scenario(scenarios=[scenario],
-                                             agents=agents, agent_states=agent_states, progress_bar=False, widget=True,
-                                             scenario_managers=[manager.name]
-                                             )
-
     def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[],
                        kind=None,
@@ -483,27 +520,52 @@ class bptk():
                        return_df=False
                       ):
 
-        """
-         THE method for plotting scenarios for SD as well as Agent based models (ABM)
-            :param scenarios: names of scenarios to plot
-            :param equations:  names of equations to plot (System Dynamics, SD)
-            :param agents: List of agents to plot (Agent based modelling)
-            :param agent_states: List of agent states to plot, REQUIRES "AGENTS" param
-            :param scenario_managers: names of scenario managers to plot
-            :param kind: type of graph to plot ("line" or "area")
-            :param alpha:  transparency 0 < x <= 1
-            :param stacked: if yes, use stacked (only with kind="bar")
-            :param freq: frequency of time series
-            :param start_date: start date for time series
-            :param title: title of plot
-            :param visualize_from_period: visualize from specific period onwards
-            :param visualize_to_period: visualize until a specific period
-            :param x_label: label for x axis
-            :param y_label: label for y axis
-            :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-            :param progress_bar: set True if you want to show a progress bar (useful for ABM simulations)
-            :param return_df: set True if you want to receive a dataFrame instead of the plot
-            :return: dataFrame with simulation results if return_df=True
+        """Plot scenarios for SD, ABM and hybrid models.
+
+        Args:
+            scenarios: List
+                Names of scenarios to plot.
+            scenario_managers: List
+                Names of scenario managers to plot.
+            agents: List.
+                List of agents to plot (Agent based modeling).
+            agent_states: List:
+                List of agent states to plot, REQUIRES "AGENTS" param
+            agent_properties: List.
+                List of agent properties to plot, REQUIRES "AGENTS" param
+            agent_property_types: List.
+                List of agent property types to plot, REQUIRES "AGENTS" param
+            equations: List.
+                Names of equations to plot (System Dynamics, SD).
+            kind: String.
+                Type of graph to plot ("line" or "area").
+            alpha: Float.
+                Transparency 0 < x <= 1.
+            stacked: Boolean
+                If trues, use stacked charts (only relevant for kind="bar").
+            freq: String.
+                Frequency of time series. Uses the pandas offset aliases. 
+            start_date: String.
+                Start date for time series.
+            title: String.
+                Title of plot
+            visualize_from_period: Integer
+                Visualize from specific period onwards.
+            visualize_to_period: Integer
+                Visualize until a specific period.
+            x_label: String.
+                Label for x axis.
+            y_label: String.
+                Label for y axis.
+            series_names: Dict.
+                Names of series to rename to, using the following format {<equation_name> : <rename_to>}.
+            progress_bar: Boolean.
+                Set True if you want to show a progress bar (useful for ABM simulations).
+            return_df: Boolean.
+                Set True if you want to receive a dataFrame instead of the plot
+        
+        Returns:
+            Dataframe with simulation results if return_df=True.
          """
         
         df = self.run_scenarios(scenarios=scenarios,
@@ -535,24 +597,44 @@ class bptk():
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
                     freq="D", series_names={}, kind=None):
-        """
-        Plot lookup functions. If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
-            :param scenarios:  List of scenarios with names
-            :param scenario_managers:
-            :param lookup_names:
-            :param return_df:
-            :param visualize_from_period:
-            :param visualize_to_period:
-            :param stacked:
-            :param title:
-            :param alpha:
-            :param x_label:
-            :param y_label:
-            :param start_date:
-            :param freq:
-            :param series_names:
-            :param kind:
-            :return:
+        """Plot lookup functions.
+        
+        If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
+            
+        Args:
+            scenarios: List.
+                names of scenarios to plot.
+            scenario_managers: List.
+                Names of scenario managers to plot.
+            lookup_names: List.
+                List of lookups to plot. 
+            kind: String.
+                Type of graph to plot ("line" or "area").
+            alpha: Float (0 < x <=1).
+                Set transparency of plot.
+            stacked: Boolean.
+                If True, use stacked (only with kind="bar").
+            freq: String.
+                Frequency of time series.  Uses the pandas offset aliases.
+            start_date: String.
+                Start date for time series (e.g. 1/11/2017)
+            title: String.
+                Title of plot.
+            visualize_from_period: Integer.
+                Visualize from specific period onwards.
+            visualize_to_period: Integer.
+                Visualize until a specific period.
+            x_label: String
+                Label for x axis.
+            y_label: String
+                Label for y axis.
+            series_names: Dict.
+                Names of series to rename to, using a dict: {equation_name : rename_to}
+            return_df: Boolean.
+                Set to True if you want to receive a dataFrame instead of the plot
+
+        Returns:
+            Dataframe with simulation results if return_df=True, else it plots the lookup function.
         """
 
         from .util import lookup_data
@@ -609,19 +691,21 @@ class bptk():
                                     series_names=series_names)
 
     def destroy(self):
-        """
-        When we do not want to use the BPTK object anymore but keep the Python Kernel running, use this. It essentially only kills all the file monitors and makes sure the Python process can die happily.
-            :return: None
+        """ Destroy the BPTK object without stopping the Python Kernel.
+        
+        Kills all the file monitors and makes sure the Python process can die happily.
         """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()
 
     def reset_scenario_cache(self, scenario_manager="", scenario=""):
-        """
-        Resets only the interal cache (equation results) of a scenario, does not re-read from storage
-            :param scenario_manager: name of scenario manager for lookup
-            :param scenario: name of scenario
-            :return: None
+        """Resets only the interal cache (equation results) of a scenario, does not re-read from storage
+
+        Args:
+            scenario_manager: String
+                Name of scenario manager for lookup.
+            scenario: String.
+                Name of scenario.
         """
         #TODO: add tests for reset_scenario_cache
 
@@ -642,26 +726,35 @@ class bptk():
                 log("[ERROR] Unable to reset simulation model. Error: {}".format(str(e)))
 
     def reset_scenario(self, scenario_manager, scenario):
-        """
-        Reload scenario from storage
-            :param scenario_manager: name of scenario manager for lookup
-            :param scenario: name of scenario
-            :return: None
+        """Reset a scenario
+        
+        Reload a scenario from its file. All scenarios for the relevant file are reloaded. NOTE: If the scenario wasn't defined via a file, this removes the scenario from the scenario manager. If you just want to reset the scenario memory, call reset_senario_cache.
+
+        Args:
+            scenario_manager: String.
+                Name of scenario manager
+            scenario: String.
+                Name of the scenario that should be reset.
         """
         self.scenario_manager_factory.reset_scenario(scenario_manager=scenario_manager, scenario=scenario)
 
     def reset_all_scenarios(self):
-        """
-        Reload all scenarios from storage
-            :return: All ABMModel Managers
+        """Reload all scenarios
+
+        Reload all scenarios from the scenario definition files. If scenarios where not created via a scenario definition file but dynamically, these are lost and must be reconfigured.
         """
         return self.scenario_manager_factory.reset_all_scenarios()
 
     def list_scenarios(self, scenario_managers=[], scenario_manager_type=""):
-        """
+        """ List scenarios for selected scenario managers.
+
         List all scenarios or scenarios from selected scenario managers
-            :param scenario_managers: The list of scenario managers whose scenarios you want to list. Default is an empty list.
-            :param scenario_manager_type: The type of scenario manager you want to list your scenarios for ("abm"|"sd"|""), default is an empty string, which returns scenario managers of both types.
+        
+        Args:
+            scenario_managers: List.
+                The list of scenario managers whose scenarios you want to list. Default is an empty list.
+            scenario_manager_type: String.
+                The type of scenario manager you want to list your scenarios for ("abm"|"sd"|""), default is an empty string, which returns scenario managers of both types.
         """
         managers = self.scenario_manager_factory. \
             get_scenario_managers(
@@ -675,25 +768,30 @@ class bptk():
                 print("\t {}".format(name))
 
     def get_scenario(self, scenario_manager, scenario):
-        """
-        Get a scenario object from a scenario manager
-            :param scenario_manager: Name of the scenario manager
-            :type scenario_manager: str
-            :param scenario: Name of the scenario
-            :type scenario: str
-            :return: the scenario object if found or else None
-            :rtype: SimulationScenario
+        """Get a scenario object from a scenario manager
+        
+        Args:
+            scenario_manager: String.
+                Name of the scenario manager
+            scenario: String.
+                Name of the scenario.
+        
+        Returns:
+            For models built using the Model class (ABM, SD DSL, hybrid) this returns the model. For XMILE-models, thsi returns a SimulationScenario object.
         """
         return self.scenario_manager_factory.get_scenario(scenario_manager, scenario)
 
     def get_scenario_names(self, scenario_managers):
+        """Returns a concated list of all the scenario names from a list of scenario managers
+        
+        Args:
+            scenario_managers: List.
+                List of scenario manager names.
+            
+        Returns:
+            List of scenario names
         """
-        Returns a concated list of all the scenario names from a list of scenario managers
-            :param scenario_managers: list of scenario managers
-            :type scenario_managers: list of strings
-            :return: Returns a list of scenario names
-            :rtype: List of strings
-        """
+
         scenarios = []
         managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
         for manager in managers.values():
@@ -701,15 +799,22 @@ class bptk():
         return scenarios
 
     def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
+        """Get a dictionary of scenario objects.
+        
+        The keys of the dictionary are the scenario names, unless more than one scenario manager is passed, in which case the name of the scenario manager is used to prefixes the scenario name (i.e. <scenario_manager>_<scenario>).
+        
+        Args:
+            scenario_managers: List.
+                List of scenario managers to get the scenarios from.
+            scenarios: List.
+                Names of the scenarios to get.
+            scenario_manager_type: String.
+                Type of the scenario manager, ("sd"|"abm"|""). Default is "".
+            
+        Returns:    
+                Dictionary of scenario objects.
         """
-        Get a dictionary of scenario objects. The keys of the dictionary are the scenario names, unless more than one scenario manager is passed, in which case the name of the scenario manager is used to prefixes the scenario name (i.e. <scenario_manager>_<scenario>).
-            :param scenario_managers: List of scenario managers to get the scenarios from
-            :type scenario_managers: List of strings, optional
-            :param scenarios: Names of the scenarios to get
-            :type scenarios: List of strings, optional
-            :return: Dictionary of scenario objects
-            :rtype: Dictionary of str:SimulationScenario entries
-        """
+
         return self.scenario_manager_factory.get_scenarios(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
@@ -717,11 +822,16 @@ class bptk():
         )
 
     def list_equations(self, scenario_managers=[], scenarios=[]):
-        """
-        This method lists (prints) all available equations for the given scenario manager(s) and scenario(s)
-            :param scenario_managers: List of scenario managers to pull the scenarios' equations for. If empty, list for all scenario managers (default)
-            :param scenarios: List of scenarios to pull the equations for. If empty, list for all scenarios of the given scenario managers(s) (default)
-            :return: This method only prints the equation(s)
+        """  Prints all available equations for the given scenario manager(s) and scenario(s)
+
+        Args:
+            scenario_managers: List.
+                List of scenario managers to pull the scenarios' equations for. If empty, list for all scenario managers (default)
+            scenarios: List.
+                List of scenarios to pull the equations for. If empty, list for all scenarios of the given scenario managers(s) (default)
+            
+        Returns:
+            This method prints the equation(s) and doesn't return anything.
         """
 
         result = {}
@@ -758,36 +868,18 @@ class bptk():
                             print("\tconverter: \t\t{}".format(equation))
                     print(" ")
 
-    def add_scenario(self, dictionary):
-        """
-        Add scenario during runtime
-            :param dictionary: dictionary that contains all data required for the scenario. Check the readme!
-            :type dictionary: A dictionary defining the scenario
-            :return: Nothing is return from this method
-            :rtype:
-        """
-        # TODO this is probably redundant because we have register_scenario now ...
-        for scenario_manager_name in dictionary.keys():
-            source = ""
-            if "source" in dictionary[scenario_manager_name].keys():
-                source = dictionary[scenario_manager_name]["source"]
-            model_file = dictionary[scenario_manager_name]["model"]
-            scenarios = [k for k in dictionary[scenario_manager_name].keys() if not k == "source" and not k == "model"]
-
-            for scenario_name in scenarios:
-                scenario = SimulationScenario(model=None, name=scenario_name,
-                                              scenario_manager_name=scenario_manager_name,
-                                              dictionary=dictionary[scenario_manager_name][scenario_name])
-
-                self.scenario_manager_factory.add_scenario(scenario=scenario, scenario_manager=scenario_manager_name,
-                                                           source=source, model=model_file)
-
     def register_model(self, model, scenario_manager=None, scenario=None):
-        """
-        Registers the given model with bptk and automatically creates both a scenario manager and an initial scenario. If no scenario manager or scenario is passed, a scenario manager is created whose name is "sm<Model.name>" along with a scenario named "base". Internally, this method calls register_scenario_manager and then register_scenarios.
-            :param model: The model that is registered.
-            :param scenario_manager: The name of the scenario manager
-            :param scenario: A scenario in the dictionary format (see the examples in the InDepth section)
+        """Registers the given model with bptk.
+        
+        Automatically creates both a scenario manager and an initial scenario. If no scenario manager or scenario is passed, a scenario manager is created whose name is "sm<Model.name>" along with a scenario named "base". Internally, this method calls register_scenario_manager and then register_scenarios.
+            
+        Args:    
+            model: Model.
+                The model that is registered, of type bptk.Model.
+            scenario_manager: String.
+                The name of the scenario manager
+            scenario: Dict.
+                A scenario in the dictionary format (see the examples in the InDepth section)
         """
         import os
         # Check whether model is a string and looks like a path
@@ -795,7 +887,6 @@ class bptk():
             tmp_dir="tmp"
             import os
             if not os.path.isdir(tmp_dir): os.mkdir(tmp_dir)
-
 
             if not scenario_manager:
                 log("[ERROR] Please define a name for the new scenario manager. The command should look like this: bptk.register_model(\"{}\",\"The Name\")".format(model))
@@ -813,9 +904,14 @@ class bptk():
             self.register_scenarios(scenario, scenario_manager)
 
     def register_scenario_manager(self, scenario_manager):
-        """
-        Register a manually defined Scenario manager using the common JSON notation. Keep in mind that it HAS TO contain a reference to a live model instance
-            :param scenario_manager: JSON notation as used in the scenarios definitions as well. DOes not necessarily need to contain scenarios, but can!
+        """Manually register a scenario manager.
+        
+        Register a manually defined Scenario manager using the common dictionary notation. Keep in mind that it HAS TO contain a reference to a live model instance.
+        
+        Args:
+            scenario_manager: Dict.
+                Dictionary notation as used in the scenarios definitions. The scenario manager definition does not necessarily need to contain scenarios, but it can.
+        
         """
 
         # TODO refactoring - much of this code should be part of scenario_manager_factory
@@ -854,11 +950,16 @@ class bptk():
             log("[INFO] Successfully registered scenario manager {}".format(scenario_manager_name))
 
     def register_scenarios(self, scenarios, scenario_manager):
-        """
-        Register a new scenario with an existing scenario manager using the common JSON notation (Read the interactive tutorial)
-            :param scenarios: JSON notation of scenario as known from "offline" definition in JSON file
-            :param scenario_manager: name of scenario manager to add the scenario to
-            :return: None
+        """Register a new scenario with an existing scenario manage.
+
+        Uses the usual dictionary format to configure the scenario.
+
+        Args:
+            scenarios: Dict.
+                Dictionary containing the scenario settings.
+            scenario_manager: String.
+                Name of scenario manager to add the scenario to.
+
         """
         if scenario_manager in self.scenario_manager_factory.scenario_managers.keys():
             manager = self.scenario_manager_factory.scenario_managers[scenario_manager]
@@ -882,28 +983,21 @@ class bptk():
             indicator_df_name="indicator",
             interactive_df_name="interactive",
             filename=None):
+        """Export scenario data into a spreadsheet.
+
+        Export data for the given scenarios in a structure that is amenable to analysis in BI tools. By default, the data is returned in a dictionary of dataframes. The first dataframe named scenario_df_name will contain all the data for all the scenarios, indexed by the scenario name. The second dataframe named interactive_df_name will contain all the data for the interactive scenarios. The interactive scenarios are generated by the export function according to the interactive settings. If you provide a filename, the data will not be returned in a dictionary but will be writen directly to an Excel (.xlsx) file. The data will be split into two tabs, one named <scenario_df_name> for the scenario data and one named <interactive_df_name> for the interactive data. Currently the export function only works for System Dynamics models (both XMILE and SD DSL).
+         
+        Args:
+            scenario_manager: string. 
+                Name of the scenario manager
+            scenarios: list, default None.
+                List of scenarios to export
+            equations: list, default None.
+                List of equations to export.
+        
+        Returns:
+            If passed a filename, then the data is exported to the file and nothing is returned. Else the method returns a dictionary of dataframes.
         """
-         Export data for the given scenarios in a structure that is amenable to analysis in BI tools. By default, the data is returned in a dictionary of dataframes.
-
-         The first dataframe named scenario_df_name will contain all the data for all the scenarios, indexed by the scenario name. The second dataframe named interactive_df_name will contain all the data for the interactive scenarios.
-
-         The interactive scenarios are generated by the export function according to the interactive settings. If you provide a filename, the data will not be returned in a dictionary but will be writen directly to an Excel (.xlsx) file.
-
-         The data will be split into two tabs, one named <scenario_df_name> for the scenario data and one named <interactive_df_name> for the interactive data. Currently the export function only works for System Dynamics models.
-            :param scenario_manager:
-            :param scenarios:
-            :param equations:
-            :param interactive_scenario:
-            :param interactive_equations:
-            :param interactive_settings:
-            :param time_column_name:
-            :param scenario_column_name:
-            :param scenario_df_name:
-            :param indicator_df_name:
-            :param interactive_df_name:
-            :param filename:
-            :return:
-         """
 
         #TODO it might be better to find a new place for this, closer to the XMILE handling classes
         # if no scenarios are passed we export all scenarios

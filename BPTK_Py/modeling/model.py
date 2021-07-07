@@ -232,6 +232,7 @@ class Model:
             # Lookup properties need to be added to the point dictionary also, for compatibility with SD models
             # this should be reworked once lookup handling is harmonized between sd and abm
 
+            #TODO Harmonize lookup handling between sd and abm
             if self.properties[name]["type"] == "Lookup":
                 self.points[name] = value
 

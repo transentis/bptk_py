@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinxcontrib.httpdomain',
     'sphinxcontrib.autohttp.flask',
+    'sphinx.ext.napoleon'
 
 ]
 

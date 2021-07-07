@@ -255,7 +255,7 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = ScenarioManagerXmile(scenarios={scenario.name: scenario},
+            self.scenario_managers[scenario_manager] = ScenarioManagerSd(scenarios={scenario.name: scenario},
                                                                          name=scenario_manager,
                                                                          model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
@@ -276,7 +276,7 @@ class ScenarioManagerFactory():
         """
         if not source in self.model_monitors.keys():
             self.model_monitors[source] = ModelMonitor(source, str(
-                model), update_func=self.refresh_scenarios_for_source_model)
+                model), update_func=self._refresh_scenarios_for_source_model)
 
     def destroy(self):
         """
@@ -306,7 +306,7 @@ class ScenarioManagerFactory():
         with open(filename, 'w', encoding="utf-8") as outfile:
             json.dump(dictionary, outfile, indent=4)
 
-    def refresh_scenarios_for_source_model(self, filename):
+    def _refresh_scenarios_for_source_model(self, filename):
         """
         Refreshes all scenarios that use the given source file (e.g. itmx)
         :param filename:
