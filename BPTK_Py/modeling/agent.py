@@ -21,18 +21,18 @@ import copy
 #################
 
 class Agent:
-    """
-    Agent for agent based simulation. A simulation requires the implementation of at least one inheriting class
-    An agent does things in the simulation and interacts with others
+    """Agent for agent based simulation.
+    Your agents must inherit from this class if they are to be part of an agent-based simulation.
+
+    Args:
+        agent_id: Integer.
+            Id of agent. Model should manage this. Do use agent factories!
+        model: Model instance
+            The agent-based model this agent will be part of.
+        properties: Dictionary of agent properties. These properties will be available as object attributes (i.e. via self.<name of property>)
     """
 
     def __init__(self, agent_id, model, properties,agent_type="agent"):
-        """
-        Initializes the agent and sets its id, model and properties.
-         :param agent_id: id of agent. Model should manage this. Do use agent factories!
-         :param model: Model instance
-         :param properties: Dictionary of agent properties
-        """
 
         from .model import Model
         if not isinstance(model,Model):
@@ -60,9 +60,10 @@ class Agent:
         self.eventHandlers = {}
 
     def serialize(self):
-        """
-        Serialize the agent.
-         :return: Returns a dictionary containing the agent state
+        """Serialize the agent.
+
+        Returns:
+            Returns a dictionary containing all relevant agent data: id, state, type and all properties.
         """
 
         output = {}
@@ -76,12 +77,17 @@ class Agent:
         return output
 
     def register_event_handler(self, states, event, handler):
-        """
-        Register an event handler.
-         :param states: States for which the event handler is valid
-         :param event: event instance
-         :param handler: Actual handler
-         :return: None
+        """Register an event handler.
+
+        The event handler is called by the framework if a relevant event occurs. The event handler is registered for all relevant state.
+
+        Args:
+            states: List.
+                List of states (String) for which the event handler is valid
+            event: String
+                The type of event the handler reacts to.
+            handler: Function.
+                The actual event handler. This must be a function that accept the event as its parameter. Typically this will be a method of the agent class.
         """
 
         if type(states) not in [list]:
@@ -238,8 +244,9 @@ class Agent:
             super.__setattr__(self, name, value)
 
     def receive_instantaneous_event(self, event):
-        """
-        Handle an event immediately, do not wait for another round
+        """Handle an event immediately, do not wait for the next round.
+
+        Args:
          :param event: event instance
          :return: None
         """
@@ -250,6 +257,18 @@ class Agent:
             raise e
 
     def handle_events(self, time, sim_round, step):
+        """Called by the framework to handle events.
+
+        This method then calls the registered event handlers.
+
+        Args:
+            time: Float.
+                The current simulation time (sim_round+dt*step)
+            sim_round: Integer.
+                The current simulation round.
+            step: Integer. 
+                The current simulation step (within the round).
+        """
         try:
             handlers = self.eventHandlers[self.state]
 
@@ -264,48 +283,59 @@ class Agent:
             pass
 
     def act(self, time, round_no, step_no):
-        """
-        This method is called by the scheduler every timestep. Agents implement their logic here.
-         :param time:     this is the current simulation time (equivalent to round_no+step_no*dt)
-         :param round_no: round number
-         :param step_no:  step number of round
-         :return: None
+        """Called by the scheduler every timestep.
+        
+        Does nothing in the base class, typically agents will implement most of their action logic in this method (and in the event handlers).
+
+        Args:
+            time: Float.
+                This is the current simulation time (equivalent to round_no+step_no*dt)
+            round_no: Integer.
+                The current round.
+            step_no: Integer.
+                The current step (within the round)
         """
         pass
 
     def begin_episode(self, episode_no):
-        """
-        This method is called by the simulation at the beginning of an episode, e.g. to allow a soft reset of the agent. The default implementation does nothing.
+        """Called by the framework at the beginning of each episode.
+        
+        Useful to allow a soft reset of the agent, e.g. when training a model for reinforcement learning.
+        
+        The default implementation does nothing.
 
-            :param episode_no: the number of the episode
-            :return: None
+        Args:
+            episode_no: Integer.
+                The number of the episode.
         """
         pass
 
 
     def end_episode(self, episode_no):
-        """
-        This method is called by the simulation at the end of an epsiode, to allow tidy up if necessary. The default implementation does nothing.
+        """Called by the framework at the end of each epsiode, to allow tidy up if necessary. The default implementation does nothing.
 
-            :param episode_no: the number of the episode
-            :return: None
+        Args:
+            episode_no: Integer.
+                The number of the episode
         """
         pass
 
 
     def to_string(self):
-        """
-        ToString method
-         :return: current state
-        """
+        #TODO might want to rename this or just remove it ...
         return self.state
 
     @staticmethod
     def is_event_relevant(threshold):
-        """
-        Function to differentiate relevant and irrelevant events. It generates a random number – if this is smaller than the threshold, the event is deemed relevant.
-         :param threshold: Threshold for relevance
-         :return: Boolean
+        """Helper function used to differentiate relevant and irrelevant events.
+        
+        The function generates a random number in the range [0.0, 1.0) using Pythons random.random(). If this is smaller than the threshold, the event is deemed relevant.
+        
+        Args:
+            threshold: Float.
+                Threshold for relevance, should be in the range [0.0,1.0]
+        Returns: 
+            Boolean
         """
         return random.random() < threshold
 

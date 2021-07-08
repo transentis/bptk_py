@@ -32,6 +32,11 @@ For questions regarding installation, usage and other help please contact us at:
 
 ## Changelog
 
+### 1.2.0
+*   Major tidy up of the bptk API, including a number of breaking changes. In particular the run_simulation method has been renamed to run_scenarios and a number of rarely used methods have been removed.
+*   Documentation improved and extended.
+*   Internal refactoring.
+
 ### 1.1.27
 *   Fix bug in XMILE compiler regrading parsing of names that start with a keyword
 
