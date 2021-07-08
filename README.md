@@ -26,7 +26,7 @@ The first place to go to for help and installation instructions is the [online d
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
-Recently we have also set up a [meetup group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) that gathers online monthly. This is a good place to see BPTK in action, ask questions and suggest new features.
+We have also set up a [meetup group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) that gathers online monthly. This is a good place to see BPTK in action, ask questions and suggest new features.
 
 For questions regarding installation, usage and other help please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
