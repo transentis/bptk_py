@@ -147,7 +147,7 @@ class ScenarioManagerFactory():
         :param path: path to look for JSON files containing scenario managers and scenarios
         :param scenario_managers_to_filter: only look for certain scenario managers
         :param scenario_manager_type: only look for scenario managers of a given type
-        :return: self.scenario_managers
+        :return: self.scenario_managers, a dictionary
         """
 
         self.path = path

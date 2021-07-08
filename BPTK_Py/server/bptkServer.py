@@ -134,29 +134,16 @@ class BptkServer(Flask):
         """
         The endpoint returns all available scenarios for the current simulation.
         """
-        scenarions = []
-        
-        if not self.bptk.get_scenarios():
+
+        scenarios = self.bptk.get_scenario_names(format="dict")
+
+        if not scenarios:
             resp = make_response('{"error": "expecting the model to have scenarios"}',500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
         
-        scenarios_dict = dict()
-        for scenario in self.bptk.get_scenarios():
-            underscore_index = scenario.index("_") # reading the index of the underscore that splits the scenarioManager from the scenario
-            scenario_manager_name = scenario[:underscore_index]
-            scenario_name = scenario[underscore_index + 1:]
-            if scenario_manager_name not in scenarios_dict: # check if the the scenario_manager_name not in our scenarios_dict
-                # add the new scenario manager name with its corresponding scenario
-                scenarios_dict[scenario_manager_name] = [scenario_name]
-            else:
-                scenarios_dict[scenario_manager_name].append(scenario_name) # append the new scenario to the list correlated with the scenario manager name.
-
-        if scenarios_dict is not None:
-            resp = make_response(scenarios_dict, 200)
-        else:
-            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+        resp = make_response(scenarios, 200)
 
         return resp
     

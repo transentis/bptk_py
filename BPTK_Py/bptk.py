@@ -777,26 +777,39 @@ class bptk():
                 Name of the scenario.
         
         Returns:
-            For models built using the Model class (ABM, SD DSL, hybrid) this returns the model. For XMILE-models, thsi returns a SimulationScenario object.
+            For models built using the Model class (ABM, SD DSL, hybrid) this returns the model. For XMILE-models, this returns a SimulationScenario object.
         """
         return self.scenario_manager_factory.get_scenario(scenario_manager, scenario)
 
-    def get_scenario_names(self, scenario_managers):
-        """Returns a concated list of all the scenario names from a list of scenario managers
+    def get_scenario_names(self, scenario_managers=[],format="list"):
+        """Returns a concatenated list of all the scenario names from a list of scenario managers
         
         Args:
             scenario_managers: List.
-                List of scenario manager names.
+                List of scenario manager names. Default is an empty list.
+
+            format: String.
+                Either "list" (=Default) or "dict"
             
         Returns:
-            List of scenario names
+            List of scenario names or a dictionary.
         """
 
-        scenarios = []
-        managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
-        for manager in managers.values():
-            scenarios.extend(manager.get_scenario_names())
-        return scenarios
+        if format=="list":
+            scenarios = []
+            managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+            for manager in managers.values():
+                scenarios.extend(manager.get_scenario_names())
+            return scenarios
+
+        if format=="dict":
+            scenarios={}
+            managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+            for manager in managers.values():
+                scenarios[manager.name]=manager.get_scenario_names()
+            return scenarios
+            
+        return []
 
     def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
         """Get a dictionary of scenario objects.
@@ -852,7 +865,7 @@ class bptk():
             else:
                 searched_scenarios = scenarios
 
-            for scenario_name, scenario in scenariomanager.scenarios.items():
+            for _ , scenario in scenariomanager.scenarios.items():
 
                 if scenario.name in searched_scenarios:
                     print("Scenario: {}".format(scenario.name))
