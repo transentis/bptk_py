@@ -288,7 +288,7 @@ class Lookup(Function):
             self.points = points
 
     def term(self, time="t"):
-        return "model.lookup({},{})".format(self.element, self.points)
+        return "model._lookup({},{})".format(self.element, self.points)
 
 
 class Step(Function):

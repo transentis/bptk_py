@@ -24,25 +24,23 @@ from ..logger import log
 from ..sddsl import Constant, Converter, Flow, Biflow, NaryOperator, Stock
 
 
-###################
-## MODEL CLASS ##
-###################
-
-
 class Model:
-    """
-    This is the main agent base / System dynamics / Hybrid model class
+    """This is the main agent base / System dynamics / Hybrid model class
+
     It can run manually generated SD models, AB Models or define hybrid models.
+
+    Args:
+        name: String.
+            Name of the model.
+        scheduler: Scheduler.
+            Scheduler object (e.g. simultaneousScheduler). This is configurable, so that you can add your own scheduling algorithms.
+        data_collector: DataCollector
+            Instance of DataCollector. This is configurable, so that you can add your own data collection algorithms.
+
     """
 
 
     def __init__(self, starttime=0, stoptime=0, dt=1,name="", scheduler=None,data_collector=None):
-        """
-
-        :param name: Name as string
-        :param scheduler: Implemented instance of scheduler (e.g. simultaneousScheduler)
-        :param data_collector: Instance of DataCollector)
-        """
 
         self._caching_on = False
 
@@ -75,7 +73,6 @@ class Model:
         self.fn = {}
         self.equation_id = 0  # unique id used for internally generated functions
 
-
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
 
@@ -89,10 +86,11 @@ class Model:
         return self
 
     def set_scenario_manager(self, scenario_manager):
-        """
-        Set the name of the scenario manager that is handling this model. Used by bptk during scenario registration.
-            :param scenario_manager: String
-            :return: None
+        """Set the name of the scenario manager that is handling this model. Used by bptk during scenario registration.
+        
+        Args:
+            scenario_manager: String.
+                Name of the scenario manager.
         """
 
         if not type(scenario_manager) == str:
@@ -101,11 +99,15 @@ class Model:
         self.scenario_manager = scenario_manager
 
     def register_agent_factory(self, agent_type, agent_factory):
-        """
+        """Register an agent factory.
+        
         Agent factories are used at run-time to populate the model with agents. This method is used to register an agent factory, which is typically just a lambda function which returns an agent.
-            :param agent_type: Type of agent to register
-            :param agent_factory: Function (typically lambda, but not limited to). Input: agent_id, model -> Output: Agent of agent_type
-            :return: None
+        
+        Args:
+            agent_type: String.
+                Type of agent to register
+            agent_factory: Function.
+                Function that returns an agent given an id and the model. Typically a lambda, but not limited to that. Input: agent_id, model -> Output: Agent of agent_type
         """
         log("[INFO] Registering agent factory for {}".format(agent_type))
 
@@ -118,9 +120,8 @@ class Model:
 
 
     def reset(self):
-        """
-        Reset the model, clearing out all agents, agent and event statistics and resets the cache of SD equations.
-            :return:  None
+        """Reset the model.
+        Cleara out all agents, agent and event statistics and resets the cache of SD equations. Keeps the agent factories though, so you could directly reconfigure the model using the configure method.
         """
         for agent_type in self.agent_type_map:
             self.agent_type_map[agent_type] = []
@@ -133,28 +134,43 @@ class Model:
         self.reset_cache()
 
     def agent_ids(self, agent_type):
-        """
-        Receive agent ids for all agents of agent_type
-            :param agent_type: agent type to get ids for
-            :return: List
+        """Get agent IDs.
+        
+        Retrieve agent IDs for all agents of type agent_type.
+
+        Args:
+            agent_type: String.
+                Agent type to get IDs for
+        
+        Returns:
+            List of IDs 
         """
 
         return self.agent_type_map[agent_type]
 
     def agent(self, agent_id):
-        """
-        Receive one agent by ID
-            :param agent_id: ID of agent (int)
-            :return: Agent object
+        """Get an agent by ID.
+        
+        Retrieve one agent by its ID
+
+        Args:
+            agent_id: Integer.
+                ID of agent that is to be retrieved.
+        
+        Returns:
+            Agent object
         """
 
         return self.agents[agent_id]
 
     def create_agents(self, agent_spec):
-        """
-        Create agents according to the agent specificaction, which is a dictionary containing the agent name and properties. Internally, this method then uses the agent factories to actually create the agents.
-            :agent_spec(dictionary): Specification of an agent using a dictionary with format {"name":<agent name>, "count": <initial count>}
-            :return: None
+        """Create agents according to the agent specificaction.
+        
+        The agent specification is a dictionary containing the agent name and properties. Internally, this method then uses the registered agent factories to actually create the agents.
+        
+        Args:
+            agent_spec: Dict.
+                Specification of an agent using a dictionary with format {"name":<agent name>, "count": <initial count>}
         """
         log("[INFO] Creating {} agents of type {}".format(agent_spec["count"], agent_spec["name"]))
 
@@ -162,11 +178,15 @@ class Model:
             self.create_agent(agent_spec["name"], agent_spec.get("properties"))
 
     def create_agent(self, agent_type, agent_properties):
-        """
-        Create one agent of the given type and with the given properties. Internally this method then uses the agent factories to actually create an agent.
-            :param agent_type: Type of agent
-            :param agent_properties: The properties to initialize the agent with.
-            :return: None
+        """Create one agent of the given type and with the given properties.
+        
+        Internally this method then uses the registered agent factories to actually create an agent.
+
+        Args:
+            agent_type: String.
+                Type of agent
+            agent_properties: Dict.
+                The properties to initialize the agent with.
         """
 
         class NotAnAgentException(Exception):
@@ -183,19 +203,33 @@ class Model:
         return agent
 
     def set_property(self, name, property_spec):
+        """Configure a property of the model itself, as opposed to the properties of individual agents.
+
+        Properties set via this mechanism are stored internally in a dictionary of properties, the value of the property directly can be access directly as an object attribute, i.e. as self.<name of property>.
+
+        The key point about keeping properties in this way is that they can then easily be collected in a data collector.
+
+        Args:
+            name: String.
+                Name of the property to set.
+            property_spec: Dict.
+                Specification of property: {"type":<type of property, free form string>,"value":<value of property>}. In principle the property can store any kind of value, the type is currently not evaluated by the framework.
         """
-        Configure a property of the model itself, as opposed to the properties of individual agents.
-            :param name: Name of the property to set.
-            :param property_spec: Specification of property (dictionary)
-            :return:
-        """
+        #TODO: Currently model properties are not collected by the standard data collector and they are also not directly plotable. This might be a useful extension.
         self.properties[name] = property_spec
 
     def get_property(self, name):
         """
-        Get a property of the model by name. Model properties can also be accessed directly as object attributes, i.e. as self.name
-            :param name: Name of property
-            :return: Dictionary for property
+        Get a property of the model by name.
+        
+        The value of the model properties can also be accessed directly as a model attribute, i.e. as self.<name of property>
+
+        Args:
+            name: String.
+                Name of property
+
+        Returns:
+            Dictionary for property
         """
 
         try:
@@ -205,12 +239,32 @@ class Model:
             return None
 
     def set_property_value(self, name, value):
-        """
-        Get the value of a model property by name. Model properties can also be accessed directly as object attributes, i.e. as self.name
+        """Set the value of a model property by name.
+        
+        Model properties can also be set directly via the model attributes, i.e. as self.<nname of property>=<value of property>
+
+        Args:
+            name: String.
+                Name of property.
+            value: Any.
+                Value of the property to set.
         """
         self.properties[name]["value"] = value
 
     def get_property_value(self, name):
+        """
+        Get a property of the model by name.
+        
+        The value of the model properties can also be accessed directly as a model attribute, i.e. as self.<name of property>
+
+        Args:
+            name: String.
+                Name of property
+
+        Returns:
+            Value of the property.
+        """
+
         return self.properties[name]["value"]
 
     # overriding getattr and setattr to ensure that properties in self.properties can be accessed as object attributes
@@ -240,12 +294,15 @@ class Model:
         super.__setattr__(self, name, value)
 
     def run_specs(self, starttime, stoptime, dt):
-        """
-        Configure the runspecs of the model.
-            :param starttime: The starttime of the model.
-            :param stoptime: The stoptime of the model.
-            :param dt: The dt of the model.
-            :return: None
+        """Configure the runspecs of the model.
+
+        Args:
+            starttime: Integer.
+                The starttime of the model.
+            stoptime: Integer.
+                The stoptime of the model.
+            dt:
+                The dt of the model.
         """
 
         log("[INFO] Setting starttime to {}, stoptime to {} and step to {}".format(starttime, stoptime, dt))
@@ -254,10 +311,16 @@ class Model:
         self.dt = dt
 
     def run(self, show_progress_widget=False, collect_data=True):
-        """
-        Initiate simulation - this esssentially just calls the run method of the models scheduler.
-            :param show_progress_widget: Boolean: If true, shows a progress widget (only in Jupyter environment!)
-            :return: None
+        """Run the simulation.
+        
+        This esssentially just calls the run method of the models scheduler.
+        
+        Args:
+            show_progress_widget: Boolean (Default=False).
+                If True, shows a progress widget (only in Jupyter environment!)
+            collect_data: Boolean (Default=True).
+                If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
+
         """
 
         if show_progress_widget:
@@ -286,56 +349,80 @@ class Model:
 
 
     def begin_round(self, time, sim_round, step):
-         """
-        Should be called by a scheduler at the beginning of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+         """Called at the beginning of a simulation round.
 
-            :param time: t
-            :param sim_round: round number
-            :param step: step number of round
-            :return: None
+        Should be called by the Scheduler at the beginning of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+
+        Args:
+            time: Integer.
+                The current timestep of the simulation, i.e.(round+step*dt)
+            sim_round: Integer
+                The current round of the simulation.
+            step:  Integer.
+                The step number of round
         """
 
     def end_round(self, time, sim_round, step):
-         """
-        Should be called by a scheduler at the end of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+         """Called at end of a simulation round.
 
-            :param time: t
-            :param sim_round: round number
-            :param step: step number of round
-            :return: None
+        Should be called by the Scheduler at the end of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+        
+        Args:
+            time: Integer.
+                The current timestep of the simulation, i.e.(round+step*dt)
+            sim_round: Integer
+                The current round of the simulation.
+            step:  Integer.
+                The step number of round
+
         """
     def begin_episode(self, episode_no):
-        """
-        When running a simulation repeatedly in episodes, this method is called by the framework to allow tidy up at the beginning of an episode, e.g. a "soft" reset of the simulation. The default implementation calls begin_episode on each agent.
+        """Called at beginning of an episode.
 
-            :param episode_no: the number of the episode
-            :return: None
+        When running a simulation repeatedly in episodes (e.g. because you are training the model using reinforcement learning), this method is called by the framework to allow tidy up at the beginning of an episode, e.g. a "soft" reset of the simulation.
+        
+        The default implementation calls begin_episode on each agent.
+        
+        Args:
+            episode_no: Integer.
+                The number of the episode
         """
+
         for agent in self.agents:
             agent.begin_episode(episode_no)
 
     def end_episode(self, episode_no):
-        """
-        When running a simulation repeatedly in episodes, this method is called by the framework to allow tidy up at the end of an episode. The default implementation calls end_episode on each agent.
-            :param episode_no: the number of the episode
-            :return: None
+        """Called at the end of an episode.
+
+        When running a simulation repeatedly in episodes, this method is called by the framework to allow tidy up at the end of an episode.
+        
+        The default implementation calls end_episode on each agent.
+
+        Args:
+            episode_no: Integer.
+                The number of the episode
         """
 
         for agent in self.agents:
             agent.end_episode(episode_no)
 
     def instantiate_model(self):
-        """
-        This method does nothing in the parent class and can be overriden in child classes. It is called by the frame directly after the model is instantiated. Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories hier and set up model properties.
-            :return: None
+        """Set properties during model initialization.
+
+        This method does nothing in the parent class and can be overriden in child classes. It is called by the frame directly after the model is instantiated.
+        
+        Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories hier and set up model properties.
         """
         pass
 
     def enqueue_event(self, event):
-        """
-        Called by the framework to enqueue events. In general you don't need to override this method.
-            :param event: Event instance
-            :return: None
+        """Called by the framework to enqueue events.
+        
+        In general you don't need to override this method or call it directly.
+
+        Args:
+            event: Event.
+                Instance of the event.
         """
 
         if isinstance(event, Event):
@@ -345,11 +432,18 @@ class Model:
             raise WrongTypeException("{} is not an instance of BPTK_Py.Event".format(event))
 
     def next_agent(self, agent_type, state):
-        """
-        Get the next agent by type and state.
-            :agent_type String: Agent type
-            :state String: State the agent is in
-            :return: Agent object
+        """Get the next agent by type and state.
+
+        Runs through the internal agent store and retrieves the first agent that matches in type and state.
+
+        Args:
+            agent_type: String.
+                Agent type
+            state: String.
+                State the agent is in
+
+        Returns:
+            The first agent object that matches the criterian None otherwise.
         """
 
         for agent in self.agents:
@@ -357,12 +451,19 @@ class Model:
             if agent.agent_type == agent_type and agent.state == state:
                 return agent
 
+        return None
+
     def random_agents(self, agent_type, num_agents):
-        """
-        Receive a number of random agents
-            :param agent_type: Type of agent
-            :param num_agents:  Number of agents to receive
-            :return: Agent IDs list
+        """Retreive a number of random agents
+
+        Args:
+            agent_type: String.
+                Type of agent to retrieve.
+            num_agents:
+                Number of agents of this type to retreive. 
+
+        Returns:
+            List of agent IDs. The number of IDs might be less then num_agents if fewer agents are available.
         """
 
         agent_map = self.agent_type_map[agent_type]
@@ -379,12 +480,15 @@ class Model:
         return agent_ids
 
     def random_events(self, agent_type, num_agents, event_factory):
-        """
-        Distribute a number of random events
-            :param agent_type: Agent types supposed to receive events
-            :param num_agents: Number of random agents
-            :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
-            :return: None.
+        """Distribute events to a number of random agents
+
+        Args:
+            agent_type: String.
+                Agent type that is to receive the event
+            num_agents: Integer.
+                Number of random agents that should receive the event
+            event_factory: Function.
+                The factory (typicalla a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
         """
         agent_ids = self.random_agents(agent_type, num_agents)
 
@@ -394,9 +498,14 @@ class Model:
     def broadcast_event(self, agent_type, event_factory):
         """
         Broadcast an event to all agents of a particular agent_type
-            :param agent_type: Agent types that are to receive the event
-            :param event_factory: event factory (function) that creates an appropriate event for a given target agent_id
-            :return:
+
+        Args:
+            agent_type: String.
+                Agent type that is to receive the event
+            num_agents: Integer.
+                Number of random agents that should receive the event
+            event_factory: Function.
+                The factory (typicalla a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
         """
 
         if not type(agent_type) == str:
@@ -411,8 +520,9 @@ class Model:
         """
         Called to configure the model using a dictionary. This method is called by the framework if you instantiate models from scenario files. But you can also call the method directly.
 
-            :config(dictionary): {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
-            :return: None
+        Args:
+            config: Dict.
+                Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
         """
         self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
 
@@ -450,19 +560,30 @@ class Model:
             self.create_agents(agent)
 
     def agent_count(self, agent_type):
-        """
-        Get number of agents
-            :param agent_type: Agent type to get count for
-            :return: Number of agents (int)
+        """Get count of agents of a given type.
+
+        Args:
+            agent_type: String.
+                Agent type to get count for
+        
+        Returns:
+            Integer. Number of agents (Integer)
         """
         return len(self.agent_type_map[agent_type])
 
     def agent_count_per_state(self, agent_type, state):
         """
         Get number of agents in a specific state
-            :param agent_type: Agent type to get count for
-            :param state: state of agents to get count for
-            :return: Integer
+         
+        Args:
+            agent_type: String.
+                Agent type to get count for
+            state: String.
+                The state of agents to get count for
+        
+        Returns:
+            Integer.
+
         """
         agent_count = 0
         agent_ids = self.agent_type_map[agent_type]
@@ -474,9 +595,10 @@ class Model:
         return agent_count
 
     def statistics(self):
-        """
-        Get statistics from DataCollector
-            :return: None
+        """Get statistics from DataCollector
+        
+        Returns: 
+            The DataCollector used to collect the simulation statistics.
         """
 
         try:
@@ -487,22 +609,38 @@ class Model:
 
     @staticmethod
     def get_random_integer(min_value, max_value):
-        """
-        Just compute a random integer within bounds
-            :param min_value: min value for random integer
-            :param max_value: max value for random integer
-            :return: Integer
+        """A random integer within bounds
+
+        This method is useful for simulating random behaviour.
+
+        Args:
+            min_value: Integer.
+                Min value for random integer
+            max_value: Integer.
+                max value for random integer
+        
+        Returns:
+            Random integer.
         """
         return round(random.random() * (max_value - min_value) + min_value)
 
 
-    def lookup(self,x, points):
+    def _lookup(self,x, points):
+        """Define a lookup function.
+        
+        Function that interpolate between set of points. This is used by the SD DSL lookup function.
+        
+        Args:
+            x: Value.
+                x-value to find the y value for
+            points: List.
+                List of coordinates.
+        
+        Returns: Float.
+            Returns the value that has been looked up.
         """
-        Lookup function: Interpolate between set of points. E.g. for "graphical functions" as known from SD
-            :param x: x-value to find the y value for
-            :param points:
-            :return:
-        """
+
+        #This is used internally by SD DSL lookup function / the Lookup operator.
 
         if type(points) is str:
             points = self.points[points]
@@ -524,7 +662,10 @@ class Model:
     def plot_lookup(self,lookup_names,config=None):
         """
         Plots lookup functions for the given list of lookup names
-            :param lookup_names: A name or list of names of lookup functions. The list can be passed as a Python list or a comma separated string.
+
+        Args:
+            lookup_names: String or List.
+                A name or list of names of lookup functions. The list can be passed as a Python list or a comma separated string.
         """
         #TODO write test for plot_lookup
         from ..util import lookup_data
@@ -562,29 +703,22 @@ class Model:
 
     @property
     def equation_prefix(self):
-        """
-        An id that is unique within this model that can be used to generate unique equation names
-        :return:
+        """An id that is unique within this model that can be used to generate unique equation names
+        
+        Returns: 
+            Integer. An id that is unique within the model.
         """
         self.equation_id += 1
         return "bptk_"+str(self.equation_id)+"_"
 
     def equation(self,equation, t):
-        """
-        Evaluates the SD equation at time t
-
-            :param equation: equaiton name
-            :param t: t
-        """
+        #TODO this is the same as the evaluate_equation method. Replace it.
         return self.memoize(equation,t)
 
     def memoize(self, equation, arg):
-        """
-        Memoize method - used by the system dynamics equations to remember values that have already been calculated.
-            :param equation: name of equation
-            :param arg: argument (t)
-            :return: result of equation
-        """
+        
+        #TODO: consider making this into an internal method
+
         try:
             mymemo = self.memo[equation]
         except:
@@ -600,12 +734,9 @@ class Model:
         return result
 
     def add_equation(self, equation, lambda_method):
-        """
-        Add an equation. ALWAYS use this method to configure equations! Configures the memo as well!
-            :param equation: Name of the equation
-            :param lambda_method: A lambda function we can insert into the set of equations
-            :return: None
-        """
+
+        #TODO Consider making this an internal method.
+        
         if equation in self.equations.keys():
             log("[WARN] Hybrid Model {}: Overwriting equation {} ".format(str(self.name), str(equation)))
 
@@ -615,10 +746,14 @@ class Model:
         self.memo[equation] = {}
 
     def stock(self, name):
-        """
-        Create a SD stock
-            :param name: name of the stock
-            :return: Stock object
+        """Create a System Dynamics stock
+
+        Args:
+            name: String.
+                Name of the stock.
+
+        Returns: 
+            The stock object.
         """
         if name in self.stocks:
             return self.stocks[name]
@@ -628,11 +763,15 @@ class Model:
             return stock
 
     def function(self, name, fn):
-        """
-        Create a user defined function for SD and hybrid models.
-        :param name:  name of the function
-        :param fn: returns
-        :return: a nary function that creates a NaryFunction class
+        """Create a user defined function for System Dynamics.
+
+        Args:
+            name:  String.
+                Name of the function.
+            fn: returns
+
+        Returns: 
+        A function which wraps the user defined function for use within System Dynamics.
         """
 
         if name not in self.functions:
@@ -642,10 +781,13 @@ class Model:
         return self.functions[name]
 
     def biflow(self, name):
-        """
-        Create a SD biflow
-            :param name: Name of the biflow
-            :return: Biflow object
+        """Create a System Dynamics biflow
+
+        Args:
+            name: String.
+                Name of the biflow
+        Returns: 
+            A Biflow object
         """
         if name in self.biflows:
             return self.biflows[name]
@@ -655,10 +797,13 @@ class Model:
             return flow
 
     def flow(self, name):
-        """
-        Create a SD flow
-            :param name: Name of the flow
-            :return: Flow object
+        """Create a System Dynamics flow
+
+        Args:
+            name: String.
+                Name of the flow
+        Returns:
+            A Flow object
         """
         if name in self.flows:
             return self.flows[name]
@@ -668,10 +813,14 @@ class Model:
             return flow
 
     def constant(self, name):
-        """
-        Create a SD constant
-            :param name: Name of the constant
-            :return: Constant object
+        """Create a System Dynamics constant
+
+        Args:
+            name: String.
+                Name of the constant
+        
+        Returns: Constant.
+            A Constant object
         """
         if name in self.constants:
             return self.constants[name]
@@ -681,10 +830,14 @@ class Model:
             return constant
 
     def converter(self, name):
-        """
-        Create an SD converter
-            :param name: Name of the converter
-            :return: Converter object
+        """Create a System Dynamics converter
+
+        Args:
+            name: String.
+                Name of the converter
+
+        Returns: 
+            A Converter object
         """
         if name in self.converters:
             return self.converters[name]
@@ -694,18 +847,21 @@ class Model:
             return converter
 
     def evaluate_equation(self, name, t):
-        """
-        Evaluate an SD element's equation at timestep t.
-            :param name: Name of the equation
-            :param t: timestep to evaluate for
-            :return: float of simulation result
+        """Evaluate an System Dynamics element's equation at timestep t.
+
+        Args:
+            name: String.
+                Name of the equation.
+            t: Float.
+                Timestep to evaluate for
+        
+        Return: Float
+            The value of the equation at time t.
         """
         return self.memoize(name,t)
 
     def reset_cache(self):
-        """
-        Reset memo of all equations
-            :return: None
+        """Reset cache of all System Dynamics equations.
         """
         for equation in self.memo:
             self.memo[equation] = {}
