@@ -351,7 +351,7 @@ class bptk():
             progress_bar: Boolean.
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
-                The data type of the return.(can either be dataframe, dictionary or json)
+                The data type of the return, which can either be 'dataframe', 'dictionary' or 'json'
         
         Returns:
             Based on the return_format value, results are returned as df, dict, or json.

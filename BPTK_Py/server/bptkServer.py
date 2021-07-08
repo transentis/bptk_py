@@ -114,15 +114,15 @@ class BptkServer(Flask):
             return resp
 
 
-        result = self.bptk.plot_scenarios(
+        result = self.bptk.run_scenarios(
               scenario_managers=scenario_managers,
               scenarios=scenarios,
               equations=equations,
-              return_df=True
+              return_format="json"
             )
 
         if result is not None:
-            resp = make_response(result.to_json(), 200)
+            resp = make_response(result, 200)
         else:
             resp = make_response('{"error": "no data was returned from simulation"}', 500)
 
