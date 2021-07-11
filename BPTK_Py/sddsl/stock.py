@@ -16,6 +16,8 @@ from .constant import Constant
 from .converter import Converter
 
 class Stock(Element):
+    """Stock in a SD DSL model.
+    """
 
     type = "Stock"
 

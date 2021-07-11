@@ -14,6 +14,10 @@ from .element import Element
 
 
 class Converter(Element):
+    """
+    A converter in an SD DSL model
+    """
+   
 
     type = "Converter"
 

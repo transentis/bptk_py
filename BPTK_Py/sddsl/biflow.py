@@ -14,6 +14,6 @@ from .element import Element
 
 class Biflow(Element):
     """
-    Biflow in a SD model
+    Biflow in a SD DSL model
     """
     type = "Biflow"

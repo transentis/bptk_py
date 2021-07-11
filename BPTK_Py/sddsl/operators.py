@@ -18,6 +18,9 @@ class OperatorError(Exception):
         return repr(self.value)
 
 class Operator:
+    """
+        Genereric SD DSL Operator
+    """
     def term(self, time="t"):
         pass
 
@@ -82,7 +85,7 @@ class Operator:
 
 class Function(Operator):
     """
-    Generic function class
+    Generic SD DSL function.
     """
 
     def term(self, time="t"):

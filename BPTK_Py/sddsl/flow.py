@@ -15,7 +15,7 @@ from .element import Element
 
 class Flow(Element):
     """
-    Flow in a SD model
+    Flow in a SD DSL model.
     """
     type = "Flow"
 

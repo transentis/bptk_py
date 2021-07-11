@@ -18,12 +18,25 @@ import numpy as np
 
 
 class Element:
-    """Generic element in a SD model. Other model elements implement concrete logic within"""
+    """Generic element in a SD DSL model.
+    
+    Concrete elements are Biflows, Flows, Constants and Converters.
+
+    In general elements are created via an instance of the Model class, using the appropriate methods.
+
+    Parameters:
+        Model: Model.
+            The model the element belongs to. 
+        Name: String.
+            The name of the model.
+        Function_string: String (Default=None)
+            The function string of the element. This is set by the framework.
+
+    """
 
     type = "Element"
 
     def __init__(self, model, name, function_string = None):
-        """Initialize the element. Pass the model the element belongs to and the name of the element. The name will be used to identify the underlying equations."""
         self.model = model
         self.name = name
         self.converters = []
@@ -49,17 +62,20 @@ class Element:
     @property
     def equation(self):
         """
-        Returns the equation, which is stored internaly as a lambda function
-            :return: The equation as a series of operators
+        Returns the equation as originally set.
+
+        Returns:
+            The equation, either a SD DSL Element or Operator.
         """
         return self._equation
 
     @equation.setter
     def equation(self, equation):
-        """
-        Set the equation
-            :param equation: the equation as defined via a series of operators.
-            :return: None
+        """Set the equation.
+
+        Parameters:
+            equation: Element or Operator.
+                The equation as defined via a series of SD DSL Elments or Operators.
         """
         self._equation = equation
 
@@ -72,8 +88,7 @@ class Element:
 
     @property
     def function_string(self):
-        """
-        Returns a string representation of the underlying function.
+        """Returns a string representation of the underlying function.    
         """
         return self._function_string
 
@@ -82,12 +97,20 @@ class Element:
         self._function_string=function_string
 
     def plot(self,starttime = None, stoptime = None, dt = None, return_df=False):
-        """
-        Plot the equation
-            :param starttime: Where to begin the plot
-            :param stoptime: Where to end the plot
-            :param dt: the timestep to plot
-            :return: The plot (via matplotlib) or a Pandas dataframe if return_df=True
+        """Plot the equation.
+
+        Parameters:
+            starttime: Integer (Default None).
+                The timestep where to begin the plot. If set to None the plot starts at the Models starttime.
+            stoptime: Integer (Default None) 
+                The timestep when to end the plot.
+            dt:  Fraction of 1 (Default None)
+                The timestep to plot. If set to None, then the plot uses the Models dt.
+            return_df: Boolean (Default False).
+                Whether to plot the equation or return the underlying dataframe.
+        
+        Returns:
+            The plot (via matplotlib) or a Pandas dataframe if return_df=True
         """
  
         ## Equation von start bis stop
@@ -192,12 +215,7 @@ class Element:
 
     @classmethod
     def update_plot_formats(self, ax):
-        """
-        Configure the plot formats for the labels. Generates the formatting for y labels
-            :param ax:
-            :return:
-        """
-
+        #TODO: check if we couldn't just remove this ... the visualizer could be used directly in the calling method.
         from BPTK_Py.visualizations import visualizer
         return visualizer().update_plot_formats(ax)
 

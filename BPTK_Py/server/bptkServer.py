@@ -67,7 +67,14 @@ class BptkServer(Flask):
         This endpoint runs the scenario through all timesteps.
 
         Parameters:
-            A JSON dictionary with keys "scenario managers", "scenarios", "equations", "settings". The first three keys contain lists of the relevant scenario managers and scenarios to run and the equations for which data should be retrieved. The settings key contains a dictionary that has scenario managers as the key. For each scenario manager there is a dictionary of scenarios, which contains a dictionary of constants and their settings.
+            scenario managers: List.
+                JSON list of scenario managers that should be run.
+            scenarios: List.
+                JSON list of scenarios that should be run.
+            equations: List.
+                JSON list of equations that data should be retrieved for.
+            settings: Dictionary.
+                JSON dictionary that has scenario managers as the key. For each scenario manager there is a dictionary of scenarios, which contains a dictionary of constants and their settings.
         
         Returns:
             A JSON dictionary that contains the simulation results ordered by scenario_manager, scenario, equations. The equations dictionary contains the timesteps as keys with the simulation results as values.

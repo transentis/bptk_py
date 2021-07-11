@@ -105,9 +105,11 @@ class Agent:
 
     def receive_event(self, event):
         """
-        Receive an event
-         :param event: Event instance
-         :return: None
+        Receive an event.
+
+        Parameters:
+         event: Event instance.
+            The event that the agent receives.
         """
         from BPTK_Py import Event
         if not isinstance(event,Event):
@@ -117,16 +119,18 @@ class Agent:
     def initialize(self):
         """
         Initialize the agent - called by the framework directly after the agent is instantiated, useful for any kind of initialization code.
-         :return: None
         """
         pass
 
     def set_property(self, name, data):
         """
         Configure an agent property by passing a dictionary specifying the property.
-         :param name: The name of the property whose data is being set.
-         :param data: Specification of property (dictionary)
-         :return:
+
+        Parameters:
+            name: String.
+                The name of the property whose data is being set.
+            data: Dictionary.
+                Specification of property in dictionary with keys type and values. Currently the types Double, String, Integer, Lookup, Dictionary, Boolean and Agent are supported.
         """
 
 
@@ -171,9 +175,12 @@ class Agent:
     def set_property_value(self, name, value):
         """
         Sets the value of a property.
-         :param name: The name of the property to set.
-         :param value: The value of the property to set.
-         :return:
+
+        Parameters:
+            name: String.
+                The name of the property to set.
+            value: (Agent|Dictionary|Double|Integer|String|Array of Points). 
+                The value of the property to set.
         """
 
         if name not in self.properties.keys():
@@ -202,9 +209,14 @@ class Agent:
 
     def get_property(self, name):
         """
-        Get one property
-         :param name: Name of property
-         :return: Dictionary for property
+        Get the settings of a property.
+
+        Parameters:
+            name: String.
+                Name of property
+
+        Returns:
+            Dictionary with keys type and value.
         """
 
         try:
@@ -216,8 +228,12 @@ class Agent:
     def get_property_value(self, name):
         """
         Retrieves the value of a property.
-         :param name: The name of the property whose value is to be retrieved.
-         :return: The value of the property.
+
+        Parameters:
+            name: String.
+                The name of the property whose value is to be retrieved.
+        Returns:
+            The value of the property.
         """
 
         if name not in self.properties.keys():
@@ -246,9 +262,9 @@ class Agent:
     def receive_instantaneous_event(self, event):
         """Handle an event immediately, do not wait for the next round.
 
-        Args:
-         :param event: event instance
-         :return: None
+        Parameters:
+            event: event instance.
+                Event that the agent receives.
         """
 
         try:

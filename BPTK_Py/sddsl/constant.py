@@ -17,7 +17,7 @@ from .element import ElementError
 
 class Constant(Element):
     """
-    A constant in a SD model
+    A constant in a SD DSL model
     """
     type = "Constant"
 
