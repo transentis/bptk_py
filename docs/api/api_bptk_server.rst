@@ -10,7 +10,6 @@ The ``BptkServer`` class provides a REST-API using the Flask framework.
 
 You will typically start the framework by instantiating the ``bptk`` class within a Jupyer notebook, as follows: ::
 
-   from flask import Flask, redirect, url_for, request, make_response, jsonify
 
    from BPTK_Py.server import BptkServer
    from flask_cors import CORS
@@ -24,7 +23,16 @@ You will typically start the framework by instantiating the ``bptk`` class withi
    if __name__ == "__main__":
       application.run()
 
-This automatically starts a background process that scans your ``scenario`` directory and imports all scenarios.
+   
+Assuming you save that code in a file called application.py, you can then start the server fro the command line as follows: ::
+
+   export FLASK_ENV=development
+   export FLASK_APP=application.py
+   python -m flask run
+
+The server is now available on port 5000 and you can call the endpoints documented below.
+
+Our  `Introduction to BPTK <https://github.com/transentis/bptk_intro>`_ repository on GitHub contains an `introductory notebook <https://github.com/transentis/bptk_intro/blob/master/rest-api/api_usage.ipynb>`_ that illustrates how to use the BPTK Rest API.
 
 .. py:module:: BPTK_Py
 .. autoclass:: BptkServer
