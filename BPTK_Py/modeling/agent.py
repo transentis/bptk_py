@@ -117,8 +117,9 @@ class Agent:
         self.events.append(event)
 
     def initialize(self):
-        """
-        Initialize the agent - called by the framework directly after the agent is instantiated, useful for any kind of initialization code.
+        """Initialize the agent.
+        
+        Called by the framework directly after the agent is instantiated, useful for any kind of initialization code such as setting the agent type, current state and registering event handlers.
         """
         pass
 
