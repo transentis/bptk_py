@@ -38,7 +38,7 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 * Improve documentation
 
 ### 1.2.0
-*   Major tidy up of the bptk API, including a number of breaking changes. In particular the run_simulation method has been renamed to run_scenarios and a number of rarely used methods have been removed.
+*   Major tidy up of the bptk API, including a number of breaking changes. In particular the run_simulation method has been renamed to run_scenarios and reset_simulation_model was renamed to reset_scenario_cache. A number of rarely used methods have been removed.
 *   Documentation improved and extended.
 *   Internal refactoring.
 
