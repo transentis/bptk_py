@@ -22,7 +22,9 @@ from ..xmile_wrapper import XmileWrapper
 class SdRunner(ScenarioRunner):
     """Runs pure SD simulations created with XMILE or with SD DSL.
 
-    This is the class that merges the scenario settings (which it reads from SdScenario) onto the actual simulation model (which is either a Model or a SimulationModel)
+    This is the class that merges the scenario settings (which it reads from SdScenario) onto the actual simulation model (which is either a Model or a SimulationModel).
+
+    Runs a set of scenarios for a given scenario manager.
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
@@ -124,7 +126,8 @@ class SdRunner(ScenarioRunner):
 
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
         """
-        Generic method for plotting scenarios
+        Runs all relevant scenarios for a given scenario manager.
+
         :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
         :param return_format: the data type of the return.(can either be dataframe, dictionary or json).
         :param scenarios: names of scenarios to plot
