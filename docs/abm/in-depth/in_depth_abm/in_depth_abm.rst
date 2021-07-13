@@ -663,34 +663,6 @@ We can also see what happens if we double the number of staff members - adding n
 
 .. image:: output_31_0.png
 
-Visualising Agent States Using The AgentStatusWidget
-====================================================
-
-Agent based simulations can take a very long time. Visualizations with widgets can visualize the progress of the simulation by monitoring agent states.
-
-As of now, the framework comes with a widget to show states of the agents. In order to use progress widgets, you need to implement the method ``build_widget()`` in your Agent based model implementation.
-The following is an example that tracks the states of all task agents. You need to map which states to monitor and create a widgetLoader. The widgetLoader loads the specified class and you need to hand over all arguments for the widget: ::
-
-    def build_widget(self):
-        widget_loader = WidgetLoader()
-        states = {1: "in_progress", 2: "closed"}
-        agents = [agent for agent in self.agents if agent.agent_type == "task"]
-
-        widget_loader.create_widget("AgentStatusWidget", states=states, agents=agents)
-
-        return widget_loader
-
-
-We can then run the widget using the following code: ::
-
-    f=bptk.run_abm_with_widget(
-        scenario_manager="ABMsmSimpleProjectManagement",
-        scenario="scenario100",agents=["task"],
-        agent_states=["open","closed"]
-    )
-
-.. image:: agent_status_widget.png
-
 Summary
 =======
 

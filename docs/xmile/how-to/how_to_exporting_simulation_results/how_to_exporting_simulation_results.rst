@@ -1141,7 +1141,7 @@ let's take a look at what it does using just two interactive parameters:
     for setting in settings:
         for setting_index, key in enumerate(interactive_settings):
             scenario.set_property_value(key, setting[setting_index])
-        bptk.reset_simulation_model(
+        bptk.reset_scenario_cache(
                 scenario_manager=scenario_manager,
                 scenario=interactive_scenario
         )

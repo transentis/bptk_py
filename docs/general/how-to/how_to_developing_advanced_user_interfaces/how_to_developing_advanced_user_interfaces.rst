@@ -557,7 +557,7 @@ interact function.
         scenario= bptk.get_scenario("smCustomerAcquisition","interactiveScenario")
         
         scenario.constants["advertisingSuccessPct"]=advertising_success_pct
-        bptk.reset_simulation_model(scenario_manager="smCustomerAcquisition",
+        bptk.reset_scenario_cache(scenario_manager="smCustomerAcquisition",
                                                                  scenario="interactiveScenario")
         bptk.plot_scenarios(scenario_managers=["smCustomerAcquisition"],
             scenarios=["interactiveScenario"], 
@@ -597,7 +597,7 @@ Now let's combine this with the tabs from above.
         scenario= bptk.get_scenario("smCustomerAcquisition","interactiveScenario")
         
         scenario.constants["advertisingSuccessPct"]=advertising_success_pct
-        bptk.reset_simulation_model(scenario_manager="smCustomerAcquisition",
+        bptk.reset_scenario_cache(scenario_manager="smCustomerAcquisition",
                                                                  scenario="interactiveScenario")
        
        

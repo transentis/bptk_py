@@ -1,5 +1,3 @@
-from .pulse_widget import PulseDashboard
-from .dashboard import Dashboard
 from .agentstatuswidget import AgentStatusWidget
 
 

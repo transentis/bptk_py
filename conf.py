@@ -23,9 +23,9 @@ copyright = '2021, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version
-version = '1.1'
+version = '1.2'
 # The full version, including alpha/beta/rc tags
-release = '1.1.25'
+release = '1.2.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,6 +43,10 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    'sphinxcontrib.httpdomain',
+    'sphinxcontrib.autohttp.flask',
+    'sphinx.ext.napoleon'
+
 ]
 
 
@@ -142,7 +146,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'bptk_py.tex', 'bptk\\_py Documentation',
-     'transentis labs Gmbh', 'manual'),
+     'transentis labs GmbH', 'manual'),
 ]
 
 
@@ -163,7 +167,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'bptk_py', 'bptk_py Documentation',
-     author, 'bptk_py', 'One line description of project.',
+     author, 'bptk_py', 'Framework for Agent-based modeling and System Dynamics simulation.',
      'Miscellaneous'),
 ]
 

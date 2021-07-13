@@ -18,10 +18,10 @@ import BPTK_Py.config.config as config
 from ..modelmonitor import FileMonitor
 from ..logger import log
 from ..modelmonitor import ModelMonitor
-from ..scenariomanager import ScenarioManagerABM
+from ..scenariomanager import ScenarioManagerHybrid
 
 from .scenario import SimulationScenario
-from .scenario_manager_sd import ScenarioManagerSD
+from .scenario_manager_sd import ScenarioManagerSd
 
 
 ####################################
@@ -82,11 +82,11 @@ class ScenarioManagerFactory():
 
         for scenario_manager_name in model_dictionary.keys():
 
-            # HANDLE ABM SCENARIOS
+            # HANDLE Hybrid SCENARIOS
             if "type" in model_dictionary[scenario_manager_name].keys() and model_dictionary[scenario_manager_name][
                 "type"].lower() == "abm":
 
-                self.scenario_managers[scenario_manager_name] = ScenarioManagerABM(
+                self.scenario_managers[scenario_manager_name] = ScenarioManagerHybrid(
                     model_dictionary[scenario_manager_name],
                     scenario_manager_name,
                     filenames=[filename], model=model)
@@ -95,7 +95,7 @@ class ScenarioManagerFactory():
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:
                 if scenario_manager_name not in self.scenario_managers.keys():
-                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSD(base_points={},
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerSd(base_points={},
                                                                                       base_constants={},
                                                                                       scenarios={},
                                                                                       name=scenario_manager_name)
@@ -128,7 +128,7 @@ class ScenarioManagerFactory():
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
                         log(
-                            "[ERROR] ABMModel monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
+                            "[ERROR] Scenario monitor: Source model file not found: \"{}\". Not attempting to monitor changes to it.".format(
                                 str(manager.source)))
 
                 manager.instantiate_model()
@@ -147,7 +147,7 @@ class ScenarioManagerFactory():
         :param path: path to look for JSON files containing scenario managers and scenarios
         :param scenario_managers_to_filter: only look for certain scenario managers
         :param scenario_manager_type: only look for scenario managers of a given type
-        :return: self.scenario_managers
+        :return: self.scenario_managers, a dictionary
         """
 
         self.path = path
@@ -188,7 +188,7 @@ class ScenarioManagerFactory():
         for filename in manager_filenames:
             self.__readScenario(filename=filename)
 
-        log("[INFO] Successfully reloaded scenario {} for ABMModel Manager {}".format(scenario, scenario_manager))
+        log("[INFO] Successfully reloaded scenario {} for Scenario Manager {}".format(scenario, scenario_manager))
 
     def reset_all_scenarios(self):
         """
@@ -255,7 +255,7 @@ class ScenarioManagerFactory():
         :return: None
         """
         if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = ScenarioManagerSD(scenarios={scenario.name: scenario},
+            self.scenario_managers[scenario_manager] = ScenarioManagerSd(scenarios={scenario.name: scenario},
                                                                          name=scenario_manager,
                                                                          model_file=model)
             self.scenario_managers[scenario_manager].instantiate_model()
@@ -276,7 +276,7 @@ class ScenarioManagerFactory():
         """
         if not source in self.model_monitors.keys():
             self.model_monitors[source] = ModelMonitor(source, str(
-                model), update_func=self.refresh_scenarios_for_source_model)
+                model), update_func=self._refresh_scenarios_for_source_model)
 
     def destroy(self):
         """
@@ -294,7 +294,7 @@ class ScenarioManagerFactory():
 
         self.model_monitors = {}
 
-    def create_scenario(self, filename="/Users/dominikschroeck/Code/sd_py_simulator/BPTK_Py/scenarios/scenario.json",
+    def create_scenario(self, filename="",
                         dictionary={}):
         """
         Method for writing scenarios to JSON file
@@ -306,7 +306,7 @@ class ScenarioManagerFactory():
         with open(filename, 'w', encoding="utf-8") as outfile:
             json.dump(dictionary, outfile, indent=4)
 
-    def refresh_scenarios_for_source_model(self, filename):
+    def _refresh_scenarios_for_source_model(self, filename):
         """
         Refreshes all scenarios that use the given source file (e.g. itmx)
         :param filename:
@@ -357,7 +357,6 @@ class ScenarioManagerFactory():
                 parser_class = ParserFactory(filename)
 
                 if parser_class:
-
                     meta_model = parser_class().parse_model(filename, silent=True)
                     model, model_dictionary = meta_model.create_model()
 

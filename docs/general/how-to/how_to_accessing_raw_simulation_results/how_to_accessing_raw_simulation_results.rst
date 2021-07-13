@@ -27,7 +27,7 @@ able to work with the data outside ``BPTK_Py``!
         title="Deadline changes\n",
         x_label="Time",start_date="1/1/2018",freq="M",
         y_label="Marketing Budget (USD)",
-        strategy=True, kind="line",
+        kind="line",
         return_df=True ## <--- HERE
         ,series_names = {"smSimpleProjectManagement_scenario120_openTasks" : "openTasks"}
         )
@@ -147,7 +147,8 @@ for and append it to the existing dataFrame:
         title="Deadline changes\n",
         x_label="Time",start_date="1/1/2018",freq="M",
         y_label="Tasks",
-        strategy=True, kind="line",return_df=True,
+        kind="line",
+        return_df=True,
         series_names= {"smSimpleProjectManagement_scenario120_closedTasks":"closedTasks"}
         )
     

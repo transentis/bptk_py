@@ -12,10 +12,17 @@ BPTK APIs
 
    ./api_agent
    ./api_bptk
+   ./api_bptk_server
+   ./api_biflow
+   ./api_constant
+   ./api_converter
    ./api_datacollector
+   ./api_element
    ./api_event
+   ./api_flow
    ./api_model
    ./api_scheduler
    ./api_simulation_scenario
    ./api_simultaneousScheduler
+   ./api_stock
 

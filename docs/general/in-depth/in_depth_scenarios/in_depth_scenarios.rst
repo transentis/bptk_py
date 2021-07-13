@@ -14,8 +14,7 @@ name. It may override model constants and define execution strategies.
 Understanding The Scenario Definition Format
 --------------------------------------------
 
-The latter change constants in different steps of the simulation. See
-the "strategy simulation" section for details. You write scenarios in
+Scenarios are defined in
 `JSON format <http://www.json.org>`__. The default location to store
 scenarios is the ``scenarios`` subfolder of your current working
 directory, you can change this value in the config file.
@@ -68,11 +67,6 @@ manager will look like this:
           "scenario120": {
             "constants": {
               "initialOpenTasks": 120
-            },
-            "strategy": {
-              "20": {
-                "deadline": 120
-              }
             }
           }
         }
@@ -131,10 +125,8 @@ scenarios during runtime. If you define multiple scenarios for the same
 ``scenario_manager``, this is no problem.
 
 First define the details for the scenario manager and then set up the
-name of the scenario, the strategy and the constants. The strategy may
-as well be one of the complex ones as described above. But be careful to
-define everything correctly. We plan to develop a tool to help you
-create scenarios a little easier.
+name of the scenario and the constants.  Be careful to
+define everything correctly. 
 
 .. code:: ipython3
 
@@ -150,15 +142,6 @@ create scenarios a little easier.
     }
     scenario_name = "scenario160"
     
-    strategy = {
-                "0": {
-                    "deadline" : 2000
-                } ,
-                "20":{
-                    "deadline" : 800
-                }
-    }
-    
     constants = {
                 "deadline" : 160,
                 "effortPerTask" : 0.1
@@ -168,7 +151,6 @@ create scenarios a little easier.
     scenario_dictionary ={
                      scenario_name:{
                          "constants" : constants, 
-                         "strategy" : strategy
                      } 
                  } 
                 
@@ -198,7 +180,6 @@ create scenarios a little easier.
         kind="line",
         equations=["deadline"],
         stacked=False, 
-        strategy=True,
         freq="D", 
         start_date="1/11/2017",
         title="Added scenario during runtime",
@@ -226,15 +207,6 @@ directly:
                     "constants":{
                         "deadline" : 160,
                         "effortPerTask" : 0.1
-                    },
-                    "strategy":{
-                        "0": {
-                            "deadline" : 2000
-                        },
-                        "20":{
-                            "deadline" : 800
-                        }
-                    }
                 }
             }
         }
@@ -266,7 +238,6 @@ directly:
         kind="line",
         equations=["deadline"],
         stacked=False, 
-        strategy=True,
         freq="D", 
         start_date="1/11/2017",
         title="Added another scenario during runtime",
@@ -289,7 +260,7 @@ available: \* ``reset_scenario(scenario_manager, scenario)``: This
 deletes a specific scenario from memory and reloads it from file.
 Requires the scenario manager's name and the scenario name. \*
 ``reset_all_scenarios()``: Reset all scenarios and re-read from file \*
-``reset_simulation_model(scenario_manager, scenario="")``: For runtime
+``reset_scenario_cache(scenario_manager, scenario="")``: For runtime
 optimizations, the simulator will cache the simulation results. In some
 rare cases, this cache may not be flushed upon scenario modification.
 Hence, this method resets the simulation model's cache.
@@ -302,65 +273,4 @@ See the example usages below:
     
     bptk.reset_all_scenarios()
     
-    bptk.reset_simulation_model("smSimpleProjectManagement","scenario80")
-
-
-Defining Simulation Strategies
-------------------------------
-
-The simulator is also able to simulate various execution strategies. A
-strategy defines which constants change at which point in time of the
-simulation. For defining a strategy, use the ``strategy`` key in your
-scenario definition and give (key,value) sets for the constants you'd
-like to change. Note that the ``constants`` field in the strategy will
-also be parsed at ``t=0`` for initial modifications of the strategies.
-
-::
-
-      "strategy": {
-        "20": {
-          "deadline" : 120
-        }
-      }
-
-This strategy reduces the deadline for the project to 120 at the 20th
-period. The full scenario for this strategy is available in
-`scenarios/intro.json <https://github.com/transentis/bptk_py_tutorial/blob/master/scenarios/intro.json>`__
-in the scenario "scenario120". To apply a strategy for a scenario, use
-the parameter ``strategy=True``.Keep in mind that if you defined a
-strategy in the JSON file and set ``strategy=True`` in the dashboard
-method, this overrides the sliders in interactive plotting from the
-point of the first time of the strategy execution.For instance if you
-define a slider for "deadline", the slider's modification will only have
-an effect until t=19, as from t=20 the strategy modifies "deadline".
-
-The following plot executes the model with the strategy and shows how
-the marketing budget follows the configuration the strategy.
-
-**Note:** If you set the ``strategy=True`` but there is not strategy
-defined in the scenario, the simulator will just issue a Warning in the
-logfile and execute the simulation(s) without a strategy.
-
-The following example shows what happens when using the strategy as
-compared to the scenario without strategy:
-
-.. code:: ipython3
-
-    from BPTK_Py.bptk import bptk
-    bptk = bptk()
-    bptk.plot_scenarios(
-        scenario_managers=["smSimpleProjectManagement"],
-        scenarios=["scenario120"], 
-        equations=["deadline"],
-        title="Deadline changes",
-        x_label="Time",
-        y_label="Marketing Budget (USD)",
-        strategy=True, kind="line"
-    )
-
-
-
-
-.. image:: output_12_0.png
-
-
+    bptk.reset_scenario_cache("smSimpleProjectManagement","scenario80")
