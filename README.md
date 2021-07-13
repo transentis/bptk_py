@@ -36,6 +36,7 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ### 1.2.1
 * Improve documentation
+* Bugfix for bptk.export_scenarios
 
 ### 1.2.0
 *   Major tidy up of the bptk API, including a number of breaking changes. In particular the run_simulation method has been renamed to run_scenarios and reset_simulation_model was renamed to reset_scenario_cache. A number of rarely used methods have been removed.
