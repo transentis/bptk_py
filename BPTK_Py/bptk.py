@@ -160,6 +160,7 @@ class bptk():
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
         self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed
+        self.session_state = None
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
@@ -323,6 +324,150 @@ class bptk():
                                         series_names=series_names
                                         )
 
+
+    def start_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                       agent_property_types=[], equations=[],step=0.0, dt=1.0):
+        """Start a session to allow stepwise simulation.
+
+        This resets the internal session cache, there can only be one session at any time.
+
+        At also resets the scenario cache for all scenarios that are passed to the session.
+
+        Args:
+            scenarios: List.
+                Names of scenarios to plot
+            scenario_managers: List.
+                Names of scenario managers to plot
+            agents: List.
+                List of agents to plot (Agent based modelling)
+            agent_states: List.
+                List of agent states to plot, REQUIRES "AGENTS" param
+            agent_properties: List.
+                List of agent properties to plot, REQUIRES "AGENTS" param
+            equations: list.
+                Names of equations to plot (System Dynamics).
+            step: Float (Default=0.0)
+                Timestep at which to start. 
+            dt: Dt (Default=1.0)
+                Deltatime.
+
+
+        """
+
+        self.session_state = None
+
+        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
+        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
+        equations = equations if isinstance(equations, list) else equations.split(",")
+        agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
+        agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
+            
+        agent_property_types = agent_property_types if type(
+        agent_property_types) is list else agent_property_types.split(",")
+        
+
+        if len(agents) == len(equations) == 0:
+            log("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!")
+            return None
+
+        # Make sure that agent_states is only used when agent is used!
+        if len(agent_states) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            return
+
+        if len(agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
+            return
+
+        if len(agent_properties) > 0 and len(agent_property_types) == 0:
+            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
+            return
+
+        if len(agent_property_types) > 0 and len(agent_properties) == 0:
+            log(
+                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            return
+
+        if len(scenario_managers) == 0:
+            log(
+                "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
+                    self.config.configuration["scenario_storage"]))
+            import pandas as pd
+            return None
+
+        #TODO add handling regarding "errouneous names" in analogy to run_scenarios
+
+        for scenario_manager in scenario_managers:
+            for scenario in scenarios:
+                self.reset_scenario_cache(scenario_manager=scenario_manager, scenario=scenario)
+
+        self.session_state = {
+            "scenarios": scenarios,
+            "scenario_managers": scenario_managers,
+            "agents": agents,
+            "agent_states": agent_states,
+            "agent_properties":agent_properties,
+            "agent_property_types":agent_property_types,
+            "equations": equations,
+            "step": step,
+            "dt": dt,
+            "settings_log":{}
+        }
+
+    
+    def run_step(self, settings=None):
+        """Run the next step of a session.
+
+        Args:
+            settings: Dictionary (Default=None)
+                The settings to apply to this step.
+        """
+
+        simulation_results = []
+
+        scenario_managers = self.session_state["scenario_managers"]
+        agents = self.session_state["agents"]
+        scenarios = self.session_state["scenarios"]
+        agent_states=self.session_state["agent_states"]
+        agent_properties=self.session_state["agent_properties"]
+        agent_property_types=self.session_state["agent_property_types"]
+        equations = self.session_state["equations"]
+        step = self.session_state["step"]
+        dt=self.session_state["dt"]
+
+        for _ , manager in self.scenario_manager_factory.scenario_managers.items():
+
+            # Handle Hybrid scenarios
+            if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
+                
+                runner = HybridRunner(self.scenario_manager_factory)
+                
+                simulation_results += [runner.run_scenario_step(
+                    step=step,
+                    dt=dt,
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    agents=agents, agent_states=agent_states, agent_properties=agent_properties,
+                    agent_property_types=agent_property_types,
+                    scenario_managers=[manager.name]
+                )]
+
+            # Handle SD sceanrios
+            elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
+                runner = SdRunner(self.scenario_manager_factory)
+
+                simulation_results += [runner.run_scenario_step(
+                    step=step,
+                    dt=dt,
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    equations=equations,
+                    scenario_managers=[manager.name]
+                )]
+
+        self.session_state["step"]=step+dt
+       
+        return simulation_results
+
+
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[], series_names={},
                        progress_bar=False,
@@ -406,7 +551,6 @@ class bptk():
             log(
                 "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
                     self.config.configuration["scenario_storage"]))
-            import pandas as pd
             return None
 
         consumed_scenarios = []
@@ -509,6 +653,7 @@ class bptk():
        
         return df
 
+
     def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[],
                        kind=None,
@@ -593,6 +738,7 @@ class bptk():
                                     freq=freq,
                                     series_names=series_names
                                     )
+
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",

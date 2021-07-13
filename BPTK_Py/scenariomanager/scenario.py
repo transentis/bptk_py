@@ -18,9 +18,11 @@ from ..logger import log
 ###############################
 
 
+#TODO rename this to SdScenario to better reflect its nature.
+
 class SimulationScenario():
     """
-    This class stores the settings for each scenario
+    This class stores the settings for each scenario for pure SD models (SD DSL and XMILE)
 
     Args:
         dictionary:
@@ -67,7 +69,7 @@ class SimulationScenario():
 
         self.name = name
 
-        self.result = None  # When we finish a simulation, we will write the resulting dataframe in here. For now, it is an empty object. Just to reserve the pointer
+        self.result = None  # Stores the result of a simulation run
 
     def setup_constants(self):
         """
