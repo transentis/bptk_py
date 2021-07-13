@@ -13,7 +13,10 @@ import pandas as pd
 
 class ScenarioRunner():
     """
-    Generic class for scenario unners. A scenario runner implements the "run_scenario" method and stores the scenario manager factory, so that it can access the scenario objects by name.
+    Generic class for scenario unners. A scenario runner implements the "run_scenarios" method and stores the scenario manager factory, so that it can access the scenario objects by name.
+
+    It is essentally an adapter for scenario managers that handles running of scenarios within one scenario manager.
+
     It handles the simulation running for simulation models with the specified scenarios
     """
 
