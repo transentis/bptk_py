@@ -18,6 +18,21 @@ import uuid
 import datetime
 from json import JSONEncoder
 
+
+class InstanceControl:
+
+    def _is_instance_timeout(self, instances_dict):
+
+        timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
+
+        for key in instances_dict.keys():
+            current_time = datetime.datetime.now()
+            last_call_time = instances_dict[key]["time"]
+            if last_call_time:
+                if current_time >= last_call_time + timeout:
+                    del instances_dict[key]
+                    return True
+
 ######################
 ##  REST API CLASS  ##
 ######################
@@ -215,7 +230,7 @@ class BptkServer(Flask):
         if not request.is_json:
             resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
             resp.headers['Content-Type'] = 'application/json'
-            resp.headers['Access-Control-Allow-Origin']='*'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
 
         content = request.get_json()
@@ -272,19 +287,13 @@ class BptkServer(Flask):
         self.instances_dict[cloned_bptk_uuid]["instance"] = self.bptk_copy
         self.instances_dict[cloned_bptk_uuid]["time"] = dict()
 
-        timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
+        instance_control = InstanceControl()
 
-        # looping over instances uuid key to keep track of time
-        for key in self.instances_dict.keys():
-            current_time = datetime.datetime.now()
-            last_call_time = self.instances_dict[key]["time"]
-            if last_call_time:
-                if current_time >= last_call_time + timeout:
-                    del self.instances_dict[key]
-                    resp = make_response('{"error": "Session has timed out"}', 401)
-                    resp.headers['Content-Type'] = 'application/json'
-                    resp.headers['Access-Control-Allow-Origin'] = '*'
-                    return resp
+        if instance_control._is_instance_timeout(self.instances_dict):
+            resp = make_response('{"error": "Session has timed out"}', 401)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
         if cloned_bptk_uuid is not None:
             resp = make_response(cloned_bptk_uuid, 200)
@@ -311,7 +320,7 @@ class BptkServer(Flask):
             self.instances_dict[instance_id]
         except KeyError:
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
-            resp.headers['Content-Type']='application/json'
+            resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
 
