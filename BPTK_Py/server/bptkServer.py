@@ -319,10 +319,9 @@ class BptkServer(Flask):
         This endpoint starts a new instance of BPTK on the server side, so that simulations can run in a "private" session. The endpoint returns an instance_id, which is needed to identify the instance in later calls.
         """
 
-        # store the new instances in the instance dictionary.
+        # store the new instance in the instance dictionary.
         self.instances_dict, cloned_bptk_uuid = self.instance_manager.store_instances(self.instances_dict, self.bptk_copy)
-        print(cloned_bptk_uuid)
-        print(self.instances_dict)
+
         # Check for the session timeout
         if self.instance_manager.is_instance_timeout(self.instances_dict):
             resp = make_response('{"error": "Session has timed out"}', 401)
