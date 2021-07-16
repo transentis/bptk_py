@@ -19,9 +19,47 @@ import datetime
 from json import JSONEncoder
 
 
-class InstanceControl:
+class InstanceManager:
+    """
+    The class is used to manipulate instances for storing cloned instances, and checking for the session timeout.
+    """
 
-    def _is_instance_timeout(self, instances_dict):
+    def store_instances(self, instances_dict, bptk_copy):
+        """
+        The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
+
+        Args:
+            instances_dict: dict.
+                a dictionary of the old instances.
+            bptk_copy: object.
+                A cloned instance of bptk
+
+        Returns:
+            instances_dict: dict.
+                The new updated dictionary of instances.
+            cloned_bptk_uuid: str.
+                The uuid value generated for the current instance.
+        """
+
+        cloned_bptk_uuid = uuid.uuid1().hex
+        instances_dict[cloned_bptk_uuid] = dict()
+        instances_dict[cloned_bptk_uuid]["instance"] = bptk_copy
+        instances_dict[cloned_bptk_uuid]["time"] = dict()
+
+        return instances_dict, cloned_bptk_uuid
+
+    def is_instance_timeout(self, instances_dict):
+        """
+        The method checks for the session timeout, and deletes the instance if it is.
+
+        Args:
+            instances_dict: dict.
+                a dictionary of instances
+
+        Returns:
+            True: Boolean.
+                Means the specified time has already passed, and the session should be terminated.
+        """
 
         timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
 
@@ -53,6 +91,7 @@ class BptkServer(Flask):
         self.bptk = bptk
         self.bptk_copy = copy.deepcopy(self.bptk)
         self.instances_dict = dict()
+        self.instance_manager = InstanceManager()
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
@@ -280,16 +319,11 @@ class BptkServer(Flask):
         This endpoint starts a new instance of BPTK on the server side, so that simulations can run in a "private" session. The endpoint returns an instance_id, which is needed to identify the instance in later calls.
         """
 
-        # Create a universally unique identifier in hex to store
-        cloned_bptk_uuid = uuid.uuid1().hex
+        # store the new instance in the instance dictionary.
+        self.instances_dict, cloned_bptk_uuid = self.instance_manager.store_instances(self.instances_dict, self.bptk_copy)
 
-        self.instances_dict[cloned_bptk_uuid] = dict()
-        self.instances_dict[cloned_bptk_uuid]["instance"] = self.bptk_copy
-        self.instances_dict[cloned_bptk_uuid]["time"] = dict()
-
-        instance_control = InstanceControl()
-
-        if instance_control._is_instance_timeout(self.instances_dict):
+        # Check for the session timeout
+        if self.instance_manager.is_instance_timeout(self.instances_dict):
             resp = make_response('{"error": "Session has timed out"}', 401)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
