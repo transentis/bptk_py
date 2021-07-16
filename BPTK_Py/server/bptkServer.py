@@ -23,52 +23,44 @@ class InstanceManager:
     """
     The class is used to manipulate instances for storing cloned instances, and checking for the session timeout.
     """
+    def __init__(self, bptk):
+        self.bptk = bptk
+        self.instances_dict = dict()
+        self.bptk_copy = copy.deepcopy(self.bptk)
 
-    def store_instances(self, instances_dict, bptk_copy):
+    def store_instance(self):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
 
-        Args:
-            instances_dict: dict.
-                a dictionary of the old instances.
-            bptk_copy: object.
-                A cloned instance of bptk
-
         Returns:
-            instances_dict: dict.
-                The new updated dictionary of instances.
             cloned_bptk_uuid: str.
                 The uuid value generated for the current instance.
         """
 
         cloned_bptk_uuid = uuid.uuid1().hex
-        instances_dict[cloned_bptk_uuid] = dict()
-        instances_dict[cloned_bptk_uuid]["instance"] = bptk_copy
-        instances_dict[cloned_bptk_uuid]["time"] = dict()
+        self.instances_dict[cloned_bptk_uuid] = dict()
+        self.instances_dict[cloned_bptk_uuid]["instance"] = self.bptk_copy
+        self.instances_dict[cloned_bptk_uuid]["time"] = dict()
 
-        return instances_dict, cloned_bptk_uuid
+        return cloned_bptk_uuid
 
-    def is_instance_timeout(self, instances_dict):
+    def is_instance_timeout(self):
         """
         The method checks for the session timeout, and deletes the instance if it is.
 
-        Args:
-            instances_dict: dict.
-                a dictionary of instances
-
         Returns:
             True: Boolean.
-                Means the specified time has already passed, and the session should be terminated.
+                Means that the specified time has already passed, and the session should be terminated.
         """
 
         timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
 
-        for key in instances_dict.keys():
+        for key in self.instances_dict.keys():
             current_time = datetime.datetime.now()
-            last_call_time = instances_dict[key]["time"]
+            last_call_time = self.instances_dict[key]["time"]
             if last_call_time:
                 if current_time >= last_call_time + timeout:
-                    del instances_dict[key]
+                    del self.instances_dict[key]
                     return True
 
 ######################
@@ -89,9 +81,7 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self.bptk = bptk
-        self.bptk_copy = copy.deepcopy(self.bptk)
-        self.instances_dict = dict()
-        self.instance_manager = InstanceManager()
+        self.instance_manager = InstanceManager(bptk)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
@@ -320,10 +310,10 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-        self.instances_dict, cloned_bptk_uuid = self.instance_manager.store_instances(self.instances_dict, self.bptk_copy)
+        cloned_bptk_uuid = self.instance_manager.store_instance()
 
         # Check for the session timeout
-        if self.instance_manager.is_instance_timeout(self.instances_dict):
+        if self.instance_manager.is_instance_timeout():
             resp = make_response('{"error": "Session has timed out"}', 401)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -349,9 +339,10 @@ class BptkServer(Flask):
 
         content = request.get_json()
 
+
         # Checking if the instance id is valid.
         try:
-            self.instances_dict[instance_id]
+            self.instance_manager.instances_dict[instance_id]
         except KeyError:
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
@@ -359,7 +350,7 @@ class BptkServer(Flask):
             return resp
 
         # Add the current time to the instances dictionary with its instance id as a key
-        self.instances_dict[instance_id]["time"] = datetime.datetime.now()
+        self.instance_manager.instances_dict[instance_id]["time"] = datetime.datetime.now()
 
         try:
             settings = content["settings"]
