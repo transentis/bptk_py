@@ -34,6 +34,13 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.2.2
+* Fix bug in run_scenarios that arose with multiple scenario managers and when return_format was json or dict
+* Add start_session and run_step methods to bptk
+* Add agent endpoint to BptkServer
+* Add start-instance endpoint to BptkServer
+* Add run-step endpoint to BptkServer
+
 ### 1.2.1
 * Improve documentation
 

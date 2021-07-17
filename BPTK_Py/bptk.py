@@ -13,6 +13,8 @@ import itertools
 import sys
 import threading 
 
+import json
+
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +28,6 @@ from .logger import log
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerSd
 from .scenariomanager import ScenarioManagerHybrid
-from .scenariomanager import SimulationScenario
 from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
@@ -397,9 +398,12 @@ class bptk():
 
         #TODO add handling regarding "errouneous names" in analogy to run_scenarios
 
-        for scenario_manager in scenario_managers:
-            for scenario in scenarios:
-                self.reset_scenario_cache(scenario_manager=scenario_manager, scenario=scenario)
+        #TODO need methods in scenario_manager_factory to make the following easier ...
+        for _, manager in self.scenario_manager_factory.scenario_managers.items():
+            if manager.name in scenario_managers:
+                for scenario in manager.scenarios.keys():
+                    if scenario in scenarios:
+                        self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
 
         self.session_state = {
             "scenarios": scenarios,
@@ -423,7 +427,6 @@ class bptk():
                 The settings to apply to this step.
         """
 
-        simulation_results = []
 
         scenario_managers = self.session_state["scenario_managers"]
         agents = self.session_state["agents"]
@@ -435,33 +438,25 @@ class bptk():
         step = self.session_state["step"]
         dt=self.session_state["dt"]
 
+        simulation_results = {manager:{} for manager in scenario_managers}
+
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
                 
-                runner = HybridRunner(self.scenario_manager_factory)
-                
-                simulation_results += [runner.run_scenario_step(
-                    step=step,
-                    dt=dt,
-                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    agents=agents, agent_states=agent_states, agent_properties=agent_properties,
-                    agent_property_types=agent_property_types,
-                    scenario_managers=[manager.name]
-                )]
+              print("run_step currently only supports SD scenarios") 
 
             # Handle SD sceanrios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
 
-                simulation_results += [runner.run_scenario_step(
+                simulation_results[manager.name] = runner.run_scenario_step(
                     step=step,
-                    dt=dt,
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_managers=[manager.name]
-                )]
+                )
 
         self.session_state["step"]=step+dt
        
@@ -496,10 +491,10 @@ class bptk():
             progress_bar: Boolean.
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
-                The data type of the return, which can either be 'dataframe', 'dictionary' or 'json'
+                The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
         
         Returns:
-            Based on the return_format value, results are returned as df, dict, or json.
+            Based on the return_format value, results are returned as df, dict, or a json string
         """
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
@@ -622,7 +617,6 @@ class bptk():
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
             return None
 
-        # prepare dataframes
 
         if len(simulation_results) == 0:
             log("[WARN] No output data produced. Hopefully this was your intention.")
@@ -630,12 +624,20 @@ class bptk():
 
         # Concatenate DataFrames
         if len(simulation_results) > 1:
-            df = simulation_results.pop(0)
-            for tmp_df in simulation_results:
-                df = df.join(tmp_df)
+            if return_format=="df":
+                df = simulation_results.pop(0)
+                for tmp_df in simulation_results:
+                    df = df.join(tmp_df)
+            else:
+                # this works because in this case the entire data structure is copied a number of times
+                df = simulation_results.pop(0)
+                if return_format=="json":
+                    df = json.dumps(df,indent=2)
 
         elif len(simulation_results) == 1:
             df = simulation_results[0]
+            if return_format=="json":
+                df = json.dumps(df,indent=2)
 
         else:
             log("[ERROR] No results produced. Check your parameters!")

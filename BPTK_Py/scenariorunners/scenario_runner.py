@@ -15,16 +15,13 @@ class ScenarioRunner():
     """
     Generic class for scenario unners. A scenario runner implements the "run_scenarios" method and stores the scenario manager factory, so that it can access the scenario objects by name.
 
-    It is essentally an adapter for scenario managers that handles running of scenarios within one scenario manager.
-
-    It handles the simulation running for simulation models with the specified scenarios
+    It is essentally an adapter for a scenario manager factory that handles running of scenarios and merging of the results into a consistent data structure.
     """
 
     def __init__(self, scenario_manager_factory):
         """
 
         :param scenario_manager_factory: the scenario manager factory of bptk
-        :param bptk: A live bptk object
         """
         self.scenario_manager_factory = scenario_manager_factory
         self.df = pd.DataFrame()

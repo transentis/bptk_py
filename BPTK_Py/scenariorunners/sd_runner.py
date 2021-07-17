@@ -11,8 +11,6 @@
 
 
 import pandas as pd
-import numpy as np
-import json
 
 from ..logger import log
 from .scenario_runner import ScenarioRunner
@@ -74,10 +72,8 @@ class SdRunner(ScenarioRunner):
                         plot_df[series.name] = series
             
             simulation_results=[]
-            if return_format=="dict":
+            if return_format=="dict" or return_format=="json":
                 simulation_results=sd_results_dict
-            elif return_format=="json":
-                simulation_results=json.dumps(sd_results_dict, indent=2)
             elif return_format=="df":
                 simulation_results=plot_df
            
@@ -99,29 +95,25 @@ class SdRunner(ScenarioRunner):
             log("[ERROR] No scenarios found for scenario managers \"{}\" and scenarios \"{}\"".format(",".join(scenario_managers),",".join(scenarios)))
 
         for key in scenario_objects.keys():
-            if key in scenarios:
-                sc = scenario_objects[key]
-                simu = XmileWrapper(model=sc.model, name=sc.name)
-                for const in sc.constants.keys():
-                    simu.change_equation(name=const, value=sc.constants[const])
-                for name, points in sc.points.items():
-                    simu.change_points(name=name, value=points)
+            sc = scenario_objects[key]
+            simu = XmileWrapper(model=sc.model, name=sc.name)
+            for const in sc.constants.keys():
+                simu.change_equation(name=const, value=sc.constants[const])
+            for name, points in sc.points.items():
+                simu.change_points(name=name, value=points)
 
-                # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
-                if len(equations) > 0:
-                    # Find equations that I can actually simulate in the specific model of the scenario!
-                    equations_to_simulate = []
-                    for equation in equations:
-
-                        equations_to_simulate += [equation]
-
+            # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
+            if len(equations) > 0:
+                # Find equations that I can actually simulate in the specific model of the scenario!
+                equations_to_simulate = []
+                for equation in equations:
+                    equations_to_simulate += [equation]
                     sc.result = simu.start(output=["frame"], start=step, until=step,equations=equations_to_simulate)
+            else:
+                log("[ERROR] No equations to simulate given!")
+                return None
 
-                else:
-                    log("[ERROR] No equations to simulate given!")
-                    return None
-
-        return scenario_objects
+        return {name:scenario.result for name,scenario in scenario_objects.items()}
 
 
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
@@ -149,7 +141,6 @@ class SdRunner(ScenarioRunner):
         """
 
         # Obtain simulation results
-
         scenario_objects = self._run_scenarios(scenarios=scenarios,
                                                                                                   equations=equations,
                                                                                                   output=["frame"],
