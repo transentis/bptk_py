@@ -327,12 +327,16 @@ class bptk():
 
 
     def start_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],step=0.0, dt=1.0):
+                       agent_property_types=[], equations=[],starttime=0.0, dt=1.0):
         """Start a session to allow stepwise simulation.
 
         This resets the internal session cache, there can only be one session at any time.
 
         At also resets the scenario cache for all scenarios that are passed to the session.
+
+        The star time is set to be the max of start and the start time of all the scenarios.
+
+        The stop time is set internally to be the minimum of all the scenario stop times.
 
         Args:
             scenarios: List.
@@ -347,11 +351,10 @@ class bptk():
                 List of agent properties to plot, REQUIRES "AGENTS" param
             equations: list.
                 Names of equations to plot (System Dynamics).
-            step: Float (Default=0.0)
+            starttime: Float (Default=0.0)
                 Timestep at which to start. 
             dt: Dt (Default=1.0)
                 Deltatime.
-
 
         """
 
@@ -399,10 +402,16 @@ class bptk():
         #TODO add handling regarding "errouneous names" in analogy to run_scenarios
 
         #TODO need methods in scenario_manager_factory to make the following easier ...
+
+        startime_ = starttime
+        stoptime_ = None
+
         for _, manager in self.scenario_manager_factory.scenario_managers.items():
             if manager.name in scenario_managers:
-                for scenario in manager.scenarios.keys():
+                for scenario,scenario_object in manager.scenarios.items():
                     if scenario in scenarios:
+                        starttime_ = max(startime_, scenario_object.starttime)
+                        stoptime_ = min(stoptime_,scenario_object.stoptime) if stoptime_ is not None else scenario_object.stoptime
                         self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
 
         self.session_state = {
@@ -413,7 +422,9 @@ class bptk():
             "agent_properties":agent_properties,
             "agent_property_types":agent_property_types,
             "equations": equations,
-            "step": step,
+            "step": starttime_,
+            "starttime": starttime_,
+            "stoptime": stoptime_,
             "dt": dt,
             "settings_log":{}
         }
@@ -436,7 +447,11 @@ class bptk():
         agent_property_types=self.session_state["agent_property_types"]
         equations = self.session_state["equations"]
         step = self.session_state["step"]
+        stoptime = self.session_state["stoptime"]
         dt=self.session_state["dt"]
+
+        if step>stoptime:
+            return {"msg":"Stoptime reached"}
 
         simulation_results = {manager:{} for manager in scenario_managers}
 
@@ -445,7 +460,7 @@ class bptk():
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
                 print("run_step currently only supports SD scenarios") 
-            # Handle SD sceanrios
+            # Handle SD sceanrios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
 
