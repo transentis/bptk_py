@@ -80,6 +80,11 @@ class SimulationScenario():
     def sd_simulation(self,sd_simulation):
         self.__sd_simulation=sd_simulation
 
+    def reset_cache(self):
+        for key in self.model.memo.keys():
+            self.model.memo[key] = {}
+        self.sd_simulation = None
+
     def setup_constants(self):
         """
         Sets up the constants of the simulation model upon scenario manager initialization

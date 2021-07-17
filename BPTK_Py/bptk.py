@@ -326,15 +326,15 @@ class bptk():
                                         )
 
 
-    def start_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+    def begin_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[],starttime=0.0, dt=1.0):
-        """Start a session to allow stepwise simulation.
+        """Begins a session to allow stepwise simulation.
 
         This resets the internal session cache, there can only be one session at any time.
 
         At also resets the scenario cache for all scenarios that are passed to the session.
 
-        The star time is set to be the max of start and the start time of all the scenarios.
+        The start time is set to be the max of start and the start time of all the scenarios.
 
         The stop time is set internally to be the minimum of all the scenario stop times.
 
@@ -430,6 +430,7 @@ class bptk():
         }
 
     def end_session(self):
+        """Ends a session, resets the cache of all relevant scenarios and deletes the session state."""
         if self.session_state is not None:
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
                 if manager.name in self.session_state["scenario_managers"]:
@@ -878,25 +879,10 @@ class bptk():
             scenario: String.
                 Name of scenario.
         """
-        #TODO: add tests for reset_scenario_cache
+        #TODO: most of this code should be part of the scenario itself
 
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
-        try:
-            # rset the memo
-            for key in scenario.model.memo.keys():
-                scenario.model.memo[key] = {}
-            # reset any running simulation
-            scenario.sd_simulation=None
-        except AttributeError as e:
-            log(
-                "[WARN] Couldn't modify memo, probably not dealing with an SD model. I will try the generic memo reference of the scenario instead.")
-            log("[WARN] Error: {}".format(str(e)))
-            try:
-                for key in scenario.memo.keys():
-                    scenario.memo[key] = {}
-                    scenario.run(False)
-            except Exception as e:
-                log("[ERROR] Unable to reset simulation model. Error: {}".format(str(e)))
+        scenario.reset_cache()
 
     def reset_scenario(self, scenario_manager, scenario):
         """Reset a scenario
