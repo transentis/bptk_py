@@ -113,7 +113,7 @@ class SdRunner(ScenarioRunner):
                 log("[ERROR] No equations to simulate given!")
                 return None
 
-        return {name:scenario.result for name,scenario in scenario_objects.items()}
+        return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
 
 
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
