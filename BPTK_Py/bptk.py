@@ -429,7 +429,16 @@ class bptk():
             "settings_log":{}
         }
 
-    
+    def end_session(self):
+        if self.session_state is not None:
+            for _, manager in self.scenario_manager_factory.scenario_managers.items():
+                if manager.name in self.session_state["scenario_managers"]:
+                    for scenario,scenario_object in manager.scenarios.items():
+                        if scenario in self.session_state["scenarios"]:
+                            self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
+            self.session_state=None
+
+
     def run_step(self, settings=None):
         """Run the next step of a session.
 
