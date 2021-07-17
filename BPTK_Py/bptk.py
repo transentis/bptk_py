@@ -444,9 +444,7 @@ class bptk():
 
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
-                
-              print("run_step currently only supports SD scenarios") 
-
+                print("run_step currently only supports SD scenarios") 
             # Handle SD sceanrios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)

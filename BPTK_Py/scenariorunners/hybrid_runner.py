@@ -319,6 +319,3 @@ class HybridRunner(ScenarioRunner):
         df = pd.concat(dfs, axis=0, ignore_index=True).fillna(0)
 
         return df
-
-
-    def run_scenario_step(self, step, scenarios, equations, scenario_managers,agents=[]):
