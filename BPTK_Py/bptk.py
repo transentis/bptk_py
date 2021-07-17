@@ -1233,7 +1233,7 @@ class bptk():
             for setting in settings:
                 for setting_index, key in enumerate(interactive_settings):
                     scenario.set_property_value(key, setting[setting_index])
-                self.reset_simulation_cache(
+                self.reset_scenario_cache(
                     scenario_manager=scenario_manager,
                     scenario=interactive_scenario)
                 df = self.plot_scenarios(
