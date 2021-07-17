@@ -39,14 +39,12 @@ class ScenarioRunner():
         return pd.DataFrame()
         
     
-    def run_scenario_step(self, step, scenarios, equations, agents, scenario_managers):
+    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations, agents):
         """
         Run a step of the given scenarios and return data for the given equations and agents
         """    
-
         print("IMPLEMENT THIS METHOD IN A SUBCLASS")
-
-        return []
+        pass
 
 
     def train_scenario(self, scenarios, agents, episodes=1, scenario_managers=[], progressBar=False, agent_states=[], agent_properties=[], agent_property_types=[]):

@@ -42,6 +42,7 @@ class SimulationScenario():
         self.dictionary = dictionary
         self.scenario_manager = scenario_manager_name
         self.model = model
+        self.sd_simulation = None # stores a live simulation when running a session
 
         if model is not None:
             self.stoptime = model.stoptime
@@ -70,6 +71,14 @@ class SimulationScenario():
         self.name = name
 
         self.result = None  # Stores the result of a simulation run
+
+    @property
+    def sd_simulation(self):
+        return self.__sd_simulation
+    
+    @sd_simulation.setter
+    def sd_simulation(self,sd_simulation):
+        self.__sd_simulation=sd_simulation
 
     def setup_constants(self):
         """

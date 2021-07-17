@@ -19,12 +19,8 @@ import pandas as pd
 
 from ..logger import log
 
-now = datetime.datetime.now()
-
-#TODO: Rename this - it doesn't just wrap XMILE SimulationModels but also Models. This is the actual simulation runner for XMILE and SD DSL models. Perhaps a better name would be RunAdapter
-
-class XmileWrapper():
-    """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and provides the methods needed to run the simulation and collect data.
+class SdSimulation():
+    """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
 
     Run the given simulation model from start to the model's stoptime or any other specified stoptime
     Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant and continue running from 501 to 1000.
@@ -51,10 +47,10 @@ class XmileWrapper():
 
         # Setting a None object for my result_frame.
         self.result_frame = None
-
         self.finished_simulations_count = 0
         self.name = name
 
+    #rename this to run or to simulate?
     def start(self, start=None, until=None, dt=None, output=["csv", "frame"], equations=[]):
         """
         start and until parameters only settable for debugging purposes. Do rather configure all these in your model config!
@@ -66,6 +62,11 @@ class XmileWrapper():
         :param equations: equations to simulate
         :return: dataFrame of results if "frame" in output
         """
+        # ensure all internal variables are initialised (important for run_step)
+        self.results={}
+        self.result_frame = None
+        self.threads=[]
+        self.finished_simulations_count = 0
 
         # Take Values from model if not given
         if start == None: start = self.mod.starttime
@@ -117,7 +118,8 @@ class XmileWrapper():
         :param equations: equation(s) to simulate
         :return: None
         """
-
+        
+        # TODO: does it make sense to run this in separate threads - in most cases the equations will be inderdependent. Do some performance tests.
         for equation in equations:  # Start one thread for each equation
             t = Thread(target=self.__simulate, args=(equation, until, start))
             t.start()

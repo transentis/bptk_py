@@ -468,7 +468,8 @@ class bptk():
                     step=step,
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
-                    scenario_managers=[manager.name]
+                    scenario_manager=manager.name,
+                    settings = settings
                 )
 
         self.session_state["step"]=step+dt
@@ -872,9 +873,11 @@ class bptk():
 
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         try:
-
+            # rset the memo
             for key in scenario.model.memo.keys():
                 scenario.model.memo[key] = {}
+            # reset any running simulation
+            scenario.sd_simulation=None
         except AttributeError as e:
             log(
                 "[WARN] Couldn't modify memo, probably not dealing with an SD model. I will try the generic memo reference of the scenario instead.")
