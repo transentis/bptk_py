@@ -76,7 +76,6 @@ class InstanceManager:
             if last_call_time:
                 if current_time >= last_call_time + timeout:
                     del self._instances[key]
-                    return True
 
 ######################
 ##  REST API CLASS  ##
