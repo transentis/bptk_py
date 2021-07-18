@@ -11,17 +11,18 @@
 
 
 import pandas as pd
-import numpy as np
-import json
 
 from ..logger import log
 from .scenario_runner import ScenarioRunner
-from ..xmile_wrapper import XmileWrapper
+from ..sd_simulation import SdSimulation
 
 
 class SdRunner(ScenarioRunner):
-    """
-    This class runs pure SD simulations created with XMILE or with SD DSL.
+    """Runs pure SD scenarios created with XMILE or with SD DSL.
+
+    This is the class that merges the scenario settings (which it reads from SdScenario) onto the actual simulation model (which is either a Model or a SimulationModel).
+
+    Runs a set of scenarios for a given scenario manager.
     """
 
     # Scenarios comes as scenario object dict, equations as a dict: { equation : [scenario1,scenario2...]}
@@ -71,40 +72,71 @@ class SdRunner(ScenarioRunner):
                         plot_df[series.name] = series
             
             simulation_results=[]
-            if return_format=="dict":
+            if return_format=="dict" or return_format=="json":
                 simulation_results=sd_results_dict
-            elif return_format=="json":
-                simulation_results=json.dumps(sd_results_dict, indent=2)
             elif return_format=="df":
                 simulation_results=plot_df
            
         return simulation_results
 
+
+    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations):
+        """
+        Run a step of the given scenarios and return data for the given equations and agents
+        """    
+
+        log("[INFO] Attempting to load scenarios from scenarios folder.")
+        scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=[scenario_manager],
+                                                                       scenarios=scenarios, scenario_manager_type="sd")
+
+        #### Run the simulation scenarios
+
+        if len(scenario_objects) == 0 :
+            log("[ERROR] No scenarios found for scenario manager \"{}\" and scenarios \"{}\"".format(scenario_manager,",".join(scenarios)))
+
+        for scenario, sc in scenario_objects.items():
+
+            if sc.sd_simulation is None:
+                # need to set up the sd simulation
+                # TODO: the following should really be part of SdSimulation
+                sc.sd_simulation = SdSimulation(model=sc.model, name=sc.name)
+                # first apply the scenario settings
+                for name, value in sc.constants.items():
+                    sc.sd_simulation.change_equation(name=name, value=value)
+                for name, points in sc.points.items():
+                    sc.sd_simulation.change_points(name=name, value=points)
+
+            # now the settings relevant for this step
+            
+            if settings:
+                if scenario_manager in settings:
+                    if scenario in settings[scenario_manager]:
+                        if "constants" in settings[scenario_manager][scenario]:
+                            constants = settings[scenario_manager][scenario]["constants"]
+                            for name, value in constants.items():
+                                sc.sd_simulation.change_equation(name=name, value=value)
+                        if "points" in settings[scenario_manager][scenario]:        
+                            points = settings[scenario_manager][scenario]["points"] 
+                            for name, points in points.items():
+                                sc.sd_simulation.change_points(name=name, value=points)
+
+            sc.result = sc.sd_simulation.start(output=["frame"], start=step, until=step,equations=equations)
+
+        return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
+
+    #TODO this really should just take on scenario manager - it doesn't make sense to call it on multiple scenario managers. It should be called run_scenarios
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
         """
-         Generic method for plotting scenarios
-         :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
+        Runs all relevant scenarios for a given scenario manager.
+
+        :param sd_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format
         :param return_format: the data type of the return.(can either be dataframe, dictionary or json).
-         :param scenarios: names of scenarios to plot
-         :param equations:  names of equations to plot
-         :param scenario_managers: names of scenario managers to plot
-         :param kind: type of graph to plot
-         :param alpha:  transparency 0 < x <= 1
-         :param stacked: if yes, use stacked (only with kind="bar")
-         :param freq: frequency of time series
-         :param start_date: start date for time series
-         :param title: title of plot
-         :param visualize_from_period: visualize from specific period onwards
-         :param visualize_to_period; visualize until a specific period
-         :param x_label: label for x axis
-         :param y_label: label for y axis
-         :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
-         :param return_df: set True if you want to receive a dataFrame instead of the plot
-         :return: None
-         """
+        :param scenarios: names of scenarios to plot
+        :param equations:  names of equations to plot
+        :param scenario_managers: names of scenario managers to plot
+       """
 
         # Obtain simulation results
-
         scenario_objects = self._run_scenarios(scenarios=scenarios,
                                                                                                   equations=equations,
                                                                                                   output=["frame"],
@@ -181,25 +213,13 @@ class SdRunner(ScenarioRunner):
         for key in scenario_objects.keys():
             if key in scenarios:
                 sc = scenario_objects[key]
-                simu = XmileWrapper(model=sc.model, name=sc.name)
+                simu = SdSimulation(model=sc.model, name=sc.name)
                 for const in sc.constants.keys():
                     simu.change_equation(name=const, value=sc.constants[const])
                 for name, points in sc.points.items():
                     simu.change_points(name=name, value=points)
 
-                # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
-                if len(equations) > 0:
-                    # Find equations that I can actually simulate in the specific model of the scenario!
-                    equations_to_simulate = []
-                    for equation in equations:
-
-                        equations_to_simulate += [equation]
-
-                    sc.result = simu.start(output=output, equations=equations_to_simulate)
-
-                else:
-                    log("[ERROR] No equations to simulate given!")
-                    return None
+                sc.result = simu.start(output=output, equations=equations)
 
         return scenario_objects
 

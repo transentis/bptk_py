@@ -209,11 +209,18 @@ class ScenarioManagerFactory():
 
     def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
         """
-        Get an arbitrary amount of scenario objects, depending on the parameters
-        :param scenario_managers:  Names of the scenario_managers to lookup
-        :param scenarios: Names of the scenarios to lookup
-        :param scenario_manager_type: Type of simulation models to return
-        :return:
+        Get an arbitrary amount of scenario objects, depending on the arguements:
+
+        Parameters:
+            scenario_managers:  List of Strings.
+                Names of the scenario_managers to retrieve
+            scenarios: List of Strings.
+                Names of the scenarios to retrieve.
+            scenario_manager_type: String
+                "SD" for SD managers or "ABM" for agent-based and hybrid managers.
+
+        Returns:
+            Dictionary of scenario objects, indexed by the scenario name. If there is more then one manager, the scenario name is prefixed by the scenario manager name.
         """
 
         managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers, scenario_manager_type=scenario_manager_type)

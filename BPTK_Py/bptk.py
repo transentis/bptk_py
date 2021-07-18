@@ -13,6 +13,8 @@ import itertools
 import sys
 import threading 
 
+import json
+
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +28,6 @@ from .logger import log
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerSd
 from .scenariomanager import ScenarioManagerHybrid
-from .scenariomanager import SimulationScenario
 from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
@@ -160,6 +161,7 @@ class bptk():
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
         self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed
+        self.session_state = None
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
@@ -323,6 +325,169 @@ class bptk():
                                         series_names=series_names
                                         )
 
+
+    def begin_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+                       agent_property_types=[], equations=[],starttime=0.0, dt=1.0):
+        """Begins a session to allow stepwise simulation.
+
+        This resets the internal session cache, there can only be one session at any time.
+
+        At also resets the scenario cache for all scenarios that are passed to the session.
+
+        The start time is set to be the max of start and the start time of all the scenarios.
+
+        The stop time is set internally to be the minimum of all the scenario stop times.
+
+        Args:
+            scenarios: List.
+                Names of scenarios to plot
+            scenario_managers: List.
+                Names of scenario managers to plot
+            agents: List.
+                List of agents to plot (Agent based modelling)
+            agent_states: List.
+                List of agent states to plot, REQUIRES "AGENTS" param
+            agent_properties: List.
+                List of agent properties to plot, REQUIRES "AGENTS" param
+            equations: list.
+                Names of equations to plot (System Dynamics).
+            starttime: Float (Default=0.0)
+                Timestep at which to start. 
+            dt: Dt (Default=1.0)
+                Deltatime.
+
+        """
+
+        self.session_state = None
+
+        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
+        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
+        equations = equations if isinstance(equations, list) else equations.split(",")
+        agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
+        agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
+            
+        agent_property_types = agent_property_types if type(
+        agent_property_types) is list else agent_property_types.split(",")
+        
+
+        if len(agents) == len(equations) == 0:
+            log("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!")
+            return None
+
+        # Make sure that agent_states is only used when agent is used!
+        if len(agent_states) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            return
+
+        if len(agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
+            return
+
+        if len(agent_properties) > 0 and len(agent_property_types) == 0:
+            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
+            return
+
+        if len(agent_property_types) > 0 and len(agent_properties) == 0:
+            log(
+                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+            return
+
+        if len(scenario_managers) == 0:
+            log(
+                "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
+                    self.config.configuration["scenario_storage"]))
+            import pandas as pd
+            return None
+
+        #TODO add handling regarding "errouneous names" in analogy to run_scenarios
+
+        #TODO need methods in scenario_manager_factory to make the following easier ...
+
+        startime_ = starttime
+        stoptime_ = None
+
+        for _, manager in self.scenario_manager_factory.scenario_managers.items():
+            if manager.name in scenario_managers:
+                for scenario,scenario_object in manager.scenarios.items():
+                    if scenario in scenarios:
+                        starttime_ = max(startime_, scenario_object.starttime)
+                        stoptime_ = min(stoptime_,scenario_object.stoptime) if stoptime_ is not None else scenario_object.stoptime
+                        self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
+
+        self.session_state = {
+            "scenarios": scenarios,
+            "scenario_managers": scenario_managers,
+            "agents": agents,
+            "agent_states": agent_states,
+            "agent_properties":agent_properties,
+            "agent_property_types":agent_property_types,
+            "equations": equations,
+            "step": starttime_,
+            "starttime": starttime_,
+            "stoptime": stoptime_,
+            "dt": dt,
+            "settings_log":{}
+        }
+
+    def end_session(self):
+        """Ends a session, resets the cache of all relevant scenarios and deletes the session state."""
+        if self.session_state is not None:
+            for _, manager in self.scenario_manager_factory.scenario_managers.items():
+                if manager.name in self.session_state["scenario_managers"]:
+                    for scenario,scenario_object in manager.scenarios.items():
+                        if scenario in self.session_state["scenarios"]:
+                            self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
+            self.session_state=None
+
+
+    def run_step(self, settings=None):
+        """Run the next step of a session.
+
+        Args:
+            settings: Dictionary (Default=None)
+                The settings to apply to this step.
+        """
+        if not self.session_state:
+            return None
+
+        scenario_managers = self.session_state["scenario_managers"]
+        agents = self.session_state["agents"]
+        scenarios = self.session_state["scenarios"]
+        agent_states=self.session_state["agent_states"]
+        agent_properties=self.session_state["agent_properties"]
+        agent_property_types=self.session_state["agent_property_types"]
+        equations = self.session_state["equations"]
+        step = self.session_state["step"]
+        stoptime = self.session_state["stoptime"]
+        dt=self.session_state["dt"]
+
+        if step>stoptime:
+            return {"msg":"Stoptime reached"}
+
+        simulation_results = {manager:{} for manager in scenario_managers}
+
+        for _ , manager in self.scenario_manager_factory.scenario_managers.items():
+
+            # Handle Hybrid scenarios
+            if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
+                print("run_step currently only supports SD scenarios") 
+            # Handle SD sceanrios and sort by scenarios
+            elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
+                runner = SdRunner(self.scenario_manager_factory)
+
+                simulation_results[manager.name] = runner.run_scenario_step(
+                    step=step,
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    equations=equations,
+                    scenario_manager=manager.name,
+                    settings = settings
+                )
+
+        self.session_state["step"]=step+dt
+       
+        return simulation_results
+
+
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[], series_names={},
                        progress_bar=False,
@@ -351,10 +516,10 @@ class bptk():
             progress_bar: Boolean.
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
-                The data type of the return, which can either be 'dataframe', 'dictionary' or 'json'
+                The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
         
         Returns:
-            Based on the return_format value, results are returned as df, dict, or json.
+            Based on the return_format value, results are returned as df, dict, or a json string
         """
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
@@ -406,7 +571,6 @@ class bptk():
             log(
                 "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
                     self.config.configuration["scenario_storage"]))
-            import pandas as pd
             return None
 
         consumed_scenarios = []
@@ -441,7 +605,7 @@ class bptk():
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    equations=equations,
+                    equations=equations,#should check for valid equations here
                     scenario_managers=[manager.name],
                     sd_results_dict=sd_results_dict,
                     return_format=return_format
@@ -478,7 +642,6 @@ class bptk():
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
             return None
 
-        # prepare dataframes
 
         if len(simulation_results) == 0:
             log("[WARN] No output data produced. Hopefully this was your intention.")
@@ -486,12 +649,20 @@ class bptk():
 
         # Concatenate DataFrames
         if len(simulation_results) > 1:
-            df = simulation_results.pop(0)
-            for tmp_df in simulation_results:
-                df = df.join(tmp_df)
+            if return_format=="df":
+                df = simulation_results.pop(0)
+                for tmp_df in simulation_results:
+                    df = df.join(tmp_df)
+            else:
+                # this works because in this case the entire data structure is copied a number of times
+                df = simulation_results.pop(0)
+                if return_format=="json":
+                    df = json.dumps(df,indent=2)
 
         elif len(simulation_results) == 1:
             df = simulation_results[0]
+            if return_format=="json":
+                df = json.dumps(df,indent=2)
 
         else:
             log("[ERROR] No results produced. Check your parameters!")
@@ -508,6 +679,7 @@ class bptk():
         
        
         return df
+
 
     def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[],
@@ -593,6 +765,7 @@ class bptk():
                                     freq=freq,
                                     series_names=series_names
                                     )
+
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
@@ -707,23 +880,10 @@ class bptk():
             scenario: String.
                 Name of scenario.
         """
-        #TODO: add tests for reset_scenario_cache
+        #TODO: most of this code should be part of the scenario itself
 
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
-        try:
-
-            for key in scenario.model.memo.keys():
-                scenario.model.memo[key] = {}
-        except AttributeError as e:
-            log(
-                "[WARN] Couldn't modify memo, probably not dealing with an SD model. I will try the generic memo reference of the scenario instead.")
-            log("[WARN] Error: {}".format(str(e)))
-            try:
-                for key in scenario.memo.keys():
-                    scenario.memo[key] = {}
-                    scenario.run(False)
-            except Exception as e:
-                log("[ERROR] Unable to reset simulation model. Error: {}".format(str(e)))
+        scenario.reset_cache()
 
     def reset_scenario(self, scenario_manager, scenario):
         """Reset a scenario

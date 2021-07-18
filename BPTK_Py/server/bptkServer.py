@@ -24,27 +24,42 @@ class InstanceManager:
     The class is used to manipulate instances for storing cloned instances, and checking for the session timeout.
     """
     def __init__(self, bptk):
-        self.bptk = bptk
-        self.instances_dict = dict()
-        self.bptk_copy = copy.deepcopy(self.bptk)
+        self._bptk = bptk
+        self._instances = dict()
 
-    def store_instance(self):
+    def is_valid_instance(self, instance_uuid):
+        return instance_uuid in self._instances
+
+    def get_instance(self,instance_uuid):
+        if not self.is_valid_instance(instance_uuid):
+            return None
+        # Add the current time to the instances dictionary with its instance id as a key
+        self._update_instance_timestamp(instance_uuid)
+        self._timeout_instances()
+        return self._instances[instance_uuid]["instance"]
+
+    def _update_instance_timestamp(self, instance_uuid):
+        if self.is_valid_instance(instance_uuid):
+            self._instances[instance_uuid]["time"]= datetime.datetime.now()
+
+    def create_instance(self):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
 
-        Returns:
-            cloned_bptk_uuid: str.
-                The uuid value generated for the current instance.
+        Returns: String
+            The uuid value generated for the current instance.
         """
 
-        cloned_bptk_uuid = uuid.uuid1().hex
-        self.instances_dict[cloned_bptk_uuid] = dict()
-        self.instances_dict[cloned_bptk_uuid]["instance"] = self.bptk_copy
-        self.instances_dict[cloned_bptk_uuid]["time"] = dict()
+        self._timeout_instances()
 
-        return cloned_bptk_uuid
+        instance_uuid = uuid.uuid1().hex
+        self._instances[instance_uuid] = dict()
+        self._instances[instance_uuid]["instance"] = copy.deepcopy(self._bptk)
+        self._instances[instance_uuid]["time"] = dict()
 
-    def is_instance_timeout(self):
+        return instance_uuid
+
+    def _timeout_instances(self):
         """
         The method checks for the session timeout, and deletes the instance if it is.
 
@@ -55,13 +70,12 @@ class InstanceManager:
 
         timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
 
-        for key in self.instances_dict.keys():
+        for key in self._instances.keys():
             current_time = datetime.datetime.now()
-            last_call_time = self.instances_dict[key]["time"]
+            last_call_time = self._instances[key]["time"]
             if last_call_time:
                 if current_time >= last_call_time + timeout:
-                    del self.instances_dict[key]
-                    return True
+                    del self._instances[key]
 
 ######################
 ##  REST API CLASS  ##
@@ -80,8 +94,8 @@ class BptkServer(Flask):
         :param bptk: simulations made by the bptk.
         """
         super(BptkServer, self).__init__(import_name)
-        self.bptk = bptk
-        self.instance_manager = InstanceManager(bptk)
+        self._bptk = bptk
+        self._instance_manager = InstanceManager(bptk)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
@@ -89,7 +103,9 @@ class BptkServer(Flask):
         self.route("/equations", methods=['POST'], strict_slashes=False)(self._equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
         self.route("/start-instance", methods=['POST'], strict_slashes=False)(self._start_instance_resource)
-        self.route("/<instance_id>/run-step", methods=['POST', 'PUT'], strict_slashes=False)(self._run_step_resource)
+        self.route("/<instance_uuid>/run-step", methods=['POST'], strict_slashes=False)(self._run_step_resource)
+        self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
+        self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
 
     def _home_resource(self):
         """
@@ -118,7 +134,7 @@ class BptkServer(Flask):
 
             for scenario_manager_name, scenario_manager_data in settings.items():
                 for scenario_name, scenario_settings in scenario_manager_data.items():
-                    scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+                    scenario = self._bptk.get_scenario(scenario_manager_name,scenario_name)
                     if "constants" in scenario_settings:
                         constants = scenario_settings["constants"]
                         for constant_name, constant_settings in constants.items():
@@ -127,7 +143,7 @@ class BptkServer(Flask):
                         points = scenario_settings["points"]
                         for points_name, points_settings in points.items():
                             scenario.points[points_name]=points_settings
-                    self.bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
+                    self._bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             self.logger.info("Settings not specified")
             pass
@@ -156,7 +172,7 @@ class BptkServer(Flask):
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
-        result = self.bptk.run_scenarios(
+        result = self._bptk.run_scenarios(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
             equations=equations,
@@ -177,7 +193,7 @@ class BptkServer(Flask):
         The endpoint returns all available scenarios for the current simulation.
         """
 
-        scenarios = self.bptk.get_scenario_names(format="dict")
+        scenarios = self._bptk.get_scenario_names(format="dict")
 
         if not scenarios:
             resp = make_response('{"error": "expecting the model to have scenarios"}',500)
@@ -202,13 +218,16 @@ class BptkServer(Flask):
 
         content = request.get_json()
 
-        try:
-            scenario_manager_name = content["scenarioManager"]
-        except KeyError:
-            resp = make_response('{"error": "expecting scenarioManager to be set"}',500)
+        if ("scenarioManager" not in content) and ("scenario_manager" not in content):
+            resp = make_response('{"error": "expecting scenarioManager or scenario_manager to be set"}',500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
+
+        if "scenario_manager" in content:
+            scenario_manager_name=content["scenario_manager"]
+        else:
+            scenario_manager_name=content["scenarioManager"]
 
         try:
             scenario_name = content["scenario"]
@@ -218,7 +237,7 @@ class BptkServer(Flask):
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
-        scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+        scenario = self._bptk.get_scenario(scenario_manager_name,scenario_name)
 
         equations_names = {}
         stocks_names = set()
@@ -279,7 +298,7 @@ class BptkServer(Flask):
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
-        scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
+        scenario = self._bptk.get_scenario(scenario_manager_name,scenario_name)
 
         if not scenario.model.agents: # Checking if the model has agents
             resp = make_response('{"error": "expecting the model to have agents"}',500)
@@ -310,25 +329,18 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-        cloned_bptk_uuid = self.instance_manager.store_instance()
+        instance_uuid = self._instance_manager.create_instance()
 
-        # Check for the session timeout
-        if self.instance_manager.is_instance_timeout():
-            resp = make_response('{"error": "Session has timed out"}', 401)
-            resp.headers['Content-Type'] = 'application/json'
-            resp.headers['Access-Control-Allow-Origin'] = '*'
-            return resp
-
-        if cloned_bptk_uuid is not None:
-            resp = make_response(cloned_bptk_uuid, 200)
+        if instance_uuid is not None:
+            resp = make_response(f'{{"instance_uuid":"{instance_uuid}"}}', 200)
         else:
-            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+            resp = make_response('{"error": "instance could not be started"}', 500)
 
         return resp
 
-    def _run_step_resource(self, instance_id):
-        """
-        This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+    def _begin_session_resource(self, instance_uuid):
+        """This endpoint starts a session for single step simulation. There can only be one session per instance at a time.
+        Currently only System Dynamics scenarios are supported for both SD DSL and XMILE models.
         """
 
         if not request.is_json:
@@ -337,42 +349,17 @@ class BptkServer(Flask):
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
 
-        content = request.get_json()
-
-
         # Checking if the instance id is valid.
-        try:
-            self.instance_manager.instances_dict[instance_id]
-        except KeyError:
+        if not self._instance_manager.is_valid_instance(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
 
-        # Add the current time to the instances dictionary with its instance id as a key
-        self.instance_manager.instances_dict[instance_id]["time"] = datetime.datetime.now()
+        content = request.get_json()
 
         try:
-            settings = content["settings"]
-
-            for scenario_manager_name, scenario_manager_data in settings.items():
-                for scenario_name, scenario_settings in scenario_manager_data.items():
-                    scenario = self.bptk.get_scenario(scenario_manager_name,scenario_name)
-                    if "constants" in scenario_settings:
-                        constants = scenario_settings["constants"]
-                        for constant_name, constant_settings in constants.items():
-                            scenario.constants[constant_name]=constant_settings
-                    if "points" in scenario_settings:
-                        points = scenario_settings["points"]
-                        for points_name, points_settings in points.items():
-                            scenario.points[points_name]=points_settings
-                    self.bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
-        except KeyError:
-            self.logger.info("Settings not specified")
-            pass
-
-        try:
-            scenario_managers=content["scenario_managers"]
+            scenario_managers = content["scenario_managers"]
         except KeyError:
             resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
             resp.headers['Content-Type']='application/json'
@@ -380,34 +367,85 @@ class BptkServer(Flask):
             return resp
 
         try:
-            scenarios=content["scenarios"]
+            scenarios = content["scenarios"]
         except KeyError:
-            resp = make_response('{"error": "expecting scenario_managers to be set"}',500)
+            resp = make_response('{"error": "expecting scenarios to be set"}', 500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
         try:
-            equations=content["equations"]
+            equations = content["equations"]
         except KeyError:
-            resp = make_response('{"error": "expecting equations to be set"}',500)
+            resp = make_response('{"error": "expecting equations to be set"}', 500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
-        # getting the results for the first time step only
-        result = self.bptk.plot_scenarios(
+        instance = self._instance_manager.get_instance(instance_uuid)
+
+        instance.begin_session(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
-            equations=equations,
-            visualize_to_period = 1,
-            return_df=True
+            equations=equations
         )
 
-        if result is not None:
-            resp = make_response(result.to_json(), 200)
+        resp = make_response('{"msg":"session started"}', 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    def _end_session_resource(self, instance_uuid):
+        """This endpoint ends a session for single step simulation and resets the internal cache.
+        """
+        # Checking if the instance id is valid.
+        if not self._instance_manager.is_valid_instance(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+
+        instance = self._instance_manager.get_instance(instance_uuid)
+        instance.end_session()
+
+        resp = make_response('{"msg":"session started"}', 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    def _run_step_resource(self, instance_uuid):
+        """
+        This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+
+        Arguments:
+            settings: JSON
+                Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
+        """
+        # Checking if the instance id is valid.
+        if not self._instance_manager.is_valid_instance(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+
+        instance = self._instance_manager.get_instance(instance_uuid)
+
+        if not request.is_json:
+            result = instance.run_step()
         else:
-            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+            content = request.get_json()
+            if "settings" in content:
+                result = instance.run_step(settings=content["settings"])
+            else:
+                resp = make_response('{"error": "expecting settings to be set"}', 500)
+                resp.headers['Content-Type'] = 'application/json'
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp
+
+        if result is not None:
+            resp = make_response(json.dumps(result), 200)
+        else:
+            resp = make_response('{"error": "no data was returned from run_step"}', 500)
 
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'

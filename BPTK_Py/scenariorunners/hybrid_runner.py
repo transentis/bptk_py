@@ -247,12 +247,8 @@ class HybridRunner(ScenarioRunner):
         df.index.name = "t"
         
         simulation_results=[]
-        if return_format=="dict":
+        if return_format=="dict" or return_format=="json":
             simulation_results=abm_results_dict
-            
-        elif return_format=="json":
-            simulation_results=json.dumps(abm_results_dict, indent=2)
-            
         elif return_format=="df":
             simulation_results=df
             
