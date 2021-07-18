@@ -447,7 +447,8 @@ class bptk():
             settings: Dictionary (Default=None)
                 The settings to apply to this step.
         """
-
+        if not self.session_state:
+            return None
 
         scenario_managers = self.session_state["scenario_managers"]
         agents = self.session_state["agents"]
