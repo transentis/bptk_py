@@ -605,7 +605,7 @@ class bptk():
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
                 simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    equations=equations,
+                    equations=equations,#should check for valid equations here
                     scenario_managers=[manager.name],
                     sd_results_dict=sd_results_dict,
                     return_format=return_format

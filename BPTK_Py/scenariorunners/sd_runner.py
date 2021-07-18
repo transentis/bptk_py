@@ -219,19 +219,7 @@ class SdRunner(ScenarioRunner):
                 for name, points in sc.points.items():
                     simu.change_points(name=name, value=points)
 
-                # Store the simulation scenario. If we only want to run a specific equation as specified in parameter (and not all from scenario file), define here
-                if len(equations) > 0:
-                    # Find equations that I can actually simulate in the specific model of the scenario!
-                    equations_to_simulate = []
-                    for equation in equations:
-
-                        equations_to_simulate += [equation]
-
-                    sc.result = simu.start(output=output, equations=equations_to_simulate)
-
-                else:
-                    log("[ERROR] No equations to simulate given!")
-                    return None
+                sc.result = simu.start(output=output, equations=equations)
 
         return scenario_objects
 

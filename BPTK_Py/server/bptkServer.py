@@ -218,13 +218,16 @@ class BptkServer(Flask):
 
         content = request.get_json()
 
-        try:
-            scenario_manager_name = content["scenarioManager"]
-        except KeyError:
-            resp = make_response('{"error": "expecting scenarioManager to be set"}',500)
+        if ("scenarioManager" not in content) and ("scenario_manager" not in content):
+            resp = make_response('{"error": "expecting scenarioManager or scenario_manager to be set"}',500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
+
+        if "scenario_manager" in content:
+            scenario_manager_name=content["scenario_manager"]
+        else:
+            scenario_manager_name=content["scenarioManager"]
 
         try:
             scenario_name = content["scenario"]
