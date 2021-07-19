@@ -34,6 +34,8 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.3
+* Return message from end-session resource no correctly reads "session terminated"
 ### 1.3.2
 * Rename package due to issues with test pypi
 

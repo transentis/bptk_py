@@ -408,7 +408,7 @@ class BptkServer(Flask):
         instance = self._instance_manager.get_instance(instance_uuid)
         instance.end_session()
 
-        resp = make_response('{"msg":"session started"}', 200)
+        resp = make_response('{"msg":"session terminated"}', 200)
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
