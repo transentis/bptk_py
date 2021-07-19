@@ -14,7 +14,7 @@ import pandas as pd
 
 from ..logger import log
 from .scenario_runner import ScenarioRunner
-from ..sd_simulation import SdSimulation
+from ..sdsimulation import SdSimulation
 
 
 class SdRunner(ScenarioRunner):
