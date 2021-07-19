@@ -79,7 +79,6 @@ echo "-------------------------------------"
 cd ./tests
 echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
-rm models/*.py
 python3 -m venv ./venv
 source ./venv/bin/activate
 pip install -r ../requirements.txt

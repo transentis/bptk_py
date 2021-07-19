@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+
+### 1.3.1
+* Fix bug in distribution
 ### 1.3.0
 * Fix bug in run_scenarios that arose with multiple scenario managers and when return_format was json or dict
 * Add begin_session, end_session and run_step methods to bptk
