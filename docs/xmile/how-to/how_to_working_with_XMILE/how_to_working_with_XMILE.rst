@@ -49,6 +49,14 @@ only takes a few minutes if you follow these six steps:
 5. Initialize BPTK-Py
 6. Start experimenting with your model
 
+Note that the transpiler converts the XMILE model into a Python class.
+For this to work in a consistent manner, the element names in the model are "sanitized"
+to ensure they can also be called in Python code. In particular all spaces and newlines
+in names are removed and the names are converted into camel case format (e.g. "My Model Element" is converted to "myModelElement").
+
+XMILE is very flexible regarding the naming of elements and we try to keep that flexibility - nevertheless we recommend keeping model names simple. Try not to include characters
+that are difficult to handle in code (such as quotation marks, plus and minus signs etc.) out of model names.
+
 Step 1: Create The Directory Structure
 --------------------------------------
 

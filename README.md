@@ -34,6 +34,8 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.4
+* Small improvements to the XMILE/SMILE parser regarding element names that include special characters and regarding operators surrounded by newlines.
 ### 1.3.3
 * Return message from end-session resource no correctly reads "session terminated"
 ### 1.3.2

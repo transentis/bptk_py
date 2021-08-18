@@ -90,14 +90,14 @@ class BptkServer(Flask):
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
 
-    def __init__(self, import_name, bptk_factory):
+    def __init__(self, import_name, bptk_factory=None):
         """
         Initialize the server with the import name and the bptk.
         :param import_name: the name of the application package. Usually __name__. This helps locate the root_path for the blueprint.
         :param bptk: simulations made by the bptk.
         """
         super(BptkServer, self).__init__(import_name)
-        self._bptk = bptk_factory()
+        self._bptk = bptk_factory() if bptk_factory is not None else None
         
         
         self._instance_manager = InstanceManager(bptk_factory)
