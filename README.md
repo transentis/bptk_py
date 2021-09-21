@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.5
+* Fixed an issue that caused bptk-server to crash if start-instance was called after a previous instance had timed out
+
 ### 1.3.4
 * Small improvements to the XMILE/SMILE parser regarding element names that include special characters and regarding operators surrounded by newlines.
 ### 1.3.3

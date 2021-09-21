@@ -73,7 +73,7 @@ class InstanceManager:
 
         timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
 
-        for key in self._instances.keys():
+        for key in tuple(self._instances.keys()): # we're iterating over a copy of the keys here to ensure we don't delete an element from the dictionary while iterating through it.
             current_time = datetime.datetime.now()
             last_call_time = self._instances[key]["time"]
             if last_call_time:
