@@ -1,4 +1,6 @@
 buildx
+.DS_Store
+BPTK_Py/.DS_Store
 *.DS_Store
 .eggs/
 *.*pyc
