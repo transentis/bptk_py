@@ -426,7 +426,8 @@ class bptk():
             "starttime": starttime_,
             "stoptime": stoptime_,
             "dt": dt,
-            "settings_log":{}
+            "settings_log":{},
+            "results_log":{}
         }
 
     def end_session(self):
@@ -466,12 +467,14 @@ class bptk():
 
         simulation_results = {manager:{} for manager in scenario_managers}
 
+
+
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
                 print("run_step currently only supports SD scenarios") 
-            # Handle SD sceanrios and sort by scenarios
+            # Handle SD scenarios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
 
@@ -483,10 +486,57 @@ class bptk():
                     settings = settings
                 )
 
+        # log settings and results
+        self.session_state["settings_log"][step] = settings
+        self.session_state["results_log"][step] = simulation_results
+
+        # move session step forward
         self.session_state["step"]=step+dt
        
         return simulation_results
 
+    def session_results(self, index_by_time=True):
+        """Return the results collected so far within a session
+
+        Args:
+            index_by_time: Boolean.
+                Indey by time (default) or else by scenario manager,scenario and equation.
+
+        Returns:
+            By default this returns a dictionary of the results indexed by timestep – this is essentially just a collection of the results created by run_step. If index_by_time==False, a dictionary is returned that is structure by scenario managers, scenarios and the equations - this resembles the data structure returend by run_scenarios.
+        """
+        if not self.session_state:
+            return {}
+
+        if index_by_time:
+            return self.session_state["results_log"]
+        else:
+            # need to rebuild the structure
+            results = {}
+
+            for _, manager in self.scenario_manager_factory.scenario_managers.items():
+
+                # Handle Hybrid scenarios
+                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and self.session_state["agents"] > 0:
+                    print("run_step currently only supports SD scenarios")
+                    # Handle SD scenarios and sort by scenarios
+                elif manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
+                    for scenario in manager.scenarios.keys():
+                        if scenario in self.session_state["scenarios"]:
+                            for equation in self.session_state["equations"]:
+                                for step, step_result in self.session_state["results_log"].items():
+                                    if manager.name not in results:
+                                        results[manager.name] = {}
+                                    if scenario not in results[manager.name]:
+                                        results[manager.name][scenario] = {}
+                                    if "equations" not in results[manager.name][scenario]:
+                                        results[manager.name][scenario]["equations"]={}
+                                    if equation not in results[manager.name][scenario]["equations"]:
+                                        results[manager.name][scenario]["equations"][equation] = {}
+
+                                    results[manager.name][scenario]["equations"][equation][step] = step_result[manager.name][scenario][equation][step]
+
+            return results
 
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[], series_names={},

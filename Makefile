@@ -19,6 +19,9 @@ test:
 publish_bptk:
 	cd scripts && ./publish.sh
 
+publish_without_test:
+	cd scripts && ./publish_without_test.sh
+
 publish_docker:
 	python3 ./build_docker.py
 

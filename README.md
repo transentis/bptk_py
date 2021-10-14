@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.6
+* Add new method session_results to bptk and corresponding endpoint session-results to Bptk server that allows the session results so far to be retrieved.
+
 ### 1.3.5
 * Fixed an issue that caused bptk-server to crash if start-instance was called after a previous instance had timed out
 

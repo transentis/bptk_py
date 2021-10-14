@@ -111,6 +111,7 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/run-step", methods=['POST'], strict_slashes=False)(self._run_step_resource)
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
+        self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
 
     def _home_resource(self):
         """
@@ -412,6 +413,26 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
+
+    def _session_results_resource(self,instance_uuid):
+        """
+        Returns the accumulated results of a session, from the first step to the last step that was run.
+        """
+
+        if not self._instance_manager.is_valid_instance(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+
+        instance = self._instance_manager.get_instance(instance_uuid)
+        result = instance.session_results(index_by_time=False)
+
+        resp = make_response(json.dumps(result), 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
 
     def _run_step_resource(self, instance_uuid):
         """
