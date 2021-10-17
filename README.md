@@ -34,6 +34,12 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.7
+* XMILE: Ensure the startime and stoptime in transpiled XMILE models are floating point values (e.g. 1.0, not 1)
+* XMILE: Top level variables in a model that contains modules are now referenced correctly from submodules
+* XMILE: Nested modules are now handled correctly
+* XMILE: Array dimensions of length <3 are now handled correctly
+
 ### 1.3.6
 * Add new method session_results to bptk and corresponding endpoint session-results to Bptk server that allows the session results so far to be retrieved.
 
