@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.8
+* XMILE: Arrayed variables that have non-arrayed inputs with "apply to all" set are now handled correctly
+
 ### 1.3.7
 * XMILE: Ensure the startime and stoptime in transpiled XMILE models are floating point values (e.g. 1.0, not 1)
 * XMILE: Top level variables in a model that contains modules are now referenced correctly from submodules
