@@ -68,7 +68,7 @@ Install Python
 
 First of all, you need `Python <https://www.python.org/>`_. Download the latest version for your operating system.
 
-BPTK-Py was tested with Python 3.7, 3.6 and 3.4.
+BPTK-Py was tested with Python 3.9.
 
 Clone the BPTK-Py tutorial
 ==========================

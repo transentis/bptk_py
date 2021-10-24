@@ -3,7 +3,7 @@ Limitations
 ###########
 
 .. meta::
-   :description: Explans the limitations of the BPTK-Py business simulation framework.
+   :description: List the limitations of the BPTK-Py framework.
    :keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation
 
 
@@ -13,6 +13,9 @@ Here are the known limitations:
 
 * Currently the simulator only supports the Euler method, Runge-Kutta Integration is not supported.
 * The SD model transpiler for XMILE models only supports regular stocks, flows, biflows and converters. Non-negative stocks and discrete modeling elements (such as ovens and conveyors) are not supported.
+* Subranges for arrays are currently not supported.
+* The inner product operator for arrays is currently not supported.
+* Special notations for arrays (e.g. N1:N2 and @) are currently not supported.
 * The random number operators (LOGNORMAL, LOGISTIC etc.) support seed but uses the Python seed and random number generator as the Stella Architect random number function is not open source. Secondly, these operators only support the mandatory arguments (usually mean/scale/stddev) as given in `in the Stella documentation <https://www.iseesystems.com/resources/help/v2/default.htm#08-Reference/07-Builtins/Statistical_builtins.htm>`_
 * The following table gives an overview of all XMILE builtins, whether they are supported by the SD model transpiler for XMILE and their equivalent in the SD DSL library – blank cells indicate that the operator is currently not supported. We are working hard to ensure support for all operators is included ASAP. Built-ins pertaining to discrete elements are not listed.
 
