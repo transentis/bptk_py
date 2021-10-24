@@ -13,7 +13,8 @@ help:
 
 .PHONY: help Makefile
 
-test:
+.PHONY: tests
+tests:
 	pip install -e . && cd tests && python3 ./run_pytests.py
 
 publish_bptk:
