@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.9
+* XMILE: Array arithmetic (such as array multiplication,...) within array functions such as SUM is now handled correctly.
+
 ### 1.3.8
 * XMILE: Arrayed variables that have non-arrayed inputs with "apply to all" set are now handled correctly
 
