@@ -280,7 +280,7 @@ class bptk():
             # Handle abm, sd-dsl and hybrid models (agents)
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
                 runner = HybridRunner(self.scenario_manager_factory)
-                dfs += [runner.train_simulation(
+                dfs += [runner.train_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
                     agent_property_types=agent_property_types, progress_widget=progress_widget,

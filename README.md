@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.10
+* BPTK: fixed an issue in train_scenarios which caused an exception in recent versions of bptk-py
+
 ### 1.3.9
 * XMILE: Array arithmetic (such as array multiplication,...) within array functions such as SUM is now handled correctly.
 
