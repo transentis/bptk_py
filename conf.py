@@ -94,7 +94,7 @@ html_theme = 'sphinx_rtd_theme'
 #
 
 html_theme_options = {
-    'analytics_id': 'UA-29198054-1',  #  Google Analytics
+    'analytics_id': 'G-CBT9QSPYKQ',  #  Google Analytics
     'canonical_url': 'https://bptk.transentis.com/en/latest'
 }
 
