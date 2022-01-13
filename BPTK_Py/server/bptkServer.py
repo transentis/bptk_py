@@ -45,7 +45,7 @@ class InstanceManager:
         if self.is_valid_instance(instance_uuid):
             self._instances[instance_uuid]["time"]= datetime.datetime.now()
 
-    def create_instance(self):
+    def create_instance(self,timeout=5):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
 
@@ -59,7 +59,8 @@ class InstanceManager:
         instance_uuid = uuid.uuid1().hex
         self._instances[instance_uuid] = dict()
         self._instances[instance_uuid]["instance"] = self._make_bptk()
-        self._instances[instance_uuid]["time"] = dict()
+        self._instances[instance_uuid]["time"] = datetime.datetime.now()
+        self._instances[instance_uuid]["timeout"]=timeout
 
         return instance_uuid
 
@@ -72,12 +73,15 @@ class InstanceManager:
                 Means that the specified time has already passed, and the session should be terminated.
         """
 
-        timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
 
         for key in tuple(self._instances.keys()): # we're iterating over a copy of the keys here to ensure we don't delete an element from the dictionary while iterating through it.
             current_time = datetime.datetime.now()
 
             if "time" in self._instances[key]:
+                if "timeout" in self.instances[key]:
+                    timeout = datetime.timedelta(self._instaces[key]["timeout"])
+                else:
+                    timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
                 last_call_time = self._instances[key]["time"]
                 if last_call_time:
                     if current_time >= last_call_time + timeout:
@@ -333,10 +337,17 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-        instance_uuid = self._instance_manager.create_instance()
+
+        timeout=5 #default timeout in minutes
+        if request.is_json:
+            content = request.get_json()
+            if "timeout" in content:
+                timeout = content["timeout"]
+
+        instance_uuid = self._instance_manager.create_instance(timeout)
 
         if instance_uuid is not None:
-            resp = make_response(f'{{"instance_uuid":"{instance_uuid}"}}', 200)
+            resp = make_response(f'{{"instance_uuid":"{instance_uuid}","timeout":"{timeout}"}}', 200)
         else:
             resp = make_response('{"error": "instance could not be started"}', 500)
 
