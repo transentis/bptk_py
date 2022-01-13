@@ -77,11 +77,11 @@ class InstanceManager:
         for key in tuple(self._instances.keys()): # we're iterating over a copy of the keys here to ensure we don't delete an element from the dictionary while iterating through it.
             current_time = datetime.datetime.now()
 
-            #TODO we should check that the key exists here
-            last_call_time = self._instances[key]["time"]
-            if last_call_time:
-                if current_time >= last_call_time + timeout:
-                    del self._instances[key]
+            if "time" in self._instances[key]:
+                last_call_time = self._instances[key]["time"]
+                if last_call_time:
+                    if current_time >= last_call_time + timeout:
+                        del self._instances[key]
 
 ######################
 ##  REST API CLASS  ##
