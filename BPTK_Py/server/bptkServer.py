@@ -33,6 +33,13 @@ class InstanceManager:
     def is_valid_instance(self, instance_uuid):
         return instance_uuid in self._instances
 
+    def keep_instance_alive(self,instance_uuid):
+        if not self.is_valid_instance(instance_uuid):
+            return None
+        self._update_instance_timestamp(instance_uuid)
+        self._timeout_instances()
+        return None
+
     def get_instance(self,instance_uuid):
         if not self.is_valid_instance(instance_uuid):
             return None
@@ -119,6 +126,7 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
+        self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
 
     def _home_resource(self):
         """
@@ -334,6 +342,9 @@ class BptkServer(Flask):
     def _start_instance_resource(self):
         """
         This endpoint starts a new instance of BPTK on the server side, so that simulations can run in a "private" session. The endpoint returns an instance_id, which is needed to identify the instance in later calls.
+
+        Arguments: timeout (minutes,optional)
+            The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed
         """
 
         # store the new instance in the instance dictionary.
@@ -481,6 +492,23 @@ class BptkServer(Flask):
             resp = make_response(json.dumps(result), 200)
         else:
             resp = make_response('{"error": "no data was returned from run_step"}', 500)
+
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    def _keep_alive_resource(self,instance_uuid):
+        """
+        This endpoint sets the "last accessed time" of the instance to the current time to prevent the instance from timeing out.
+
+        Arguments: None
+        """
+
+        if not self._instance_manager.is_valid_instance(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+        else:
+            self._instance_manager.keep_instance_alive(instance_uuid)
+            resp = make_response('{"msg":"instance timer reset"}',200)
 
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
