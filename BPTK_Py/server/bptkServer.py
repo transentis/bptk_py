@@ -52,7 +52,7 @@ class InstanceManager:
         if self.is_valid_instance(instance_uuid):
             self._instances[instance_uuid]["time"]= datetime.datetime.now()
 
-    def create_instance(self,timeout=5):
+    def create_instance(self,**timeout):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
 
@@ -62,6 +62,15 @@ class InstanceManager:
 
         self._timeout_instances()
 
+        timeout = {
+            "weeks": 0 if "weeks" not in timeout else timeout["weeks"],
+            "days": 0 if "days" not in timeout else timeout["days"],
+            "hours": 0 if "hours" not in timeout else timeout["hours"],
+            "minutes":  0 if "minutes" not in timeout else timeout["minutes"],
+            "seconds": 0 if "seconds" not in timeout else timeout["seconds"],
+            "milliseconds": 0 if "milliseconds" not in timeout else timeout["milliseconds"],
+            "microseconds":0 if "microseconds" not in timeout else timeout["microseconds"]
+        }
 
         instance_uuid = uuid.uuid1().hex
         self._instances[instance_uuid] = dict()
@@ -85,8 +94,8 @@ class InstanceManager:
             current_time = datetime.datetime.now()
 
             if "time" in self._instances[key]:
-                if "timeout" in self.instances[key]:
-                    timeout = datetime.timedelta(self._instaces[key]["timeout"])
+                if "timeout" in self._instances[key]:
+                    timeout = datetime.timedelta(**self._instances[key]["timeout"])
                 else:
                     timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
                 last_call_time = self._instances[key]["time"]
@@ -343,19 +352,19 @@ class BptkServer(Flask):
         """
         This endpoint starts a new instance of BPTK on the server side, so that simulations can run in a "private" session. The endpoint returns an instance_id, which is needed to identify the instance in later calls.
 
-        Arguments: timeout (minutes,optional)
-            The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed
+        Arguments: timeout (dict,optional)
+            The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
         """
 
         # store the new instance in the instance dictionary.
 
-        timeout=5 #default timeout in minutes
+        timeout = {"weeks":0, "days":0, "hours":0, "minutes":5,"seconds":0,"milliseconds":0,"microseconds":0}
         if request.is_json:
             content = request.get_json()
             if "timeout" in content:
                 timeout = content["timeout"]
 
-        instance_uuid = self._instance_manager.create_instance(timeout)
+        instance_uuid = self._instance_manager.create_instance(**timeout)
 
         if instance_uuid is not None:
             resp = make_response(f'{{"instance_uuid":"{instance_uuid}","timeout":"{timeout}"}}', 200)
