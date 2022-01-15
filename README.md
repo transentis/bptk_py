@@ -34,6 +34,9 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.3.12
+* BPTK Server: fixed an issue that could lead to race conditions leading to server crashes
+
 ### 1.3.11
 * BPTK Server: add a keep-alive method to keep instances from timing out
 * BPTK Server: start-instances now accepts a timeout structure so that instance timeouts can be set flexibly.

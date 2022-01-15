@@ -34,8 +34,6 @@ class InstanceManager:
         return instance_uuid in self._instances
 
     def keep_instance_alive(self,instance_uuid):
-        if not self.is_valid_instance(instance_uuid):
-            return None
         self._update_instance_timestamp(instance_uuid)
         self._timeout_instances()
         return None
@@ -46,11 +44,19 @@ class InstanceManager:
         # Add the current time to the instances dictionary with its instance id as a key
         self._update_instance_timestamp(instance_uuid)
         self._timeout_instances()
-        return self._instances[instance_uuid]["instance"]
+        try:
+            instance = self._instances[instance_uuid]["instance"]
+        except KeyError:
+            instance = None
+
+        return instance
 
     def _update_instance_timestamp(self, instance_uuid):
-        if self.is_valid_instance(instance_uuid):
-            self._instances[instance_uuid]["time"]= datetime.datetime.now()
+        try:
+            if self.is_valid_instance(instance_uuid):
+                self._instances[instance_uuid]["time"] = datetime.datetime.now()
+        except KeyError:
+            pass
 
     def create_instance(self,**timeout):
         """
@@ -72,11 +78,14 @@ class InstanceManager:
             "microseconds":0 if "microseconds" not in timeout else timeout["microseconds"]
         }
 
+        instance_data = {
+            "instance": self._make_bptk(),
+            "time": datetime.datetime.now(),
+            "timout": timeout
+        }
+
         instance_uuid = uuid.uuid1().hex
-        self._instances[instance_uuid] = dict()
-        self._instances[instance_uuid]["instance"] = self._make_bptk()
-        self._instances[instance_uuid]["time"] = datetime.datetime.now()
-        self._instances[instance_uuid]["timeout"]=timeout
+        self._instances[instance_uuid] = instance_data
 
         return instance_uuid
 
@@ -92,16 +101,18 @@ class InstanceManager:
 
         for key in tuple(self._instances.keys()): # we're iterating over a copy of the keys here to ensure we don't delete an element from the dictionary while iterating through it.
             current_time = datetime.datetime.now()
-
-            if "time" in self._instances[key]:
-                if "timeout" in self._instances[key]:
-                    timeout = datetime.timedelta(**self._instances[key]["timeout"])
-                else:
-                    timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
-                last_call_time = self._instances[key]["time"]
-                if last_call_time:
-                    if current_time >= last_call_time + timeout:
-                        del self._instances[key]
+            try:
+                if "time" in self._instances[key]:
+                    if "timeout" in self._instances[key]:
+                        timeout = datetime.timedelta(**self._instances[key]["timeout"])
+                    else:
+                        timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
+                    last_call_time = self._instances[key]["time"]
+                    if last_call_time:
+                        if current_time >= last_call_time + timeout:
+                            del self._instances[key]
+            except KeyError:
+                pass
 
 ######################
 ##  REST API CLASS  ##
