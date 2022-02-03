@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>test_expressions</name>
+		<uuid>e04402bd-eb8c-4b10-8b47-dddb43010cac</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="2.1" isee:build_number="2324" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:sim_duration="0" isee:simulation_delay="0" isee:restore_on_start="false" method="Euler" time_units="months" isee:instantaneous_flows="true" isee:loop_scores="false" isee:loop_exhaustive_allowed="1000">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format/>
+	<model_units/>
+	<model>
+		<variables>
+			<flow name="ESF money\nfor households">
+				<eqn>&quot;EU_fund_for_MFH_2017-2021&quot;*&quot;EU_fund_for_HH_2021-2023&quot;*(IF DHC_scenario_investment_ON_OFF=0 THEN Converter_86 ELSE DHC_scenario_HH)</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="EU fund for MFH 2017-2021">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="EU fund for HH 2021-2023">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="DHC scenario investment ON OFF">
+				<eqn>STEP(1, 6)</eqn>
+			</aux>
+			<aux name="Converter 86">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="DHC scenario HH">
+				<eqn>4</eqn>
+			</aux>
+			<aux name="ESF money for houseolds reference">
+				<eqn>6+STEP(2, 6)</eqn>
+			</aux>
+			<aux name="diff esf">
+				<eqn>ESF_money_for_households-ESF_money_for_houseolds_reference</eqn>
+			</aux>
+			<aux name="modular expression">
+				<eqn>atom_3 * 
+sentence</eqn>
+			</aux>
+			<aux name="atom 3">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="sentence">
+				<eqn> atom_2 
+ - 
+atom_1</eqn>
+			</aux>
+			<aux name="atom 2">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="atom 1">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="compact expression">
+				<eqn>atom_3
+*
+(
+atom_2
+-
+atom_1
+)</eqn>
+			</aux>
+			<aux name="diff expression">
+				<eqn>modular_expression-compact_expression</eqn>
+			</aux>
+			<aux name="Total Annual Subsidy, R&amp;D and\ninformation campaign costs">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="Additional EEOS costs for\ninformation,\nadministration etc">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="A&gt;B&lt;C">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="diff Difficult Names">
+				<eqn>&quot;Total_Annual_Subsidy,_R&amp;D_and_information_campaign_costs&quot;-&quot;Additional_EEOS_costs_for_information,_administration_etc&quot;+IF_Statement</eqn>
+			</aux>
+			<aux name="Can't implement on their own'">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="IF Statement">
+				<eqn>IF Can&apos;t_implement_on_their_own&apos;=0 THEN &quot;A&gt;B&lt;C&quot; ELSE Can&apos;t_implement_on_their_own&apos;</eqn>
+			</aux>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_corner_radius="0" popup_background_color="#FFFECF"/>
+				<slider color="#66CC66" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:fancy_appearance="false" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="#E95F74" background="silver"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch" isee:on_color="green"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt" isee:show_hover_tip="true"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+				<isee:navigation_widget color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_color="#999999" border_width="thin" border_style="solid" item_spacing="6" appearance="tabs" corner_radius="4" selected_item_color="black" selected_item_background="white" item_background="#DDDDDD"/>
+				<isee:shape color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid" opacity="1" transparent_background="true"/>
+				<isee:selector color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
+				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+			</style>
+			<view isee:show_pages="false" background="white" page_width="818" page_height="571" isee:page_rows="3" isee:scroll_y="807.143" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom"/>
+					<isee:placeholder color="#228B22" background="white" font_color="#228B22" font_size="7pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="7pt"/>
+					<connector color="#FF007F" background="white" font_color="#FF007F" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<flow x="382" y="147" name="ESF money\nfor households">
+					<pts>
+						<pt x="313" y="147"/>
+						<pt x="463" y="147"/>
+					</pts>
+				</flow>
+				<aux x="144" y="289" name="EU fund for MFH 2017-2021"/>
+				<aux x="300" y="302" name="EU fund for HH 2021-2023"/>
+				<aux x="454" y="284" name="DHC scenario investment ON OFF"/>
+				<aux x="586" y="307" name="Converter 86"/>
+				<aux x="697" y="307" name="DHC scenario HH"/>
+				<connector uid="1" angle="20.556">
+					<from>&quot;EU_fund_for_MFH_2017-2021&quot;</from>
+					<to>ESF_money_for_households</to>
+				</connector>
+				<connector uid="2" angle="41.1859">
+					<from>&quot;EU_fund_for_HH_2021-2023&quot;</from>
+					<to>ESF_money_for_households</to>
+				</connector>
+				<connector uid="3" angle="105.945">
+					<from>DHC_scenario_investment_ON_OFF</from>
+					<to>ESF_money_for_households</to>
+				</connector>
+				<connector uid="4" angle="141.892">
+					<from>Converter_86</from>
+					<to>ESF_money_for_households</to>
+				</connector>
+				<connector uid="5" angle="136.848">
+					<from>DHC_scenario_HH</from>
+					<to>ESF_money_for_households</to>
+				</connector>
+				<stacked_container uid="6" x="69.2857" y="380.714" width="691.429" height="250">
+					<table width="691.429" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="ESF_money_for_households"/>
+						</item>
+						<item>
+							<entity name="ESF_money_for_houseolds_reference"/>
+						</item>
+						<item>
+							<entity name="diff_esf"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="642.143" y="140" name="ESF money for houseolds reference"/>
+				<aux x="485" y="65.7143" name="diff esf"/>
+				<connector uid="7" angle="62.6568">
+					<from>ESF_money_for_households</from>
+					<to>diff_esf</to>
+				</connector>
+				<connector uid="8" angle="120.964">
+					<from>ESF_money_for_houseolds_reference</from>
+					<to>diff_esf</to>
+				</connector>
+				<aux x="345.714" y="761.429" name="modular expression"/>
+				<aux x="279.286" y="835" name="atom 3"/>
+				<aux x="392.857" y="835" name="sentence"/>
+				<aux x="374.857" y="897.143" name="atom 2"/>
+				<aux x="452.857" y="901.429" name="atom 1"/>
+				<connector uid="9" angle="47.9207">
+					<from>atom_3</from>
+					<to>modular_expression</to>
+				</connector>
+				<connector uid="10" angle="76.5514">
+					<from>sentence</from>
+					<to>modular_expression</to>
+				</connector>
+				<connector uid="11" angle="105.234">
+					<from>atom_2</from>
+					<to>sentence</to>
+				</connector>
+				<connector uid="12" angle="62.8787">
+					<from>atom_1</from>
+					<to>sentence</to>
+				</connector>
+				<aux x="566.429" y="765.714" name="compact expression"/>
+				<connector uid="13" angle="13.2405">
+					<from>atom_3</from>
+					<to>compact_expression</to>
+				</connector>
+				<connector uid="14" angle="20.439">
+					<from>atom_2</from>
+					<to>compact_expression</to>
+				</connector>
+				<connector uid="15" angle="11.0409">
+					<from>atom_1</from>
+					<to>compact_expression</to>
+				</connector>
+				<aux x="452.857" y="705" name="diff expression"/>
+				<connector uid="16" angle="35.5377">
+					<from>modular_expression</from>
+					<to>diff_expression</to>
+				</connector>
+				<connector uid="17" angle="142.306">
+					<from>compact_expression</from>
+					<to>diff_expression</to>
+				</connector>
+				<stacked_container uid="18" x="201.429" y="941.429" width="480.714" height="250">
+					<table width="480.714" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="diff_expression"/>
+						</item>
+						<item>
+							<entity name="modular_expression"/>
+						</item>
+						<item>
+							<entity name="compact_expression"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="305.714" y="1300" name="Total Annual Subsidy, R&amp;D and\ninformation campaign costs"/>
+				<aux x="441.786" y="1310.71" name="Additional EEOS costs for\ninformation,\nadministration etc"/>
+				<aux x="598.571" y="1288.57" name="A&gt;B&lt;C"/>
+				<aux x="382.143" y="1243.57" name="diff Difficult Names"/>
+				<aux x="546.429" y="1328.71" name="Can't implement on their own'"/>
+				<aux x="522.143" y="1270.57" name="IF Statement"/>
+				<connector uid="19" angle="124.885">
+					<from>Can&apos;t_implement_on_their_own&apos;</from>
+					<to>IF_Statement</to>
+				</connector>
+				<connector uid="20" angle="149.381">
+					<from>&quot;A&gt;B&lt;C&quot;</from>
+					<to>IF_Statement</to>
+				</connector>
+				<connector uid="21" angle="49.3987">
+					<from>&quot;Total_Annual_Subsidy,_R&amp;D_and_information_campaign_costs&quot;</from>
+					<to>diff_Difficult_Names</to>
+				</connector>
+				<connector uid="22" angle="60.9983">
+					<from>&quot;Additional_EEOS_costs_for_information,_administration_etc&quot;</from>
+					<to>diff_Difficult_Names</to>
+				</connector>
+				<connector uid="23" angle="131.364">
+					<from>IF_Statement</from>
+					<to>diff_Difficult_Names</to>
+				</connector>
+				<stacked_container uid="24" x="93.8571" y="1398.57" width="668.571" height="250">
+					<table width="668.571" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="diff_Difficult_Names"/>
+						</item>
+						<item>
+							<entity name='"Total_Annual_Subsidy,_R&amp;D_and_information_campaign_costs"'/>
+						</item>
+						<item>
+							<entity name='"Additional_EEOS_costs_for_information,_administration_etc"'/>
+						</item>
+					</table>
+				</stacked_container>
+			</view>
+		</views>
+	</model>
+</xmile>
+

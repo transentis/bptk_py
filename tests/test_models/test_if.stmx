@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>test_if</name>
+		<uuid>be239704-9015-4aec-a06f-d01ba26bc7e7</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="2.1" isee:build_number="2324" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:sim_duration="0" isee:simulation_delay="0" isee:restore_on_start="false" method="Euler" time_units="months" isee:instantaneous_flows="true" isee:loop_scores="true" isee:loop_exhaustive_allowed="1000">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format/>
+	<model_units/>
+	<model>
+		<variables>
+			<aux name="function">
+				<eqn>IF TIME&lt;4 THEN 100 ELSE (100+input*50)</eqn>
+			</aux>
+			<aux name="input">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="A">
+				<eqn>1+STEP(1, 7)</eqn>
+			</aux>
+			<aux name="B">
+				<eqn>1+STEP(1, 5)</eqn>
+			</aux>
+			<aux name="C">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="D">
+				<eqn>4</eqn>
+			</aux>
+			<aux name="nested if">
+				<eqn>IF A=1 THEN (IF A+B=2 THEN C ELSE D) ELSE E</eqn>
+			</aux>
+			<aux name="E">
+				<eqn>5</eqn>
+			</aux>
+			<aux name="Demand">
+				<eqn>STEP(1, 5)+STEP(10, 7)</eqn>
+			</aux>
+			<aux name="Total CC Capacity">
+				<eqn>10</eqn>
+			</aux>
+			<aux name="Delay in capacity increase">
+				<eqn>5</eqn>
+			</aux>
+			<flow name="capacity increase rate">
+				<eqn>IF Demand=0 THEN 0 ELSE
+(IF Total_CC_Capacity/Demand&lt;2.1 THEN MIN(Demand, Total_CC_Capacity)/Delay_in_capacity_increase ELSE 0)</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="reference capacity increase">
+				<eqn>STEP(2, 7)</eqn>
+			</aux>
+			<aux name="diff capacity increase">
+				<eqn>capacity_increase_rate-reference_capacity_increase</eqn>
+			</aux>
+			<aux name="reference nested if">
+				<eqn>3+STEP(1, 5)+STEP(1, 7)</eqn>
+			</aux>
+			<aux name="diff nested if">
+				<eqn>nested_if-reference_nested_if</eqn>
+			</aux>
+			<aux name="reference function">
+				<eqn>100+STEP(50, 4)</eqn>
+			</aux>
+			<aux name="diff function">
+				<eqn>function-reference_function</eqn>
+			</aux>
+			<aux name="Limit">
+				<eqn>IF ((Capacity_ordered+Capacity_in_operation)&lt;Capacity_limit) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="Capacity ordered">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="Capacity in operation">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="Capacity limit">
+				<eqn>STEP(5, 6)</eqn>
+			</aux>
+			<aux name="diff Limit">
+				<eqn>Limit-Limit_reference</eqn>
+			</aux>
+			<aux name="Limit reference">
+				<eqn>STEP(1, 6)</eqn>
+			</aux>
+			<aux name="diff atom if">
+				<eqn>atom_if-atom_if_reference</eqn>
+			</aux>
+			<aux name="atom if">
+				<eqn>IF atom_converter THEN 0 ELSE 1</eqn>
+			</aux>
+			<aux name="atom if reference">
+				<eqn>1-STEP(1, 6)</eqn>
+			</aux>
+			<aux name="atom converter">
+				<eqn>0 + STEP(1, 6)</eqn>
+			</aux>
+			<aux name="Capacity\nsufficiency">
+				<eqn>(Inexperienced_CC_capacity+Experienced_CC_capacity)/DELAY(IF_demand, 1)</eqn>
+			</aux>
+			<aux name="Inexperienced CC capacity">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="Experienced CC capacity">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="IF demand">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="diff capacity sufficiency">
+				<eqn>Capacity_sufficiency-capacity_sufficiency_reference</eqn>
+			</aux>
+			<aux name="capacity sufficiency reference">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="or test">
+				<eqn>1/Ordering_time/Operation_hours</eqn>
+			</aux>
+			<aux name="Ordering time">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="Operation hours">
+				<eqn>1</eqn>
+			</aux>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_corner_radius="0" popup_background_color="#FFFECF"/>
+				<slider color="#66CC66" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:fancy_appearance="false" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="#E95F74" background="silver"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch" isee:on_color="green"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt" isee:show_hover_tip="true"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+				<isee:navigation_widget color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_color="#999999" border_width="thin" border_style="solid" item_spacing="6" appearance="tabs" corner_radius="4" selected_item_color="black" selected_item_background="white" item_background="#DDDDDD"/>
+				<isee:shape color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid" opacity="1" transparent_background="true"/>
+				<isee:selector color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
+				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+			</style>
+			<view isee:show_pages="false" background="white" page_width="818" page_height="571" isee:page_cols="3" isee:page_rows="4" isee:scroll_x="760" isee:scroll_y="1000" zoom="140" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom"/>
+					<isee:placeholder color="#228B22" background="white" font_color="#228B22" font_size="7pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="7pt"/>
+					<connector color="#FF007F" background="white" font_color="#FF007F" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<aux x="191" y="212" name="function"/>
+				<aux x="269" y="122" name="input"/>
+				<connector uid="1" angle="227.49">
+					<from>input</from>
+					<to>function</to>
+				</connector>
+				<stacked_container uid="2" x="506" y="316">
+					<graph width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="function"/>
+						</plot>
+						<plot color="red" pen_style="dot_dashed" isee:keep_zero_visible="true" pen_width="1" index="1" show_y_axis="true">
+							<entity name="diff_function"/>
+						</plot>
+						<plot color="fuchsia" pen_style="dotted" isee:keep_zero_visible="true" pen_width="1" index="2" show_y_axis="true">
+							<entity name="reference_function"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux x="120" y="406" name="A"/>
+				<aux x="183" y="393" name="B"/>
+				<aux x="239" y="378" name="C"/>
+				<aux x="261" y="333" name="D"/>
+				<aux x="129" y="341" name="nested if"/>
+				<connector uid="6" angle="172.093">
+					<from>D</from>
+					<to>nested_if</to>
+				</connector>
+				<connector uid="5" angle="138.691">
+					<from>C</from>
+					<to>nested_if</to>
+				</connector>
+				<connector uid="4" angle="157.011">
+					<from>B</from>
+					<to>nested_if</to>
+				</connector>
+				<connector uid="3" angle="109.855">
+					<from>A</from>
+					<to>nested_if</to>
+				</connector>
+				<aux x="276" y="286" name="E"/>
+				<connector uid="7" angle="174.289">
+					<from>E</from>
+					<to>nested_if</to>
+				</connector>
+				<aux x="294" y="704" name="Demand"/>
+				<aux x="357" y="768" name="Total CC Capacity"/>
+				<aux x="435" y="865" name="Delay in capacity increase"/>
+				<flow x="203" y="823" name="capacity increase rate">
+					<pts>
+						<pt x="134" y="823"/>
+						<pt x="284" y="823"/>
+					</pts>
+				</flow>
+				<connector uid="8" angle="205.907">
+					<from>Demand</from>
+					<to>capacity_increase_rate</to>
+				</connector>
+				<connector uid="9" angle="199.654">
+					<from>Total_CC_Capacity</from>
+					<to>capacity_increase_rate</to>
+				</connector>
+				<connector uid="10" angle="189.782">
+					<from>Delay_in_capacity_increase</from>
+					<to>capacity_increase_rate</to>
+				</connector>
+				<stacked_container uid="11" x="762" y="885">
+					<graph width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="diff_capacity_increase"/>
+						</plot>
+						<plot color="red" pen_style="dot_dashed" isee:keep_zero_visible="true" pen_width="1" index="1" show_y_axis="true">
+							<entity name="capacity_increase_rate"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux x="336" y="994" name="reference capacity increase"/>
+				<aux x="165" y="956" name="diff capacity increase"/>
+				<connector uid="12" angle="243.435">
+					<from>capacity_increase_rate</from>
+					<to>diff_capacity_increase</to>
+				</connector>
+				<connector uid="13" angle="182.203">
+					<from>reference_capacity_increase</from>
+					<to>diff_capacity_increase</to>
+				</connector>
+				<stacked_container uid="14" x="877.143" y="202.143" width="350" height="250">
+					<graph width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="nested_if"/>
+						</plot>
+						<plot color="red" pen_style="dot_dashed" isee:keep_zero_visible="true" pen_width="1" index="1" show_y_axis="true">
+							<entity name="reference_nested_if"/>
+						</plot>
+						<plot color="fuchsia" pen_style="dotted" isee:keep_zero_visible="true" pen_width="1" index="2" show_y_axis="true">
+							<entity name="diff_nested_if"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux x="191" y="513.571" name="reference nested if"/>
+				<aux x="48.5714" y="428.571" name="diff nested if"/>
+				<connector uid="15" angle="194.457">
+					<from>nested_if</from>
+					<to>diff_nested_if</to>
+				</connector>
+				<connector uid="16" angle="180">
+					<from>reference_nested_if</from>
+					<to>diff_nested_if</to>
+				</connector>
+				<aux x="124.286" y="104" name="reference function"/>
+				<aux x="124.286" y="219.286" name="diff function"/>
+				<connector uid="17" angle="248.405">
+					<from>reference_function</from>
+					<to>diff_function</to>
+				</connector>
+				<connector uid="18" angle="193.294">
+					<from>function</from>
+					<to>diff_function</to>
+				</connector>
+				<aux x="339" y="1397.11" name="Limit"/>
+				<aux label_side="left" label_angle="225" x="417" y="1342.14" name="Capacity ordered"/>
+				<aux label_side="left" label_angle="135" x="453" y="1397.11" name="Capacity in operation"/>
+				<aux x="453" y="1457.86" name="Capacity limit"/>
+				<connector uid="19" angle="190.886">
+					<from>Capacity_ordered</from>
+					<to>Limit</to>
+				</connector>
+				<connector uid="21" angle="188.702">
+					<from>Capacity_limit</from>
+					<to>Limit</to>
+				</connector>
+				<stacked_container uid="22" x="862.857" y="1457.86">
+					<table width="350" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="Limit"/>
+						</item>
+						<item>
+							<entity name="diff_Limit"/>
+						</item>
+						<item>
+							<entity name="Limit_reference"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="268.571" y="1318.57" name="diff Limit"/>
+				<aux x="330" y="1275" name="Limit reference"/>
+				<connector uid="23" angle="199.44">
+					<from>Limit_reference</from>
+					<to>diff_Limit</to>
+				</connector>
+				<connector uid="24" angle="159.729">
+					<from>Limit</from>
+					<to>diff_Limit</to>
+				</connector>
+				<connector uid="25" angle="189.237">
+					<from>Capacity_in_operation</from>
+					<to>Limit</to>
+				</connector>
+				<aux x="1223.57" y="1153.57" name="diff atom if"/>
+				<aux x="1331.43" y="1090.71" name="atom if"/>
+				<aux x="1313.43" y="1206.43" name="atom if reference"/>
+				<aux x="1407.86" y="1050.71" name="atom converter"/>
+				<connector uid="26" angle="218.047">
+					<from>atom_converter</from>
+					<to>atom_if</to>
+				</connector>
+				<connector uid="27" angle="199.44">
+					<from>atom_if</from>
+					<to>diff_atom_if</to>
+				</connector>
+				<connector uid="28" angle="171.999">
+					<from>atom_if_reference</from>
+					<to>diff_atom_if</to>
+				</connector>
+				<stacked_container uid="29" x="1474.29" y="1464.29">
+					<table width="350" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="diff_atom_if"/>
+						</item>
+						<item>
+							<entity name="atom_if"/>
+						</item>
+						<item>
+							<entity name="atom_if_reference"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="2022.86" y="1206.43" name="Capacity\nsufficiency"/>
+				<aux x="2147.86" y="1108.71" name="Inexperienced CC capacity"/>
+				<aux x="2179.29" y="1196.43" name="Experienced CC capacity"/>
+				<aux x="2179.29" y="1280.71" name="IF demand"/>
+				<connector uid="30" angle="177.371">
+					<from>Inexperienced_CC_capacity</from>
+					<to>Capacity_sufficiency</to>
+				</connector>
+				<connector uid="31" angle="202.249">
+					<from>Experienced_CC_capacity</from>
+					<to>Capacity_sufficiency</to>
+				</connector>
+				<connector uid="32" angle="189.462">
+					<from>IF_demand</from>
+					<to>Capacity_sufficiency</to>
+				</connector>
+				<aux x="1905" y="1305.71" name="diff capacity sufficiency"/>
+				<connector uid="33" angle="202.304">
+					<from>Capacity_sufficiency</from>
+					<to>diff_capacity_sufficiency</to>
+				</connector>
+				<aux x="2018.57" y="1405.71" name="capacity sufficiency reference"/>
+				<connector uid="34" angle="162.646">
+					<from>capacity_sufficiency_reference</from>
+					<to>diff_capacity_sufficiency</to>
+				</connector>
+				<stacked_container uid="35" x="2179.29" y="1670">
+					<table width="350" height="250">
+						<item type="time"/>
+						<item>
+							<entity name="diff_capacity_sufficiency"/>
+						</item>
+						<item>
+							<entity name="Capacity_sufficiency"/>
+						</item>
+						<item>
+							<entity name="capacity_sufficiency_reference"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="1818.57" y="1122.86" name="or test"/>
+				<aux x="1905" y="1068.71" name="Ordering time"/>
+				<aux x="1818.57" y="1050.71" name="Operation hours"/>
+				<connector uid="36" angle="267.208">
+					<from>Operation_hours</from>
+					<to>or_test</to>
+				</connector>
+				<connector uid="37" angle="206.331">
+					<from>Ordering_time</from>
+					<to>or_test</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>
+
