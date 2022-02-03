@@ -1,0 +1,5 @@
+parsimonious
+xmltodict
+jinja2
+bptk_py
+sympy
