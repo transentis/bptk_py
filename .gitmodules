@@ -1,6 +1,0 @@
-[submodule "BPTK_Py/sdcompiler"]
-	path = BPTK_Py/sdcompiler
-	url = git@bitbucket.org:transentis/sd-compiler-py.git
-[submodule "tests"]
-	path = tests
-	url = git@bitbucket.org:transentis/bptk_tests.git
