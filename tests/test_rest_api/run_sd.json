@@ -1,0 +1,17 @@
+{
+     "scenario_managers": [
+        "addManager"
+    ],
+    "scenarios": [
+        "addScenario"
+    ],
+    "equations": [
+        "c"
+    ],
+    "settings": {
+        "addManager": {
+            "addScenario": {
+            }
+        }
+    }
+}

@@ -1,0 +1,708 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_arrays="3"/>
+		<name>test_array_3dimensional</name>
+		<uuid>9fd3305d-fd84-411e-bc5c-825ca8fb0020</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="2.1" isee:build_number="2324" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:sim_duration="0" isee:simulation_delay="0" isee:restore_on_start="false" method="Euler" time_units="months" isee:instantaneous_flows="true" isee:loop_scores="false" isee:loop_exhaustive_allowed="1000">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="Countries">
+			<elem name="Germany"/>
+			<elem name="England"/>
+			<elem name="Austria"/>
+			<elem name="Greece"/>
+		</dim>
+		<dim name="Distance">
+			<elem name="under_500m"/>
+			<elem name="a_500_to_1000m"/>
+			<elem name="a_1000_to_1500m"/>
+			<elem name="a_1500_to_2000m"/>
+			<elem name="a_2000_to_2500m"/>
+			<elem name="a_2500_to_3000m"/>
+			<elem name="over_3000m"/>
+		</dim>
+		<dim name="Producer">
+			<elem name="Producer_1"/>
+			<elem name="Producer_2"/>
+			<elem name="Producer_3"/>
+		</dim>
+		<dim name="Products" size="3"/>
+	</dimensions>
+	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format/>
+	<model_units>
+		<unit name="Dimensionless">
+			<eqn>1</eqn>
+			<alias>dmnl</alias>
+			<alias>unitless</alias>
+			<alias>fraction</alias>
+		</unit>
+		<unit name="Hours">
+			<eqn/>
+			<alias>hr</alias>
+			<alias>hour</alias>
+		</unit>
+		<unit name="Years">
+			<eqn/>
+			<alias>yr</alias>
+			<alias>year</alias>
+		</unit>
+		<unit name="Megawatthours">
+			<eqn>MW*hr</eqn>
+			<alias>MWh</alias>
+		</unit>
+		<unit name="Gigawatthours">
+			<eqn>GW*hr</eqn>
+			<alias>GWh</alias>
+		</unit>
+		<unit name="My Tonnes">
+			<eqn>Tonnes</eqn>
+			<alias>t</alias>
+		</unit>
+		<unit name="m2">
+			<eqn>m*m</eqn>
+		</unit>
+		<unit name="Kilowatthours">
+			<eqn>kW*Hours</eqn>
+			<alias>kWh</alias>
+		</unit>
+	</model_units>
+	<model>
+		<variables>
+			<stock name="Production">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>0</eqn>
+				<inflow>production_start</inflow>
+				<outflow>production_rate</outflow>
+			</stock>
+			<aux name="production start rate">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<element subscript="1, Germany, Producer_1">
+					<eqn>10</eqn>
+				</element>
+				<element subscript="1, Germany, Producer_2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="1, Germany, Producer_3">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="1, England, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="1, England, Producer_2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="1, England, Producer_3">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="1, Austria, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="1, Austria, Producer_2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="1, Austria, Producer_3">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="1, Greece, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="1, Greece, Producer_2">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="1, Greece, Producer_3">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="2, Germany, Producer_1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2, Germany, Producer_2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="2, Germany, Producer_3">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="2, England, Producer_1">
+					<eqn>5</eqn>
+				</element>
+				<element subscript="2, England, Producer_2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2, England, Producer_3">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2, Austria, Producer_1">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2, Austria, Producer_2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2, Austria, Producer_3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2, Greece, Producer_1">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2, Greece, Producer_2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2, Greece, Producer_3">
+					<eqn>5</eqn>
+				</element>
+				<element subscript="3, Germany, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Germany, Producer_2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Germany, Producer_3">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, England, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, England, Producer_2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, England, Producer_3">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Austria, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Austria, Producer_2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Austria, Producer_3">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Greece, Producer_1">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Greece, Producer_2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3, Greece, Producer_3">
+					<eqn>0</eqn>
+				</element>
+			</aux>
+			<flow name="production start">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>production_start_rate</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="Total Inventory">
+				<eqn>SUM(Inventory[*, *, *])</eqn>
+			</aux>
+			<aux name="Average Inventory">
+				<eqn>MEAN(Inventory[*, *, *])</eqn>
+			</aux>
+			<aux name="smallest German inventory">
+				<dimensions>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>Inventory[RANK(Inventory[*, Germany, *], 1), Germany, Producer]</eqn>
+			</aux>
+			<aux name="largest German inventory">
+				<dimensions>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>Inventory[RANK(Inventory[*, Germany, *], SIZE(Inventory[*, Germany, *])), Germany, Producer]</eqn>
+			</aux>
+			<aux name="Average Inventory using Size">
+				<eqn>SUM(Inventory[*, *, *])/SIZE(Inventory[*,*,*])</eqn>
+			</aux>
+			<stock name="Inventory">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>0</eqn>
+				<inflow>production_rate</inflow>
+			</stock>
+			<flow name="production rate">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>DELAY(production_start, production_duration, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="production duration">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="Inventory Size">
+				<eqn>SIZE(Inventory)</eqn>
+			</aux>
+			<aux name="rankinv">
+				<eqn>RANK(Inventory[*,   Germany, Producer_1], 1)</eqn>
+			</aux>
+			<aux name="Country Inventory">
+				<dimensions>
+					<dim name="Countries"/>
+				</dimensions>
+				<eqn>SUM(Inventory[*,Countries, *])</eqn>
+			</aux>
+			<aux name="German Inventory">
+				<eqn>SUM(Inventory[*,Germany, *])</eqn>
+			</aux>
+			<aux name="Country Inventory Indiviudual">
+				<dimensions>
+					<dim name="Countries"/>
+				</dimensions>
+				<element subscript="Germany">
+					<eqn>SUM(Inventory[*,Germany, *])</eqn>
+				</element>
+				<element subscript="England">
+					<eqn>SUM(Inventory[*,England, *])</eqn>
+				</element>
+				<element subscript="Austria">
+					<eqn>SUM(Inventory[*,Austria, *])</eqn>
+				</element>
+				<element subscript="Greece">
+					<eqn>SUM(Inventory[*,Greece, *])</eqn>
+				</element>
+			</aux>
+			<aux name="Inventory Share per Product">
+				<dimensions>
+					<dim name="Products"/>
+				</dimensions>
+				<eqn>SAFEDIV(SUM(Inventory[Products, *, *]), SUM(Inventory[*,*,*]), 0)</eqn>
+			</aux>
+			<aux name="Relative German Inventory Disaggregated">
+				<eqn>Factor*SAFEDIV(German_Inventory, SUM(Country_Inventory[*]), 0)</eqn>
+			</aux>
+			<aux name="Relative German Inventory Agg">
+				<eqn>Factor*SAFEDIV(SUM(Inventory[*,Germany, *]), (SUM(Inventory[*,* , *])), 0)</eqn>
+			</aux>
+			<aux name="Diff Average Inventory">
+				<eqn>Average_Inventory-Average_Inventory_using_Size</eqn>
+			</aux>
+			<aux name="Diff Country Inventory">
+				<eqn>Country_Inventory[Germany]-Country_Inventory_Indiviudual[Germany]</eqn>
+			</aux>
+			<aux name="Diff Rel Inventory">
+				<eqn>Relative_German_Inventory_Agg-Relative_German_Inventory_Disaggregated</eqn>
+			</aux>
+			<aux name="Factor">
+				<eqn>100</eqn>
+			</aux>
+			<aux name="rankinv reference">
+				<eqn>1+PULSE(0.5,  3.25)</eqn>
+			</aux>
+			<aux name="diff rankinv">
+				<eqn>rankinv-rankinv_reference</eqn>
+			</aux>
+			<aux name="input flat" access="output">
+				<eqn>10</eqn>
+				<units>GWh/yr</units>
+			</aux>
+			<aux name="non-arrayed apply to all">
+				<dimensions>
+					<dim name="Distance"/>
+				</dimensions>
+				<eqn>input_flat</eqn>
+				<units>unitless</units>
+			</aux>
+			<aux name="non-arrayed individual">
+				<dimensions>
+					<dim name="Distance"/>
+				</dimensions>
+				<element subscript="under_500m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="a_500_to_1000m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="a_1000_to_1500m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="a_1500_to_2000m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="a_2000_to_2500m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="a_2500_to_3000m">
+					<eqn>input_flat</eqn>
+				</element>
+				<element subscript="over_3000m">
+					<eqn>input_flat</eqn>
+				</element>
+			</aux>
+			<aux name="arrayed input">
+				<dimensions>
+					<dim name="Distance"/>
+				</dimensions>
+				<eqn>input_arrayed</eqn>
+			</aux>
+			<aux name="input arrayed">
+				<dimensions>
+					<dim name="Distance"/>
+				</dimensions>
+				<eqn>10</eqn>
+			</aux>
+			<aux name="sum arrayed input">
+				<eqn>SUM(arrayed_input)</eqn>
+			</aux>
+			<aux name="sum nonarrayed apply to all">
+				<eqn>SUM(&quot;non-arrayed_apply_to_all&quot;)</eqn>
+			</aux>
+			<aux name="sum nonarrayed individual">
+				<eqn>SUM(&quot;non-arrayed_individual&quot;)</eqn>
+			</aux>
+			<aux name="non-arrayed apply to all 3d">
+				<dimensions>
+					<dim name="Products"/>
+					<dim name="Countries"/>
+					<dim name="Producer"/>
+				</dimensions>
+				<eqn>input_flat</eqn>
+			</aux>
+			<aux name="sum nonarrayed apply to all 3d">
+				<eqn>SUM(&quot;non-arrayed_apply_to_all_3d&quot;)</eqn>
+			</aux>
+			<aux name="array product">
+				<eqn>SAFEDIV(SUM(Production[*,*,*]*Inventory[*,*,*]), SUM(Production[*,*,*]*Inventory[*,*,*]), 1)</eqn>
+			</aux>
+			<aux name="array arithmetic">
+				<eqn>SUM(5*input_arrayed[*])</eqn>
+			</aux>
+			<aux name="non array arithmetic">
+				<eqn>5*SUM(input_arrayed[*])</eqn>
+			</aux>
+			<aux name="Diff Array Arithmetic">
+				<eqn>non_array_arithmetic-array_arithmetic</eqn>
+			</aux>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_corner_radius="0" popup_background_color="#FFFECF"/>
+				<slider color="#66CC66" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:fancy_appearance="false" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="#E95F74" background="silver"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch" isee:on_color="green"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt" isee:show_hover_tip="true"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+				<isee:navigation_widget color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_color="#999999" border_width="thin" border_style="solid" item_spacing="6" appearance="tabs" corner_radius="4" selected_item_color="black" selected_item_background="white" item_background="#DDDDDD"/>
+				<isee:shape color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid" opacity="1" transparent_background="true"/>
+				<isee:selector color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
+				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+			</style>
+			<view isee:show_pages="false" background="white" page_width="818" page_height="571" isee:page_cols="2" isee:page_rows="2" isee:scroll_x="117.5" isee:scroll_y="23.75" zoom="160" isee:popup_graphs_are_comparative="false" isee:enable_non_negative_highlights="false" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom"/>
+					<isee:placeholder color="#228B22" background="white" font_color="#228B22" font_size="7pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="7pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="7pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="7pt"/>
+					<connector color="#FF007F" background="white" font_color="#FF007F" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="ending" report_flows="summed" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<stock x="369" y="159" name="Production"/>
+				<aux x="283.25" y="232" name="production start rate"/>
+				<flow x="299.25" y="159" name="production start">
+					<pts>
+						<pt x="252" y="159"/>
+						<pt x="346.5" y="159"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="102.907">
+					<from>production_start_rate</from>
+					<to>production_start</to>
+				</connector>
+				<aux x="659.429" y="66.5714" name="Total Inventory"/>
+				<aux x="686.571" y="217.286" name="Average Inventory"/>
+				<aux x="459.857" y="66.5714" name="smallest German inventory"/>
+				<aux x="537" y="53.1429" name="largest German inventory"/>
+				<aux x="720.429" y="294.143" name="Average Inventory using Size"/>
+				<stock x="556" y="155" name="Inventory"/>
+				<flow x="456.5" y="157" name="production rate">
+					<pts>
+						<pt x="391.5" y="157"/>
+						<pt x="533.5" y="157"/>
+					</pts>
+				</flow>
+				<aux x="468.857" y="249.429" width="18" height="18" name="production duration"/>
+				<connector uid="2" angle="297.521">
+					<from>production_start</from>
+					<to>production_rate</to>
+				</connector>
+				<connector uid="3" angle="35.7535">
+					<from>production_duration</from>
+					<to>production_rate</to>
+				</connector>
+				<connector uid="4" angle="40.5294">
+					<from>Inventory</from>
+					<to>Total_Inventory</to>
+				</connector>
+				<connector uid="5" angle="355.556">
+					<from>Inventory</from>
+					<to>Average_Inventory</to>
+				</connector>
+				<connector uid="6" angle="310.626">
+					<from>Inventory</from>
+					<to>Average_Inventory_using_Size</to>
+				</connector>
+				<connector uid="7" angle="100.566">
+					<from>Inventory</from>
+					<to>largest_German_inventory</to>
+				</connector>
+				<connector uid="8" angle="158.962">
+					<from>Inventory</from>
+					<to>smallest_German_inventory</to>
+				</connector>
+				<aux x="686.571" y="125" name="Inventory Size"/>
+				<connector uid="12" angle="12.9397">
+					<from>Inventory</from>
+					<to>Inventory_Size</to>
+				</connector>
+				<aux x="360" y="78.5714" name="rankinv"/>
+				<connector uid="14" angle="170.599">
+					<from>Inventory</from>
+					<to>rankinv</to>
+				</connector>
+				<aux x="572.857" y="312.143" name="Country Inventory"/>
+				<connector uid="15" angle="276.123">
+					<from>Inventory</from>
+					<to>Country_Inventory</to>
+				</connector>
+				<aux x="495.857" y="348.571" name="German Inventory"/>
+				<connector uid="18" angle="241.359">
+					<from>Inventory</from>
+					<to>German_Inventory</to>
+				</connector>
+				<aux x="654.762" y="342.127" name="Country Inventory Indiviudual"/>
+				<connector uid="20" angle="299.767">
+					<from>Inventory</from>
+					<to>Country_Inventory_Indiviudual</to>
+				</connector>
+				<aux x="594.444" y="31.1111" name="Inventory Share per Product"/>
+				<connector uid="21" angle="72.6292">
+					<from>Inventory</from>
+					<to>Inventory_Share_per_Product</to>
+				</connector>
+				<aux x="530" y="401.667" name="Relative German Inventory Disaggregated"/>
+				<connector uid="22" angle="303.737">
+					<from>German_Inventory</from>
+					<to>Relative_German_Inventory_Disaggregated</to>
+				</connector>
+				<connector uid="23" angle="256.424">
+					<from>Country_Inventory</from>
+					<to>Relative_German_Inventory_Disaggregated</to>
+				</connector>
+				<aux x="415.556" y="360.127" name="Relative German Inventory Agg"/>
+				<connector uid="24" angle="223.377">
+					<from>Inventory</from>
+					<to>Relative_German_Inventory_Agg</to>
+				</connector>
+				<aux x="791.667" y="253.889" name="Diff Average Inventory"/>
+				<connector uid="25" angle="354.712">
+					<from>Average_Inventory</from>
+					<to>Diff_Average_Inventory</to>
+				</connector>
+				<connector uid="26" angle="11.8728">
+					<from>Average_Inventory_using_Size</from>
+					<to>Diff_Average_Inventory</to>
+				</connector>
+				<aux x="616.667" y="397.222" name="Diff Country Inventory"/>
+				<connector uid="27" angle="282.418">
+					<from>Country_Inventory</from>
+					<to>Diff_Country_Inventory</to>
+				</connector>
+				<connector uid="28" angle="238.991">
+					<from>Country_Inventory_Indiviudual</from>
+					<to>Diff_Country_Inventory</to>
+				</connector>
+				<aux x="420" y="457.857" name="Diff Rel Inventory"/>
+				<aux x="337.5" y="302.571" name="Factor"/>
+				<connector uid="29" angle="350.899">
+					<from>Factor</from>
+					<to>Relative_German_Inventory_Agg</to>
+				</connector>
+				<connector uid="30" angle="128.019">
+					<from>
+						<alias uid="31"/>
+					</from>
+					<to>Relative_German_Inventory_Disaggregated</to>
+				</connector>
+				<connector uid="32" angle="267.861">
+					<from>Relative_German_Inventory_Agg</from>
+					<to>Diff_Rel_Inventory</to>
+				</connector>
+				<connector uid="33" angle="214.114">
+					<from>Relative_German_Inventory_Disaggregated</from>
+					<to>Diff_Rel_Inventory</to>
+				</connector>
+				<aux x="229.444" y="66.5714" name="rankinv reference"/>
+				<aux label_side="right" label_angle="315" x="283.25" y="31.1111" name="diff rankinv"/>
+				<connector uid="37" angle="35.0092">
+					<from>rankinv_reference</from>
+					<to>diff_rankinv</to>
+				</connector>
+				<connector uid="38" angle="149.61">
+					<from>rankinv</from>
+					<to>diff_rankinv</to>
+				</connector>
+				<aux label_side="bottom" x="359" y="796" name="input flat"/>
+				<aux label_side="bottom" x="448" y="799" name="non-arrayed apply to all"/>
+				<connector uid="39" angle="358.069">
+					<from>input_flat</from>
+					<to>&quot;non-arrayed_apply_to_all&quot;</to>
+				</connector>
+				<aux x="477" y="976" name="non-arrayed individual"/>
+				<connector uid="40" angle="268.21">
+					<from>input_flat</from>
+					<to>&quot;non-arrayed_individual&quot;</to>
+				</connector>
+				<aux x="438" y="666" name="arrayed input"/>
+				<aux x="315" y="671" name="input arrayed"/>
+				<connector uid="41" angle="356.424">
+					<from>input_arrayed</from>
+					<to>arrayed_input</to>
+				</connector>
+				<aux x="555.889" y="658" name="sum arrayed input"/>
+				<connector uid="42" angle="10.1247">
+					<from>arrayed_input</from>
+					<to>sum_arrayed_input</to>
+				</connector>
+				<aux x="555.889" y="778" name="sum nonarrayed apply to all"/>
+				<connector uid="43" angle="350.538">
+					<from>&quot;non-arrayed_apply_to_all&quot;</from>
+					<to>sum_nonarrayed_apply_to_all</to>
+				</connector>
+				<aux x="573.889" y="922" name="sum nonarrayed individual"/>
+				<connector uid="44" angle="28.3008">
+					<from>&quot;non-arrayed_individual&quot;</from>
+					<to>sum_nonarrayed_individual</to>
+				</connector>
+				<aux x="256.875" y="753.75" name="non-arrayed apply to all 3d"/>
+				<connector uid="45" angle="183.576">
+					<from>input_flat</from>
+					<to>&quot;non-arrayed_apply_to_all_3d&quot;</to>
+				</connector>
+				<aux x="208.125" y="684" name="sum nonarrayed apply to all 3d"/>
+				<connector uid="46" angle="139.485">
+					<from>&quot;non-arrayed_apply_to_all_3d&quot;</from>
+					<to>sum_nonarrayed_apply_to_all_3d</to>
+				</connector>
+				<aux x="385" y="240.429" name="array product"/>
+				<connector uid="47" angle="263.66">
+					<from>Production</from>
+					<to>array_product</to>
+				</connector>
+				<connector uid="48" angle="204.318">
+					<from>Inventory</from>
+					<to>array_product</to>
+				</connector>
+				<aux x="337.5" y="579.375" name="array arithmetic"/>
+				<aux x="238.875" y="579.375" name="non array arithmetic"/>
+				<connector uid="49" angle="162.255">
+					<from>input_arrayed</from>
+					<to>non_array_arithmetic</to>
+				</connector>
+				<connector uid="50" angle="62.8503">
+					<from>input_arrayed</from>
+					<to>array_arithmetic</to>
+				</connector>
+				<aux x="289.375" y="509.375" name="Diff Array Arithmetic"/>
+				<connector uid="51" angle="72.4635">
+					<from>non_array_arithmetic</from>
+					<to>Diff_Array_Arithmetic</to>
+				</connector>
+				<connector uid="52" angle="106.504">
+					<from>array_arithmetic</from>
+					<to>Diff_Array_Arithmetic</to>
+				</connector>
+				<alias color="blue" background="white" font_style="italic" uid="31" x="564.889" y="463.778" width="18" height="18">
+					<shape type="circle" radius="18"/>
+					<of>Factor</of>
+				</alias>
+			</view>
+		</views>
+	</model>
+</xmile>
+
