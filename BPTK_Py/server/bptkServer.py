@@ -75,6 +75,10 @@ class InstanceManager:
 
         return metrics
 
+        
+    def _get_prometheus_instance_metrics(self):
+        return "# TYPE bptk_instance_count gauge " + str(len(self._instances))
+
     def create_instance(self,**timeout):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
@@ -164,8 +168,15 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
+        self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
+
 
     def _metrics(self):
+        resp = make_response(self._instance_manager._get_prometheus_instance_metrics(), 200)
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    def _full_metrics(self):
         resp = make_response(json.dumps(self._instance_manager._get_instance_metrics(), indent=4, sort_keys=True, default=str), 200)
         resp.headers['Content-Type']='application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
