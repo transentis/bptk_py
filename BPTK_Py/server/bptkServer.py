@@ -18,7 +18,6 @@ import uuid
 import datetime
 from json import JSONEncoder
 
-
 class InstanceManager:
     """
     The class is used to manipulate instances for storing cloned instances, and checking for the session timeout.
@@ -57,6 +56,24 @@ class InstanceManager:
                 self._instances[instance_uuid]["time"] = datetime.datetime.now()
         except KeyError:
             pass
+    
+    def _get_instance_metrics(self):
+        metrics = dict()
+
+        for key in tuple(self._instances.keys()):
+            instance = self._instances[key]
+
+            if(instance == None or instance['instance'] == None or instance['instance'].session_state == None):
+                continue
+
+            metrics[key] = {
+                "startTime": instance["time"],
+                "step": instance['instance'].session_state["step"]
+            }
+
+        metrics["instanceCount"] = len(self._instances)
+
+        return metrics
 
     def create_instance(self,**timeout):
         """
@@ -133,7 +150,6 @@ class BptkServer(Flask):
         super(BptkServer, self).__init__(import_name)
         self._bptk = bptk_factory() if bptk_factory is not None else None
         
-        
         self._instance_manager = InstanceManager(bptk_factory)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
@@ -147,6 +163,13 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
+        self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
+
+    def _metrics(self):
+        resp = make_response(json.dumps(self._instance_manager._get_instance_metrics(), indent=4, sort_keys=True, default=str), 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
 
     def _home_resource(self):
         """
