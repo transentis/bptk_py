@@ -166,17 +166,26 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
+        self.route("/<instance_uuid>/flat-session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource_flat)
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
 
 
     def _metrics(self):
+        """
+        Returns metrics in a prometheus compatible format.
+        """
         resp = make_response(self._instance_manager._get_prometheus_instance_metrics(), 200)
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
     def _full_metrics(self):
+        """
+        Returns metrics in JSON format. Following metrics are returned:
+        - Instance count
+        - Creation time und current timestep of each instance
+        """
         resp = make_response(json.dumps(self._instance_manager._get_instance_metrics(), indent=4, sort_keys=True, default=str), 200)
         resp.headers['Content-Type']='application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
@@ -493,11 +502,19 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
-    def _session_results_resource(self,instance_uuid):
+
+    def _session_results_resource_flat(self,instance_uuid):
+        """
+        Returns the accumulated results of a session, from the first step to the last step that was run in a flat format.
+        """
+
+        return self._session_results_resource(instance_uuid, True)
+
+    def _session_results_resource(self,instance_uuid,flat=False):
         """
         Returns the accumulated results of a session, from the first step to the last step that was run.
         """
-
+        
         if not self._instance_manager.is_valid_instance(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
@@ -505,7 +522,7 @@ class BptkServer(Flask):
             return resp
 
         instance = self._instance_manager.get_instance(instance_uuid)
-        result = instance.session_results(index_by_time=False)
+        result = instance.session_results(index_by_time=False, flat=flat)
 
         resp = make_response(json.dumps(result), 200)
         resp.headers['Content-Type'] = 'application/json'
