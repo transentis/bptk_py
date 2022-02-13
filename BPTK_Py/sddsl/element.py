@@ -15,6 +15,12 @@ from .operators import *
 import BPTK_Py.config.config as config
 import pandas as pd
 import numpy as np
+import statistics
+import random
+import math
+import scipy
+import scipy.stats
+from scipy.stats import norm
 
 
 class Element:
