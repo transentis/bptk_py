@@ -11,11 +11,6 @@ def build_container(ver=release,tag="transentis/bptk-py"):
     print("Building Container and Pushing to Dockerhub")
     print("-------------------------")
     print("Building for Tag: " + str(build_tag))
-    print("Sleeping for 10 seconds. If this version is wrong, please press CTRL+C and fix the release in conf.py")
-    for i in range(10, 0, -1):
-        sys.stdout.write(str(i) + ' ')
-        sys.stdout.flush()
-        time.sleep(1)
 
     client = docker.APIClient()
 
