@@ -1,0 +1,172 @@
+{
+  "array": {
+    "model": "models/test_array",
+    "source": "models/test_array.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "time":{
+    "model": "models/test_time",
+    "source": "models/test_time.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "trend":{
+    "model": "models/test_trend",
+    "source": "models/test_trend.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "smooth":{
+    "model": "models/test_smooth",
+    "source": "models/test_smooth.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "abs":{
+    "model": "models/test_abs",
+    "source": "models/test_abs.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "dt_fraction":{
+    "model": "models/test_dt_fraction",
+    "source": "models/test_dt_fraction.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "dt_rational":{
+    "model": "models/test_dt_rational",
+    "source": "models/test_dt_rational.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "no_dimensions":{
+    "model": "models/test_no_dimensions",
+    "source": "models/test_no_dimensions.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "cos":{
+    "model": "models/test_cos",
+    "source": "models/test_cos.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "tan":{
+    "model": "models/test_tan",
+    "source": "models/test_tan.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "sim_builtins":{
+    "model": "models/test_sim_builtins",
+    "source": "models/test_sim_builtins.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "step":{
+    "model": "models/test_step",
+    "source": "models/test_step.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "delay":{
+    "model": "models/test_delay",
+    "source": "models/test_delay.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  },
+ "if":{
+    "model": "models/test_if",
+    "source": "models/test_if.stmx",
+    "base_constants": {
+    },
+    "scenarios": {
+      "test": {
+        "constants": {
+        }
+      }
+    }
+  }
+}
+
+

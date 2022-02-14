@@ -1,0 +1,34 @@
+{
+  "testAbmManager": {
+    "type": "abm",
+    "name": "testAbmModel",
+    "model" : "abm_model.src.model_env.modelTestEnv",
+
+       "scenarios": {
+      "testScenario": {
+        "runspecs": {
+          "starttime": 1,
+          "stoptime": 10,
+          "dt": 1
+        },
+        "properties": {
+          "deadline":
+         {
+            "type": "Integer",
+            "value": 1
+          }
+        },
+        "agents": [
+          {
+            "name": "agent_1",
+            "count": 1
+         },
+          {
+            "name": "agent_2",
+            "count": 1
+          }
+        ]
+      }
+    }
+  }
+}
