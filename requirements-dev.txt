@@ -6,3 +6,4 @@ pytest
 docker
 sphinx
 sphinx_rtd_theme
+sphinxcontrib-httpdomain
