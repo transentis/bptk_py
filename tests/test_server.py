@@ -144,6 +144,12 @@ def test_agents_resource(app, client):
     response = client.post('/agents', content_type = 'application/json')
     assert response.status_code == 400 # System dynamics systems shouldn't have agents 
 
-        
+def test_metrics(app, client):
+    response = client.get('/metrics')
+    assert response.status_code == 200
 
-        
+def test_full_metrics(app, client):
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 0
