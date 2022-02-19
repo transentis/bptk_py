@@ -495,7 +495,7 @@ class bptk():
        
         return simulation_results
 
-    def session_results(self, index_by_time=True):
+    def session_results(self, index_by_time=True, flat=False):
         """Return the results collected so far within a session
 
         Args:
@@ -532,9 +532,14 @@ class bptk():
                                     if "equations" not in results[manager.name][scenario]:
                                         results[manager.name][scenario]["equations"]={}
                                     if equation not in results[manager.name][scenario]["equations"]:
-                                        results[manager.name][scenario]["equations"][equation] = {}
-
-                                    results[manager.name][scenario]["equations"][equation][step] = step_result[manager.name][scenario][equation][step]
+                                        if flat:
+                                            results[manager.name][scenario]["equations"][equation] = []
+                                        else:
+                                            results[manager.name][scenario]["equations"][equation] = {}
+                                    if flat:
+                                        results[manager.name][scenario]["equations"][equation].append(step_result[manager.name][scenario][equation][step])
+                                    else:
+                                        results[manager.name][scenario]["equations"][equation][step] = step_result[manager.name][scenario][equation][step]
 
             return results
 
