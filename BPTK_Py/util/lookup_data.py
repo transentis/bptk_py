@@ -29,7 +29,7 @@ def lookup_data(model, names):
             xmax = np.max(x_vals)
             xmin = np.min(x_vals)
 
-            x2 = np.arange(xmin, xmax, 0.01)
+            x2 = x_vals #TODO check whether this setting is optimal in all cases, i.e. also for lookups not index by time
             f = interp1d(x_vals, y_vals)
             data = {}
             data[name] = []
@@ -45,7 +45,6 @@ def lookup_data(model, names):
         df = dfs.pop(0)
         for elem in dfs:
             df = df.combine_first(elem)
-            # df = df.join(elem)
     else:
         df = dfs.pop(0)
 

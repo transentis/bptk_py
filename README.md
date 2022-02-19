@@ -34,6 +34,10 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+###  1.xx.xxx
+
+* Fix to plot_lookup
+
 ### 1.4.0
 
 * BPTK Server: add metrics endpoint
