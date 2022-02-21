@@ -495,7 +495,7 @@ class bptk():
        
         return simulation_results
 
-    def session_results(self, index_by_time=True):
+    def session_results(self, index_by_time=True, flat=False):
         """Return the results collected so far within a session
 
         Args:
@@ -532,9 +532,14 @@ class bptk():
                                     if "equations" not in results[manager.name][scenario]:
                                         results[manager.name][scenario]["equations"]={}
                                     if equation not in results[manager.name][scenario]["equations"]:
-                                        results[manager.name][scenario]["equations"][equation] = {}
-
-                                    results[manager.name][scenario]["equations"][equation][step] = step_result[manager.name][scenario][equation][step]
+                                        if flat:
+                                            results[manager.name][scenario]["equations"][equation] = []
+                                        else:
+                                            results[manager.name][scenario]["equations"][equation] = {}
+                                    if flat:
+                                        results[manager.name][scenario]["equations"][equation].append(step_result[manager.name][scenario][equation][step])
+                                    else:
+                                        results[manager.name][scenario]["equations"][equation][step] = step_result[manager.name][scenario][equation][step]
 
             return results
 
@@ -897,12 +902,10 @@ class bptk():
 
         df = df.fillna(0)
 
-        t = df.loc[df["t"]==visualize_to_period ].index[0]
-
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     visualize_from_period=visualize_from_period,
-                                    visualize_to_period=t,
+                                    visualize_to_period= min(visualize_to_period,len(df)),
                                     stacked=stacked,
                                     kind=kind,
                                     title=title,
