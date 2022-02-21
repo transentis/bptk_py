@@ -58,6 +58,7 @@ class InstanceManager:
             pass
     
     def _get_instance_metrics(self):
+        self._timeout_instances()
         metrics = dict()
 
         for key in tuple(self._instances.keys()):
