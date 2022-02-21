@@ -204,31 +204,28 @@ def test_sddsl_functions():
 
 
     # delay
-    # only works properly with integer values or a model dt of 1.0. Is this intended? Looks weird for example for dt = .9
-    # start = 0.0
-    # dt = 0.1
-    # stop = 10.0
-    # model = Model(starttime=start,stoptime=stop,dt=dt,name='delay')
+    start = 0.0
+    dt = 0.5
+    stop = 10.0
+    model = Model(starttime=start,stoptime=stop,dt=dt,name='delay')
 
-    # input_function = model.converter("input_function")
-    # input_function.equation=sd.time()
-    # delayed_input = model.converter("delayed_input")
+    input_function = model.converter("input_function")
+    input_function.equation=sd.time()
+    delayed_input = model.converter("delayed_input")
 
-    # delay_duration = 0.0
-    # initial_value = 0.0
-    # delayed_input.equation = sd.delay(model,input_function, delay_duration, initial_value)
+    delay_duration = 1.0
+    initial_value = 0.0
+    delayed_input.equation = sd.delay(model,input_function, delay_duration, initial_value)
 
-    # bptk.register_model(model)
-    # data = bptk.run_scenarios(scenario_managers=["smDelay"],scenarios=["base"],equations=["input_function","delayed_input"])
-    
-    # for i in np.arange(start, stop, dt):
-    #     if(i < delay_duration + 1):
-    #         assert data.delayed_input[i] == initial_value
-    #         continue
+    bptk.register_model(model)
+    data = bptk.run_scenarios(scenario_managers=["smDelay"],scenarios=["base"],equations=["input_function","delayed_input"])
+    for i in np.arange(start, stop, dt):
+        if(i < delay_duration + dt):
+            assert data.delayed_input[i] == initial_value
+            continue
 
-    #     input_function_index = math.floor(i - delay_duration)
-    #     assert data.delayed_input[i] == data.input_function[input_function_index]
-
+        input_function_index = i - delay_duration
+        assert data.delayed_input[i] == data.input_function[input_function_index]
 
     # dt
     start = 5.0
@@ -307,88 +304,88 @@ def test_sddsl_functions():
         assert data.c[i] == 8
 
 
-    # # pulse
-    # # dt has to be 1/(2^n) or the pulse function does not properly work.
-    # # the first pulse is 1-interval. Is that intended?
-    # # first pulse attribute only works when first_pulse < interval. Intended?
-    # start = 0
-    # dt = 2
-    # stop = 10
-    # model = Model(starttime=start,stoptime=stop,dt=dt,name='pulse')
-    # stock = model.stock("stock")
-    # stock.initial_value=0.0
-    # flow = model.flow("flow")
-    # volume = 10.0
-    # first_pulse = 2.0
-    # interval = 3.0
-    # flow.equation=sd.pulse(model,10.0,first_pulse,interval)
-    # stock.equation = flow
-    # bptk.register_model(model)
-    # data = bptk.plot_scenarios(scenario_managers=["smPulse"],scenarios=["base"],equations=["stock","flow"],return_df=True)
-    # for i in np.arange(start, stop, dt):
-    #     if i < first_pulse:
-    #         assert data.flow[i] == 0
-    #         assert data.stock[i] == 0
-    #         continue
-    #     if i == first_pulse:
-    #         assert data.flow[i] == volume * (1 / dt)
-    #         assert data.stock[i] == 0
-    #         continue
+    # pulse
+    # dt has to be 1/(2^n) or the pulse function does not properly work.
+    # the first pulse is 1-interval. Is that intended?
+    # first pulse attribute only works when first_pulse < interval. Intended?
+    start = 0
+    dt = .5
+    stop = 9
+    model = Model(starttime=start,stoptime=stop,dt=dt,name='pulse')
+    stock = model.stock("stock")
+    stock.initial_value=0.0
+    flow = model.flow("flow")
+    volume = 9.0
+    first_pulse = 1.5
+    interval = 3.0
+    flow.equation=sd.pulse(model,volume,first_pulse,interval)
+    stock.equation = flow
+    bptk.register_model(model)
+    data = bptk.plot_scenarios(scenario_managers=["smPulse"],scenarios=["base"],equations=["stock","flow"],return_df=True)
+    for i in np.arange(start, stop, dt):
+        if i < first_pulse:
+            assert data.flow[i] == 0
+            assert data.stock[i] == 0
+            continue
+        if i == first_pulse:
+            assert data.flow[i] == volume * (1 / dt)
+            assert data.stock[i] == 0
+            continue
 
-    #     if i % interval == first_pulse:
-    #         assert data.flow[i] == volume * (1 / dt)
-    #     assert data.stock[i] == volume * (math.ceil((i - first_pulse) / interval))
+        if i % interval == first_pulse:
+            assert data.flow[i] == volume * (1 / dt)
+        assert data.stock[i] == volume * (math.ceil((i - first_pulse) / interval))
 
 
-    # # smooth
-    # # does not test for exact values
-    # # only tests if the values continously increase, while the rate of change drops and absolute values stays below the max value (which implies some smoothing function)
-    # start = 1.0
-    # dt = 0.1
-    # stop = 10.0
-    # model = Model(starttime=start,stoptime=stop,dt=dt,name='smooth')
+    # smooth
+    # does not test for exact values
+    # only tests if the values continously increase, while the rate of change drops and absolute values stays below the max value (which implies some smoothing function)
+    start = 1.0
+    dt = 0.1
+    stop = 10.0
+    model = Model(starttime=start,stoptime=stop,dt=dt,name='smooth')
     
-    # step_start = 3.0
-    # step_height = 10.0
-    # input_function = model.converter("input_function")
-    # input_function.equation=sd.step(step_height,step_start)
+    step_start = 3.0
+    step_height = 10.0
+    input_function = model.converter("input_function")
+    input_function.equation=sd.step(step_height,step_start)
 
-    # base_value = 9.0
-    # smooth = model.converter("smooth")
-    # smooth.equation=sd.smooth(model, input_function,1.0,base_value)
+    base_value = 9.0
+    smooth = model.converter("smooth")
+    smooth.equation=sd.smooth(model, input_function,1.0,base_value)
 
-    # bptk.register_model(model)
-    # data = bptk.run_scenarios(scenario_managers=["smSmooth"],scenarios=["base"],equations=["input_function","smooth"])
-    # last_value = base_value
-    # last_change = 9999999
-    # reached_step_height = False
-    # for i in np.arange(start, stop, dt):
+    bptk.register_model(model)
+    data = bptk.run_scenarios(scenario_managers=["smSmooth"],scenarios=["base"],equations=["input_function","smooth"])
+    last_value = base_value
+    last_change = 9999999
+    reached_step_height = False
+    for i in np.arange(start, stop, dt):
 
-    #     # smoothing function never exceeds height
-    #     assert data.smooth[i] <= step_height
+        # smoothing function never exceeds height
+        assert data.smooth[i] <= step_height
 
-    #     # no further testing if necessary if height got reached
-    #     if data.smooth[i] == step_height:
-    #         reached_step_height = True
-    #         continue
-    #     else: 
-    #         # ensure the smoothing function never drops below step height once reached
-    #         assert reached_step_height == False
+        # no further testing if necessary if height got reached
+        if data.smooth[i] == step_height:
+            reached_step_height = True
+            continue
+        else: 
+            # ensure the smoothing function never drops below step height once reached
+            assert reached_step_height == False
 
-    #     # before the smooth function reacts to the change in step height it should be equal to the initial value.
-    #     if i <= step_start + dt:
-    #         assert data.smooth[i] == base_value
-    #         continue
+        # before the smooth function reacts to the change in step height it should be equal to the initial value.
+        if i <= step_start + dt:
+            assert data.smooth[i] == base_value
+            continue
 
-    #     # the value of the function should always increase
-    #     assert data.smooth[i] > last_value
+        # the value of the function should always increase
+        assert data.smooth[i] > last_value
 
-    #     # calculate the rate of change and ensure it is lower than in previous runs.
-    #     new_change = data.smooth[i] - last_value
-    #     assert new_change < last_change
+        # calculate the rate of change and ensure it is lower than in previous runs.
+        new_change = data.smooth[i] - last_value
+        assert new_change < last_change
 
-    #     last_value = data.smooth[i]
-    #     last_change = new_change
+        last_value = data.smooth[i]
+        last_change = new_change
 
 
     # starttime
@@ -456,8 +453,8 @@ def test_sddsl_functions():
         assert data.inflow[i] == i
 
 
-    # # trend
-    # # To Do
+    # trend
+    # ToDo
 
 
     # round
@@ -505,7 +502,6 @@ def test_sddsl_functions():
     data_tan = tan.plot(return_df=True)
     data_cos = cos.plot(return_df=True)
     for i in np.arange(start, stop, dt):
-        print(str(i) + "   " + str(math.tan(i)) + "     " + str(data_tan.tan[i]))
         assert data_sin.sin[i] == max(math.sin(i), 0.0)
         assert data_cos.cos[i] == max(math.cos(i), 0.0)
         assert data_tan.tan[i] == max(math.tan(i), 0.0)
@@ -533,16 +529,17 @@ def test_sddsl_functions():
 
     # combinations
     # only works for r < 5? 
-    # start = 3
-    # dt = 1
-    # stop = 10
-    # m = Model(starttime=start,stoptime=stop,dt=dt)
-    # f = m.flow(name="combinations")
-    # n = 3
-    # r = 5
-    # f.equation = sd.combinations(n,r)
-    # data = f.plot(return_df=True)
-    
+    start = 3
+    dt = 1
+    stop = 10
+    m = Model(starttime=start,stoptime=stop,dt=dt)
+    f = m.flow(name="combinations")
+    n = 7
+    r = 5
+    f.equation = sd.combinations(n,r)
+    data = f.plot(return_df=True)
+    for i in np.arange(start, stop, dt):
+        assert data.combinations[i] == 21
 
     # exprnd
     # only tests if it runs
@@ -691,15 +688,19 @@ def test_sddsl_functions():
 
 
     # permutations
-    # only working for some values. For example not for 3 and 4
-    # m = Model(starttime=2,stoptime=10,dt=0.1)
-    # f = m.flow(name="permutations")
-    # n = 3
-    # r = 4
+    start = 4
+    stop = 10
+    dt = 1
+    m = Model(starttime=start,stoptime=stop,dt=dt)
+    f = m.flow(name="permutations")
+    n = sd.time()
+    r = 2
 
-    # f.equation = sd.permutations(n, r)
-    # data = f.plot(return_df=True)
-    
+    f.equation = sd.permutations(n, r)
+    data = f.plot(return_df=True)
+    print(data)
+    for i in np.arange(start, stop, dt):
+        assert (math.factorial(i) / math.factorial(i - r))
 
     # poisson
     # only tests if it runs

@@ -322,8 +322,7 @@ class Pulse(Function):
         if self.interval.element == 0.0:
             return "(({}/{}) if {}=={} else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse)
         else:
-            return "(({}/{}) if (({}-{})%({}))==0 else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse, self.interval)
-
+            return "(({volume}/{dt}) if (({time}-{first_pulse}) >= 0 and (({time}-{first_pulse})%({interval}))==0) else 0.0)".format(volume=self.volume.term(time), dt=self.model.dt, time=time, first_pulse=self.first_pulse, interval=self.interval)
 class Trend(Function):
     """
     Trend class, which represents the trend function as a SD DSL operator.
@@ -376,7 +375,7 @@ class Delay(Function):
        self.initial_value = UnaryOperator(initial_value) if initial_value is not None else initial_value
 
    def term(self, time="t"):
-       delayed_time = "{} - {}".format("int(" + str(time) + ")", self.delay_duration.term(str(self.model.starttime)))
+       delayed_time = "{} - {}".format(str(time), self.delay_duration.term(str(self.model.starttime)))
        return "({} if {}>{} else {})".format(
            self.input_function.term(delayed_time),
            delayed_time,
