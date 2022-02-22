@@ -166,7 +166,7 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
-        self.route("/<instance_uuid>/flat-session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource_flat)
+        self.route("/<instance_uuid>/flat-session-results", methods=['GET'], strict_slashes=False)(self._flat_session_results_resource)
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
@@ -503,7 +503,7 @@ class BptkServer(Flask):
         return resp
 
 
-    def _session_results_resource_flat(self,instance_uuid):
+    def _flat_session_results_resource(self,instance_uuid):
         """
         Returns the accumulated results of a session, from the first step to the last step that was run in a flat format.
         """

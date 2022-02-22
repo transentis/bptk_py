@@ -34,9 +34,11 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
-###  1.xx.xxx
+###  1.4.1
 
-* Fix to plot_lookup
+* BPTK: Fix to plot_lookup
+* BPTK Server: 'flat' version of session results
+* SD DSL: small changes to SD functions pulse and delay to make them more robust.
 
 ### 1.4.0
 
@@ -44,6 +46,7 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 * SD DSL: fixed missing imports that caused some sddsl functions to throw an exception
 
 ### 1.3.12
+
 * BPTK Server: fixed an issue that could lead to race conditions leading to server crashes
 
 ### 1.3.11

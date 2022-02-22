@@ -1,8 +1,7 @@
-import sys,os
+import sys
 import pytest
 
 def run_tests():
-    import pytest
     test_result = pytest.main(["./"])
     return test_result
 
