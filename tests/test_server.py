@@ -120,6 +120,7 @@ def test_run_resource(app, client):
     }
 
     response = client.post('/run', data=json.dumps(query), content_type = 'application/json')
+    
     assert response.status_code == 200 # checking the status code
     
 def test_scenarios_resource(app, client):
@@ -149,6 +150,30 @@ def test_metrics(app, client):
     assert response.status_code == 200
 
 def test_full_metrics(app, client):
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 0
+
+def test_instance_timeouts(app, client):
+    import time
+
+    response = client.post('/start-instance')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+    
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 1
+    time.sleep(290)
+    
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 1
+    time.sleep(15)
+    
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
