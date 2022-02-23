@@ -78,6 +78,7 @@ class InstanceManager:
 
         
     def _get_prometheus_instance_metrics(self):
+        self._timeout_instances()
         return "# TYPE bptk_instance_count gauge " + str(len(self._instances))
 
     def create_instance(self,**timeout):
@@ -119,7 +120,6 @@ class InstanceManager:
             True: Boolean.
                 Means that the specified time has already passed, and the session should be terminated.
         """
-
 
         for key in tuple(self._instances.keys()): # we're iterating over a copy of the keys here to ensure we don't delete an element from the dictionary while iterating through it.
             current_time = datetime.datetime.now()
