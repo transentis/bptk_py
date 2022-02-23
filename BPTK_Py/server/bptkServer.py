@@ -78,7 +78,8 @@ class InstanceManager:
 
         
     def _get_prometheus_instance_metrics(self):
-        return "# TYPE bptk_instance_count gauge " + str(len(self._instances))
+        self._timeout_instances()
+        return "# HELP bptk_instance_count The number of instances in the beergame server\n# TYPE bptk_instance_count gauge\nbptk_instance_count " + str(len(self._instances))
 
     def create_instance(self,**timeout):
         """
