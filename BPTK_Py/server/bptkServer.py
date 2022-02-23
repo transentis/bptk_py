@@ -78,7 +78,6 @@ class InstanceManager:
 
         
     def _get_prometheus_instance_metrics(self):
-        self._timeout_instances()
         return "# TYPE bptk_instance_count gauge " + str(len(self._instances))
 
     def create_instance(self,**timeout):
