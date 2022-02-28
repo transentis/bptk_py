@@ -38,7 +38,6 @@ plt.interactive(True)
 
 
 class conf:
-
     def __init__(self):
         """Initialze config zu defaults."""
         self.loglevel = default_config.loglevel
@@ -226,6 +225,9 @@ class bptk():
         else:
             return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
                                            agent_properties, agent_property_types, series_names, return_df)
+
+    def _set_state(self, state):
+        self.session_state = state
 
     def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                            agent_properties=[], agent_property_types=[], series_names={}, return_df=False,

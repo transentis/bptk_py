@@ -17,6 +17,10 @@ import copy
 import uuid
 import datetime
 from json import JSONEncoder
+from faunadb import query as q
+from faunadb.objects import Ref
+from faunadb.client import FaunaClient
+import jsonpickle
 
 class InstanceManager:
     """
@@ -36,6 +40,16 @@ class InstanceManager:
         self._update_instance_timestamp(instance_uuid)
         self._timeout_instances()
         return None
+
+    def get_instance_states(self):
+        keys = list(self._instances.keys())
+        instances = []
+
+        for key in keys:
+            instance = self._instances[key]['instance']
+            instances.append({"state": instance.session_state, "instance_id": key})
+        return instances
+        
 
     def get_instance(self,instance_uuid):
         if not self.is_valid_instance(instance_uuid):
@@ -78,6 +92,7 @@ class InstanceManager:
 
         
     def _get_prometheus_instance_metrics(self):
+        self._timeout_instances()
         return "# TYPE bptk_instance_count gauge " + str(len(self._instances))
 
     def create_instance(self,**timeout):
@@ -110,6 +125,28 @@ class InstanceManager:
         self._instances[instance_uuid] = instance_data
 
         return instance_uuid
+
+    def reconstruct_instance(self,instance_uuid,session_state):
+        timeout = {
+            "weeks": 0,
+            "days": 0,
+            "hours": 0,
+            "minutes":  0,
+            "seconds": 0,
+            "milliseconds": 0,
+            "microseconds":0
+        }
+
+        instance = self._make_bptk()
+        instance._set_state(session_state)
+
+        instance_data = {
+            "instance": instance,
+            "time": datetime.datetime.now(),
+            "timout": timeout
+        }
+
+        self._instances[instance_uuid] = instance_data
 
     def _timeout_instances(self):
         """
@@ -154,7 +191,13 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self._bptk = bptk_factory() if bptk_factory is not None else None
-        
+        self.fauna_client = FaunaClient(
+            secret="fnAEgDWDkFAAxw7rcwmIxq8-BI_2TMKhSQ1d2FVv",
+            domain="db.eu.fauna.com",
+            # NOTE: Use the correct domain for your database's Region Group.
+            port=443,
+            scheme="https"
+        )
         self._instance_manager = InstanceManager(bptk_factory)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
@@ -171,7 +214,39 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
+        self.route("/save-to-fauna", methods=['GET'], strict_slashes=False)(self._save_to_fauna)
+        self.route("/load-from-fauna", methods=['GET'], strict_slashes=False)(self._load_from_fauna)
 
+    def _save_to_fauna(self):
+        instance_states = self._instance_manager.get_instance_states()
+
+        for state in instance_states:
+            # json_state = 
+            self.fauna_client.query(q.create(q.ref(q.collection("state"), q.new_id()), { "data": { "state": jsonpickle.dumps(state["state"]), "instance_id": state["instance_id"] }}))
+
+        resp = make_response(jsonpickle.dumps(instance_states), 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+    
+    def _load_from_fauna(self):
+
+        result = self.fauna_client.query(q.map_(lambda x: q.get(q.var("x")), q.paginate(q.documents(q.collection("state")))))
+
+        for instance_data in result['data']:
+            decoded_data = jsonpickle.loads(instance_data["data"]["state"])
+
+            # resp = make_response(jsonpickle.dumps(decoded_data), 200)
+            # resp.headers['Content-Type']='application/json'
+            # resp.headers['Access-Control-Allow-Origin']='*'
+            # return resp
+
+            self._instance_manager.reconstruct_instance(instance_data["data"]["instance_id"], decoded_data)
+
+        resp = make_response(jsonpickle.dumps(result), 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
 
     def _metrics(self):
         """
