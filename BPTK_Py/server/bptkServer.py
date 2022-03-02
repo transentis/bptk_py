@@ -45,7 +45,7 @@ class InstanceManager:
 
         for key in keys:
             instance = self._instances[key]
-            instances.append(InstanceState(instance['instance'].session_state, key, instance["time"], instance["timeout"]))
+            instances.append(InstanceState(instance['instance'].session_state, key, instance["time"], instance["timeout"], instance['instance'].session_state['step']))
         return instances
         
     def get_instance(self,instance_uuid):
@@ -169,7 +169,7 @@ class BptkServer(Flask):
     """
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
-
+    _external_state_adapter: ExternalStateAdapter
     def __init__(self, import_name, bptk_factory=None, external_state_adapter=None):
         """
         Initialize the server with the import name and the bptk.
@@ -497,7 +497,7 @@ class BptkServer(Flask):
             return resp
 
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -546,7 +546,7 @@ class BptkServer(Flask):
         """This endpoint ends a session for single step simulation and resets the internal cache.
         """
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -565,6 +565,11 @@ class BptkServer(Flask):
         """
         Returns the accumulated results of a session, from the first step to the last step that was run in a flat format.
         """
+        if not self._ensure_instance_exists(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
         return self._session_results_resource(instance_uuid, True)
 
@@ -573,7 +578,7 @@ class BptkServer(Flask):
         Returns the accumulated results of a session, from the first step to the last step that was run.
         """
         
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -597,14 +602,14 @@ class BptkServer(Flask):
                 Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
         """
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
-
+        print("Is valid!")
         instance = self._instance_manager.get_instance(instance_uuid)
-
+        print(instance)
         if not request.is_json:
             result = instance.run_step()
         else:
@@ -642,3 +647,16 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
+
+    def _ensure_instance_exists(self, instance_uuid) -> bool:
+        if self._instance_manager.is_valid_instance(instance_uuid):
+            return True
+        
+        instance = self._external_state_adapter.load_instance(instance_uuid)
+        if instance == None:
+            return False
+
+        self._instance_manager.reconstruct_instance(instance.instance_id, instance.timeout, instance.time, instance.state)
+        return True
+        
+        
