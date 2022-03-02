@@ -17,10 +17,8 @@ import copy
 import uuid
 import datetime
 from json import JSONEncoder
-from faunadb import query as q
-from faunadb.objects import Ref
-from faunadb.client import FaunaClient
 import jsonpickle
+from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
     """
@@ -46,11 +44,10 @@ class InstanceManager:
         instances = []
 
         for key in keys:
-            instance = self._instances[key]['instance']
-            instances.append({"state": instance.session_state, "instance_id": key})
+            instance = self._instances[key]
+            instances.append(InstanceState(instance['instance'].session_state, key, instance["time"], instance["timeout"]))
         return instances
         
-
     def get_instance(self,instance_uuid):
         if not self.is_valid_instance(instance_uuid):
             return None
@@ -118,7 +115,7 @@ class InstanceManager:
         instance_data = {
             "instance": self._make_bptk(),
             "time": datetime.datetime.now(),
-            "timout": timeout
+            "timeout": timeout
         }
 
         instance_uuid = uuid.uuid1().hex
@@ -126,24 +123,14 @@ class InstanceManager:
 
         return instance_uuid
 
-    def reconstruct_instance(self,instance_uuid,session_state):
-        timeout = {
-            "weeks": 0,
-            "days": 0,
-            "hours": 0,
-            "minutes":  0,
-            "seconds": 0,
-            "milliseconds": 0,
-            "microseconds":0
-        }
-
+    def reconstruct_instance(self,instance_uuid,timeout,time,session_state):
         instance = self._make_bptk()
         instance._set_state(session_state)
 
         instance_data = {
             "instance": instance,
-            "time": datetime.datetime.now(),
-            "timout": timeout
+            "time": time,
+            "timeout": timeout
         }
 
         self._instances[instance_uuid] = instance_data
@@ -183,7 +170,7 @@ class BptkServer(Flask):
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
 
-    def __init__(self, import_name, bptk_factory=None):
+    def __init__(self, import_name, bptk_factory=None, external_state_adapter=None):
         """
         Initialize the server with the import name and the bptk.
         :param import_name: the name of the application package. Usually __name__. This helps locate the root_path for the blueprint.
@@ -191,13 +178,7 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self._bptk = bptk_factory() if bptk_factory is not None else None
-        self.fauna_client = FaunaClient(
-            secret="fnAEgDWDkFAAxw7rcwmIxq8-BI_2TMKhSQ1d2FVv",
-            domain="db.eu.fauna.com",
-            # NOTE: Use the correct domain for your database's Region Group.
-            port=443,
-            scheme="https"
-        )
+        self._external_state_adapter = external_state_adapter
         self._instance_manager = InstanceManager(bptk_factory)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
@@ -214,37 +195,38 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
-        self.route("/save-to-fauna", methods=['GET'], strict_slashes=False)(self._save_to_fauna)
-        self.route("/load-from-fauna", methods=['GET'], strict_slashes=False)(self._load_from_fauna)
+        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state)
+        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state)
 
-    def _save_to_fauna(self):
+    def _save_state(self):
+        """
+        Save all instances with the provided external state adapter.
+        """
+        if(self._external_state_adapter == None):
+            return
+
         instance_states = self._instance_manager.get_instance_states()
-
-        for state in instance_states:
-            # json_state = 
-            self.fauna_client.query(q.create(q.ref(q.collection("state"), q.new_id()), { "data": { "state": jsonpickle.dumps(state["state"]), "instance_id": state["instance_id"] }}))
+        self._external_state_adapter.save_state(instance_states)
 
         resp = make_response(jsonpickle.dumps(instance_states), 200)
         resp.headers['Content-Type']='application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
     
-    def _load_from_fauna(self):
+    def _load_state(self):
+        """
+        Loads all instances from fauna.
+        """
+        
+        if(self._external_state_adapter == None):
+            return
 
-        result = self.fauna_client.query(q.map_(lambda x: q.get(q.var("x")), q.paginate(q.documents(q.collection("state")))))
+        result = self._external_state_adapter.load_state()
 
-        for instance_data in result['data']:
-            decoded_data = jsonpickle.loads(instance_data["data"]["state"])
+        for instance_data in result:
+            self._instance_manager.reconstruct_instance(instance_data.instance_id, instance_data.timeout, instance_data.time, instance_data.state)
 
-            # resp = make_response(jsonpickle.dumps(decoded_data), 200)
-            # resp.headers['Content-Type']='application/json'
-            # resp.headers['Access-Control-Allow-Origin']='*'
-            # return resp
-
-            self._instance_manager.reconstruct_instance(instance_data["data"]["instance_id"], decoded_data)
-
-        resp = make_response(jsonpickle.dumps(result), 200)
-        resp.headers['Content-Type']='application/json'
+        resp = make_response("Success", 200)
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
