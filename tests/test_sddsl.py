@@ -121,26 +121,34 @@ def test_delay():
     a = model.converter('a')
     b = model.converter('b')
 
-    a.equation = 0
-    b.equation = 100.0 + (sd_functions.delay(model, a, 20.0, 10.0))
+    a.equation = sd_functions.time()
+    b.equation = sd_functions.delay(model, a, 20.0, 10.0)
 
-    df = b.plot(return_df=True)
+    df_b = b.plot(return_df=True)
 
-    assert (df[0:20] == 110.0).all()["b"]
-    assert (df[21:] == 100).all()["b"]
+    for index  in range(1,100):
+        if index<=20:
+            assert(df_b["b"][index]==10)
+        else:
+            assert(df_b["b"][index]==index-20)
 
-    model = Model(starttime=1, stoptime=100, dt=0.25, name='test')
+
+    model = Model(starttime=1, stoptime=10, dt=0.25, name='test')
 
     a = model.converter('a')
     b = model.converter('b')
 
-    a.equation = 0
-    b.equation = 100.0 + (sd_functions.delay(model, a, 20.0, 10.0))
+    a.equation = sd_functions.time()
+    b.equation = sd_functions.delay(model, a, 3.0, 0.0)
 
-    df = b.plot(return_df=True)
+    df_b = b.plot(return_df=True)
 
-    assert (df[0:20] == 110.0).all()["b"]
-    assert (df[22:] == 100).all()["b"]
+    for index  in range(1,10):
+        if index<=3:
+            assert(df_b["b"][index]==0)
+        else:
+            assert(df_b["b"][index]==index-3)
+
 
 def test_equations():
     from BPTK_Py import Model
