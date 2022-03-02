@@ -34,6 +34,10 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.4.3
+
+* SD DSL: fix to delay function
+
 ###  1.4.2
 
 * Small bugfixes in prometheus metrics.
