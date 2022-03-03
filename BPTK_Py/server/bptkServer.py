@@ -18,6 +18,7 @@ import uuid
 import datetime
 from json import JSONEncoder
 import jsonpickle
+import copy
 from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
@@ -39,13 +40,16 @@ class InstanceManager:
         self._timeout_instances()
         return None
 
+            
     def get_instance_states(self):
         keys = list(self._instances.keys())
         instances = []
 
         for key in keys:
             instance = self._instances[key]
-            instances.append(InstanceState(instance['instance'].session_state, key, instance["time"], instance["timeout"], instance['instance'].session_state['step']))
+            session_state = copy.deepcopy(instance['instance'].session_state)
+            
+            instances.append(InstanceState(session_state, key, instance["time"], instance["timeout"], session_state["step"]))
         return instances
         
     def get_instance(self,instance_uuid):
@@ -169,7 +173,6 @@ class BptkServer(Flask):
     """
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
-    _external_state_adapter: ExternalStateAdapter
     def __init__(self, import_name, bptk_factory=None, external_state_adapter=None):
         """
         Initialize the server with the import name and the bptk.

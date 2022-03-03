@@ -6,6 +6,7 @@ from faunadb.client import FaunaClient
 import jsonpickle
 import datetime
 from dataclasses import dataclass
+from ..util import statecompression
 
 @dataclass
 class InstanceState:
@@ -17,25 +18,54 @@ class InstanceState:
 
 class ExternalStateAdapter(metaclass=ABCMeta):
     @abstractmethod
+    def __init__(self, compress: bool):
+        self.compress = compress
+    
     def save_state(self, state: list[InstanceState]):
-        pass
-
+        # if(self.compress):
+        #     for cur_state in state:
+        #         cur_state.state["settings_log"] = statecompression.compress_settings(cur_state.state["settings_log"])
+        #         cur_state.state["results_log"] = statecompression.compress_results(cur_state.state["results_log"])
+        return self._save_state(state)
     
-    @abstractmethod
     def load_state(self) -> list[InstanceState]:
+        state = self._load_state()
+        if(self.compress):
+            for cur_state in state:
+                print(cur_state.state["settings_log"])
+                cur_state.state["settings_log"] = statecompression.decompress_settings(cur_state.state["settings_log"])
+                cur_state.state["results_log"] = statecompression.decompress_results(cur_state.state["results_log"])
+        return state
+    
+    def load_instance(self, instance_uuid: str) -> InstanceState:
+        state = self._load_instance(instance_uuid)
+        if(self.compress):
+            state.state["settings_log"] = statecompression.decompress_settings(state.state["settings_log"])
+            state.state["results_log"] = statecompression.decompress_results(state.state["results_log"])
+        return state
+
+    
+    @abstractmethod
+    def _save_state(self, state: list[InstanceState]):
         pass
 
     
     @abstractmethod
-    def load_instance(self, instance_uuid: str) -> InstanceState:
+    def _load_state(self) -> list[InstanceState]:
+        pass
+
+    
+    @abstractmethod
+    def _load_instance(self, instance_uuid: str) -> InstanceState:
         pass
 
 
 class FaunaAdapter(ExternalStateAdapter):
-    def __init__(self, fauna_client: FaunaClient):
+    def __init__(self, fauna_client: FaunaClient, compress: bool):
+        super().__init__(compress)
         self._fauna_client = fauna_client
 
-    def save_state(self, instance_states: list[InstanceState]):
+    def _save_state(self, instance_states: list[InstanceState]):
         for state in instance_states:
             fauna_data = { 
                 "data": { 
@@ -56,7 +86,7 @@ class FaunaAdapter(ExternalStateAdapter):
                 print("Error: " + str(e))
                 self._fauna_client.query(q.create(q.ref(q.collection("state"), q.new_id()), fauna_data))
     
-    def load_state(self) -> list[InstanceState]:    
+    def _load_state(self) -> list[InstanceState]:    
         result = self._fauna_client.query(q.map_(lambda x: q.get(q.var("x")), q.paginate(q.documents(q.collection("state")))))
 
         instances = []
@@ -71,7 +101,7 @@ class FaunaAdapter(ExternalStateAdapter):
 
         return instances
 
-    def load_instance(self, instance_uuid: str) -> InstanceState:
+    def _load_instance(self, instance_uuid: str) -> InstanceState:
         try:
             instance_data = self._fauna_client.query(q.get(q.match(q.index("GetInstanceRef"), instance_uuid)))
             
