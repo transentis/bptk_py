@@ -22,17 +22,16 @@ class ExternalStateAdapter(metaclass=ABCMeta):
         self.compress = compress
     
     def save_state(self, state: list[InstanceState]):
-        # if(self.compress):
-        #     for cur_state in state:
-        #         cur_state.state["settings_log"] = statecompression.compress_settings(cur_state.state["settings_log"])
-        #         cur_state.state["results_log"] = statecompression.compress_results(cur_state.state["results_log"])
+        if(self.compress):
+            for cur_state in state:
+                cur_state.state["settings_log"] = statecompression.compress_settings(cur_state.state["settings_log"])
+                cur_state.state["results_log"] = statecompression.compress_results(cur_state.state["results_log"])
         return self._save_state(state)
     
     def load_state(self) -> list[InstanceState]:
         state = self._load_state()
         if(self.compress):
             for cur_state in state:
-                print(cur_state.state["settings_log"])
                 cur_state.state["settings_log"] = statecompression.decompress_settings(cur_state.state["settings_log"])
                 cur_state.state["results_log"] = statecompression.decompress_results(cur_state.state["results_log"])
         return state
