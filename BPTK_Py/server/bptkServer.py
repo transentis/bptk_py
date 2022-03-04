@@ -652,6 +652,9 @@ class BptkServer(Flask):
         if self._instance_manager.is_valid_instance(instance_uuid):
             return True
         
+        if(self._external_state_adapter == None):
+            return False
+        
         instance = self._external_state_adapter.load_instance(instance_uuid)
         if instance == None:
             return False
