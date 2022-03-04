@@ -17,6 +17,9 @@ import copy
 import uuid
 import datetime
 from json import JSONEncoder
+import jsonpickle
+import copy
+from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
     """
@@ -37,6 +40,18 @@ class InstanceManager:
         self._timeout_instances()
         return None
 
+            
+    def get_instance_states(self):
+        keys = list(self._instances.keys())
+        instances = []
+
+        for key in keys:
+            instance = self._instances[key]
+            session_state = copy.deepcopy(instance['instance'].session_state)
+            
+            instances.append(InstanceState(session_state, key, instance["time"], instance["timeout"], session_state["step"]))
+        return instances
+        
     def get_instance(self,instance_uuid):
         if not self.is_valid_instance(instance_uuid):
             return None
@@ -104,13 +119,24 @@ class InstanceManager:
         instance_data = {
             "instance": self._make_bptk(),
             "time": datetime.datetime.now(),
-            "timout": timeout
+            "timeout": timeout
         }
-
         instance_uuid = uuid.uuid1().hex
         self._instances[instance_uuid] = instance_data
 
         return instance_uuid
+
+    def reconstruct_instance(self,instance_uuid,timeout,time,session_state):
+        instance = self._make_bptk()
+        instance._set_state(session_state)
+
+        instance_data = {
+            "instance": instance,
+            "time": time,
+            "timeout": timeout
+        }
+
+        self._instances[instance_uuid] = instance_data
 
     def _timeout_instances(self):
         """
@@ -145,8 +171,7 @@ class BptkServer(Flask):
     """
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
-
-    def __init__(self, import_name, bptk_factory=None):
+    def __init__(self, import_name, bptk_factory=None, external_state_adapter=None):
         """
         Initialize the server with the import name and the bptk.
         :param import_name: the name of the application package. Usually __name__. This helps locate the root_path for the blueprint.
@@ -154,7 +179,7 @@ class BptkServer(Flask):
         """
         super(BptkServer, self).__init__(import_name)
         self._bptk = bptk_factory() if bptk_factory is not None else None
-        
+        self._external_state_adapter = external_state_adapter
         self._instance_manager = InstanceManager(bptk_factory)
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
@@ -171,7 +196,40 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
+        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state)
+        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state)
 
+    def _save_state(self):
+        """
+        Save all instances with the provided external state adapter.
+        """
+        if(self._external_state_adapter == None):
+            return
+
+        instance_states = self._instance_manager.get_instance_states()
+        self._external_state_adapter.save_state(instance_states)
+
+        resp = make_response(jsonpickle.dumps(instance_states), 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+    
+    def _load_state(self):
+        """
+        Loads all instances from fauna.
+        """
+        
+        if(self._external_state_adapter == None):
+            return
+
+        result = self._external_state_adapter.load_state()
+
+        for instance_data in result:
+            self._instance_manager.reconstruct_instance(instance_data.instance_id, instance_data.timeout, instance_data.time, instance_data.state)
+
+        resp = make_response("Success", 200)
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
 
     def _metrics(self):
         """
@@ -412,13 +470,11 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-
         timeout = {"weeks":0, "days":0, "hours":0, "minutes":5,"seconds":0,"milliseconds":0,"microseconds":0}
         if request.is_json:
             content = request.get_json()
             if "timeout" in content:
                 timeout = content["timeout"]
-
         instance_uuid = self._instance_manager.create_instance(**timeout)
 
         if instance_uuid is not None:
@@ -440,7 +496,7 @@ class BptkServer(Flask):
             return resp
 
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -489,7 +545,7 @@ class BptkServer(Flask):
         """This endpoint ends a session for single step simulation and resets the internal cache.
         """
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -508,6 +564,11 @@ class BptkServer(Flask):
         """
         Returns the accumulated results of a session, from the first step to the last step that was run in a flat format.
         """
+        if not self._ensure_instance_exists(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
         return self._session_results_resource(instance_uuid, True)
 
@@ -516,7 +577,7 @@ class BptkServer(Flask):
         Returns the accumulated results of a session, from the first step to the last step that was run.
         """
         
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
@@ -538,22 +599,23 @@ class BptkServer(Flask):
         Arguments:
             settings: JSON
                 Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
+            flatResults: boolean
+                When set to true, a flat version of the results is returned.
         """
         # Checking if the instance id is valid.
-        if not self._instance_manager.is_valid_instance(instance_uuid):
+        if not self._ensure_instance_exists(instance_uuid):
             resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
-
+        
         instance = self._instance_manager.get_instance(instance_uuid)
-
         if not request.is_json:
             result = instance.run_step()
         else:
             content = request.get_json()
             if "settings" in content:
-                result = instance.run_step(settings=content["settings"])
+                result = instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True)
             else:
                 resp = make_response('{"error": "expecting settings to be set"}', 500)
                 resp.headers['Content-Type'] = 'application/json'
@@ -585,3 +647,16 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
+
+    def _ensure_instance_exists(self, instance_uuid) -> bool:
+        if self._instance_manager.is_valid_instance(instance_uuid):
+            return True
+        
+        instance = self._external_state_adapter.load_instance(instance_uuid)
+        if instance == None:
+            return False
+
+        self._instance_manager.reconstruct_instance(instance.instance_id, instance.timeout, instance.time, instance.state)
+        return True
+        
+        

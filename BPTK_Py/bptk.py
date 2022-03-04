@@ -38,7 +38,6 @@ plt.interactive(True)
 
 
 class conf:
-
     def __init__(self):
         """Initialze config zu defaults."""
         self.loglevel = default_config.loglevel
@@ -226,6 +225,9 @@ class bptk():
         else:
             return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
                                            agent_properties, agent_property_types, series_names, return_df)
+
+    def _set_state(self, state):
+        self.session_state = state
 
     def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                            agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
@@ -441,7 +443,7 @@ class bptk():
             self.session_state=None
 
 
-    def run_step(self, settings=None):
+    def run_step(self, settings=None, flat=False):
         """Run the next step of a session.
 
         Args:
@@ -466,8 +468,7 @@ class bptk():
             return {"msg":"Stoptime reached"}
 
         simulation_results = {manager:{} for manager in scenario_managers}
-
-
+        flat_results = {manager:{} for manager in scenario_managers}
 
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
@@ -485,6 +486,16 @@ class bptk():
                     scenario_manager=manager.name,
                     settings = settings
                 )
+                
+                if(flat):
+                    flat_results[manager.name] = dict()
+                    
+                    for scenario in simulation_results[manager.name]:
+                        flat_results[manager.name][scenario] = dict()
+                        
+                        for value in simulation_results[manager.name][scenario]:
+                            value_content = simulation_results[manager.name][scenario][value]
+                            flat_results[manager.name][scenario][value] = value_content[list(value_content.keys())[0]]                    
 
         # log settings and results
         self.session_state["settings_log"][step] = settings
@@ -493,7 +504,7 @@ class bptk():
         # move session step forward
         self.session_state["step"]=step+dt
        
-        return simulation_results
+        return flat_results if flat else simulation_results
 
     def session_results(self, index_by_time=True, flat=False):
         """Return the results collected so far within a session
