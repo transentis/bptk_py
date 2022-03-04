@@ -376,7 +376,7 @@ class Delay(Function):
 
    def term(self, time="t"):
        delayed_time = "{} - {}".format(str(time), self.delay_duration.term(str(self.model.starttime)))
-       return "({} if {}>{} else {})".format(
+       return "({} if {}>={} else {})".format(
            self.input_function.term(delayed_time),
            delayed_time,
            str(self.model.starttime),
