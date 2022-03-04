@@ -121,7 +121,6 @@ class InstanceManager:
             "time": datetime.datetime.now(),
             "timeout": timeout
         }
-
         instance_uuid = uuid.uuid1().hex
         self._instances[instance_uuid] = instance_data
 
@@ -471,13 +470,11 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-
         timeout = {"weeks":0, "days":0, "hours":0, "minutes":5,"seconds":0,"milliseconds":0,"microseconds":0}
         if request.is_json:
             content = request.get_json()
             if "timeout" in content:
                 timeout = content["timeout"]
-
         instance_uuid = self._instance_manager.create_instance(**timeout)
 
         if instance_uuid is not None:
@@ -602,6 +599,8 @@ class BptkServer(Flask):
         Arguments:
             settings: JSON
                 Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
+            flatResults: boolean
+                When set to true, a flat version of the results is returned.
         """
         # Checking if the instance id is valid.
         if not self._ensure_instance_exists(instance_uuid):
@@ -609,15 +608,14 @@ class BptkServer(Flask):
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
-        print("Is valid!")
+        
         instance = self._instance_manager.get_instance(instance_uuid)
-        print(instance)
         if not request.is_json:
             result = instance.run_step()
         else:
             content = request.get_json()
             if "settings" in content:
-                result = instance.run_step(settings=content["settings"])
+                result = instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True)
             else:
                 resp = make_response('{"error": "expecting settings to be set"}', 500)
                 resp.headers['Content-Type'] = 'application/json'
