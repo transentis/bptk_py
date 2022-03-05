@@ -16,7 +16,6 @@ import threading
 import json
 
 import ipywidgets as widgets
-import matplotlib.pyplot as plt
 import numpy as np
 from IPython.display import display
 import pandas as pd
@@ -34,7 +33,7 @@ from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 
 
-plt.interactive(True)
+#plt.interactive(True)
 
 
 class conf:
@@ -153,8 +152,10 @@ class bptk():
         logmod.logfile = self.config.configuration["log_file"]
 
         # Setup matplotlib
-        for key, value in self.config.matplotlib_rc_settings.items():
-            plt.rcParams[key] = value
+        if self.config.configuration["interactive"]:
+            import matplotlib.pyplot as plt
+            for key, value in self.config.matplotlib_rc_settings.items():
+                plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory()
         self.scenario_manager_factory.get_scenario_managers()

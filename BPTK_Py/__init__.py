@@ -7,6 +7,7 @@ from .bptk import bptk, conf
 from .config import config
 from .logger import log
 from .server import BptkServer
+from .externalstateadapter import ExternalStateAdapter, InstanceState
 
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version

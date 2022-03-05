@@ -196,10 +196,10 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
-        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state)
-        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state)
+        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
+        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
 
-    def _save_state(self):
+    def _save_state_resource(self):
         """
         Save all instances with the provided external state adapter.
         """
@@ -214,9 +214,9 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
     
-    def _load_state(self):
+    def _load_state_resource(self):
         """
-        Loads all instances from fauna.
+        Loads all instances using the external state adapter
         """
         
         if(self._external_state_adapter == None):

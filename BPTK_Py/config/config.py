@@ -54,6 +54,7 @@ configuration = {
     "bptk_Py_module_path": os.path.dirname(BPTK_Py.__file__),
 
     # Graphic settings
+    "interactive": True,
     "matplotlib_rc_settings": matplotlib_rc_settings,
     "colors": [color for color in transentis_colors.values()],
     "kind": "area",
