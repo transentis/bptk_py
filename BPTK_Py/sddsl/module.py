@@ -7,6 +7,8 @@ class Module():
     `parent_module_name.module_name.name`. The fully qualfied name is used as the equation
     name in the Model class and is needed when making calls to `bptk.run_scenario` or 
     `bptk.plot_scenario`.
+
+    Check our `Beer Distribution Game <https://github.com/transentis/beergame/blob/master/beergame_sd_dsl.ipynb>`_ model to see how to use the Module class
     """
     def __init__(self, model, name, parent=None):
         """
