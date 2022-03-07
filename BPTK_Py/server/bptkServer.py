@@ -19,7 +19,6 @@ import datetime
 from json import JSONEncoder
 import jsonpickle
 import copy
-import gc
 from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
@@ -52,8 +51,8 @@ class InstanceManager:
         instances = []
 
         for key in keys:
-
             instances.append(self._get_instance_state(key))
+            
         return instances
         
     def get_instance(self,instance_uuid):
