@@ -1,1 +1,1 @@
-from .externalStateAdapter import ExternalStateAdapter, FaunaAdapter, InstanceState
+from .externalStateAdapter import ExternalStateAdapter, InstanceState

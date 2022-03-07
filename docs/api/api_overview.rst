@@ -21,6 +21,7 @@ BPTK APIs
    ./api_event
    ./api_flow
    ./api_model
+   ./api_module
    ./api_scheduler
    ./api_simulation_scenario
    ./api_simultaneousScheduler

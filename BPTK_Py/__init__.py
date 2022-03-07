@@ -3,10 +3,12 @@ import pkg_resources
 
 import BPTK_Py.sddsl.functions as sd_functions
 from .modeling import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler
+from .sddsl import Module
 from .bptk import bptk, conf
 from .config import config
 from .logger import log
 from .server import BptkServer
+from .externalstateadapter import ExternalStateAdapter, InstanceState
 
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version

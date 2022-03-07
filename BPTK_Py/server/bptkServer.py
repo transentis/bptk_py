@@ -158,7 +158,7 @@ class InstanceManager:
                     if "timeout" in self._instances[key]:
                         timeout = datetime.timedelta(**self._instances[key]["timeout"])
                     else:
-                        timeout = datetime.timedelta(minutes=5)  # Terminate the session after 5 minutes
+                        timeout = datetime.timedelta(hours=12)  # Terminate the session after 12 hours
                     last_call_time = self._instances[key]["time"]
                     if last_call_time:
                         if current_time >= last_call_time + timeout:
@@ -211,7 +211,7 @@ class BptkServer(Flask):
         self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
         self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
 
-    def _save_state(self):
+    def _save_state_resource(self):
         """
         Save all instances with the provided external state adapter.
         """
@@ -226,9 +226,9 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
     
-    def _load_state(self):
+    def _load_state_resource(self):
         """
-        Loads all instances from fauna.
+        Loads all instances using the external state adapter
         """
         
         if(self._external_state_adapter == None):
@@ -482,7 +482,7 @@ class BptkServer(Flask):
         """
 
         # store the new instance in the instance dictionary.
-        timeout = {"weeks":0, "days":0, "hours":0, "minutes":5,"seconds":0,"milliseconds":0,"microseconds":0}
+        timeout = {"weeks":0, "days":0, "hours":12, "minutes":0,"seconds":0,"milliseconds":0,"microseconds":0}
         if request.is_json:
             content = request.get_json()
             if "timeout" in content:

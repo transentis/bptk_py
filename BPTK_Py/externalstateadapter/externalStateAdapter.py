@@ -1,12 +1,6 @@
 from abc import ABCMeta, abstractmethod
-
-from faunadb import query as q
-from faunadb.objects import Ref
-from faunadb.client import FaunaClient
-import jsonpickle
-import datetime
-from dataclasses import dataclass
 from ..util import statecompression
+from dataclasses import dataclass
 
 @dataclass
 class InstanceState:

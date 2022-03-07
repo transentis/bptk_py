@@ -13,3 +13,4 @@ distlib
 cachetools
 requests
 flask
+jsonpickle
