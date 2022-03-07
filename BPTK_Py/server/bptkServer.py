@@ -19,6 +19,7 @@ import datetime
 from json import JSONEncoder
 import jsonpickle
 import copy
+import gc
 from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
@@ -40,16 +41,19 @@ class InstanceManager:
         self._timeout_instances()
         return None
 
+    def _get_instance_state(self, instance_uuid):
+        instance = self._instances[instance_uuid]
+        session_state = copy.deepcopy(instance['instance'].session_state)
+        
+        return InstanceState(session_state, instance_uuid, instance["time"], instance["timeout"], session_state["step"])
             
     def get_instance_states(self):
         keys = list(self._instances.keys())
         instances = []
 
         for key in keys:
-            instance = self._instances[key]
-            session_state = copy.deepcopy(instance['instance'].session_state)
-            
-            instances.append(InstanceState(session_state, key, instance["time"], instance["timeout"], session_state["step"]))
+
+            instances.append(self._get_instance_state(key))
         return instances
         
     def get_instance(self,instance_uuid):
@@ -158,6 +162,7 @@ class InstanceManager:
                     last_call_time = self._instances[key]["time"]
                     if last_call_time:
                         if current_time >= last_call_time + timeout:
+                            print(gc.get_referrers(self._instances[key]['instance']))
                             del self._instances[key]
             except KeyError:
                 pass
@@ -181,6 +186,13 @@ class BptkServer(Flask):
         self._bptk = bptk_factory() if bptk_factory is not None else None
         self._external_state_adapter = external_state_adapter
         self._instance_manager = InstanceManager(bptk_factory)
+
+        # Loading the full state on startup
+        if external_state_adapter != None:
+            result = self._external_state_adapter.load_state()
+            for instance_data in result:
+                self._instance_manager.reconstruct_instance(instance_data.instance_id, instance_data.timeout, instance_data.time, instance_data.state)
+
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'])(self._home_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
@@ -196,8 +208,8 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
         self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
-        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state)
-        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state)
+        self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
+        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
 
     def _save_state(self):
         """
@@ -626,6 +638,9 @@ class BptkServer(Flask):
             resp = make_response(json.dumps(result), 200)
         else:
             resp = make_response('{"error": "no data was returned from run_step"}', 500)
+
+        if self._external_state_adapter != None:
+            self._external_state_adapter.save_instance(self._instance_manager._get_instance_state(instance_uuid))
 
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
