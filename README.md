@@ -34,10 +34,14 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.5.1
+
+* BPTK Server: Improvements to the new state externalisation feature
+* BPTK Server: Improve cleanup of resources when an instance times out 
 
 ### 1.5.0
 
-* SD DSL: Added a new model class that makes it easy to structure large models
+* SD DSL: Added a new module class that makes it easy to structure large models
 * BPTK Server: Add new endpoints to allow externalising the instance state
 * BPTK Server: Changed the default timeout for equations for instances to 12h
 

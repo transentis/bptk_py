@@ -161,7 +161,7 @@ class InstanceManager:
                     last_call_time = self._instances[key]["time"]
                     if last_call_time:
                         if current_time >= last_call_time + timeout:
-                            print(gc.get_referrers(self._instances[key]['instance']))
+                            self._instances[key]['instance'].destroy() #ensure that bptk releases all resources
                             del self._instances[key]
             except KeyError:
                 pass
