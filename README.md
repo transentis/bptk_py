@@ -34,6 +34,11 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.5.2
+
+* BPTK Server: Added file adapter as a concrete example of an external adapter
+* BPTK: Improve cleanup of resources when bptk instance is destroyed
+
 ### 1.5.1
 
 * BPTK Server: Improvements to the new state externalisation feature
