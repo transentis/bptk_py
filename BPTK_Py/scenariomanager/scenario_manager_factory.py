@@ -300,6 +300,7 @@ class ScenarioManagerFactory():
             log("[INFO] Killing monitoring thread for {}".format(name))
 
         self.model_monitors = {}
+        self.file_monitors = {}
 
     def create_scenario(self, filename="",
                         dictionary={}):
