@@ -1,1 +1,1 @@
-from .externalStateAdapter import ExternalStateAdapter, InstanceState
+from .externalStateAdapter import ExternalStateAdapter, InstanceState, FileAdapter
