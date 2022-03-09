@@ -72,19 +72,7 @@ class FileAdapter(ExternalStateAdapter):
 
     def _save_state(self, instance_states: list[InstanceState]):
         for state in instance_states:
-            data = { 
-                "data": { 
-                    "state": jsonpickle.dumps(state.state), 
-                    "instance_id": state.instance_id,
-                    "time": str(state.time),
-                    "timeout": state.timeout,
-                    "step": state.step
-                }
-            }
-
-            f = open(os.path.join(self.path, str(state.instance_id) + ".json"), "w")
-            f.write(jsonpickle.dumps(data))
-            f.close()
+            self._save_instance(state)
     
 
     def _save_instance(self, state: InstanceState):
