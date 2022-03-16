@@ -34,7 +34,7 @@ class ScenarioManagerFactory():
     This class manages all scenario of all scenario managers and exposes methods to look them up, read from filesystem and flush them
     """
 
-    def __init__(self):
+    def __init__(self, start_scenario_monitor: bool, start_manager_monitor: bool):
         """
         Initialize object and reserve namespaces for scenario managers, monitors, scenarios and JSON file path (scenario storage)
         """
@@ -46,6 +46,9 @@ class ScenarioManagerFactory():
         self.file_monitors = {}
         self.path = ""
         self.scenario_files = []
+
+        self.start_scenario_monitor = start_scenario_monitor
+        self.start_manager_monitor = start_manager_monitor
 
     def __readScenario(self, filename=""):
         """
@@ -123,7 +126,7 @@ class ScenarioManagerFactory():
                 manager.load_scenarios(scen_dict=scen_dict, model_file=model_file, source=source)
 
                 # Start monitor for source file
-                if "source" in model_dictionary[scenario_manager_name].keys():
+                if self.start_manager_monitor and "source" in model_dictionary[scenario_manager_name].keys():
                     if not source in self.model_monitors.keys() and os.path.isfile(source):
                         self.__add_monitor(manager.source, manager.model_file)
                     elif not os.path.isfile(manager.source):
@@ -134,7 +137,7 @@ class ScenarioManagerFactory():
                 manager.instantiate_model()
 
             ## CREATE FILE MONITOR
-            if not filename in self.file_monitors.keys():
+            if self.start_scenario_monitor and not filename in self.file_monitors.keys():
                 self.file_monitors[filename] = FileMonitor(json_file=filename,
                                                            update_func=self.__refresh_scenarios_for_json)
 
