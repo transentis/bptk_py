@@ -69,7 +69,6 @@ class ScenarioManagerFactory():
             parser_class = ParserFactory(filename)
 
             if parser_class:
-
                 meta_model = parser_class().parse_model(filename, silent=True)
                 model, model_dictionary = meta_model.create_model()
 

@@ -19,6 +19,7 @@ import datetime
 from json import JSONEncoder
 import jsonpickle
 import copy
+import threading
 from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
 
 class InstanceManager:
@@ -91,13 +92,16 @@ class InstanceManager:
             }
 
         metrics["instanceCount"] = len(self._instances)
+        metrics["threadCount"] = threading.active_count()
 
         return metrics
 
         
     def _get_prometheus_instance_metrics(self):
         self._timeout_instances()
-        return "# HELP bptk_instance_count The number of instances in the beergame server\n# TYPE bptk_instance_count gauge\nbptk_instance_count " + str(len(self._instances))
+        metrics =  "# HELP bptk_instance_count The number of instances in the bptk server\n# TYPE bptk_instance_count gauge\nbptk_instance_count " + str(len(self._instances)) + "\n"
+        metrics += "# HELP bptk_thread_count The number of threads in the bptk server\n# TYPE bptk_thread_count gauge\nbptk_thread_count " + str(threading.active_count()) + "\n"
+        return metrics
 
     def _delete_instance(self, instance_id):
         if instance_id in self._instances:

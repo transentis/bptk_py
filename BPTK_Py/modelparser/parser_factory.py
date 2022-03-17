@@ -25,7 +25,6 @@ def ParserFactory(filename):
     ending = filename.split(".")[-1:][0].lower()
 
     try:
-
         return parsers[ending]
     except KeyError as e:
         log("[ERROR] No parser available for filetype {}".format(ending))
