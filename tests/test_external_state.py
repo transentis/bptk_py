@@ -84,6 +84,8 @@ def bptk_factory():
 
 @pytest.fixture
 def app():
+    if not os.path.exists("state/"):
+        os.mkdir("state/")
     adapter = FileAdapter(True, os.path.join(os.getcwd(), "state"))
     flask_app = BptkServer(__name__, bptk_factory, external_state_adapter=adapter)
     yield flask_app
@@ -104,6 +106,7 @@ def test_instance_timeouts(app, client):
             assert not instance_id in result
 
     import time
+
 
     timeout = {
         "timeout": {
@@ -174,10 +177,25 @@ def test_instance_timeouts(app, client):
     assert_in_full_metrics(instance_id, False)
 
     response = client.get('http://localhost:5000/load-state')
+    assert response.status_code == 200
+
     os.remove(os.path.join("state/", instance_id + ".json"))
+
     response = client.get('http://localhost:5000/save-state')
+    assert response.status_code == 200
+
 
     dir_content = os.listdir("state/")
     assert instance_id + ".json" in dir_content
     
-    os.remove(os.path.join("state/", instance_id + ".json"))
+    response = client.get('http://localhost:5000/load-state')
+    assert response.status_code == 200
+
+    response = client.get(f'http://localhost:5000/{instance_id}/stop-instance')
+    assert response.status_code == 200
+    
+    response = client.get('http://localhost:5000/save-state')
+    assert response.status_code == 200
+
+    dir_content = os.listdir("state/")
+    assert not instance_id + ".json" in dir_content

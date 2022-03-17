@@ -99,6 +99,10 @@ class InstanceManager:
         self._timeout_instances()
         return "# HELP bptk_instance_count The number of instances in the beergame server\n# TYPE bptk_instance_count gauge\nbptk_instance_count " + str(len(self._instances))
 
+    def _delete_instance(self, instance_id):
+        if instance_id in self._instances:
+            del self._instances[instance_id]
+
     def create_instance(self,**timeout):
         """
         The method generates a universally unique identifier in hexadecimal, that is used as key for the instances.
@@ -209,6 +213,17 @@ class BptkServer(Flask):
         self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
         self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
         self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
+        self.route("/<instance_uuid>/stop-instance", methods=['GET'], strict_slashes=False)(self._stop_instance)
+
+    def _stop_instance(self, instance_uuid):
+        self._instance_manager._delete_instance(instance_uuid)
+        if self._external_state_adapter != None:
+            self._external_state_adapter.delete_instance(instance_uuid)
+
+        resp = make_response("Instance deleted.", 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
 
     def _save_state_resource(self):
         """
