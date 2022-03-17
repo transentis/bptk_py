@@ -191,9 +191,13 @@ def test_instance_timeouts(app, client):
     response = client.get('http://localhost:5000/load-state')
     assert response.status_code == 200
 
+    assert_in_full_metrics(instance_id, True)
+
     response = client.get(f'http://localhost:5000/{instance_id}/stop-instance')
     assert response.status_code == 200
     
+    assert_in_full_metrics(instance_id, False)
+
     response = client.get('http://localhost:5000/save-state')
     assert response.status_code == 200
 
