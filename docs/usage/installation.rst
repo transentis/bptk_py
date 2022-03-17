@@ -123,7 +123,7 @@ If for any reason, you want to install the requirements manually or need to know
 
 If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
 
-We have tested the framework with Python 3.4, 3.6 and 3.7. It should work fine with other Python 3.x versions.
+We have tested the framework with Python 3.9 and above. 
 
 ============ ================================================
 Package name What we use it for
@@ -139,6 +139,5 @@ numpy        Linear interpolation and required by pandas
 xlsxwriter   Exporting simulation results to CSV files
 xmltodict    Reading XMILE files
 distlib      Update checks
+flask        REST API
 ============ ================================================
-
-If you are using `JupyterLab <https://jupyterlab.readthedocs.io>`_, you need the jupyter lab extension for ipywidgets.
