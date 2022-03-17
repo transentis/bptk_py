@@ -73,7 +73,7 @@ configuration = {
     "log_file": "bptk_py.log",
 
     "set_scenario_monitor": True,
-    "set_manager_monitor": True,
+    "set_model_monitor": True,
 }
 
 
