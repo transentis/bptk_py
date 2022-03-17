@@ -157,7 +157,7 @@ class bptk():
             for key, value in self.config.matplotlib_rc_settings.items():
                 plt.rcParams[key] = value
 
-        self.scenario_manager_factory = ScenarioManagerFactory()
+        self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
         self.scenario_manager_factory.get_scenario_managers()
         self.visualizer = visualizer(config=self.config)
         self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed

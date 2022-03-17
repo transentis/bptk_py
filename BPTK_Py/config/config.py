@@ -70,7 +70,10 @@ configuration = {
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],
-    "log_file": "bptk_py.log"
+    "log_file": "bptk_py.log",
+
+    "set_scenario_monitor": True,
+    "set_model_monitor": True,
 }
 
 

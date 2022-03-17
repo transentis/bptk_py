@@ -47,7 +47,7 @@ class ExternalStateAdapter(metaclass=ABCMeta):
             state.state["results_log"] = statecompression.decompress_results(state.state["results_log"])
         return state
 
-    
+
     @abstractmethod
     def _save_state(self, state: list[InstanceState]):
         pass
@@ -64,6 +64,9 @@ class ExternalStateAdapter(metaclass=ABCMeta):
     def _load_instance(self, instance_uuid: str) -> InstanceState:
         pass
 
+    @abstractmethod
+    def delete_instance(self, instance_uuid: str):
+        pass
 
 class FileAdapter(ExternalStateAdapter):
     def __init__(self, compress: bool, path: str):
@@ -114,3 +117,9 @@ class FileAdapter(ExternalStateAdapter):
         except Exception as e:
             print("Error: " + str(e))
             return None
+
+    def delete_instance(self, instance_uuid: str):
+        try:
+            os.remove(os.path.join(self.path, str(instance_uuid) + ".json"))
+        except Exception as e:
+            print("Error: " + str(e))
