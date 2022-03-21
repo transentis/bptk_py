@@ -31,6 +31,8 @@ Getting Started
 
 The best way to get started with BPTK is our tutorial, which contains a number of simulation models and Jupyter notebooks to get you started – you can clone or download the tutorial from our `git repository <https://github.com/transentis/bptk_py_tutorial/>`_ on Github.
 
+Our `Business Prototyping Toolkit Meetup <https://www.transentis.com/business-prototyping-toolkit-meetup/en/>`_ meets online regularly. All meetups are recorded and the recordings are available on the meetup page.
+
 You might also like to clone our `model library repository <https://github.com/transentis/bptk-model-library/>`_ , which contains a number of models that illustrate how to model business models and market strategies using Agent-based modeling, System Dynamics and BPTK.
 
 BPTK was also used to build our implementation of the infamous `Beer Distribution Game <https://beergame.transentis.com>`_. Our `beergame repository <https://github.com/transentis/beergame>`_ contains Jupyter notebooks that analyse the Beergame in-depth and also provides XMILE, SD DSL and Agent-based versions of the Beergame.
@@ -41,7 +43,7 @@ Getting Help
 
 BPTK-Py is developed and maintained by `transentis labs <https://www.transentis.com/business-prototyping-toolkit/en/>`_.
 
-The best place to ask questions about the framework is our `Business Prototyping Toolkit Meetup <https://www.meetup.com/business-prototyping-toolkit>`_, which meets online regularly.
+The best place to ask questions about the framework is our `Business Prototyping Toolkit Meetup <https://www.transentis.com/business-prototyping-toolkit-meetup/en/>`_, which meets online regularly. 
 
 You can also contact us any time at `support@transentis.com <mailto:support@transentis.com>`_, we are always happy to help.
 
