@@ -7,8 +7,13 @@ from .sddsl import Module
 from .bptk import bptk, conf
 from .config import config
 from .logger import log
-from .server import BptkServer
-from .externalstateadapter import ExternalStateAdapter, InstanceState, FileAdapter
+import sys
+version = sys.version_info
+if(version[0] < 3 or (version[0] == 3 and version[1] < 10)):
+    print("BPTK Server requires Python 3.10 or later. Please update Python to use the BPTK Server!")
+else:
+    from .server import BptkServer
+    from .externalstateadapter import ExternalStateAdapter, InstanceState, FileAdapter
 
 try:
     __version__ = pkg_resources.get_distribution("BPTK_Py").version
