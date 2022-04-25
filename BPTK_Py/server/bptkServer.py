@@ -9,6 +9,13 @@
 # Copyright (c) 2021 transentis labs GmbH
 # MIT License
 
+import sys
+version = sys.version_info
+if(version[0] < 3 or (version[0] == 3 and version[1] < 10)):
+    print("BPTK Server requires Python 3.10 or later. Please update Python to use the BPTK Server! Exitting now.")
+    sys.exit()
+
+
 from flask import Flask, redirect, url_for, request, make_response, jsonify
 from BPTK_Py.bptk import bptk
 import pandas as pd
