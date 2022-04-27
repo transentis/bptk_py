@@ -11,8 +11,8 @@
 
 import sys
 version = sys.version_info
-if(version[0] < 3 or (version[0] == 3 and version[1] < 10)):
-    print("BPTK Server requires Python 3.10 or later. Please update Python to use the BPTK Server! Exitting now.")
+if(version[0] < 3 or (version[0] == 3 and version[1] < 9)):
+    print("BPTK Server requires Python 3.9 or later. Please update Python to use the BPTK Server! Exitting now.")
     sys.exit()
 
 
