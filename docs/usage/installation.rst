@@ -123,7 +123,7 @@ If for any reason, you want to install the requirements manually or need to know
 
 If you observe malfunctions in the framework and believe the reason may be incompatibilities with newer versions of the packages, please inform us.
 
-We have tested the framework with Python 3.9 and above. 
+We have tested the framework with Python 3.9 and above. BPTK Server requires a version of Python >= 3.9, other parts of the framework should work fine with older versions of Python. 
 
 ============ ================================================
 Package name What we use it for

@@ -34,6 +34,10 @@ For any questions you have regarding BPTK, please contact us at: [support@transe
 
 ## Changelog
 
+### 1.5.3
+
+* BPTK Server: Since v 1.5.0, BPTK Server requires a Python version >= 3.9. The package now informs the user about this upon import. Other parts of the BPTK framework should work fine with older Python3 versions.
+
 ### 1.5.2
 
 * BPTK Server: Added file adapter as a concrete example of an external adapter
