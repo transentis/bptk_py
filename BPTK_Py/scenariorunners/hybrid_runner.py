@@ -89,7 +89,11 @@ class HybridRunner(ScenarioRunner):
         :return: DataFrame containing the simulation results
         """
         
-        expected_agent_property_types = set(["mean", "max", "min", "total"])
+
+        if len(agent_property_types) == 0:
+            expected_agent_property_types = set(["mean", "max", "min", "total"])
+        else: 
+            expected_agent_property_types = set(agent_property_types)
         if return_format=="dict" or return_format=="json":
             for agent_property_type in agent_property_types:
                 expected_agent_property_types.add(agent_property_type)
