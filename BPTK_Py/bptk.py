@@ -360,7 +360,7 @@ class bptk():
                 Deltatime.
 
         """
-
+        print(equations, agents)
         self.session_state = None
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
@@ -474,7 +474,20 @@ class bptk():
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
-            if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
+            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+                runner = HybridRunner(self.scenario_manager_factory)
+                print(agent_property_types,agent_properties,agent_states)
+                simulation_results[manager.name] = runner.run_scenarios(
+                    abm_results_dict={},
+                    return_format='json',
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    equations=equations,
+                    agents=agents,
+                    scenario_managers=[manager.name],
+                    agent_states=agent_states,
+                    agent_properties=agent_properties,
+                    agent_property_types=agent_property_types
+                )
                 print("run_step currently only supports SD scenarios") 
             # Handle SD scenarios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:

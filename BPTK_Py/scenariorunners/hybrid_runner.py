@@ -58,8 +58,8 @@ class HybridRunner(ScenarioRunner):
                                     if column in agent_states:
                                         counts[column] = states[column]["count"]
                                 output[t] = counts
-                        else:
-                            output[t] = series
+                        # else:
+                        #     output[t] = series
             return output
 
         res = get_stats_for(data, agent_name, agent_states, agent_properties, agent_property_types)
@@ -74,7 +74,7 @@ class HybridRunner(ScenarioRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_scenarios(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param abm_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format.
@@ -237,7 +237,7 @@ class HybridRunner(ScenarioRunner):
 
                 dfs += [new_df]
 
-
+        print(dfs)
         try:
             df = pd.concat(dfs, axis=1, sort=True).fillna(0)
         except ValueError as e:
@@ -245,7 +245,6 @@ class HybridRunner(ScenarioRunner):
             return pd.DataFrame()
         
         df.index.name = "t"
-        
         simulation_results=[]
         if return_format=="dict" or return_format=="json":
             simulation_results=abm_results_dict
@@ -253,6 +252,8 @@ class HybridRunner(ScenarioRunner):
             simulation_results=df
             
         return simulation_results
+
+
 
     def train_scenario(self, scenarios, agents, episodes = 1, scenario_managers=[], progress_widget=None, agent_states=[], agent_properties=[], agent_property_types=[]):
         """

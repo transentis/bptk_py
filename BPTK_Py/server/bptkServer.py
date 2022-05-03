@@ -225,6 +225,13 @@ class BptkServer(Flask):
         self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
         self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
         self.route("/<instance_uuid>/stop-instance", methods=['GET'], strict_slashes=False)(self._stop_instance)
+        self.route("/test", methods=['GET'], strict_slashes=False)(self._test)
+
+    def _test(self):
+        resp = make_response("TEST.", 200)
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp 
 
     def _stop_instance(self, instance_uuid):
         self._instance_manager._delete_instance(instance_uuid)
@@ -556,21 +563,40 @@ class BptkServer(Flask):
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
+        equations = []
+        agents = []
+        agent_states=[]
+        agent_properties=[]
+        agent_property_types=[]
 
-        try:
-            equations = content["equations"]
-        except KeyError:
-            resp = make_response('{"error": "expecting equations to be set"}', 500)
+        if(not "agents" in content.keys() and not "equations" in content.keys()):
+            resp = make_response('{"error": "expecting either equations or agents to be set"}', 500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
+        if("agents" in content.keys()):
+            agents = content["agents"]
+        if("equations" in content.keys()):
+            equations = content["equations"]
+        if("agent_states" in content.keys()):
+            agent_states = content["agent_states"]
+        if("agent_properties" in content.keys()):
+            agent_properties = content["agent_properties"]
+        if("agent_property_types" in content.keys()):
+            agent_property_types = content["agent_property_types"]
+
+
 
         instance = self._instance_manager.get_instance(instance_uuid)
 
         instance.begin_session(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
-            equations=equations
+            equations=equations,
+            agents=agents,
+            agent_states=agent_states,
+            agent_properties=agent_properties,
+            agent_property_types=agent_property_types
         )
 
         resp = make_response('{"msg":"session started"}', 200)
@@ -660,7 +686,7 @@ class BptkServer(Flask):
                 return resp
 
         if result is not None:
-            resp = make_response(json.dumps(result), 200)
+            resp = make_response(jsonpickle.dumps(result), 200)
         else:
             resp = make_response('{"error": "no data was returned from run_step"}', 500)
 
