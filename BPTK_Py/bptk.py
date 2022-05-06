@@ -476,8 +476,8 @@ class bptk():
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
                 runner = HybridRunner(self.scenario_manager_factory)
-                print(agent_property_types,agent_properties,agent_states)
-                simulation_results[manager.name] = runner.run_scenarios(
+                simulation_results[manager.name] = runner.run_scenario_step(
+                    step=step,
                     abm_results_dict={},
                     return_format='json',
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
