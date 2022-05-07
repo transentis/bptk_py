@@ -488,7 +488,6 @@ class bptk():
                     agent_properties=agent_properties,
                     agent_property_types=agent_property_types
                 )
-                print("run_step currently only supports SD scenarios") 
             # Handle SD scenarios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
