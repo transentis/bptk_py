@@ -568,6 +568,7 @@ class BptkServer(Flask):
         agent_states=[]
         agent_properties=[]
         agent_property_types=[]
+        individual_agent_properties=[]
 
         if(not "agents" in content.keys() and not "equations" in content.keys()):
             resp = make_response('{"error": "expecting either equations or agents to be set"}', 500)
@@ -584,6 +585,8 @@ class BptkServer(Flask):
             agent_properties = content["agent_properties"]
         if("agent_property_types" in content.keys()):
             agent_property_types = content["agent_property_types"]
+        if("individual_agent_properties" in content.keys()):
+            individual_agent_properties = content["individual_agent_properties"]
 
 
 
@@ -596,7 +599,8 @@ class BptkServer(Flask):
             agents=agents,
             agent_states=agent_states,
             agent_properties=agent_properties,
-            agent_property_types=agent_property_types
+            agent_property_types=agent_property_types,
+            individual_agent_properties=individual_agent_properties
         )
 
         resp = make_response('{"msg":"session started"}', 200)

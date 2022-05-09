@@ -330,7 +330,7 @@ class bptk():
 
 
     def begin_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],starttime=0.0, dt=1.0):
+                       agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0):
         """Begins a session to allow stepwise simulation.
 
         This resets the internal session cache, there can only be one session at any time.
@@ -371,7 +371,6 @@ class bptk():
             
         agent_property_types = agent_property_types if type(
         agent_property_types) is list else agent_property_types.split(",")
-        
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!")
@@ -380,6 +379,10 @@ class bptk():
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            return
+            
+        if len(individual_agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!")
             return
 
         if len(agent_properties) > 0 and len(agents) == 0:
@@ -424,6 +427,7 @@ class bptk():
             "agent_states": agent_states,
             "agent_properties":agent_properties,
             "agent_property_types":agent_property_types,
+            "individual_agent_properties":individual_agent_properties,
             "equations": equations,
             "step": starttime_,
             "starttime": starttime_,
@@ -460,6 +464,7 @@ class bptk():
         agent_states=self.session_state["agent_states"]
         agent_properties=self.session_state["agent_properties"]
         agent_property_types=self.session_state["agent_property_types"]
+        individual_agent_properties=self.session_state["individual_agent_properties"]
         equations = self.session_state["equations"]
         step = self.session_state["step"]
         stoptime = self.session_state["stoptime"]
@@ -486,7 +491,8 @@ class bptk():
                     scenario_managers=[manager.name],
                     agent_states=agent_states,
                     agent_properties=agent_properties,
-                    agent_property_types=agent_property_types
+                    agent_property_types=agent_property_types,
+                    individual_agent_properties=individual_agent_properties
                 )
             # Handle SD scenarios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:

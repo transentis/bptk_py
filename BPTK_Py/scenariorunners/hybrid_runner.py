@@ -24,7 +24,13 @@ class HybridRunner(ScenarioRunner):
     This class runs agent-based and hybrid simulation models that are built using the Model class. 
     """
 
-
+    def _get_agents_for_model(self, scenario):
+        agents = {}
+        for agent in scenario.agents:
+            if (not agent.agent_type in agents):
+                agents[agent.agent_type] = []
+            agents[agent.agent_type].append(agent)
+        return agents
 
     def get_df_for_agent(self, data, agent_name, agent_states, agent_properties, agent_property_types):
 
@@ -251,7 +257,7 @@ class HybridRunner(ScenarioRunner):
         return simulation_results
 
 
-    def run_scenario_step(self, step, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], agent_states=[], agent_properties=[], agent_property_types=[], rerun=False):
+    def run_scenario_step(self, step, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], agent_states=[], agent_properties=[], agent_property_types=[], individual_agent_properties=[], rerun=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param step: the step to run
@@ -293,6 +299,8 @@ class HybridRunner(ScenarioRunner):
             scenario.run_step(step)
         
         for scenario in scenario_objects:
+            agent_instance_data = self._get_agents_for_model(scenario)
+
             data = scenario.statistics()
             if len(data) == 0:
                 log("[WARN] No output data produced. Hopefully this was your intention.")
@@ -300,7 +308,33 @@ class HybridRunner(ScenarioRunner):
             for agent in agents:
                 new_df = pd.DataFrame()
                 df = self.get_df_for_agent(data, agent, agent_states, agent_properties, agent_property_types)
-    
+                if(individual_agent_properties):
+                    if agent in individual_agent_properties:
+                        for agent_property in individual_agent_properties[agent]:
+                            print(agent_property)
+                            if scenario.scenario_manager not in abm_results_dict:
+                                abm_results_dict[scenario.scenario_manager] = dict()
+
+                            if scenario.name not in abm_results_dict[scenario.scenario_manager]:
+                                abm_results_dict[scenario.scenario_manager][scenario.name] = dict()
+
+                            if "agents" not in abm_results_dict[scenario.scenario_manager][scenario.name]:
+                                abm_results_dict[scenario.scenario_manager][scenario.name]["agents"] = dict()
+
+                            if agent not in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"]:
+                                abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent] = dict()
+
+                            if "instances" not in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]:
+                                abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"] = dict()
+                            
+                            for agent_instance in agent_instance_data[agent]:
+                                if agent_instance.id not in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]:
+                                    abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"][agent_instance.id] = dict()
+                                if agent_property not in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"][agent_instance.id]:
+                                    abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"][agent_instance.id] = dict()
+                                if agent_property in agent_instance.properties:
+                                    abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"][agent_instance.id][agent_property] = agent_instance.properties[agent_property]
+                            
                 if agent_properties:
                     for state in agent_states:
                         for agent_property in agent_properties:
