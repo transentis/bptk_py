@@ -448,6 +448,15 @@ class bptk():
             self.session_state=None
 
 
+    
+    def progress(self):
+        """Returns the progress of a simulation as float.
+        """
+        print("CALLED")
+        return float(self.session_state["step"]) / float(self.session_state["stoptime"])
+    
+
+
     def run_step(self, settings=None, flat=False):
         """Run the next step of a session.
 
@@ -1224,6 +1233,7 @@ class bptk():
 
         else:
             log("[ERROR] Scenario manager not found. Did you register it?")
+
 
     def export_scenarios(
             self,

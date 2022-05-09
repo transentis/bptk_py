@@ -16,7 +16,7 @@ if(version[0] < 3 or (version[0] == 3 and version[1] < 9)):
     sys.exit()
 
 
-from flask import Flask, redirect, url_for, request, make_response, jsonify
+from flask import Flask, redirect, url_for, request, make_response, jsonify, Response
 from BPTK_Py.bptk import bptk
 import pandas as pd
 import json
@@ -215,6 +215,7 @@ class BptkServer(Flask):
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
         self.route("/start-instance", methods=['POST'], strict_slashes=False)(self._start_instance_resource)
         self.route("/<instance_uuid>/run-step", methods=['POST'], strict_slashes=False)(self._run_step_resource)
+        self.route("/<instance_uuid>/stream-steps", methods=['POST'], strict_slashes=False)(self._stream_steps_resource)
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
@@ -700,6 +701,53 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
+
+
+
+    def _stream_steps_resource(self, instance_uuid):
+        """
+        This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+
+        Arguments:
+            settings: JSON
+                Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
+            flatResults: boolean
+                When set to true, a flat version of the results is returned.
+        """
+        # Checking if the instance id is valid.
+        if not self._ensure_instance_exists(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+        
+        instance = self._instance_manager.get_instance(instance_uuid)
+        is_json = request.is_json
+        if is_json:
+            content = request.get_json()
+            
+            if not "settings" in content:
+                resp = make_response('{"error": "expecting settings to be set"}', 500)
+                resp.headers['Content-Type'] = 'application/json'
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp
+
+        def streamer():
+            while instance.progress() <= 1.0:
+                if is_json:
+                    result = instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True)
+                else:
+                    result = instance.run_step()
+                if result is not None:
+                    yield jsonpickle.dumps(result)
+                else:
+                    yield '{"error": "no data was returned from run_step"}'
+
+            if self._external_state_adapter != None:
+                self._external_state_adapter.save_instance(self._instance_manager._get_instance_state(instance_uuid))
+
+        return Response(streamer())
+
 
     def _keep_alive_resource(self,instance_uuid):
         """
