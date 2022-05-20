@@ -122,7 +122,108 @@ def test_run_resource(app, client):
     response = client.post('/run', data=json.dumps(query), content_type = 'application/json')
     
     assert response.status_code == 200 # checking the status code
-    
+
+def test_run_steps_resource(app, client):
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":10,
+            "seconds":0,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+
+    session = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]
+    }
+
+    response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json')
+    assert response.status_code == 200
+
+    query={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0 
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.post('/' + id + '/run-step', data=json.dumps(query), content_type = 'application/json')
+    assert response.status_code == 200 # checking the status code
+
+
+def test_stream_steps_resource(app, client):
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":10,
+            "seconds":0,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+
+    session = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]
+    }
+
+    response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json')
+    assert response.status_code == 200
+
+    query={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0 
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.post('/' + id + '/stream-steps', data=json.dumps(query), content_type = 'application/json')
+    assert response.status_code == 200 # checking the status code
+
 def test_scenarios_resource(app, client):
     response = client.get('/scenarios')
     data=json.loads(response.data)

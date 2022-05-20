@@ -31,6 +31,7 @@ from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
+from .visualizations import SimpleDashboard
 
 
 #plt.interactive(True)
