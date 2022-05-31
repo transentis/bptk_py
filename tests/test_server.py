@@ -326,7 +326,6 @@ def test_keep_alive(app, client):
     response = client.post('/' + id + "/keep-alive")
     assert response.status_code == 200
     
-    
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)

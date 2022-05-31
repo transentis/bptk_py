@@ -60,7 +60,7 @@ class ModelConnection:
     call: Callable = None
 
 class SimpleDashboard:
-    def __init__(self, bptk, scenario_manager, scenario, style = None, layout = None):
+    def __init__(self, bptk, scenario_manager, scenario, style = {}, layout = {}):
         """
             Arguments:
             bptk: bptk
