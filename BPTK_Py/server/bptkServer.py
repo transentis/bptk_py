@@ -226,13 +226,6 @@ class BptkServer(Flask):
         self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
         self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
         self.route("/<instance_uuid>/stop-instance", methods=['GET'], strict_slashes=False)(self._stop_instance)
-        self.route("/test", methods=['GET'], strict_slashes=False)(self._test)
-
-    def _test(self):
-        resp = make_response("TEST.", 200)
-        resp.headers['Content-Type']='application/json'
-        resp.headers['Access-Control-Allow-Origin']='*'
-        return resp 
 
     def _stop_instance(self, instance_uuid):
         self._instance_manager._delete_instance(instance_uuid)
