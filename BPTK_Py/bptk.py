@@ -361,7 +361,6 @@ class bptk():
                 Deltatime.
 
         """
-        print(equations, agents)
         self.session_state = None
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
@@ -453,7 +452,6 @@ class bptk():
     def progress(self):
         """Returns the progress of a simulation as float.
         """
-        print("CALLED")
         return float(self.session_state["step"]) / float(self.session_state["stoptime"])
     
 

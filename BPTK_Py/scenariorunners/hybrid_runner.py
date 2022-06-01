@@ -311,7 +311,6 @@ class HybridRunner(ScenarioRunner):
                 if(individual_agent_properties):
                     if agent in individual_agent_properties:
                         for agent_property in individual_agent_properties[agent]:
-                            print(agent_property)
                             if scenario.scenario_manager not in abm_results_dict:
                                 abm_results_dict[scenario.scenario_manager] = dict()
 
