@@ -53,7 +53,6 @@ class SimultaneousScheduler(Scheduler):
             else:
                 break
 
-    # TODO What's the difference between sim_round and step?
     def run_step(self, model, sim_round, step, progress_widget=None, collect_data=True):
         """
         Run one step.
