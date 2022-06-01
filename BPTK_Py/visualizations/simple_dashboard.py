@@ -11,7 +11,7 @@ class ScenarioWidget:
     def _event_handler(self, change):
         self.new_value = change.new
         if(self.pre_trigger != None):
-            self.pre_trigger()
+            self.pre_trigger(change.new)
         self.trigger()
 
 
@@ -240,100 +240,6 @@ class SimpleDashboard:
         if(model_connection != None):
             self._add_model_widget(widget, model_connection)
 
-    def get_dropdown(self, description: str, options: List[str], selected: str = None, model_connection: Union[str, ModelConnection, Callable, None] = None) -> widgets.Dropdown:
-        """
-            Add a dropdown
-
-            description: string
-            options: List
-            selected: string
-                The selected element
-            model_connection: Union[str, ModelConnection, Callable, None] - Optional
-                The connection this widget has to the model. Can either be a direct connection to a constant using a string, a ModelConnection or a Callable, that gets called when the widget updates.
-
-            Returns:
-                widgets.Dropdown
-        """
-        value = selected
-        if(selected == None):
-            value = options[0]
-
-        widget = widgets.Dropdown(
-            options=options,
-            value=value,
-            description=description,
-            continuous_update=False, 
-            layout=self.layout,
-            style=self.style
-        )
-        if(model_connection != None):
-            self._add_model_widget(widget, model_connection)
-        return widget
-
-
-    def get_int_slider(self, description: str, value: int, min: int, max: int, step = 1, model_connection: Union[str, ModelConnection, Callable, None] = None, readout_format='.2f') -> widgets.IntSlider:
-        """
-            Add an int slider
-
-            description: string
-            value: int
-            min: int
-            max: int
-            step: int
-            model_connection: Union[str, ModelConnection, Callable, None] - Optional
-                The connection this widget has to the model. Can either be a direct connection to a constant using a string, a ModelConnection or a Callable, that gets called when the widget updates.
-
-            Returns:
-                widgets.Dropdown
-        """
-        widget = widgets.IntSlider(
-            value=value,
-            min=min,
-            max=max,
-            step=step,
-            continuous_update=False,
-            description=description,
-            layout=self.layout,
-            style=self.style,
-        )
-
-        if(model_connection != None):
-            self._add_model_widget(widget, model_connection)
-
-        return widget
-    
-
-    def get_float_slider(self, description: str, value: float, min: float, max: float, step = 1.0, model_connection: Union[str, ModelConnection, Callable, None] = None, readout_format='.2f') -> widgets.FloatSlider:
-        """
-            Add a float slider
-
-            description: string
-            value: float
-            min: float
-            max: float
-            step: float
-            model_connection: Union[str, ModelConnection, Callable, None] - Optional
-                The connection this widget has to the model. Can either be a direct connection to a constant using a string, a ModelConnection or a Callable, that gets called when the widget updates.
-
-            Returns:
-                widgets.FloatSlider
-        """
-        widget = widgets.FloatSlider(
-            value=value,
-            min=min,
-            max=max,
-            step=step,
-            continuous_update=False,
-            description=description,
-            layout=self.layout,
-            style=self.style,
-            readout_format=readout_format
-        )
-        if(model_connection != None):
-            self._add_model_widget(widget, model_connection)
-
-        return widget
-    
     def _add_model_widget(self, widget, model_connection: Union[str, ModelConnection, Callable]):
         if(isinstance(model_connection, str)):
             self.widget_array.append(ScenarioWidget(widget, model_connection, self._update))
