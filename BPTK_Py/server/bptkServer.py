@@ -658,10 +658,8 @@ class BptkServer(Flask):
         This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
 
         Arguments:
-            settings: JSON
-                Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
-            flatResults: boolean
-                When set to true, a flat version of the results is returned.
+            instance_uuid: string
+                The id of the instance to advance.
         """
         # Checking if the instance id is valid.
         if not self._ensure_instance_exists(instance_uuid):
@@ -699,13 +697,12 @@ class BptkServer(Flask):
 
     def _stream_steps_resource(self, instance_uuid):
         """
-        This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+        This endpoint is used to stream a simulation.
 
         Arguments:
-            settings: JSON
-                Dictionary structure with a key "settings" that contains the settings to apply for that step. These can be constants and points.
-            flatResults: boolean
-                When set to true, a flat version of the results is returned.
+            
+            instance_uuid: string
+                The id of the instance to stream.
         """
         # Checking if the instance id is valid.
         if not self._ensure_instance_exists(instance_uuid):

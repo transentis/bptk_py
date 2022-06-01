@@ -42,11 +42,11 @@ class ScenarioWidget:
 @dataclasses.dataclass
 class ModelConnection:
     """
-        Defines the connection a widget has to the model. When the dashboard updates all widgets update the model with their current values.
+        Defines the connection of a widget to the model. When the dashboard updates all widgets update the model with their current values.
 
         Arguments:
         element: string
-            The element in the model the widget is connected to. If points is not set, it defaults to a model constant, otherwise it uses a model points.
+            The element of the model the widget is connected to. If points is not set, it defaults to a model constant, otherwise it uses a model points.
         points: string - Optional
             A list of points indices to update.
         multiply: int - Optional
