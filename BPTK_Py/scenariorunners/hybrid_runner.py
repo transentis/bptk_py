@@ -64,8 +64,8 @@ class HybridRunner(ScenarioRunner):
                                     if column in agent_states:
                                         counts[column] = states[column]["count"]
                                 output[t] = counts
-                        # else:
-                        #     output[t] = series
+                        else:
+                            output[t] = series
             return output
 
         res = get_stats_for(data, agent_name, agent_states, agent_properties, agent_property_types)
