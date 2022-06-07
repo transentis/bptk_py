@@ -355,7 +355,7 @@ def test_abm_run_scenarios_json_results(abm_model):
         agents=["agent_1"],
         agent_states=["open"],
         agent_properties=["x"],
-        agent_property_types=["total"],
+        agent_property_types=["total", "mean", "max", "min"],
         return_format="json"
     )
     
@@ -390,5 +390,6 @@ def test_abm_run_scenarios_json_results(abm_model):
             }
         }
     }
+    print(results)
     expected_json = json.dumps(expected_json, indent=2)
     assert results==expected_json

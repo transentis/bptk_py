@@ -64,7 +64,6 @@ class SimultaneousScheduler(Scheduler):
             progress_widget: FloatBarProgress instance.
                 Ipywidgets element used to track progress.
         """
-
         self.current_round = sim_round
 
         self.current_step = step
@@ -106,7 +105,6 @@ class SimultaneousScheduler(Scheduler):
             agent.act(time, sim_round, step)
 
         model.end_round(time, sim_round, step)
-
 
 
         if model.data_collector:

@@ -31,6 +31,7 @@ from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
+from .visualizations import SimpleDashboard
 
 
 #plt.interactive(True)
@@ -330,7 +331,7 @@ class bptk():
 
 
     def begin_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],starttime=0.0, dt=1.0):
+                       agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0):
         """Begins a session to allow stepwise simulation.
 
         This resets the internal session cache, there can only be one session at any time.
@@ -360,7 +361,6 @@ class bptk():
                 Deltatime.
 
         """
-
         self.session_state = None
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
@@ -371,7 +371,6 @@ class bptk():
             
         agent_property_types = agent_property_types if type(
         agent_property_types) is list else agent_property_types.split(",")
-        
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!")
@@ -380,6 +379,10 @@ class bptk():
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+            return
+            
+        if len(individual_agent_properties) > 0 and len(agents) == 0:
+            log("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!")
             return
 
         if len(agent_properties) > 0 and len(agents) == 0:
@@ -424,6 +427,7 @@ class bptk():
             "agent_states": agent_states,
             "agent_properties":agent_properties,
             "agent_property_types":agent_property_types,
+            "individual_agent_properties":individual_agent_properties,
             "equations": equations,
             "step": starttime_,
             "starttime": starttime_,
@@ -444,6 +448,14 @@ class bptk():
             self.session_state=None
 
 
+    
+    def progress(self):
+        """Returns the progress of a simulation as float.
+        """
+        return float(self.session_state["step"]) / float(self.session_state["stoptime"])
+    
+
+
     def run_step(self, settings=None, flat=False):
         """Run the next step of a session.
 
@@ -460,6 +472,7 @@ class bptk():
         agent_states=self.session_state["agent_states"]
         agent_properties=self.session_state["agent_properties"]
         agent_property_types=self.session_state["agent_property_types"]
+        individual_agent_properties=self.session_state["individual_agent_properties"]
         equations = self.session_state["equations"]
         step = self.session_state["step"]
         stoptime = self.session_state["stoptime"]
@@ -474,8 +487,21 @@ class bptk():
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
-            if manager.type == "abm" and manager.name in scenario_managers  and agents > 0:
-                print("run_step currently only supports SD scenarios") 
+            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+                runner = HybridRunner(self.scenario_manager_factory)
+                simulation_results[manager.name] = runner.run_scenario_step(
+                    step=step,
+                    abm_results_dict={},
+                    return_format='json',
+                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
+                    equations=equations,
+                    agents=agents,
+                    scenario_managers=[manager.name],
+                    agent_states=agent_states,
+                    agent_properties=agent_properties,
+                    agent_property_types=agent_property_types,
+                    individual_agent_properties=individual_agent_properties
+                )
             # Handle SD scenarios and sort by scenarios
             elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
@@ -1206,6 +1232,7 @@ class bptk():
 
         else:
             log("[ERROR] Scenario manager not found. Did you register it?")
+
 
     def export_scenarios(
             self,

@@ -322,7 +322,6 @@ class Model:
                 If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
 
         """
-
         if show_progress_widget:
             progress_widget = widgets.FloatProgress(
                 value=0.0,
@@ -347,6 +346,23 @@ class Model:
         else:
             self.scheduler.run(self, None, collect_data)
 
+
+    def run_step(self, step, show_progress_widget=False, collect_data=True):
+        """Run a simulation step.
+        
+        This esssentially just calls the run method of the models scheduler.
+        
+        Args:
+            step: Int.
+                The step to run
+            show_progress_widget: Boolean (Default=False).
+                If True, shows a progress widget (only in Jupyter environment!)
+            collect_data: Boolean (Default=True).
+                If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
+
+        """
+        result = self.scheduler.run_step(self, 0, step, show_progress_widget, collect_data)
+        
 
     def begin_round(self, time, sim_round, step):
          """Called at the beginning of a simulation round.
@@ -600,7 +616,7 @@ class Model:
         Returns: 
             The DataCollector used to collect the simulation statistics.
         """
-
+        
         try:
             return self.data_collector.statistics()
         except AttributeError as e:
