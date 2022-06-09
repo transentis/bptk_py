@@ -147,7 +147,6 @@ def test_sd_run_scenarios_df_results(sd_model):
     """
     bptk=sd_model
     results=sd_run_scenarios_results(bptk)
-    print(results)
     test_df = pd.DataFrame({'stock': pd.Series(list(range(10)), dtype='float'),
                             'flow': pd.Series([1.0]*10, dtype='float')})
     test_df.index.name =  "t"
@@ -390,6 +389,5 @@ def test_abm_run_scenarios_json_results(abm_model):
             }
         }
     }
-    print(results)
     expected_json = json.dumps(expected_json, indent=2)
     assert results==expected_json
