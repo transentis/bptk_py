@@ -327,10 +327,6 @@ class HybridRunner(ScenarioRunner):
                                 abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"] = dict()
                             
                             for agent_instance in agent_instance_data[agent]:
-                                print(abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent])
-                                print(agent_instance.id)
-                                print(agent_instance.id in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"])
-                                print()
                                 if agent_instance.id not in abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"]:
                                     abm_results_dict[scenario.scenario_manager][scenario.name]["agents"][agent]["instances"][agent_instance.id] = dict()
                                 if agent_property in agent_instance.properties:

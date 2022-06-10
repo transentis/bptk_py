@@ -736,7 +736,11 @@ class BptkServer(Flask):
             if self._external_state_adapter != None:
                 self._external_state_adapter.save_instance(self._instance_manager._get_instance_state(instance_uuid))
 
-        return Response(streamer())
+        resp = Response(streamer())
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
 
 
     def _keep_alive_resource(self,instance_uuid):
