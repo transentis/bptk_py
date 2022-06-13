@@ -361,7 +361,7 @@ class Model:
                 If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
 
         """
-        result = self.scheduler.run_step(self, 0, step, show_progress_widget, collect_data)
+        return self.scheduler.run_step(self, 0, step, show_progress_widget, collect_data)
         
 
     def begin_round(self, time, sim_round, step):

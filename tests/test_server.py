@@ -9,7 +9,7 @@ import BPTK_Py
 
 
 def bptk_factory():
-    model = Model(starttime=1.0,stoptime=5.0, dt=1.0, name="Test Model")
+    model = Model(starttime=1.0,stoptime=50.0, dt=1.0, name="Test Model")
     stock = model.stock("stock")
     flow = model.flow("flow")
     constant = model.constant("constant")
@@ -342,3 +342,246 @@ def test_keep_alive(app, client):
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 0
+
+
+
+
+def test_instance_timeouts(app, client):
+    import time
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":0,
+            "seconds":10,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+    
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 1
+    time.sleep(6)
+    
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 1
+    time.sleep(6)
+    
+    response = client.get('/full-metrics')
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert result['instanceCount'] == 0
+    
+    
+
+def test_run_steps(app, client):
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":10,
+            "seconds":0,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+
+    session = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]
+    }
+
+    response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json')
+    assert response.status_code == 200
+
+    query={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0 
+                    }
+                }
+            }
+        },
+        "numberSteps": 20
+    }
+
+    response = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json')
+    assert response.status_code == 200 # checking the status code
+    result = json.loads(response.data)
+    assert len(result) == 20
+
+
+
+def test_run_steps_lock(app, client):
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":10,
+            "seconds":0,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+
+    session = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]
+    }
+
+    response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json')
+    assert response.status_code == 200
+
+    query={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0 
+                    }
+                }
+            }
+        },
+        "numberSteps": 20
+    }
+
+    thread_results = [None, None]
+
+    def _run_steps_lock(requests, index):
+        requests[index] = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json')
+
+    import threading
+    import time
+    t1 = threading.Thread(target=_run_steps_lock, args=[thread_results, 0])
+    t2 = threading.Thread(target=_run_steps_lock, args=[thread_results, 1])
+    t1.start()
+    t2.start()
+
+    t1.join()
+    t2.join()
+
+    assert thread_results[0].status_code == 200
+    assert thread_results[1].status_code == 500
+    
+    result = json.loads(thread_results[0].data)
+    assert len(result) == 20
+
+    time.sleep(1)
+    request = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json')
+    assert request.status_code == 200
+    result = json.loads(request.data)
+    assert len(result) == 20
+
+
+
+def test_stream_steps_lock(app, client):
+
+    timeout = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":10,
+            "seconds":0,
+            "milliseconds":0,
+            "microseconds":0
+        }
+    }
+
+    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
+    assert response.status_code == 200
+    id = json.loads(response.data)['instance_uuid']
+
+    session = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]
+    }
+
+    response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json')
+    assert response.status_code == 200
+
+   
+    query={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0 
+                    }
+                }
+            }
+        }
+    }
+
+    thread_results = [None, None]
+
+    def _stream_steps_lock(requests, index):
+        requests[index] = client.post('/' + id + '/stream-steps', data=json.dumps(query), content_type = 'application/json')
+
+    import threading
+    import time
+    t1 = threading.Thread(target=_stream_steps_lock, args=[thread_results, 0])
+    t2 = threading.Thread(target=_stream_steps_lock, args=[thread_results, 1])
+    t1.start()
+    t2.start()
+
+    t1.join()
+    t2.join()
+
+    assert thread_results[0].status_code == 200
+    assert thread_results[1].status_code == 500
+    
+    result = json.loads(thread_results[0].data)
+    assert len(result) == 50
