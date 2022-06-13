@@ -229,7 +229,7 @@ class bptk():
                                            agent_properties, agent_property_types, series_names, return_df)
 
     def _set_state(self, state):
-        if(not "lock" in self.session_state.keys()):
+        if(not "lock" in state.keys()):
             state["lock"] = False
         self.session_state = state
 
