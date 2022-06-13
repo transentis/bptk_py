@@ -229,7 +229,16 @@ class bptk():
                                            agent_properties, agent_property_types, series_names, return_df)
 
     def _set_state(self, state):
+        if(not "lock" in state.keys()):
+            state["lock"] = False
         self.session_state = state
+
+    def lock(self):
+        self.session_state["lock"] = True
+    def unlock(self):
+        self.session_state["lock"] = False
+    def is_locked(self):
+        return self.session_state["lock"]
 
     def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                            agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
@@ -434,7 +443,8 @@ class bptk():
             "stoptime": stoptime_,
             "dt": dt,
             "settings_log":{},
-            "results_log":{}
+            "results_log":{},
+            "lock": False
         }
 
     def end_session(self):

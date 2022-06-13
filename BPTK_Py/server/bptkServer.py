@@ -51,7 +51,7 @@ class InstanceManager:
     def _get_instance_state(self, instance_uuid):
         instance = self._instances[instance_uuid]
         session_state = copy.deepcopy(instance['instance'].session_state)
-        
+        session_state["lock"] = False
         return InstanceState(session_state, instance_uuid, instance["time"], instance["timeout"], session_state["step"])
             
     def get_instance_states(self):
@@ -215,6 +215,7 @@ class BptkServer(Flask):
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
         self.route("/start-instance", methods=['POST'], strict_slashes=False)(self._start_instance_resource)
         self.route("/<instance_uuid>/run-step", methods=['POST'], strict_slashes=False)(self._run_step_resource)
+        self.route("/<instance_uuid>/run-steps", methods=['POST'], strict_slashes=False)(self._run_steps_resource)
         self.route("/<instance_uuid>/stream-steps", methods=['POST'], strict_slashes=False)(self._stream_steps_resource)
         self.route("/<instance_uuid>/begin-session", methods=['POST'], strict_slashes=False)(self._begin_session_resource)
         self.route("/<instance_uuid>/end-session", methods=['POST'], strict_slashes=False)(self._end_session_resource)
@@ -669,6 +670,13 @@ class BptkServer(Flask):
             return resp
         
         instance = self._instance_manager.get_instance(instance_uuid)
+
+        if(instance.is_locked()):
+            resp = make_response('{"error": "instace is locked"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+
         if not request.is_json:
             result = instance.run_step()
         else:
@@ -681,6 +689,66 @@ class BptkServer(Flask):
                 resp.headers['Access-Control-Allow-Origin'] = '*'
                 return resp
 
+        if result is not None:
+            resp = make_response(jsonpickle.dumps(result), 200)
+        else:
+            resp = make_response('{"error": "no data was returned from run_step"}', 500)
+
+        if self._external_state_adapter != None:
+            self._external_state_adapter.save_instance(self._instance_manager._get_instance_state(instance_uuid))
+
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    def _run_steps_resource(self, instance_uuid):
+        """
+        This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+
+        Arguments:
+            instance_uuid: string
+                The id of the instance to advance.
+        """
+        # Checking if the instance id is valid.
+        if not self._ensure_instance_exists(instance_uuid):
+            resp = make_response('{"error": "expecting a valid instance id to be given"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+        
+        result = []
+        try:
+            instance = self._instance_manager.get_instance(instance_uuid)
+            if not request.is_json:
+                resp = make_response('{"error": "expecting a number of steps to be provided in the body as a json {numberSteps: int}"}', 500)
+                resp.headers['Content-Type'] = 'application/json'
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp
+
+            if(instance.is_locked()):
+                resp = make_response('{"error": "instace is locked"}', 500)
+                resp.headers['Content-Type'] = 'application/json'
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp
+            content = request.get_json()
+            if "numberSteps" in content:
+                if "settings" in content:
+                    instance.lock()
+                    for i in range(0,content["numberSteps"]):
+                        result.append(instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True))
+                    instance.unlock()
+                else:
+                    resp = make_response('{"error": "expecting settings to be set"}', 500)
+                    resp.headers['Content-Type'] = 'application/json'
+                    resp.headers['Access-Control-Allow-Origin'] = '*'
+                    return resp
+            else:
+                resp = make_response('{"error": "expecting a number of steps to be provided in the body as a json {"numberSteps": int}"}', 500)
+                resp.headers['Content-Type'] = 'application/json'
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp
+        except:
+            instance.unlock()
         if result is not None:
             resp = make_response(jsonpickle.dumps(result), 200)
         else:
@@ -722,17 +790,34 @@ class BptkServer(Flask):
                 resp.headers['Access-Control-Allow-Origin'] = '*'
                 return resp
 
-        def streamer():
-            while instance.progress() <= 1.0:
-                if is_json:
-                    result = instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True)
-                else:
-                    result = instance.run_step()
-                if result is not None:
-                    yield jsonpickle.dumps(result)
-                else:
-                    yield '{"error": "no data was returned from run_step"}'
+        if(instance.is_locked()):
+            resp = make_response('{"error": "instace is locked"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
+        def streamer():
+            try:
+                instance.lock()
+                yield "["
+                first = True
+                while instance.progress() <= 1.0:
+                    if first:
+                        first = False
+                    else:
+                        yield ","
+                        
+                    if is_json:
+                        result = instance.run_step(settings=content["settings"], flat="flatResults" in content and content["flatResults"] == True)
+                    else:
+                        result = instance.run_step()
+                    if result is not None:
+                        yield jsonpickle.dumps(result)
+                    else:
+                        yield '{"error": "no data was returned from run_step"}'
+                yield "]"
+            except:
+                instance.unlock()
             if self._external_state_adapter != None:
                 self._external_state_adapter.save_instance(self._instance_manager._get_instance_state(instance_uuid))
 
