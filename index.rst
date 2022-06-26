@@ -11,7 +11,7 @@ BPTK-Py: System Dynamics and Agent-based Modeling In Python
    :description: In-depth explanation of agent-based modeling
    :keywords: agent-based modeling, system dynamics, python, bptk, sddsl, xmile, smile, stella, ithink
 
-The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) and manage simulation scenarios with ease.
+The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) natively in Python and manage simulation scenarios with ease.
 
 Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
 
@@ -41,7 +41,7 @@ BPTK was also used to build our implementation of the infamous `Beer Distributio
 Getting Help
 ============
 
-BPTK-Py is developed and maintained by `transentis labs <https://www.transentis.com/business-prototyping-toolkit/en/>`_.
+BPTK-Py is developed and maintained by `transentis labs <https://www.transentis.com/business-prototyping-toolkit/en/>`_. Currently the main developers are `Dr. Oliver Grasl <https://linkedin.com/in/olivergrasl>`_, `Jeremy Funk <https://linkedin.com/in/nathan-jeremy-funk-344617216>`_  and `David Granzin <https://linkedin.com/in/makisuo>`_, former contributors include Dominik Schröck and Ahmed Eldably. 
 
 The best place to ask questions about the framework is our `Business Prototyping Toolkit Meetup <https://www.transentis.com/business-prototyping-toolkit-meetup/en/>`_, which meets online regularly. 
 

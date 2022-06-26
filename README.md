@@ -2,9 +2,9 @@
 
 __System Dynamics and Agent-based Modeling in Python__
 
-The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) and manage simulation scenarios with ease.
+The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) natively in Python and manage simulation scenarios with ease.
 
-Next to providing the necessary SD and ABM language constructs to build models directly in Python, the framework also includes a compiler for transpiling  System Dynamics models conforming to the XMILE standard into Python code.
+Next to providing the necessary SD and ABM language constructs to build simulation models directly in Python, the framework also includes a compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code.
 
 This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](http://www.iseesystems.com) or [iThink](http://www.iseesystems.com))) and then use them _independently_ in an Python environment.
 
@@ -28,11 +28,21 @@ Our [Introduction to the Business Prototyping Toolkit](https://github.com/transe
 
 You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
 
-We have also set up a [meetup group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) that gathers online monthly. This is a good place to see BPTK in action, ask questions and suggest new features.
+Our [Business Prototyping Toolkit Meetup Group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) gathers online regularly. This is a good place to see BPTK in action, ask questions and suggest new features. We record every session and you can _view past recordings_ on the [meetup homepage](https://www.transentis.com/resources/business-prototyping-toolkit-meetup).
 
-For any questions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
+You might also like to clone our [model library repository](https://github.com/transentis/bptk-model-library), which contains a number of models that illustrate how to model socio-economic systems using Agent-based modeling, System Dynamics and BPTK.
+
+BPTK was also used to build our implementation of the infamous Beer Distribution Game. Our [beergame repository](https://github.com/transentis/beergame) contains Jupyter notebooks that analyse the Beergame in-depth and also provides XMILE, SD DSL and Agent-based versions of the Beergame.
+
+For any questions our suggestions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 1.6.0
+
+* BPTK Server: The run_step methods now also support agent-based models
+* BPTK Server: A new endpoint streams_steps runs all the steps of a model and streams the results, especially useful for models that run for a long-time.
+* SimpleDashboard: A new utility class that allows easy creation of dashboards based on Jupyter Widgets.
 
 ### 1.5.3
 

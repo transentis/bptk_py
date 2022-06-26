@@ -23,9 +23,9 @@ copyright = '2022, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version
-version = '1.5'
+version = '1.6'
 # The full version, including alpha/beta/rc tags
-release = '1.5.3'
+release = '1.6.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -94,7 +94,7 @@ html_theme = 'sphinx_rtd_theme'
 #
 
 html_theme_options = {
-    #'analytics_id': 'G-CBT9QSPYKQ',  #  Google Analytics
+    'analytics_id': 'G-CBT9QSPYKQ',  #  Google Analytics
     'canonical_url': 'https://bptk.transentis.com/en/latest'
 }
 

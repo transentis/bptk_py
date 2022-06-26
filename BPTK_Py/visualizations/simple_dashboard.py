@@ -42,9 +42,9 @@ class ScenarioWidget:
 @dataclasses.dataclass
 class ModelConnection:
     """
-        Defines the connection of a widget to the model. When the dashboard updates all widgets update the model with their current values.
+    Defines the connection of a widget to the model. When the dashboard updates all widgets update the model with their current values.
 
-        Arguments:
+    Arguments:
         element: string
             The element of the model the widget is connected to. If points is not set, it defaults to a model constant, otherwise it uses a model points.
         points: string - Optional
@@ -62,7 +62,7 @@ class ModelConnection:
 class SimpleDashboard:
     def __init__(self, bptk, scenario_manager, scenario, style = {}, layout = {}):
         """
-            Arguments:
+        Arguments:
             bptk: bptk
                 Reference to bptk.
             scenario_manager: string
@@ -84,7 +84,7 @@ class SimpleDashboard:
 
     def update_plot_data(self, attribute: str, value: str, plot: int):
         """
-            Arguments:
+        Arguments:
             attribute: string
                 The attribute of the plot that will be updated.
             value: string
@@ -143,7 +143,7 @@ class SimpleDashboard:
 
     def start(self):
         """
-            Starts the dashboard. Call this at the end of the script.
+        Starts the dashboard. Call this at the end of the script.
         """
         self._update()
 
@@ -153,39 +153,39 @@ class SimpleDashboard:
                  agent_property_types: List[str] = []
     ) -> int:
         """
-            Wrapper function for bptk.plot_scenarios.
-            Arguments:
-                equations: List.
-                    Names of equations to plot (System Dynamics, SD).
-                title: String.
-                    Title of plot
-                names: List
-                    Names of equations. Used to map equation names to human readable names.
-                x_label: String.
-                    Label for x axis.
-                y_label: String.
-                    Label for y axis.
-                start_date: String.
-                    Start date for time series.
-                kind: String.
-                    Type of graph to plot ("line" or "area").
-                visualize_from_period: Integer
-                    Visualize from specific period onwards.
-                visualize_to_period: Integer
-                    Visualize until a specific period.
-                freq: String.
-                    Frequency of time series. Uses the pandas offset aliases. 
-                agents: List.
-                    List of agents to plot (Agent based modeling).
-                agent_states: List:
-                    List of agent states to plot, REQUIRES "AGENTS" param
-                agent_properties: List.
-                    List of agent properties to plot, REQUIRES "AGENTS" param
-                agent_property_types: List.
-                    List of agent property types to plot, REQUIRES "AGENTS" param
+        Wrapper function for bptk.plot_scenarios.
+        Args:
+            equations: List.
+                Names of equations to plot (System Dynamics, SD).
+            title: String.
+                Title of plot
+            names: List
+                Names of equations. Used to map equation names to human readable names.
+            x_label: String.
+                Label for x axis.
+            y_label: String.
+                Label for y axis.
+            start_date: String.
+                Start date for time series.
+            kind: String.
+                Type of graph to plot ("line" or "area").
+            visualize_from_period: Integer
+                Visualize from specific period onwards.
+            visualize_to_period: Integer
+                Visualize until a specific period.
+            freq: String.
+                Frequency of time series. Uses the pandas offset aliases. 
+            agents: List.
+                List of agents to plot (Agent based modeling).
+            agent_states: List:
+                List of agent states to plot, REQUIRES "AGENTS" param
+            agent_properties: List.
+                List of agent properties to plot, REQUIRES "AGENTS" param
+            agent_property_types: List.
+                List of agent property types to plot, REQUIRES "AGENTS" param
                 
-            Returns:
-                Plot id (used for identification when plot data is updated).
+        Returns:
+            Plot id (used for identification when plot data is updated).
         """
         series_names = dict()
 
@@ -215,13 +215,13 @@ class SimpleDashboard:
 
     def add_custom_plot(self, plot: Callable) -> widgets.Output:
         """
-            Adds custom plot. Plotting must be handeled in the function.
-            Arguments:
-                equations: Callable
-                    Reference to function that plots.
-                
-            Returns:
-                widgets.Output: The output the plot gets drawn on.
+        Adds custom plot. Plotting must be handeled in the function.
+        Args:
+            equations: Callable
+                Reference to function that plots.        
+        
+        Returns:
+            widgets.Output: The output the plot gets drawn on.
         """
         output = widgets.Output()
         self.outputs.append({'output': output, 'plot_function': plot})
@@ -230,12 +230,12 @@ class SimpleDashboard:
 
     def add_widget(self, widget, model_connection: Union[str, ModelConnection, Callable, None] = None):
         """
-            Add any custom widget to the dashboard
+        Add any custom widget to the dashboard
 
-            Args:
-                widget: Widget
-                model_connection: Union[str, ModelConnection, Callable, None] - Optional
-                    The connection this widget has to the model. Can either be a direct connection to a constant using a string, a ModelConnection or a Callable, that gets called when the widget updates.
+        Args:
+            widget: Widget
+            model_connection: Union[str, ModelConnection, Callable, None] - Optional
+                The connection this widget has to the model. Can either be a direct connection to a constant using a string, a ModelConnection or a Callable, that gets called when the widget updates.
         """
         if(model_connection != None):
             self._add_model_widget(widget, model_connection)

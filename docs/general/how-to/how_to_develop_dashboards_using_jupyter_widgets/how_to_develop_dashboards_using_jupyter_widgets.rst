@@ -1,6 +1,6 @@
 
-Developing Advanced User Interfaces
-===================================
+Developing Dashboards Using Jupyter Widgets
+===========================================
 
 .. meta::
    :description: Developing advanced user interfaces using the BPTK-Py business simulation framework.
@@ -16,7 +16,7 @@ to create more sophisticated plots (e.g. plots with two axes) or a more
 sophisticated interface dashboard for your simulation.
 
 This is actually quite easy, because BPTK-Py's high-level functions
-already utilize some very powerfull open source libraries for data
+already utilize some very powerful open source libraries for data
 management, plotting and dashboards: Pandas, Matplotlib and Jupyter
 Widgets.
 

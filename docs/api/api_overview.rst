@@ -23,6 +23,7 @@ BPTK APIs
    ./api_model
    ./api_module
    ./api_scheduler
+   ./api_simpledashboard
    ./api_simulation_scenario
    ./api_simultaneousScheduler
    ./api_stock

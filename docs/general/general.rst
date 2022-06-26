@@ -17,7 +17,9 @@ This section contains documents that are relevant to Agent-based modeling, Syste
    ./in-depth/in_depth_scenarios/in_depth_scenarios
    ./how-to/how_to_accessing_raw_simulation_results/how_to_accessing_raw_simulation_results
    ./how-to/how_to_advanced_plotting_features/how_to_advanced_plotting_features
-   ./how-to/how_to_developing_advanced_user_interfaces/how_to_developing_advanced_user_interfaces
+   ./how-to/how_to_develop_dashboards_using_jupyter_widgets/how_to_develop_dashboards_using_jupyter_widgets
+   ./how-to/how_to_develop_dashboards_using_simpledashboard/how_to_developing_dashboards_using_simpledashboard
+   ./how-to/how_to_external_state/how_to_external_state
 
 
 
