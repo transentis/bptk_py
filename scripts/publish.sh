@@ -14,9 +14,9 @@
 ## MAGIC Build Script that also tests your code!
 
 
-pip3 install -r ../requirements-dev.txt
+#pip3 install -r ../requirements-dev.txt
 
-git submodule update --remote --recursive
+#git submodule update --remote --recursive
 
 #######################
 ## Run tests locally ##
@@ -27,7 +27,7 @@ echo "Running tests on local version"
 echo "-------------------------------------"
 
 cd ../tests
-python3 -m venv ./venv
+python3 -m venv venv
 source ./venv/bin/activate
 pip install -r ../requirements.txt
 pip install pytest
