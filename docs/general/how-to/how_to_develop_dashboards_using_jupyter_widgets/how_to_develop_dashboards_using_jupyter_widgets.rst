@@ -11,7 +11,7 @@ Developing Dashboards Using Jupyter Widgets
 
 While BPTK-Py offers a number of high-level functions to quickly plot
 equations (such as ``bptk.plot_scenarios``) or create a dashboard (e.g.
-``bptk.dashboard``), you may sometimes be in a situation when you want
+the ``SimpleDashboard`` utility class), you may sometimes be in a situation when you want
 to create more sophisticated plots (e.g. plots with two axes) or a more
 sophisticated interface dashboard for your simulation.
 
