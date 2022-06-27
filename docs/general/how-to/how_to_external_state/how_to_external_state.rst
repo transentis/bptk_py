@@ -56,7 +56,7 @@ the ``adapter`` as an optional argument. When no adapter is provided,
 the state will not be saved.
 
 How does it work?
-=================
+-----------------
 
 *To continue this tutorial, run a new BPTK server using the
 ``run_server.sh`` script (or ``run_server.bat`` under Windows) in the
@@ -157,7 +157,7 @@ You will see a JSON-File with the instance id as its name in the state
 directory.
 
 Implementing your own ExternalStateAdapter
-==========================================
+------------------------------------------
 
 Implementing your own ``ExternalStateAdapter`` is trivial. All the logic
 is handled by BPTK. The adapter must only handle the IO with the storage
