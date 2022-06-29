@@ -10,7 +10,7 @@
 # MIT License
 
 
-from .element import Element
+from .element import ArrayedEquation, Element
 from .element import ElementError
 from .constant import Constant
 from .converter import Converter
@@ -56,16 +56,33 @@ class Stock(Element):
         self.generate_function()
 
     def build_function_string(self):
-        self._function_string = "lambda model, t : ( ("
-        self._function_string += str(self.__initial_value)
-        self._function_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
+        # self._function_string = "lambda model, t : ( ("
+        # self._function_string += str(self.__initial_value)
+        # self._function_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
 
-        if self._equation is not None:
-            self._function_string += "+ model.dt*("
-            self._function_string += self._equation.term("t-model.dt")
-            self._function_string += ") )"
+        # if self._equation is not None:
+        #     self._function_string += "+ model.dt*("
+        #     self._function_string += self._equation.term("t-model.dt")
+        #     self._function_string += ") )"
+        # else:
+        #     self._function_string += ")"
+        start_string = "lambda model, t : ( ("
+        start_string += str(self.__initial_value)
+        start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
+
+        print("OCH MAN WHY KMS")
+        if self.equation is not None:
+            start_string += "+ model.dt*("
+            if(isinstance(self._equation, ArrayedEquation)):
+                start_strings = {}
+                for k in self._equation.equation.keys():
+                    print("AYYY YEES LETLJETKET")
+                    start_strings[k] = start_string + self.equation.equation[k].term("t-model.dt") + ") )"
+                self._function_string = start_strings
+            else:
+                self._function_string = start_string + self._equation.term("t-model.dt") + ") )"
         else:
-            self._function_string += ")"
+            self._function_string = start_string + ")"
 
 
 
