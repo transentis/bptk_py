@@ -10,6 +10,23 @@
 # MIT License
 
 
+class ArrayedEquation:
+    def __init__(self, element):
+        self.equations = []
+        self._element = element;
+
+    def __getitem__(self, key):
+        if(not str(key) in self.equations):
+            self.equations.append(str(key))
+            return self._element.add_arr_empty(str(key))
+
+        return self._element.get_arr_equation(str(key))
+    def __setitem__(self, key, value):
+        #self.equation[str(key)] = value
+        self.equations.append(str(key))     
+        self._element.add_arr_equation(str(key), value)
+
+
 class OperatorError(Exception):
     def __init__(self, value):
         self.value = value
@@ -91,6 +108,48 @@ class Function(Operator):
     def term(self, time="t"):
         pass
 
+
+def _array_resolve(operator, element, time, dimensions):
+    def rec_resolve(element, index):
+        if isinstance(element.equation, (float, int)):
+            return str(element)
+        if not isinstance(element.equation, ArrayedEquation) or dimensions == index:
+            return "{}".format(extractTerm(element, time))
+        if isinstance(element.equation, ArrayedEquation):
+            if(len(element.equation.equations) == 0):
+                return ""
+            string_term = ""
+            for a in element.equation.equations:
+                string_term_cur = rec_resolve(element[a], index + 1)
+                if(string_term_cur != ""):
+                    string_term += rec_resolve(element[a], index + 1) + operator
+            print(string_term)
+            return string_term[:-len(operator)]
+    return rec_resolve(element, 0)
+
+
+class ArrayProductOperator(Operator):
+    """
+    UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
+    """
+    def __init__(self, element, dimensions):
+        self.element = element
+        self.dimensions = dimensions
+
+    def term(self, time="t"):
+        return _array_resolve("*", self.element, time, self.dimensions)
+
+
+class ArraySumOperator(Operator):
+    """
+    UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
+    """
+    def __init__(self, element, dimensions):
+        self.element = element
+        self.dimensions = dimensions
+
+    def term(self, time="t"):
+        return _array_resolve("+", self.element, time, self.dimensions)
 
 
 class BinaryOperator(Operator):

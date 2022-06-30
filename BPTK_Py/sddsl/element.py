@@ -23,22 +23,6 @@ import scipy
 import scipy.stats
 from scipy.stats import norm
 
-class ArrayedEquation:
-    def __init__(self, element):
-        self.equations = []
-        self._element = element;
-
-    def __getitem__(self, key):
-        if(not str(key) in self.equations):
-            self.equations.append(str(key))
-            return self._element.add_arr_empty(str(key))
-
-        return self._element.get_arr_equation(str(key))
-    def __setitem__(self, key, value):
-        #self.equation[str(key)] = value
-        self.equations.append(str(key))
-        self._element.add_arr_equation(str(key), value)
-
 
 class Element:
     """Generic element in a SD DSL model.
@@ -178,8 +162,12 @@ class Element:
 
             self.update_plot_formats(ax)
 
+    def arr_sum(self, dimension="*"):
+        return ArraySumOperator(self, dimension)
+
+    def arr_prod(self, dimension="*"):
+        return ArrayProductOperator(self, dimension)
     ### Operator overrides
-    
         
     def __str__(self):
         """Returns the term."""
