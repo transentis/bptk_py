@@ -30,6 +30,7 @@ class ArrayedEquation:
 
     def __getitem__(self, key):
         if(not str(key) in self.equations):
+            self.equations.append(str(key))
             return self._element.add_arr_empty(str(key))
 
         return self._element.get_arr_equation(str(key))
