@@ -27,6 +27,8 @@ class Flow(Element):
     def add_arr_equation(self, name, value):
         s = self.model.flow(self.name + "[" + name + "]")
         s.equation = value
+    def add_arr_empty(self, name):
+        return self.model.flow(self.name + "[" + name + "]")
 
     def get_arr_equation(self, name):
         return self.model.flows[self.name + "[" + name + "]"]

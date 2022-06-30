@@ -25,7 +25,8 @@ class Constant(Element):
     def add_arr_equation(self, name, value):
         s = self.model.constant(self.name + "[" + name + "]")
         s.equation = value
-
+    def add_arr_empty(self, name):
+        return self.model.constant(self.name + "[" + name + "]")
     def get_arr_equation(self, name):
         return self.model.constants[self.name + "[" + name + "]"]
 

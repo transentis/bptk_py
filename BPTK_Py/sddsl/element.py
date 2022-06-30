@@ -29,6 +29,9 @@ class ArrayedEquation:
         self._element = element;
 
     def __getitem__(self, key):
+        if(not str(key) in self.equations):
+            return self._element.add_arr_empty(str(key))
+
         return self._element.get_arr_equation(str(key))
     def __setitem__(self, key, value):
         #self.equation[str(key)] = value
@@ -68,6 +71,9 @@ class Element:
 
     @classmethod
     def add_arr_equation(self, name, value):
+        pass
+    @classmethod
+    def add_arr_empty(self, name):
         pass
     @classmethod
     def get_arr_equation(self, name):
