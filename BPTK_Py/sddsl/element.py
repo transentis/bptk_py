@@ -25,14 +25,15 @@ from scipy.stats import norm
 
 class ArrayedEquation:
     def __init__(self, element):
-        self.equation = {}
+        self.equations = []
         self._element = element;
 
     def __getitem__(self, key):
-        return self.equation[str(key)]
+        return self._element.get_arr_equation(str(key))
     def __setitem__(self, key, value):
-        self.equation[str(key)] = value
-        self._element.update_equation()
+        #self.equation[str(key)] = value
+        self.equations.append(str(key))
+        self._element.add_arr_equation(str(key), value)
 
 
 class Element:
@@ -66,26 +67,31 @@ class Element:
         self.generate_function()
 
     @classmethod
+    def add_arr_equation(self, name, value):
+        pass
+    @classmethod
+    def get_arr_equation(self, name):
+        pass
+
+
+    def __getitem__(self, key):
+        if(isinstance(self.equation, ArrayedEquation)):
+            return self.equation[key]
+    def __setitem__(self, key, value):
+        if(isinstance(self.equation, ArrayedEquation)):
+            self.equation[key] = value
+
+    @classmethod
     def default_function_string(self):
         return "lambda model, t: 0"
 
     def generate_function(self):
-        if(not isinstance(self._function_string, str) and len(self._function_string) > 0):
-            for k in self._function_string:
-                fn = eval(self.function_string[k])
-                self.model.equations[self.name + "[" + k + "]"] = lambda t: fn(self.model, t)
-                self.model.memo[self.name + "[" + k + "]"] = {}
-        else:
-            fn = eval(self._function_string)
-            self.model.equations[self.name] = lambda t: fn(self.model, t)
-            self.model.memo[self.name] = {}
+        fn = eval(self._function_string)
+        self.model.equations[self.name] = lambda t: fn(self.model, t)
+        self.model.memo[self.name] = {}
         
     def term(self, time="t"):
-        if(not isinstance(self._function_string, str) and len(self._function_string) > 0):
-            for k in self._function_string:
-                return "model.memoize('{}',{})".format(k, time)
-        else:
-            return "model.memoize('{}',{})".format(self.name, time)
+        return "model.memoize('{}',{})".format(self.name, time)
 
     @property
     def equation(self):
@@ -95,9 +101,6 @@ class Element:
         Returns:
             The equation, either a SD DSL Element or Operator.
         """
-        # if(self._equation != None and isinstance(self._equation, ArrayedEquation)):
-        #     print("ARRAYED FOUND!!")
-        #     return None
         return self._equation
 
     @equation.setter
@@ -108,26 +111,12 @@ class Element:
             equation: Element or Operator.
                 The equation as defined via a series of SD DSL Elments or Operators.
         """
-
-        if(isinstance(self._equation, ArrayedEquation)):
+        if(not isinstance(self._equation, ArrayedEquation) or (isinstance(self._equation, ArrayedEquation) and len(self._equation.equations) > 0)):
             logging.warning("Equation of " + self.name + " got set more than once!")
 
         self._equation = equation
-        self.update_equation()
-
-    @classmethod
-    def update_equation(self):
-        """Class internal use only. Called when equations are updated."""
         self.model.reset_cache()
-        if(isinstance(self._equation, ArrayedEquation)):
-            if(len(self._equation.equation) == 0):
-                self._function_string = "lambda model, t: {}".format(None)
-            else:
-                self._function_string = {}
-                for k in self._equation.equation.keys():
-                    self._function_string[k] = "lambda model, t: {}".format(self.equation.equation[k])
-        else:
-            self._function_string = "lambda model, t: {}".format(self.equation)
+        self._function_string = "lambda model, t: {}".format(self.equation)
         self.generate_function()
 
     @property

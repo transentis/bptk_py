@@ -11,7 +11,7 @@
 
 
 
-from .element import Element
+from .element import ArrayedEquation, Element
 from .element import ElementError
 
 
@@ -20,6 +20,14 @@ class Constant(Element):
     A constant in a SD DSL model
     """
     type = "Constant"
+
+
+    def add_arr_equation(self, name, value):
+        s = self.model.constant(self.name + "[" + name + "]")
+        s.equation = value
+
+    def get_arr_equation(self, name):
+        return self.model.constants[self.name + "[" + name + "]"]
 
     @property
     def equation(self):
@@ -34,7 +42,7 @@ class Constant(Element):
 
         if isinstance(equation, (float)):
             self._function_string = "lambda model, t: {}".format(equation)
-        else:
+        elif not isinstance(equation, ArrayedEquation):
             raise ElementError("Constants can only contain floating point values")
 
         self.generate_function()

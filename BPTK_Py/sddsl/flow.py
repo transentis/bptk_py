@@ -23,6 +23,14 @@ class Flow(Element):
     def equation(self):
        return super().equation
 
+
+    def add_arr_equation(self, name, value):
+        s = self.model.flow(self.name + "[" + name + "]")
+        s.equation = value
+
+    def get_arr_equation(self, name):
+        return self.model.flows[self.name + "[" + name + "]"]
+
     @equation.setter
     def equation(self, equation):
         self._equation = equation
