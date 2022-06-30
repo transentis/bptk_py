@@ -853,7 +853,7 @@ class bptk():
                                   series_names=series_names,
                                   progress_bar=progress_bar
                                  )
-
+                                 
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     visualize_from_period=visualize_from_period,

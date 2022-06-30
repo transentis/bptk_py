@@ -42,6 +42,11 @@ class Stock(Element):
             raise ElementError("Initial values must be floating point values, constants or converters")
 
 
+    def update_equation(self):
+        self.model.reset_cache()
+        self.build_function_string()
+        self.generate_function()
+
     @property
     def equation(self):
         return super().equation
@@ -50,38 +55,23 @@ class Stock(Element):
     @equation.setter
     def equation(self, equation):
         self._equation = equation
-
-        self.model.reset_cache()
-        self.build_function_string()
-        self.generate_function()
+        self.update_equation()
 
     def build_function_string(self):
-        # self._function_string = "lambda model, t : ( ("
-        # self._function_string += str(self.__initial_value)
-        # self._function_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
-
-        # if self._equation is not None:
-        #     self._function_string += "+ model.dt*("
-        #     self._function_string += self._equation.term("t-model.dt")
-        #     self._function_string += ") )"
-        # else:
-        #     self._function_string += ")"
         start_string = "lambda model, t : ( ("
         start_string += str(self.__initial_value)
-        start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
 
-        print("OCH MAN WHY KMS")
         if self.equation is not None:
-            start_string += "+ model.dt*("
             if(isinstance(self._equation, ArrayedEquation)):
                 start_strings = {}
                 for k in self._equation.equation.keys():
-                    print("AYYY YEES LETLJETKET")
-                    start_strings[k] = start_string + self.equation.equation[k].term("t-model.dt") + ") )"
+                    start_strings[k] = start_string + ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name + "[" + str(k) + "]") + "+ model.dt*(" + self.equation.equation[k].term("t-model.dt") + ") )"
                 self._function_string = start_strings
             else:
+                start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name) + "+ model.dt*("
                 self._function_string = start_string + self._equation.term("t-model.dt") + ") )"
         else:
+            start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name) + "+ model.dt*("
             self._function_string = start_string + ")"
 
 

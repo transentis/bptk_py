@@ -32,7 +32,7 @@ class ArrayedEquation:
         return self.equation[str(key)]
     def __setitem__(self, key, value):
         self.equation[str(key)] = value
-        self._element._update_equation()
+        self._element.update_equation()
 
 
 class Element:
@@ -70,27 +70,22 @@ class Element:
         return "lambda model, t: 0"
 
     def generate_function(self):
-        # fn = eval(self.function_string)
-        # self.model.equations[self.name] = lambda t: fn(self.model, t)
-        # self.model.memo[self.name] = {}
-        if(isinstance(self._equation, ArrayedEquation) and len(self._equation.equation) > 0):
-            for k in self._equation.equation:
+        if(not isinstance(self._function_string, str) and len(self._function_string) > 0):
+            for k in self._function_string:
                 fn = eval(self.function_string[k])
                 self.model.equations[self.name + "[" + k + "]"] = lambda t: fn(self.model, t)
                 self.model.memo[self.name + "[" + k + "]"] = {}
         else:
-            print(self._function_string)
-            print(self._equation)
-            # print(isinstance(self._equation, ArrayedEquation))
-            if(isinstance(self._equation, ArrayedEquation)):
-                print(self._equation.equation)
-            else:
-                fn = eval(self._function_string)
-                self.model.equations[self.name] = lambda t: fn(self.model, t)
-                self.model.memo[self.name] = {}
-
+            fn = eval(self._function_string)
+            self.model.equations[self.name] = lambda t: fn(self.model, t)
+            self.model.memo[self.name] = {}
+        
     def term(self, time="t"):
-        return "model.memoize('{}',{})".format(self.name, time)
+        if(not isinstance(self._function_string, str) and len(self._function_string) > 0):
+            for k in self._function_string:
+                return "model.memoize('{}',{})".format(k, time)
+        else:
+            return "model.memoize('{}',{})".format(self.name, time)
 
     @property
     def equation(self):
@@ -118,13 +113,12 @@ class Element:
             logging.warning("Equation of " + self.name + " got set more than once!")
 
         self._equation = equation
-        self._update_equation()
+        self.update_equation()
 
-
-    def _update_equation(self):
-        """Internal use only. Called when array equations are updated."""
+    @classmethod
+    def update_equation(self):
+        """Class internal use only. Called when equations are updated."""
         self.model.reset_cache()
-        print("UPDATING")
         if(isinstance(self._equation, ArrayedEquation)):
             if(len(self._equation.equation) == 0):
                 self._function_string = "lambda model, t: {}".format(None)
@@ -167,7 +161,6 @@ class Element:
         dt = self.model.dt if dt is None else dt
         stoptime = self.model.stoptime if stoptime is None else stoptime
         starttime = self.model.starttime if starttime is None else starttime
-
         try:
             df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(starttime,stoptime+dt,dt)}})
         except:

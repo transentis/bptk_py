@@ -38,6 +38,3 @@ class Constant(Element):
             raise ElementError("Constants can only contain floating point values")
 
         self.generate_function()
-
-
-
