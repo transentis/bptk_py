@@ -151,6 +151,19 @@ class ArraySumOperator(Operator):
     def term(self, time="t"):
         return _array_resolve("+", self.element, time, self.dimensions)
 
+class ArraySizeOperator(Operator):
+    """
+    Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
+    Example: array_rank([3,6,2,4,1], 2) -> 4
+    """
+    def __init__(self, element):
+        self.element = element
+
+    def term(self, time="t"):
+        if not isinstance(self.element.equation, ArrayedEquation):
+            return 0
+        return str(len(self.element.equation.equations))
+         
 
 class ArrayRankOperator(Operator):
     """
@@ -177,6 +190,55 @@ class ArrayRankOperator(Operator):
 
         return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element.equation.equations))
          
+
+class ArrayMeanOperator(Operator):
+    """
+    Returns the mean of an array.
+    """
+    def __init__(self, element):
+        self.element = element
+
+    def term(self, time="t"):
+        if not isinstance(self.element.equation, ArrayedEquation):
+            return "0.0"
+
+        if(len(self.element.equation.equations) == 0):
+            return "0.0"
+
+        string_term = "["
+
+        for a in self.element.equation.equations:
+            string_term += "{},".format(extractTerm(self.element[a], time))
+        string_term = string_term[:-1] + "]"
+
+        return "np.mean({arr})".format(arr=string_term)
+         
+        
+        
+
+class ArrayMedianOperator(Operator):
+    """
+    Returns the mean of an array.
+    """
+    def __init__(self, element):
+        self.element = element
+
+    def term(self, time="t"):
+        if not isinstance(self.element.equation, ArrayedEquation):
+            return "0.0"
+
+        if(len(self.element.equation.equations) == 0):
+            return "0.0"
+
+        string_term = "["
+
+        for a in self.element.equation.equations:
+            string_term += "{},".format(extractTerm(self.element[a], time))
+        string_term = string_term[:-1] + "]"
+
+        return "np.median({arr})".format(arr=string_term)
+         
+        
         
 class BinaryOperator(Operator):
 

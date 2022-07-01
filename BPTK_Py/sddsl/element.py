@@ -170,8 +170,18 @@ class Element:
 
     def arr_rank(self, rank):
         return ArrayRankOperator(self, rank)
+
+    def arr_mean(self):
+        return ArrayMeanOperator(self)
+
+    def arr_median(self):
+        return ArrayMedianOperator(self)
+
+    def arr_size(self):
+        return ArraySizeOperator(self)
+
+
     ### Operator overrides
-        
     def __str__(self):
         """Returns the term."""
         return self.term()
