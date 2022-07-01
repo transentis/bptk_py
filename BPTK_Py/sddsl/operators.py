@@ -152,6 +152,32 @@ class ArraySumOperator(Operator):
         return _array_resolve("+", self.element, time, self.dimensions)
 
 
+class ArrayRankOperator(Operator):
+    """
+    Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
+    Example: array_rank([3,6,2,4,1], 2) -> 4
+    """
+    def __init__(self, element, rank):
+        self.element = element
+        self.rank = rank
+
+    def term(self, time="t"):
+        if not isinstance(self.element.equation, ArrayedEquation):
+            return "{}".format(extractTerm(self.element, time))
+
+        if(len(self.element.equation.equations) == 0):
+            return ""
+            
+
+        string_term = "["
+
+        for a in self.element.equation.equations:
+            string_term += "{},".format(extractTerm(self.element[a], time))
+        string_term = string_term[:-1] + "]".format(self.rank)
+
+        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element.equation.equations))
+         
+        
 class BinaryOperator(Operator):
 
     def __init__(self, element_1, element_2):

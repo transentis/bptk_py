@@ -167,6 +167,9 @@ class Element:
 
     def arr_prod(self, dimension="*"):
         return ArrayProductOperator(self, dimension)
+
+    def arr_rank(self, rank):
+        return ArrayRankOperator(self, rank)
     ### Operator overrides
         
     def __str__(self):
