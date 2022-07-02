@@ -102,7 +102,7 @@ class Element:
             equation: Element or Operator.
                 The equation as defined via a series of SD DSL Elments or Operators.
         """
-        if(not isinstance(self._equation, ArrayedEquation) or (isinstance(self._equation, ArrayedEquation) and len(self._equation.equations) > 0)):
+        if(not isinstance(self._equation, ArrayedEquation) or (isinstance(self._equation, ArrayedEquation) and self._equation.total_count() > 0)):
             logging.warning("Equation of " + self.name + " got set more than once!")
 
         self._equation = equation
@@ -162,11 +162,11 @@ class Element:
 
             self.update_plot_formats(ax)
 
-    def arr_sum(self, dimension="*"):
-        return ArraySumOperator(self, dimension)
+    def arr_sum(self, dimension="*", include_all=False):
+        return ArraySumOperator(self, dimension, include_all)
 
-    def arr_prod(self, dimension="*"):
-        return ArrayProductOperator(self, dimension)
+    def arr_prod(self, dimension="*", include_all=False):
+        return ArrayProductOperator(self, dimension, include_all)
 
     def arr_rank(self, rank):
         return ArrayRankOperator(self, rank)
@@ -177,8 +177,13 @@ class Element:
     def arr_median(self):
         return ArrayMedianOperator(self)
 
+    def arr_stddev(self):
+        return ArrayStandardDeviationOperator(self)
+
     def arr_size(self):
         return ArraySizeOperator(self)
+
+    #def matrix_size(self):
 
 
     ### Operator overrides
@@ -192,6 +197,9 @@ class Element:
 
     def __mul__(self, other):
         """Left Multiply with other operators"""
+        if isinstance(self._equation, ArrayedEquation):
+            return ArrayMatrixMulOperator(self, other)
+
         return MultiplicationOperator(self, other)
 
     def __rmul__(self, other):

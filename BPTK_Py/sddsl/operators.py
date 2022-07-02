@@ -12,20 +12,37 @@
 
 class ArrayedEquation:
     def __init__(self, element):
-        self.equations = []
-        self._element = element;
+        self.str_equations = {} # Member equations like ["total"], ["first"]...
+        self.number_equations = {} # Member equations like [0], [1]...
+        self._element = element
 
     def __getitem__(self, key):
-        if(not str(key) in self.equations):
-            self.equations.append(str(key))
-            return self._element.add_arr_empty(str(key))
-
+        if(isinstance(key,int)):
+            if(not key in self.number_equations):
+                self.number_equations.append(key)
+                return self._element.add_arr_empty(str(key))
+        else:
+            if(not str(key) in self.str_equations):
+                self.str_equations.append(str(key))
+                return self._element.add_arr_empty(str(key))
+            
         return self._element.get_arr_equation(str(key))
-    def __setitem__(self, key, value):
-        #self.equation[str(key)] = value
-        self.equations.append(str(key))     
-        self._element.add_arr_equation(str(key), value)
 
+    def __setitem__(self, key, value):
+        if(isinstance(key,int)):    
+            self.number_equations.append(key)
+            self._element.add_arr_equation(str(key), value)
+        else:
+            self.str_equations.append(str(key))     
+            self._element.add_arr_equation(str(key), value)
+
+        #self.equation[str(key)] = value
+
+    def total_count(self):
+        return len(self.number_equations) + len(self.str_equations)
+
+    def vector_size(self):
+        return len(self.number_equations)
 
 class OperatorError(Exception):
     def __init__(self, value):
@@ -109,47 +126,77 @@ class Function(Operator):
         pass
 
 
-def _array_resolve(operator, element, time, dimensions):
+def _array_resolve(operator, element, time, dimensions, include_all):
+    """
+    Converts an array element to array form.
+    """
     def rec_resolve(element, index):
         if isinstance(element.equation, (float, int)):
             return str(element)
         if not isinstance(element.equation, ArrayedEquation) or dimensions == index:
             return "{}".format(extractTerm(element, time))
         if isinstance(element.equation, ArrayedEquation):
-            if(len(element.equation.equations) == 0):
+            if(element.equation.total_count() == 0):
                 return ""
             string_term = ""
-            for a in element.equation.equations:
+            for a in element.equation.number_equations:
                 string_term_cur = rec_resolve(element[a], index + 1)
                 if(string_term_cur != ""):
                     string_term += rec_resolve(element[a], index + 1) + operator
+            if(include_all):
+                for a in element.equation.str_equations:
+                    string_term_cur = rec_resolve(element[a], index + 1)
+                    if(string_term_cur != ""):
+                        string_term += rec_resolve(element[a], index + 1) + operator
             print(string_term)
             return string_term[:-len(operator)]
     return rec_resolve(element, 0)
 
+def _array_element_to_string(element, time):
+    """
+    Recursively converts an array element to array form.
+    """
+    string_term = "["
+
+    for a in element.equation.equations:
+        string_term += "{},".format(extractTerm(element[a], time))
+    return string_term[:-1] + "]"
+
+def _rec_array_element_to_string(element, time):
+    if not isinstance(element.equation, ArrayedEquation):
+        return "{}".format(extractTerm(element, time))
+    
+    if(len(element.equation.equations) == 0):
+        return ""
+    string_term_cur = "["
+    for a in element.equation.equations:
+        string_term_cur += _rec_array_element_to_string(element[a], time) + ","
+    return string_term_cur[:-1] + "]"
 
 class ArrayProductOperator(Operator):
     """
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
-    def __init__(self, element, dimensions):
+    def __init__(self, element, dimensions, include_all):
         self.element = element
         self.dimensions = dimensions
+        self.include_all = include_all
 
     def term(self, time="t"):
-        return _array_resolve("*", self.element, time, self.dimensions)
+        return _array_resolve("*", self.element, time, self.dimensions, self.include_all)
 
 
 class ArraySumOperator(Operator):
     """
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
-    def __init__(self, element, dimensions):
+    def __init__(self, element, dimensions, include_all):
         self.element = element
         self.dimensions = dimensions
+        self.include_all = include_all
 
     def term(self, time="t"):
-        return _array_resolve("+", self.element, time, self.dimensions)
+        return _array_resolve("+", self.element, time, self.dimensions, self.include_all)
 
 class ArraySizeOperator(Operator):
     """
@@ -180,13 +227,8 @@ class ArrayRankOperator(Operator):
 
         if(len(self.element.equation.equations) == 0):
             return ""
-            
 
-        string_term = "["
-
-        for a in self.element.equation.equations:
-            string_term += "{},".format(extractTerm(self.element[a], time))
-        string_term = string_term[:-1] + "]".format(self.rank)
+        string_term = _array_element_to_string(self.element, time)
 
         return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element.equation.equations))
          
@@ -205,11 +247,7 @@ class ArrayMeanOperator(Operator):
         if(len(self.element.equation.equations) == 0):
             return "0.0"
 
-        string_term = "["
-
-        for a in self.element.equation.equations:
-            string_term += "{},".format(extractTerm(self.element[a], time))
-        string_term = string_term[:-1] + "]"
+        string_term = _array_element_to_string(self.element, time)
 
         return "np.mean({arr})".format(arr=string_term)
          
@@ -229,16 +267,50 @@ class ArrayMedianOperator(Operator):
 
         if(len(self.element.equation.equations) == 0):
             return "0.0"
-
-        string_term = "["
-
-        for a in self.element.equation.equations:
-            string_term += "{},".format(extractTerm(self.element[a], time))
-        string_term = string_term[:-1] + "]"
+        
+        string_term = _array_element_to_string(self.element, time)
 
         return "np.median({arr})".format(arr=string_term)
          
         
+class ArrayStandardDeviationOperator(Operator):
+    """
+    Returns the mean of an array.
+    """
+    def __init__(self, element):
+        self.element = element
+
+    def term(self, time="t"):
+        if not isinstance(self.element.equation, ArrayedEquation):
+            return "0.0"
+
+        if(len(self.element.equation.equations) == 0):
+            return "0.0"
+
+        string_term = _array_element_to_string(self.element, time)
+
+        return "np.std({arr})".format(arr=string_term)
+         
+        
+        
+        
+class ArrayMatrixMulOperator(Operator):
+    """
+    Returns the mean of an array.
+    """
+    def __init__(self, element1, element2):
+        self.element1 = element1
+        self.element2 = element2
+
+    def term(self, time="t"):
+        string_term1 = _rec_array_element_to_string(self.element1, time)
+        string_term2 = _rec_array_element_to_string(self.element2, time)
+
+        return "np.matmul({},{})".format(string_term1, string_term2)
+         
+        
+
+
         
 class BinaryOperator(Operator):
 
