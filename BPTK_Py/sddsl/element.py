@@ -51,7 +51,8 @@ class Element:
             self._function_string = self.default_function_string()
         else:
             self._function_string = function_string
-        self._equation = ArrayedEquation(self)
+        self._equation = None
+        self._elements = ArrayedEquation(self)
         self.generate_function()
 
     @classmethod
@@ -66,11 +67,9 @@ class Element:
 
 
     def __getitem__(self, key):
-        if(isinstance(self.equation, ArrayedEquation)):
-            return self.equation[key]
+        return self._elements[key]
     def __setitem__(self, key, value):
-        if(isinstance(self.equation, ArrayedEquation)):
-            self.equation[key] = value
+        self._elements[key] = value
 
     @classmethod
     def default_function_string(self):

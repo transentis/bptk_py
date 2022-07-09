@@ -207,9 +207,9 @@ class ArraySizeOperator(Operator):
         self.element = element
 
     def term(self, time="t"):
-        if not isinstance(self.element.equation, ArrayedEquation):
-            return 0
-        return str(len(self.element.equation.equations))
+        if self.element._element.total_count() == 0:
+            return "0.0"
+        return str(len(self.element._elements.vector_size()))
          
 
 class ArrayRankOperator(Operator):
@@ -222,11 +222,8 @@ class ArrayRankOperator(Operator):
         self.rank = rank
 
     def term(self, time="t"):
-        if not isinstance(self.element.equation, ArrayedEquation):
-            return "{}".format(extractTerm(self.element, time))
-
-        if(len(self.element.equation.equations) == 0):
-            return ""
+        if self.element._element.total_count() == 0:
+            return "0.0"
 
         string_term = _array_element_to_string(self.element, time)
 
@@ -241,10 +238,7 @@ class ArrayMeanOperator(Operator):
         self.element = element
 
     def term(self, time="t"):
-        if not isinstance(self.element.equation, ArrayedEquation):
-            return "0.0"
-
-        if(len(self.element.equation.equations) == 0):
+        if self.element._element.total_count() == 0:
             return "0.0"
 
         string_term = _array_element_to_string(self.element, time)
@@ -262,10 +256,7 @@ class ArrayMedianOperator(Operator):
         self.element = element
 
     def term(self, time="t"):
-        if not isinstance(self.element.equation, ArrayedEquation):
-            return "0.0"
-
-        if(len(self.element.equation.equations) == 0):
+        if self.element._element.total_count() == 0:
             return "0.0"
         
         string_term = _array_element_to_string(self.element, time)
@@ -281,10 +272,7 @@ class ArrayStandardDeviationOperator(Operator):
         self.element = element
 
     def term(self, time="t"):
-        if not isinstance(self.element.equation, ArrayedEquation):
-            return "0.0"
-
-        if(len(self.element.equation.equations) == 0):
+        if self.element._element.total_count() == 0:
             return "0.0"
 
         string_term = _array_element_to_string(self.element, time)
