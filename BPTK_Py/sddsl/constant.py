@@ -37,13 +37,13 @@ class Constant(Element):
     @equation.setter
     def equation(self, equation):
         self._equation = equation
-
         self.model.reset_cache()
-
-
         if isinstance(equation, (float)):
             self._function_string = "lambda model, t: {}".format(equation)
-        elif not isinstance(equation, ArrayedEquation):
-            raise ElementError("Constants can only contain floating point values")
+        else:
+            if(self._elements.total_count() != 0):
+                self._equation = 0.0
+            else:
+                raise ElementError("Constants can only contain floating point values")
 
         self.generate_function()

@@ -12,8 +12,8 @@
 
 class ArrayedEquation:
     def __init__(self, element):
-        self.str_equations = {} # Member equations like ["total"], ["first"]...
-        self.number_equations = {} # Member equations like [0], [1]...
+        self.str_equations = [] # Member equations like ["total"], ["first"]...
+        self.number_equations = [] # Member equations like [0], [1]...
         self._element = element
 
     def __getitem__(self, key):
@@ -43,6 +43,16 @@ class ArrayedEquation:
 
     def vector_size(self):
         return len(self.number_equations)
+
+    def mat_dimensions(self):
+        m = self.vector_size()
+        n = -1
+        for a in self.number_equations:
+            c = self._element[a]._elements.vector_size()
+            if n != -1 and n != c:
+                raise Exception("Matrix is does not have uniform dimensions!")
+            n = c
+        return [m,n]
 
 class OperatorError(Exception):
     def __init__(self, value):
@@ -131,46 +141,52 @@ def _array_resolve(operator, element, time, dimensions, include_all):
     Converts an array element to array form.
     """
     def rec_resolve(element, index):
-        if isinstance(element.equation, (float, int)):
-            return str(element)
-        if not isinstance(element.equation, ArrayedEquation) or dimensions == index:
+        if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
+            if isinstance(element.equation, (float, int)):
+                return str(element)
             return "{}".format(extractTerm(element, time))
-        if isinstance(element.equation, ArrayedEquation):
-            if(element.equation.total_count() == 0):
-                return ""
-            string_term = ""
-            for a in element.equation.number_equations:
+        if dimensions == index:
+            return ""
+        string_term = ""
+        for a in element._elements.number_equations:
+            string_term_cur = rec_resolve(element[a], index + 1)
+            if(string_term_cur != ""):
+                string_term += rec_resolve(element[a], index + 1) + operator
+        if(include_all):
+            for a in element._elements.str_equations:
                 string_term_cur = rec_resolve(element[a], index + 1)
                 if(string_term_cur != ""):
                     string_term += rec_resolve(element[a], index + 1) + operator
-            if(include_all):
-                for a in element.equation.str_equations:
-                    string_term_cur = rec_resolve(element[a], index + 1)
-                    if(string_term_cur != ""):
-                        string_term += rec_resolve(element[a], index + 1) + operator
-            print(string_term)
-            return string_term[:-len(operator)]
+        return string_term[:-len(operator)]
     return rec_resolve(element, 0)
 
-def _array_element_to_string(element, time):
+def _array_element_to_string(element, time, include_all):
     """
     Recursively converts an array element to array form.
     """
+
+    if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
+        return ""
+
     string_term = "["
 
-    for a in element.equation.equations:
+    for a in element._elements.number_equations:
         string_term += "{},".format(extractTerm(element[a], time))
+    if(include_all):
+        for a in element._elements.str_equations:
+            string_term += "{},".format(extractTerm(element[a], time))
     return string_term[:-1] + "]"
 
-def _rec_array_element_to_string(element, time):
-    if not isinstance(element.equation, ArrayedEquation):
-        return "{}".format(extractTerm(element, time))
-    
-    if(len(element.equation.equations) == 0):
+def _rec_array_element_to_string(element, time, include_all):
+    if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
         return ""
+
     string_term_cur = "["
-    for a in element.equation.equations:
+    for a in element._elements.number_equations:
         string_term_cur += _rec_array_element_to_string(element[a], time) + ","
+    if(include_all):
+        for a in element._elements.str_equations:
+            string_term_cur += _rec_array_element_to_string(element[a], time) + ","
     return string_term_cur[:-1] + "]"
 
 class ArrayProductOperator(Operator):
@@ -291,12 +307,12 @@ class ArrayMatrixMulOperator(Operator):
         self.element2 = element2
 
     def term(self, time="t"):
-        string_term1 = _rec_array_element_to_string(self.element1, time)
-        string_term2 = _rec_array_element_to_string(self.element2, time)
+        # string_term1 = _rec_array_element_to_string(self.element1, time)
+        # string_term2 = _rec_array_element_to_string(self.element2, time)
 
-        return "np.matmul({},{})".format(string_term1, string_term2)
+        # return "np.matmul({},{})".format(string_term1, string_term2)
          
-        
+        return "0.0"
 
 
         

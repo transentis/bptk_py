@@ -101,13 +101,34 @@ class Element:
             equation: Element or Operator.
                 The equation as defined via a series of SD DSL Elments or Operators.
         """
-        if(not isinstance(self._equation, ArrayedEquation) or (isinstance(self._equation, ArrayedEquation) and self._equation.total_count() > 0)):
-            logging.warning("Equation of " + self.name + " got set more than once!")
+        if isinstance(equation, ArrayMatrixMulOperator):
+            dim1 = equation.element1._elements.mat_dimensions()
+            if dim1[0] != 0:
+                dim2 = equation.element2._elements.mat_dimensions()
+                if(dim1[0] == 0 or dim1[1] == 0 or dim2[0] == 0 or dim2[1] == 0 or dim1[1] != dim2[0]):
+                    raise Exception("Attempted multiplication with non-compatible matrices!")
+                for i in range(dim1[0]):
+                    res = self[i]
+                    for j in range(dim2[1]):
+                        res[j]
 
+                for i in range(dim1[0]):
+                    for j in range(dim2[1]):
+                        eq = None
+                        for k in range(dim1[1]):
+                            if k == 0:
+                                eq = equation.element1[i][k] * equation.element2[k][j]
+                            else:
+                                cur_eq = (equation.element1[i][k] * equation.element2[k][j])
+                                eq = AdditionOperator(eq, cur_eq)
+                                print(eq)
+                        self[i][j].equation = eq
         self._equation = equation
         self.model.reset_cache()
         self._function_string = "lambda model, t: {}".format(self.equation)
         self.generate_function()
+
+                            
 
     @property
     def function_string(self):
@@ -196,7 +217,14 @@ class Element:
 
     def __mul__(self, other):
         """Left Multiply with other operators"""
-        if isinstance(self._equation, ArrayedEquation):
+        dim1 = self._elements.mat_dimensions()
+        if dim1[0] != 0:
+            dim1 = self._elements.mat_dimensions()
+            dim2 = other._elements.mat_dimensions()
+
+            if(dim1[0] == 0 or dim1[1] == 0 or dim2[0] == 0 or dim2[1] == 0 or dim1[1] != dim2[0]):
+                raise Exception("Attempted multiplication with non-compatible matrices!")
+            
             return ArrayMatrixMulOperator(self, other)
 
         return MultiplicationOperator(self, other)
