@@ -44,7 +44,7 @@ class ArrayedEquation:
     def vector_size(self):
         return len(self.number_equations)
 
-    def mat_dimensions(self):
+    def matrix_size(self):
         m = self.vector_size()
         n = -1
         for a in self.number_equations:
@@ -65,6 +65,9 @@ class Operator:
     """
         Genereric SD DSL Operator
     """
+    def __init__(self):
+        self.arrayed = False
+
     def term(self, time="t"):
         pass
 
@@ -88,7 +91,8 @@ class Operator:
         return MultiplicationOperator(other, self)
 
     def __mul__(self, other):
-        return MultiplicationOperator(self, other)
+        arrayed = self.arrayed or (isinstance(other, Operator) and other.arrayed)
+        return MultiplicationOperator(self, other, arrayed)
 
     def __pow__(self, power):
         return PowerOperator(self,power)
@@ -194,6 +198,7 @@ class ArrayProductOperator(Operator):
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
     def __init__(self, element, dimensions, include_all):
+        super().__init__()
         self.element = element
         self.dimensions = dimensions
         self.include_all = include_all
@@ -207,6 +212,7 @@ class ArraySumOperator(Operator):
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
     def __init__(self, element, dimensions, include_all):
+        super().__init__()
         self.element = element
         self.dimensions = dimensions
         self.include_all = include_all
@@ -220,6 +226,7 @@ class ArraySizeOperator(Operator):
     Example: array_rank([3,6,2,4,1], 2) -> 4
     """
     def __init__(self, element):
+        super().__init__()
         self.element = element
 
     def term(self, time="t"):
@@ -234,6 +241,7 @@ class ArrayRankOperator(Operator):
     Example: array_rank([3,6,2,4,1], 2) -> 4
     """
     def __init__(self, element, rank):
+        super().__init__()
         self.element = element
         self.rank = rank
 
@@ -251,6 +259,7 @@ class ArrayMeanOperator(Operator):
     Returns the mean of an array.
     """
     def __init__(self, element):
+        super().__init__()
         self.element = element
 
     def term(self, time="t"):
@@ -269,6 +278,7 @@ class ArrayMedianOperator(Operator):
     Returns the mean of an array.
     """
     def __init__(self, element):
+        super().__init__()
         self.element = element
 
     def term(self, time="t"):
@@ -285,6 +295,7 @@ class ArrayStandardDeviationOperator(Operator):
     Returns the mean of an array.
     """
     def __init__(self, element):
+        super().__init__()
         self.element = element
 
     def term(self, time="t"):
@@ -297,30 +308,13 @@ class ArrayStandardDeviationOperator(Operator):
          
         
         
-        
-class ArrayMatrixMulOperator(Operator):
-    """
-    Returns the mean of an array.
-    """
-    def __init__(self, element1, element2):
-        self.element1 = element1
-        self.element2 = element2
-
-    def term(self, time="t"):
-        # string_term1 = _rec_array_element_to_string(self.element1, time)
-        # string_term2 = _rec_array_element_to_string(self.element2, time)
-
-        # return "np.matmul({},{})".format(string_term1, string_term2)
-         
-        return "0.0"
-
-
-        
 class BinaryOperator(Operator):
 
-    def __init__(self, element_1, element_2):
+    def __init__(self, element_1, element_2, arrayed=False):
+        super().__init__()
         self.element_1 = UnaryOperator(element_1) if issubclass(type(element_1), (int, float)) else element_1
         self.element_2 = UnaryOperator(element_2) if issubclass(type(element_2), (int,  float)) else element_2
+        self.arrayed = arrayed
 
     def term(self, time="t"):
         pass
@@ -331,6 +325,7 @@ class UnaryOperator(Operator):
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
     def __init__(self, element):
+        super().__init__()
         self.element = element
 
     def term(self, time="t"):
@@ -342,6 +337,7 @@ class UnaryOperator(Operator):
 
 class PowerOperator(Operator):
     def __init__(self, element, power):
+        super().__init__()
         self.element = element
         self.power = power
 
@@ -369,6 +365,7 @@ class ComparisonOperator(BinaryOperator):
 class NaryOperator(Operator):
 
     def __init__(self, name,  *args):
+        super().__init__()
         self.name = name
         self.args = args
 
@@ -414,15 +411,11 @@ class DivisionOperator(BinaryOperator):
 
 
 class NumericalMultiplicationOperator(BinaryOperator):
-
     def term(self, time="t"):
         return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
 
 
-
-
 class MultiplicationOperator(BinaryOperator):
-
     def term(self, time="t"):
         return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
 

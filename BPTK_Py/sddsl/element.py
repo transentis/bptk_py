@@ -93,6 +93,145 @@ class Element:
         """
         return self._equation
 
+    def handle_array_mul(self, equation: MultiplicationOperator):
+
+        # Handle Element * Value
+
+        # Possibilities: Matrix * float
+        #                Matrix * int
+        if isinstance(equation.element_1, Element) and isinstance(equation.element_2, (float,int,Operator)):
+            dim = equation.element_1._elements.matrix_size()
+            if dim[0] == 0 and dim[1] == 0: # It is not arrayed, therfor should not be handled here.
+                return
+            if dim[1] != 0: # Matrix
+                for i in range(dim[0]):
+                    for j in range(dim[1]):
+                        self[i][j] = equation.element_1[i][j] * equation.element_2
+                return
+            if dim[0] != 0:
+                for i in range(dim[0]):
+                    self[i] = equation.element_1[i] * equation.element_2
+            return
+
+        # Possibilities: float * Matrix
+        #                int * Matrix
+        if isinstance(equation.element_2, Element) and isinstance(equation.element_1, (float,int,Operator)):
+            dim = equation.element_2._elements.matrix_size()
+            if dim[0] == 0 and dim[1] == 0: # It is not arrayed, therfor should not be handled here.
+                return
+            if dim[1] != 0: # Matrix
+                for i in range(dim[0]):
+                    for j in range(dim[1]):
+                        self[i][j] = equation.element_1 * equation.element_2[i][j]
+                return
+            if dim[0] != 0:
+                for i in range(dim[0]):
+                    self[i] = equation.element_1 * equation.element_2[i]
+            return
+
+
+        # Handle Element * Element
+        if isinstance(equation.element_1, Element) and isinstance(equation.element_2, Element):
+            dim1 = equation.element_1._elements.matrix_size()
+            dim2 = equation.element_2._elements.matrix_size()
+
+            # Element * Element should not be handled
+            if dim1[0] == 0 and dim2[0] == 0:
+                return
+
+            # Matrix * Element
+            if dim1[0] != 0 and dim2[0] == 0:
+                if dim1[1] == 0: # Vector * Element
+                    for i in range(dim1[0]):
+                        self[i] = equation.element_1[i] * equation.element_2
+                    return
+                if dim1[1] != 0: # Matrix * Element
+                    for i in range(dim1[0]):
+                        for j in range(dim1[0]):
+                            self[i][j] = equation.element_1[i][j] * equation.element_2
+                    return
+            
+            # Element * Matrix
+            if dim1[0] == 0 and dim2[0] != 0:
+                if dim2[1] == 0: # Element * Vector
+                    for i in range(dim2[0]):
+                        self[i] = equation.element_1 * equation.element_2[i]
+                    return
+                if dim2[1] != 0: # Element * Matrix
+                    for i in range(dim2[0]):
+                        for j in range(dim2[0]):
+                            self[i][j] = equation.element_1 * equation.element_2[i][j]
+                    return
+
+            
+            # Matrix * Matrix
+            if dim1[0] != 0 and dim2[0] != 0:
+                # Vector * Vector
+                if dim1[1] == 0 and dim2[1] == 0:
+                    if dim1[0] != dim2[0]:
+                        raise Exception("Attempted Multiplication of incompatible vectors (sizes {} and {})".format(str(dim1[0]), str(dim2[0])))
+                    for i in range(dim1[0]):
+                        self[i] = equation.element_1[i] * equation.element_2[i]
+                    return
+
+                # Matrix * Vector
+                if dim1[1] != 0 and dim2[1] == 0:
+                    if(dim1[1] != dim2[0]): # incompatible matrix multiplication
+                        raise Exception("Attempted incompatible matrix vector multiplication (sizes ({}, {}) and {})!".format(str(dim1[0]), str(dim1[1]), str(dim2[0])))
+
+                    self.setup_vector(dim1[0])
+
+                    for i in range(dim1[0]):
+                        eq = None
+                        for k in range(dim1[1]):
+                            if k == 0:
+                                eq = equation.element_1[i][k] * equation.element_2[k][j]
+                            else:
+                                cur_eq = (equation.element_1[i][k] * equation.element_2[k][j])
+                                eq = AdditionOperator(eq, cur_eq)
+                                print(eq)
+                        self[i].equation = eq
+                    return
+
+                # Vector * Matrix
+                if dim1[1] == 0 and dim2[1] != 0:
+                    if(dim1[0] != dim2[0]): # incompatible matrix multiplication
+                        raise Exception("Attempted incompatible vector matrix multiplication (sizes {} and ({}, {}))!".format(str(dim1[0]), str(dim1[1]), str(dim2[0])))
+
+                    self.setup_vector(dim2[1])
+
+                    for i in range(dim2[1]):
+                        eq = None
+                        for k in range(dim1[0]):
+                            if k == 0:
+                                eq = equation.element_1[i][k] * equation.element_2[k][j]
+                            else:
+                                cur_eq = (equation.element_1[i][k] * equation.element_2[k][j])
+                                eq = AdditionOperator(eq, cur_eq)
+                                print(eq)
+                        self[i].equation = eq
+                    return
+
+                # Matrix * Matrix
+                if dim1[1] != 0 and dim2[1] != 0:
+                    if dim1[1] != dim2[0]: # incompatible matrix multiplication
+                        raise Exception("Attempted multiplication with incompatible matrices (sizes ({}, {}) and ({}, {}))!".format(str(dim1[0]), str(dim1[1]), str(dim2[0]), str(dim2[1])))
+                    
+                    self.setup_matrix([dim1[0],dim2[1]])
+
+                    for i in range(dim1[0]):
+                        for j in range(dim2[1]):
+                            eq = None
+                            for k in range(dim1[1]):
+                                if k == 0:
+                                    eq = equation.element_1[i][k] * equation.element_2[k][j]
+                                else:
+                                    cur_eq = (equation.element_1[i][k] * equation.element_2[k][j])
+                                    eq = AdditionOperator(eq, cur_eq)
+                                    print(eq)
+                            self[i][j].equation = eq
+                    return
+
     @equation.setter
     def equation(self, equation):
         """Set the equation.
@@ -101,29 +240,21 @@ class Element:
             equation: Element or Operator.
                 The equation as defined via a series of SD DSL Elments or Operators.
         """
-        if isinstance(equation, ArrayMatrixMulOperator):
-            dim1 = equation.element1._elements.mat_dimensions()
-            if dim1[0] != 0:
-                dim2 = equation.element2._elements.mat_dimensions()
-                if(dim1[0] == 0 or dim1[1] == 0 or dim2[0] == 0 or dim2[1] == 0 or dim1[1] != dim2[0]):
-                    raise Exception("Attempted multiplication with non-compatible matrices!")
-                for i in range(dim1[0]):
-                    res = self[i]
-                    for j in range(dim2[1]):
-                        res[j]
+        if isinstance(equation, MultiplicationOperator): # Check for matrix/vector multiplication
+            array_equation = False
+            if isinstance(equation.element_2, Element) and equation.element_2._elements.vector_size() > 0:
+                array_equation = True
+            if isinstance(equation.element_1, Element) and equation.element_1._elements.vector_size() > 0:
+                array_equation = True
 
-                for i in range(dim1[0]):
-                    for j in range(dim2[1]):
-                        eq = None
-                        for k in range(dim1[1]):
-                            if k == 0:
-                                eq = equation.element1[i][k] * equation.element2[k][j]
-                            else:
-                                cur_eq = (equation.element1[i][k] * equation.element2[k][j])
-                                eq = AdditionOperator(eq, cur_eq)
-                                print(eq)
-                        self[i][j].equation = eq
-        self._equation = equation
+            if(array_equation):
+                self.handle_array_mul(equation)
+                self.equation = 0.0
+            else:
+                self._equation = equation
+        else:
+            self._equation = equation
+                
         self.model.reset_cache()
         self._function_string = "lambda model, t: {}".format(self.equation)
         self.generate_function()
@@ -202,9 +333,7 @@ class Element:
 
     def arr_size(self):
         return ArraySizeOperator(self)
-
-    #def matrix_size(self):
-
+    
 
     ### Operator overrides
     def __str__(self):
@@ -217,17 +346,7 @@ class Element:
 
     def __mul__(self, other):
         """Left Multiply with other operators"""
-        dim1 = self._elements.mat_dimensions()
-        if dim1[0] != 0:
-            dim1 = self._elements.mat_dimensions()
-            dim2 = other._elements.mat_dimensions()
-
-            if(dim1[0] == 0 or dim1[1] == 0 or dim2[0] == 0 or dim2[1] == 0 or dim1[1] != dim2[0]):
-                raise Exception("Attempted multiplication with non-compatible matrices!")
-            
-            return ArrayMatrixMulOperator(self, other)
-
-        return MultiplicationOperator(self, other)
+        return MultiplicationOperator(self, other, self._elements.vector_size() > 0)
 
     def __rmul__(self, other):
         """Right multiply with other operators."""
@@ -296,6 +415,15 @@ class Element:
         return visualizer().update_plot_formats(ax)
 
 
+    def setup_vector(self, size, default_value = 0.0):
+        for i in range(size):
+            self[i] = default_value
+            
+    def setup_matrix(self, size, default_value = 0.0):
+        for i in range(size[0]):
+            for j in range(size[1]):
+                self[i][j] = default_value
+        
 class ElementError(Exception):
     def __init__(self, value):
         """Initialize element"""
