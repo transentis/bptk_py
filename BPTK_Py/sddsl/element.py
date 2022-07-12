@@ -232,6 +232,21 @@ class Element:
                             self[i][j].equation = eq
                     return
 
+    # Distribute equations accross all relevant elements.
+    # Returns a list of dimensions
+    # Examples:
+    # [2, 3, 5] + [2, 5, 6] *  2 => [3]
+    # [[2, 3, 4]] * [[2, 3, 4]   => [1, 2]
+    #                [5, 6, 7]]
+    def resolve_equation_dimensions(self, equation):
+        # For both equations
+            # If equation binary and arrayed:
+                # Resolve dimensions
+                # Return dimensions
+            # Else
+                # return -1
+        pass
+
     @equation.setter
     def equation(self, equation):
         """Set the equation.
@@ -240,21 +255,39 @@ class Element:
             equation: Element or Operator.
                 The equation as defined via a series of SD DSL Elments or Operators.
         """
-        if isinstance(equation, MultiplicationOperator): # Check for matrix/vector multiplication
-            array_equation = False
-            if isinstance(equation.element_2, Element) and equation.element_2._elements.vector_size() > 0:
-                array_equation = True
-            if isinstance(equation.element_1, Element) and equation.element_1._elements.vector_size() > 0:
-                array_equation = True
+        # if isinstance(equation, MultiplicationOperator): # Check for matrix/vector multiplication
+        #     array_equation = False
+        #     if isinstance(equation.element_2, Element) and equation.element_2._elements.vector_size() > 0:
+        #         array_equation = True
+        #     if isinstance(equation.element_1, Element) and equation.element_1._elements.vector_size() > 0:
+        #         array_equation = True
 
-            if(array_equation):
-                self.handle_array_mul(equation)
-                self.equation = 0.0
-            else:
-                self._equation = equation
-        else:
+        #     if(array_equation):
+        #         self.handle_array_mul(equation)
+        #         self.equation = 0.0
+        #     else:
+        #         self._equation = equation
+        # else:
+        #     self._equation = equation
+        arrayed_equation = False
+        if isinstance(equation, Operator):
+            if equation.is_any_subelement_arrayed() and equation.index == None:
+                # Resolve equations
+                dims = equation.resolve_dimensions()
+                if(dims != -1): # It is an arrayed equation
+                    arrayed_equation = True
+                    if len(dims) < 2 or dims[1] == 0:
+                        self.setup_vector(dims[0])
+                        # Copy equations with relevant indices
+                        print("IM CLONING", dims)
+                        for i in range(dims[0]):
+                            self[i] = equation.clone_with_index([i])
+                    else:
+                        self.setup_matrix(dims)
+
+        
+        if not arrayed_equation:
             self._equation = equation
-                
         self.model.reset_cache()
         self._function_string = "lambda model, t: {}".format(self.equation)
         self.generate_function()
@@ -346,7 +379,7 @@ class Element:
 
     def __mul__(self, other):
         """Left Multiply with other operators"""
-        return MultiplicationOperator(self, other, self._elements.vector_size() > 0)
+        return MultiplicationOperator(self, other)
 
     def __rmul__(self, other):
         """Right multiply with other operators."""

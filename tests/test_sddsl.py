@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from BPTK_Py.sdcompiler.compile import compile_xmile
+from BPTK_Py.sddsl.operators import BinaryOperator
 
 # def test_spm():
 #     from BPTK_Py import Model
@@ -807,16 +808,69 @@ def test_array_functions():
 
     # multiplication
     
-    for i in range(1, 10):
-        model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(i))
+    model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(4))
 
-        # test_converter = model.converter("test_converter")
-        # test_converter.setup_vector(i, i)
+    test_converter = model.converter("test_converter")
+    test_converter.setup_vector(3, 4.0)
+    test_converter[1] = 5.0
+    test_converter[2] = 6.0
 
-        # test_mul_converter = model.converter("test_mul_converter")
-        # test_mul_converter.equation = test_converter * i
-        # #print(type((test_converter * (i * 0.45)).element_2))
-        # print(model.converters)
+    test_converter2 = model.converter("test_converter2")
+    test_converter2.setup_vector(3, 5.0)
+    # test_converter2[1] = 6.0
+    # test_converter2[2] = 7.0
+
+    test_mul_converter = model.converter("test_mul_converter")
+    test_mul_converter.equation = test_converter * 2.0 + 3.0 + 4.0
+
+    data = test_mul_converter[0].plot(return_df=True)
+    print(data)
+    data = test_mul_converter[1].plot(return_df=True)
+    print(data)
+    data = test_mul_converter[2].plot(return_df=True)
+    print(data)
+    # test_eq = test_converter2 + 2.5
+    # print(test_converter._elements.matrix_size())
+    # print(test_eq.resolve_dimensions())
+    # def print_eq(eq, offset):
+    #     if isinstance(eq, BinaryOperator):
+    #         print(offset + str(type(eq)))
+    #         print(offset + str(eq.resolve_dimensions()))
+    #         print(offset + str(eq.is_any_subelement_arrayed()))
+    #         print()
+    #         print_eq(eq.element_1, offset + "  ")
+    #         print_eq(eq.element_2, offset + "  ")
+    #     else:
+    #         print(offset + str(type(eq)))
+    # print_eq(test_eq, "")
+
+    # def resolve(eq, offset):
+    #     if isinstance(eq, BinaryOperator):
+    #         if eq.is_any_arrayed():
+    #             if eq.arrayed:
+                    
+    #         else:
+    #             return -1
+    
+    # for i in range(1, 10):
+    #     model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(i))
+
+    #     test_converter = model.converter("test_converter")
+    #     test_converter.setup_vector(i, i)
+
+    #     test_mul_converter = model.converter("test_mul_converter")
+    #     test_mul_converter.equation = test_converter * i
+
+    #     test_eq = test_converter * i * 0.45
+
+    #     def print_eq(eq, offset):
+    #         if isinstance(eq, BinaryOperator):
+    #             print(offset + str(type(eq)))
+    #             print_eq(eq.element_1, offset + "  ")
+    #             print_eq(eq.element_2, offset + "  ")
+    #         else:
+    #             print(offset + str(type(eq)))
+    #     print_eq(test_eq, "")
         # assert(test_mul_converter._elements.vector_size() == i)
         # dim = test_mul_converter._elements.matrix_size()
         # assert(dim == [i, 0])
@@ -828,20 +882,32 @@ def test_array_functions():
         #     assert(test_mul_converter[x].equation == i * i * 0.45)
 
 
-        for j in range(1, 10):
-            test_converter = model.converter("test_converter_matrix" + str(j))
-            test_converter.setup_matrix([i, j], i + j)
+        # for j in range(1, 10):
+        #     test_converter = model.converter("test_converter_matrix" + str(j))
+        #     test_converter.setup_matrix([i, j], i + j)
             
-            test_mul_converter = model.converter("test_converter_matrix_mul_" + str(j))
-            test_mul_converter.equation = test_converter * i * j * 0.45
+        #     test_mul_converter = model.converter("test_converter_matrix_mul_" + str(j))
+        #     test_mul_converter.equation = test_converter * i * j * 0.45
 
-            for x in range(0, i):
-                for y in range(0, j):
-                    assert(test_converter[x][y].equation == i + j)
-                    assert(test_mul_converter[x][y].equation == i * i * j * 0.45)
+        #     for x in range(0, i):
+        #         for y in range(0, j):
+        #             assert(test_converter[x][y].equation == i + j)
+        #             assert(test_mul_converter[x][y].equation == i * i * j * 0.45)
 
 
         #bptk.register_model(model)
         #data = bptk.run_scenarios(scenario_managers=["smAbs"],scenarios=["base"],equations=["input_converter","abs_converter"])
+
+        # test_converter = model.converter("test_converter")
+        # test_converter.setup_vector(i, i)
+        # test_add_converter = model.converter("test_add_converter")
+        # test_add_converter.equation = test_converter * i
+
+        # assert(test_add_converter._elements.vector_size() == i)
+        # dim = test_add_converter._elements.matrix_size()
+        # assert(dim == [i, 0])
+
+        
+
 
 test_array_functions()
