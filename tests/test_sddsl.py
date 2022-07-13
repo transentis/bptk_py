@@ -811,31 +811,55 @@ def test_array_functions():
     model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(4))
 
     test_converter = model.converter("test_converter")
-    test_converter.setup_vector(3, 4.0)
-    test_converter[1] = 5.0
-    test_converter[2] = 6.0
+    test_converter.setup_matrix([3,2], 4.0)
+    test_converter[0][0] = 1.0
+    test_converter[0][1] = 2.0
+    test_converter[1][0] = 3.0
+    test_converter[1][1] = 4.0
+    test_converter[2][0] = 5.0
+    test_converter[2][1] = 6.0
+    # test_converter[2] = 6.0
 
-    test_converter2 = model.converter("test_converter2")
-    test_converter2.setup_vector(3, 5.0)
-    test_converter2[1] = 6.0
-    test_converter2[2] = 7.0
+    test_vec1 = model.converter("test_vec1")
+    test_vec1.setup_vector(3, [1,2,3])
 
+    test_vec2 = model.converter("test_vec2")
+    test_vec2.setup_vector(3, [4,5,6])
+
+    test_constant = model.constant("test_constant")
+    test_constant.equation = 10.0
+
+    test_mat1 = model.converter("test_mat1")
+    test_mat1.setup_matrix([2,4], [[7.0,8.0,9.0,10.0], [11.0,12.0,13.0,14.0]])
+
+    test_mat2 = model.converter("test_mat2")
+    test_mat2.setup_matrix([2,4], [[7.0,8.0,9.0,10.0], [11.0,12.0,13.0,14.0]])
+    test_mat2[0][2] = test_mat1.arr_sum()
+    test_mat2[0][3] = test_vec1.dot(test_vec2)
     test_converter3 = model.converter("test_converter3")
     test_converter3.equation = 5.0
 
-    test_eq = test_converter2.dot(test_converter2)
+    test_eq = test_converter.dot(test_mat1)
     print(test_eq.resolve_dimensions())
 
     test_mul_converter = model.converter("test_mul_converter")
-    test_mul_converter.equation = test_converter2.dot(test_converter)
+    test_mul_converter.equation = test_converter.dot(test_mat2)
 
-    print(test_mul_converter.equation)
-    data = test_mul_converter.plot(return_df=True)
-    print(data)
-    # data = test_mul_converter[0][1].plot(return_df=True)
-    # print(data)
-    # data = test_mul_converter[0][2].plot(return_df=True)
-    # print(data)
+    def print_element(element):
+        data = element.plot(return_df=True)
+        print(str(data[element.name][0]))
+
+    def print_matrix(element, dim1, dim2):
+        full_res = "["
+        for i in range(dim1):
+            res = "[" if i == 0 else " ["
+            for j in range(dim2):
+                data = element[i][j].plot(return_df=True)
+                res += str(data["{}[{}][{}]".format(element.name,i,j)][0]) + ", "
+            full_res += res[:-2] + "], \n"
+        print(full_res[:-3] + "]")
+    print_element(test_mat2[0][3])
+    print_matrix(test_mul_converter, 3, 4)
     
     # print(test_converter._elements.matrix_size())
     # print(test_eq.resolve_dimensions())

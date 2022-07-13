@@ -437,14 +437,45 @@ class Element:
 
 
     def setup_vector(self, size, default_value = 0.0):
-        for i in range(size):
-            self[i] = default_value
+        """
+        Creates sub-element for this element.
+
+        Parameters:
+            size: int - Size of the vector
+            default_value: float | List[float] - The default value or values of the vector
+        """
+
+        if isinstance(default_value, (float,int)):
+            for i in range(size):
+                self[i] = default_value
+        else:
+            if len(default_value) != size:
+                raise Exception("The passed size of the vector {} does not match the size of the default values {}.".format(size, len(default_value)))
+            for i in range(size):
+                self[i] = default_value[i]
             
     def setup_matrix(self, size, default_value = 0.0):
-        for i in range(size[0]):
-            for j in range(size[1]):
-                self[i][j] = default_value
+        """
+        Creates sub-element for this element.
+
+        Parameters:
+            size: [int, int] - Size of the matrix
+            default_value: float | List[float] - The default value or values of the vector
+        """
+        if isinstance(size, int) or len(size) != 2:
+            raise Exception("Expected two-element size to be passed to setup_matrix. Received size {}!".format(size))
         
+        if isinstance(default_value, (float,int)):
+            for i in range(size[0]):
+                for j in range(size[1]):
+                    self[i][j] = default_value
+        else:
+            if len(default_value) != size[0] or len(default_value[0]) != size[1]:
+                raise Exception("Expected passed default_value to have the same size as passed matrix size. Received default_value of size {} and matrix of size {}!".format([len(default_value), len(default_value[1])], size))
+            for i in range(size[0]):
+                for j in range(size[1]):
+                    self[i][j] = default_value[i][j]
+
 class ElementError(Exception):
     def __init__(self, value):
         """Initialize element"""

@@ -732,6 +732,18 @@ class DotOperator(BinaryOperator):
                 Example: [[1,2,3],[4,5,6]] * [2,3,4] => [20, 47]
                 Dimension Rule: Matrix must have dimensions mxn if length of vector=n
         """
+        def _get_sub_element_term(element, index, time):
+            if isinstance(element, BPTK_Py.sddsl.element.Element):
+                if isinstance(index, (int, float)):
+                    return element[index].term(time)
+                cur = element
+                for i in index:
+                    cur = cur[i]
+                return cur.term(time)
+
+            if isinstance(element, Operator):
+                return element.arrayed_term(index, time)
+
         dim1 = _get_element_dimensions(self.element_1)
         dim2 = _get_element_dimensions(self.element_2)  
 
@@ -775,10 +787,45 @@ class DotOperator(BinaryOperator):
                 for i in range(dim1[0]):
                     result += "({}) * ({}) + ".format(self.element_1[i].term(time), self.element_2[i].term(time))
                 return result[:-3]
+
+            # Vector * Matrix
+            if dim1[0] != dim2[0]: # Vector matrix
+                raise Exception("Attempted invalid vector matrix multiplication (sizes {} and [{}, {}]). Required: m and mxn.".format(dim1[0], dim2[0], dim2[1]))
             
+            index = self.index if isinstance(self.index,int) else self.index[0]
 
+            if(index >= dim2[1]):
+                raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(self.index[0], dim2[1]))
+            res = ""
+            for k in range(dim2[0]):
+                res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1, [k], time), _get_sub_element_term(self.element_2, [k, index], time))
+            return res[:-3]
 
-        
+        if len(dim2) == 1 or dim2[1] == 0: # Matrix * Vector
+            if dim1[1] != dim2[0]:
+                raise Exception("Attempted invalid matrix vector multiplication (sizes [{}, {}] and {}). Required: mxn and n.".format(dim1[0], dim1[1], dim2[0]))
+            
+            index = self.index if isinstance(self.index,int) else self.index[0]
+
+            if(index >= dim1[0]):
+                raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(self.index[0], dim2[1]))
+
+            res = ""
+            for k in range(dim1[1]):
+                res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1, [index, k], time), _get_sub_element_term(self.element_2, [k], time))
+            return res[:-3]
+
+        # Matrix * Matrix
+        if isinstance(self.index, int) or len(self.index) != 2:
+            raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}. Expected two-element index for matrix multiplication!".format(self.index))
+
+        if self.index[0] >= dim1[0] or self.index[1] >= dim2[1]:
+            raise Exception("Invalid index was passed to vector matrix multiplication. Index is [{}, {}], output matrix size is [{}, {}]!".format(self.index[0], self.index[1], dim1[0],dim2[1]))
+        res = ""
+        for k in range(dim1[1]):
+            res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1, [self.index[0], k], time), _get_sub_element_term(self.element_2, [k, self.index[1]], time))
+        return res[:-3]
+
 
         return super().term(time)
         
