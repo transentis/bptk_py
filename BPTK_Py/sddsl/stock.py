@@ -70,7 +70,7 @@ class Stock(Element):
             start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name) + "+ model.dt*("
             self._function_string = start_string + self._equation.term("t-model.dt") + ") )"
         else:
-            start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name) + "+ model.dt*("
+            start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
             self._function_string = start_string + ")"
 
 

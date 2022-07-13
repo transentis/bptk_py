@@ -267,7 +267,7 @@ class ArraySizeOperator(Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._element.total_count() == 0:
+        if self.element._elements.total_count() == 0:
             return "0.0"
         return str(len(self.element._elements.vector_size()))
          
@@ -287,10 +287,10 @@ class ArrayRankOperator(Operator):
         self.rank = rank
 
     def term(self, time="t"):
-        if self.element._element.total_count() == 0:
+        if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time)
+        string_term = _array_element_to_string(self.element, time, False)
 
         return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element.equation.equations))
          
@@ -303,15 +303,16 @@ class ArrayMeanOperator(Operator):
     """
     Returns the mean of an array.
     """
-    def __init__(self, element):
+    def __init__(self, element, include_all = False):
         super().__init__()
         self.element = element
+        self.include_all = include_all
 
     def term(self, time="t"):
-        if self.element._element.total_count() == 0:
+        if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time)
+        string_term = _array_element_to_string(self.element, time, self.include_all)
 
         return "np.mean({arr})".format(arr=string_term)
     
@@ -326,15 +327,16 @@ class ArrayMedianOperator(Operator):
     """
     Returns the mean of an array.
     """
-    def __init__(self, element):
+    def __init__(self, element, include_all = False):
         super().__init__()
         self.element = element
+        self.include_all = include_all
 
     def term(self, time="t"):
-        if self.element._element.total_count() == 0:
+        if self.element._elements.total_count() == 0:
             return "0.0"
         
-        string_term = _array_element_to_string(self.element, time)
+        string_term = _array_element_to_string(self.element, time, self.include_all)
 
         return "np.median({arr})".format(arr=string_term)
          
@@ -347,15 +349,16 @@ class ArrayStandardDeviationOperator(Operator):
     """
     Returns the mean of an array.
     """
-    def __init__(self, element):
+    def __init__(self, element, include_all = False):
         super().__init__()
         self.element = element
+        self.include_all = include_all
 
     def term(self, time="t"):
-        if self.element._element.total_count() == 0:
+        if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time)
+        string_term = _array_element_to_string(self.element, time, self.include_all)
 
         return "np.std({arr})".format(arr=string_term)
          
