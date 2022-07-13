@@ -52,7 +52,7 @@ class ArrayedEquation:
         for a in self.number_equations:
             c = self._element[a]._elements.vector_size()
             if n != -1 and n != c:
-                raise Exception("Matrix is does not have uniform dimensions!")
+                raise Exception("Matrix does not have uniform dimensions!")
             n = c
         return [m,n]
 
@@ -74,11 +74,15 @@ class Operator:
     def term(self, time="t"):
         pass
 
+    def arrayed_term(self, index, time="t"):
+        temp = self.index
+        self.index = index
+        result = self.term(time)
+        self.index = temp
+        return result
+
     def clone_with_index(self, index):
         pass
-
-    def term_arrayed(self, index, time="t"):
-        return self.term(time)
 
     def is_any_subelement_arrayed(self) -> bool:
         return False
@@ -372,9 +376,6 @@ class BinaryOperator(Operator):
     def term(self, time="t"):
         pass
 
-    def term_arrayed(self, index, time="t"):
-        pass
-
     def _is_arrayed(self, element):
         return self.arrayed or (isinstance(element, BPTK_Py.sddsl.element.Element) and element._elements.vector_size() > 0) or (isinstance(element, Operator) and element.is_any_subelement_arrayed())
 
@@ -461,6 +462,7 @@ class NaryOperator(Operator):
 class ModOperator(BinaryOperator):
     def term(self, time="t"):
         return self.element_1.term(time) + "%" + self.element_2.term(time)
+
 
 class AdditionOperator(BinaryOperator):
     def term(self, time="t"):
@@ -607,26 +609,22 @@ class DivisionOperator(BinaryOperator):
 
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
-        return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
-
-
-    def term(self, time="t"):
         if self.arrayed:
             if self.index == None: # Can not resolve arrayed equations without index
                 return "0.0" 
 
-            el1_arrayed = isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
+            el2_arrayed = isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
 
-            if(el1_arrayed):
-                cur_el1 = self.element_1
+            if(el2_arrayed):
+                cur_el2 = self.element_2
                 for i in self.index:
-                    cur_el1 = cur_el1[i]
-                return "({}) * ({})".format(cur_el1.term(time), str(self.element_2))
+                    cur_el2 = cur_el2[i]
+                return "({}) * ({})".format(str(self.element_1), cur_el2.term(time))
            
             else:
-                return "(" + self.element_1.term(time) + ") * (" + str(self.element_2) + ")"
+                return "(" + str(self.element_1) + ") * (" + self.element_2.term(time) + ")"
         else:
-            return "(" + self.element_1.term(time) + ") * (" + str(self.element_2) + ")"
+            return "(" + str(self.element_1) + ") * (" + self.element_2.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -693,6 +691,165 @@ class MultiplicationOperator(BinaryOperator):
         return MultiplicationOperator(element_1, element_2, index)
         
 
+class DotOperator(BinaryOperator):
+    """
+        Multiply two matrices or vectors.
+    """
+    def __init__(self, element_1, element_2, index=None):
+        super().__init__(element_1, element_2, index)
+        if not self.arrayed:
+            raise Exception("Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
+
+
+    def term(self, time="t"):
+        """
+            Calculating matrix/vector multiplication is complex..
+            Following rules are taken into account:
+
+            Value * Vector => Every vector element multiplied by value
+                Example: 2 * [1, 2] => [2, 4]
+                Dimension Rule: No rule
+            Vector * Value => Every vector element multiplied by value
+                Example: [1, 2] * 2 => [2, 4
+                Dimension Rule: No rule
+
+            Value * Matrix => Every matrix element multiplied by value
+                Example: 2 * [[1, 2],[3,4]] => [[2, 4],[6,8]]
+                Dimension Rule: No rule
+            Matrix * Value => Every matrix element multiplied by value
+                Example: [[1, 2],[3,4]] * 2 => [[2, 4],[6,8]]
+                Dimension Rule: No rule
+
+            Vector * Vector => Every vector element multiplied by corresponding element in other vector.
+                Example: [1,2] * [3,4] => 11
+                Dimension Rule: Vectors must have same dimensions
+                
+            Vector * Matrix => 
+                Example: [2,3,4] * [[1,2,3],[4,5,6],[7,8,9]] => [42, 51, 60]
+                Dimension Rule: Matrix must have dimensions mxn if length of vector=m
+            
+            Matrix * Vector => 
+                Example: [[1,2,3],[4,5,6]] * [2,3,4] => [20, 47]
+                Dimension Rule: Matrix must have dimensions mxn if length of vector=n
+        """
+        dim1 = _get_element_dimensions(self.element_1)
+        dim2 = _get_element_dimensions(self.element_2)  
+
+        if self.index == None:
+            # Only equation without index is vector * vector
+
+            if len(dim1) == 1 or dim1[1] == 0:
+                if len(dim2) == 1 or dim2[1] == 0:
+                    if dim1[0] != dim2[0]:
+                        raise Exception("Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
+                    result = ""
+                    for i in range(dim1[0]):
+                        result += "({}) * ({}) + ".format(self.element_1[i].term(time), self.element_2[i].term(time))
+                    return result[:-3]
+            return "0.0" 
+
+        ### Value
+
+        if dim1 == -1: # Value
+            if dim2 == -1:
+                raise Exception("Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
+            # Value * Vector or Value * Matrix
+            cur_el2 = self.element_2
+            for i in self.index:
+                cur_el2 = cur_el2[i]
+            return "({}) * ({})".format(self.element_1.term(time), cur_el2.term(time))
+
+        if dim2 == -1: # Value
+            # Vector * Value or Matrix * Value
+            cur_el1 = self.element_1
+            for i in self.index:
+                cur_el1 = cur_el1[i]
+            return "({}) * ({})".format(cur_el1.term(time), self.element_2.term(time))
+        
+        ### Vector
+        if len(dim1) == 1 or dim1[1] == 0: # Vector
+            if len(dim2) == 1 or dim2[1] == 0: # Vector * Vector
+                if dim1[0] != dim2[0]:
+                    raise Exception("Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
+                result = ""
+                for i in range(dim1[0]):
+                    result += "({}) * ({}) + ".format(self.element_1[i].term(time), self.element_2[i].term(time))
+                return result[:-3]
+            
+
+
+        
+
+        return super().term(time)
+        
+    def resolve_dimensions(self):
+        """
+            Resolving multiplication dimensions is more complex than other resolves.
+            Following rules are taken into account:
+
+            Value * Vector => Every vector element multiplied by value
+                Example: 2 * [1, 2] => [2, 4] => [2]
+                Dimension Rule: No rule
+            Vector * Value => Every vector element multiplied by value
+                Example: [1, 2] * 2 => [2, 4] => [2]
+                Dimension Rule: No rule
+
+            Value * Matrix => Every matrix element multiplied by value
+                Example: 2 * [[1, 2],[3,4]] => [[2, 4],[6,8]] => [2,2]
+                Dimension Rule: No rule
+            Matrix * Value => Every matrix element multiplied by value
+                Example: [[1, 2],[3,4]] * 2 => [[2, 4],[6,8]] => [2,2]
+                Dimension Rule: No rule
+
+            Vector * Vector => Every vector element multiplied by corresponding element in other vector.
+                Example: [1,2] * [3,4] => 11 => -1
+                Dimension Rule: Vectors must have same dimensions
+                
+            Vector * Matrix => 
+                Example: [2,3,4] * [[1,2,3],[4,5,6],[7,8,9]] => [42, 51, 60] => [3]
+                Dimension Rule: Matrix must have dimensions mxn if length of vector=m
+            
+            Matrix * Vector => 
+                Example: [[1,2,3],[4,5,6]] * [2,3,4] => [20, 47] => [2] (mxn=m)
+                Dimension Rule: Matrix must have dimensions mxn if length of vector=n
+        """
+        dim1 = _get_element_dimensions(self.element_1)
+        dim2 = _get_element_dimensions(self.element_2)
+
+        ## Values
+        if dim1 == -1:
+            if dim2 == -1:
+                raise Exception("Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
+            return dim2
+
+        if dim2 == -1:
+            return dim1
+
+        ## Vectors
+        if len(dim1) == 1 or dim1[1] == 0:
+            if len(dim2) == 1 or dim2[1] == 0: # Vector vector
+                if dim1[0] != dim2[0]:
+                    raise Exception("Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
+                return -1
+            if dim2[0] != dim1[0]: # Vector matrix
+                raise Exception("Attempted invalid vector matrix multiplication (sizes {} and [{}, {}]). Required: m and mxn.".format(dim1[0], dim2[0], dim2[1]))
+            return [dim2[1]]
+        if len(dim2) == 1 or dim2[1] == 0: # Matrix vector
+            if dim1[1] != dim2[0]:
+                raise Exception("Attempted invalid matrix vector multiplication (sizes [{}, {}] and {}). Required: mxn and n.".format(dim1[0], dim1[1], dim2[0]))
+            return [dim1[0]]
+
+        ## Matrix matrix
+        if dim1[1] != dim2[0]:
+            raise Exception("Attempted invalid matrix matrix multiplication (sizes [{}, {}] and [{}, {}]). Required: mxn and nxp.".format(dim1[0], dim1[1], dim2[0], dim2[1]))
+
+        return [dim1[0],dim2[1]]
+            
+    def clone_with_index(self, index):
+        element_1 = self.element_1 if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
+        element_2 = self.element_2 if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        return DotOperator(element_1, element_2, index)
+        
 class AbsOperator(UnaryOperator):
     """
     Abs Function

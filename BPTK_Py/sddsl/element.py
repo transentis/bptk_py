@@ -232,21 +232,6 @@ class Element:
                             self[i][j].equation = eq
                     return
 
-    # Distribute equations accross all relevant elements.
-    # Returns a list of dimensions
-    # Examples:
-    # [2, 3, 5] + [2, 5, 6] *  2 => [3]
-    # [[2, 3, 4]] * [[2, 3, 4]   => [1, 2]
-    #                [5, 6, 7]]
-    def resolve_equation_dimensions(self, equation):
-        # For both equations
-            # If equation binary and arrayed:
-                # Resolve dimensions
-                # Return dimensions
-            # Else
-                # return -1
-        pass
-
     @equation.setter
     def equation(self, equation):
         """Set the equation.
@@ -279,13 +264,14 @@ class Element:
                     if len(dims) < 2 or dims[1] == 0:
                         self.setup_vector(dims[0])
                         # Copy equations with relevant indices
-                        print("IM CLONING", dims)
                         for i in range(dims[0]):
                             self[i] = equation.clone_with_index([i])
                     else:
                         self.setup_matrix(dims)
-
-        
+                        for i in range(dims[0]):
+                            for j in range(dims[1]):
+                                self[i][j] = equation.clone_with_index([i,j])
+                                
         if not arrayed_equation:
             self._equation = equation
         self.model.reset_cache()
@@ -367,6 +353,8 @@ class Element:
     def arr_size(self):
         return ArraySizeOperator(self)
     
+    def dot(self, other):
+        return DotOperator(self, other)
 
     ### Operator overrides
     def __str__(self):

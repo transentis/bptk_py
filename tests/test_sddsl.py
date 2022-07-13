@@ -817,19 +817,26 @@ def test_array_functions():
 
     test_converter2 = model.converter("test_converter2")
     test_converter2.setup_vector(3, 5.0)
-    # test_converter2[1] = 6.0
-    # test_converter2[2] = 7.0
+    test_converter2[1] = 6.0
+    test_converter2[2] = 7.0
+
+    test_converter3 = model.converter("test_converter3")
+    test_converter3.equation = 5.0
+
+    test_eq = test_converter2.dot(test_converter2)
+    print(test_eq.resolve_dimensions())
 
     test_mul_converter = model.converter("test_mul_converter")
-    test_mul_converter.equation = test_converter * 2.0 + 3.0 + 4.0
+    test_mul_converter.equation = test_converter2.dot(test_converter)
 
-    data = test_mul_converter[0].plot(return_df=True)
+    print(test_mul_converter.equation)
+    data = test_mul_converter.plot(return_df=True)
     print(data)
-    data = test_mul_converter[1].plot(return_df=True)
-    print(data)
-    data = test_mul_converter[2].plot(return_df=True)
-    print(data)
-    # test_eq = test_converter2 + 2.5
+    # data = test_mul_converter[0][1].plot(return_df=True)
+    # print(data)
+    # data = test_mul_converter[0][2].plot(return_df=True)
+    # print(data)
+    
     # print(test_converter._elements.matrix_size())
     # print(test_eq.resolve_dimensions())
     # def print_eq(eq, offset):
