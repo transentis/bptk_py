@@ -269,7 +269,7 @@ class ArraySizeOperator(Operator):
     def term(self, time="t"):
         if self.element._elements.total_count() == 0:
             return "0.0"
-        return str(len(self.element._elements.vector_size()))
+        return str(self.element._elements.vector_size())
          
     def clone_with_index(self, index):
         a = ArraySizeOperator(self.element)
@@ -292,7 +292,7 @@ class ArrayRankOperator(Operator):
 
         string_term = _array_element_to_string(self.element, time, False)
 
-        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element.equation.equations))
+        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element._elements.number_equations))
          
     def clone_with_index(self, index):
         a = ArrayRankOperator(self.element, self.rank)
@@ -616,18 +616,18 @@ class NumericalMultiplicationOperator(BinaryOperator):
             if self.index == None: # Can not resolve arrayed equations without index
                 return "0.0" 
 
-            el2_arrayed = isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
+            el1_arrayed = isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
 
-            if(el2_arrayed):
-                cur_el2 = self.element_2
+            if(el1_arrayed):
+                cur_el1 = self.element_1
                 for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "({}) * ({})".format(str(self.element_1), cur_el2.term(time))
+                    cur_el1 = cur_el1[i]
+                return "({}) * ({})".format(str(self.element_2), cur_el1.term(time))
            
             else:
-                return "(" + str(self.element_1) + ") * (" + self.element_2.term(time) + ")"
+                return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
         else:
-            return "(" + str(self.element_1) + ") * (" + self.element_2.term(time) + ")"
+            return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
