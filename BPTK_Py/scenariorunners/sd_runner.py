@@ -1,3 +1,4 @@
+
 #                                                       /`-
 # _                                  _   _             /####`-
 # | |                                | | (_)           /########`-
@@ -152,8 +153,6 @@ class SdRunner(ScenarioRunner):
 
         all_equations = [item for sublist in [list(mod.model.equations.keys()) for mod in scenario_objects.values()] for item in sublist]
         all_equations = list(dict.fromkeys(all_equations))
-        for k in scenario_objects.values():
-            print(k.model.equations)
         # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
         # We are checking which scenarios can handle which equation
         import re
