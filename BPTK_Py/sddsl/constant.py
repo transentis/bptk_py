@@ -36,14 +36,14 @@ class Constant(Element):
 
     @equation.setter
     def equation(self, equation):
-        self._equation = equation
-        self.model.reset_cache()
-        if isinstance(equation, (float)):
-            self._function_string = "lambda model, t: {}".format(equation)
-        else:
-            if(self._elements.total_count() != 0):
-                self._equation = 0.0
+        if not self._handle_arrayed(equation):
+            self._equation = equation
+            if isinstance(equation, (float)):
+                self._function_string = "lambda model, t: {}".format(equation)
             else:
+                print(equation)
                 raise ElementError("Constants can only contain floating point values")
 
+        self.model.reset_cache()
+       
         self.generate_function()

@@ -93,28 +93,10 @@ class Element:
         """
         return self._equation
 
-    @equation.setter
-    def equation(self, equation):
-        """Set the equation.
-
-        Parameters:
-            equation: Element or Operator.
-                The equation as defined via a series of SD DSL Elments or Operators.
+    def _handle_arrayed(self, equation) -> bool:
         """
-        # if isinstance(equation, MultiplicationOperator): # Check for matrix/vector multiplication
-        #     array_equation = False
-        #     if isinstance(equation.element_2, Element) and equation.element_2._elements.vector_size() > 0:
-        #         array_equation = True
-        #     if isinstance(equation.element_1, Element) and equation.element_1._elements.vector_size() > 0:
-        #         array_equation = True
-
-        #     if(array_equation):
-        #         self.handle_array_mul(equation)
-        #         self.equation = 0.0
-        #     else:
-        #         self._equation = equation
-        # else:
-        #     self._equation = equation
+            Handles arrayed equations. Returns true if the equation is arrayed.
+        """
         arrayed_equation = False
         if isinstance(equation, Operator):
             if equation.is_any_subelement_arrayed() and equation.index == None:
@@ -132,8 +114,21 @@ class Element:
                         for i in range(dims[0]):
                             for j in range(dims[1]):
                                 self[i][j] = equation.clone_with_index([i,j])
+        return arrayed_equation
+
+    @equation.setter
+    def equation(self, equation):
+        """Set the equation.
+
+        Parameters:
+            equation: Element or Operator.
+                The equation as defined via a series of SD DSL Elments or Operators.
+        """
+
+        # Solves arrayed equations
+        
                                 
-        if not arrayed_equation:
+        if not self._handle_arrayed(equation):
             self._equation = equation
         self.model.reset_cache()
         self._function_string = "lambda model, t: {}".format(self.equation)
@@ -194,27 +189,35 @@ class Element:
             self.update_plot_formats(ax)
 
     def arr_sum(self, dimension="*", include_all=False):
+        """Element-wise sum of vector/matrix."""
         return ArraySumOperator(self, dimension, include_all)
 
     def arr_prod(self, dimension="*", include_all=False):
+        """Element-wise product of vector/matrix."""
         return ArrayProductOperator(self, dimension, include_all)
 
     def arr_rank(self, rank):
+        """Returns the rank'th highest element."""
         return ArrayRankOperator(self, rank)
 
     def arr_mean(self):
+        """Mean of vector/matrix."""
         return ArrayMeanOperator(self)
 
     def arr_median(self):
+        """Median of vector/matrix."""
         return ArrayMedianOperator(self)
 
     def arr_stddev(self):
+        """Standard deviation of vector/matrix."""
         return ArrayStandardDeviationOperator(self)
 
     def arr_size(self):
+        """Vector size of array."""
         return ArraySizeOperator(self)
     
     def dot(self, other):
+        """Dot product (matrix/vector multiplication)."""
         return DotOperator(self, other)
 
     ### Operator overrides
@@ -299,7 +302,7 @@ class Element:
 
     def setup_vector(self, size, default_value = 0.0):
         """
-        Creates sub-element for this element.
+        Creates sub-elements for this element.
 
         Parameters:
             size: int - Size of the vector
@@ -317,7 +320,7 @@ class Element:
             
     def setup_matrix(self, size, default_value = 0.0):
         """
-        Creates sub-element for this element.
+        Creates sub-elements for this element.
 
         Parameters:
             size: [int, int] - Size of the matrix

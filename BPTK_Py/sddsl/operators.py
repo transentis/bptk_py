@@ -75,6 +75,11 @@ class Operator:
         pass
 
     def arrayed_term(self, index, time="t"):
+        """
+            Temporarily changes index to passed index and returns result of term function.
+
+            Used in dot operator for vector-vector, matrix-vector, vector-matrix and matrix-matrix multiplications.
+        """
         temp = self.index
         self.index = index
         result = self.term(time)
@@ -82,12 +87,25 @@ class Operator:
         return result
 
     def clone_with_index(self, index):
-        pass
+        """
+            Clones a given operator with the passed index.
+        """
+        return self
 
     def is_any_subelement_arrayed(self) -> bool:
+        """
+            Returns true if any of the sub-elements contain an arrayed element or resolve to arrayed dimensions.
+        """
         return False
     
     def resolve_dimensions(self):
+        """
+            Resolves dimensions of the operator. Most operators will return -1, meaning the operator returns only a value.
+            Operators can resolve to vectors (e.g. 1, 2, [3], [4], [5,0], [6,0]).
+            Operators can resolve to matrices (e.g. [1,2], [3,4]).
+
+            This function is used to create the necessary sub-elements and to follow dot product rules in the dot operator.
+        """
         return -1
 
     def __str__(self):
@@ -110,8 +128,7 @@ class Operator:
         return MultiplicationOperator(other, self)
 
     def __mul__(self, other):
-        arrayed = self.arrayed or (isinstance(other, Operator) and other.arrayed)
-        return MultiplicationOperator(self, other, arrayed)
+        return MultiplicationOperator(self, other)
 
     def __pow__(self, power):
         return PowerOperator(self,power)
@@ -159,6 +176,9 @@ class Function(Operator):
         super().__init__()
 
 def _get_element_dimensions(element):
+    """
+        Helper function returns the dimensions of an sddsl.Element.
+    """
     if isinstance(element, BPTK_Py.sddsl.element.Element):
         if element._elements.vector_size() > 0:
             return element._elements.matrix_size()
@@ -169,7 +189,14 @@ def _get_element_dimensions(element):
 
 def _array_resolve(operator, element, time, dimensions, include_all):
     """
-    Converts an array element to array form.
+    Converts an array element to a string.
+
+    Parameters:
+        operator: string - The operator used to concatenate elements.
+        element: sddsl.Element
+        time
+        dimensions: int - The dimensions to resolve. An array with dimensions [2,5,6] and passed dimensions parameter 2 will resolve elements [2,5]
+        include_all: bool - If true, both number and string elements will be used, if false only number equations are used.
     """
     def rec_resolve(element, index):
         if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
@@ -193,7 +220,7 @@ def _array_resolve(operator, element, time, dimensions, include_all):
 
 def _array_element_to_string(element, time, include_all):
     """
-    Recursively converts an array element to array form.
+    Recursively converts an array element to array form. The array [[2,3],[4,5]] is converted to the string "[[2,3],[4,5]]" using this function.
     """
 
     if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
@@ -208,21 +235,10 @@ def _array_element_to_string(element, time, include_all):
             string_term += "{},".format(extractTerm(element[a], time))
     return string_term[:-1] + "]"
 
-def _rec_array_element_to_string(element, time, include_all):
-    if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
-        return ""
-
-    string_term_cur = "["
-    for a in element._elements.number_equations:
-        string_term_cur += _rec_array_element_to_string(element[a], time) + ","
-    if(include_all):
-        for a in element._elements.str_equations:
-            string_term_cur += _rec_array_element_to_string(element[a], time) + ","
-    return string_term_cur[:-1] + "]"
-
 class ArrayProductOperator(Operator):
     """
-    UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
+    Returns the product of an array (element-wise). 
+    Example: [2,3,4] => "2*3*4"
     """
     def __init__(self, element, dimensions, include_all):
         super().__init__()
@@ -241,7 +257,8 @@ class ArrayProductOperator(Operator):
 
 class ArraySumOperator(Operator):
     """
-    UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
+    Returns the sum of an array (element-wise). 
+    Example: [2,3,4] => "2+3+4"
     """
     def __init__(self, element, dimensions, include_all):
         super().__init__()
@@ -259,8 +276,7 @@ class ArraySumOperator(Operator):
 
 class ArraySizeOperator(Operator):
     """
-    Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
-    Example: array_rank([3,6,2,4,1], 2) -> 4
+    Returns the size of an array vector. For example: [2,3] => 2
     """
     def __init__(self, element):
         super().__init__()
@@ -325,7 +341,7 @@ class ArrayMeanOperator(Operator):
 
 class ArrayMedianOperator(Operator):
     """
-    Returns the mean of an array.
+    Returns the median of an array.
     """
     def __init__(self, element, include_all = False):
         super().__init__()
@@ -347,7 +363,7 @@ class ArrayMedianOperator(Operator):
         
 class ArrayStandardDeviationOperator(Operator):
     """
-    Returns the mean of an array.
+    Returns the standard deviation of an array.
     """
     def __init__(self, element, include_all = False):
         super().__init__()
@@ -400,9 +416,6 @@ class UnaryOperator(Operator):
         else:
             return self.element.term(time)
 
-    def clone_with_index(self, index):
-        return self
-
 class PowerOperator(Operator):
     def __init__(self, element, power):
         super().__init__()
@@ -415,11 +428,6 @@ class PowerOperator(Operator):
         power = extractTerm(self.power, time)
 
         return "({} ** {} )".format(element, power)
-
-    def clone_with_index(self, index):
-        a = PowerOperator(self.element, self.power)
-        a.index = index
-        return a
 
 class ComparisonOperator(BinaryOperator):
     """

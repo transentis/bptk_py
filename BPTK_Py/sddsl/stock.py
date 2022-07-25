@@ -57,20 +57,23 @@ class Stock(Element):
 
     @equation.setter
     def equation(self, equation):
-        self._equation = equation
+        if not self._handle_arrayed(equation):
+            self._equation = equation
         self.model.reset_cache()
         self.build_function_string()
         self.generate_function()
 
     def build_function_string(self):
         start_string = "lambda model, t : ( ("
-        start_string += str(self.__initial_value)
+        start_string += str(self.__initial_value) + ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
 
         if self.equation is not None:
-            start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name) + "+ model.dt*("
-            self._function_string = start_string + self._equation.term("t-model.dt") + ") )"
+            start_string +=  "+ model.dt*("
+            if isinstance(self._equation, (float, int)):
+                self._function_string = start_string + str(self._equation) + ") )"
+            else:
+                self._function_string = start_string + self._equation.term("t-model.dt") + ") )"
         else:
-            start_string += ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
             self._function_string = start_string + ")"
 
 
