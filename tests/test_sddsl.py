@@ -1,12 +1,15 @@
+import random
 import os
 import numpy as np
 from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
 
+
 def test_spm():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
-    model = Model(starttime=0.0, stoptime=120.0, dt=1.0, name='SimpleProjectManagement')
+    model = Model(starttime=0.0, stoptime=120.0, dt=1.0,
+                  name='SimpleProjectManagement')
 
     openTasks = model.stock("openTasks")
     closedTasks = model.stock("closedTasks")
@@ -34,7 +37,8 @@ def test_spm():
     openTasks.equation = -completionRate
     closedTasks.equation = completionRate
 
-    schedulePressure.equation = sd.min((openTasks * effortPerTask) / (staff * sd.max(remainingTime, 1)), 2.5)
+    schedulePressure.equation = sd.min(
+        (openTasks * effortPerTask) / (staff * sd.max(remainingTime, 1)), 2.5)
 
     model.points["productivity"] = [
         [0, 0.4],
@@ -51,7 +55,8 @@ def test_spm():
     ]
 
     productivity.equation = sd.lookup(schedulePressure, "productivity")
-    completionRate.equation = sd.max(0.0, sd.min(openTasks, staff * (productivity / effortPerTask)))
+    completionRate.equation = sd.max(0.0, sd.min(
+        openTasks, staff * (productivity / effortPerTask)))
 
     print(openTasks)
     print(completionRate)
@@ -61,7 +66,7 @@ def test_spm():
     # !=
     x.equation = sd.If(productivity != 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
         if i < 100:
             assert result == 0
@@ -71,24 +76,24 @@ def test_spm():
     # ==
     x.equation = sd.If(productivity == 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
         if i < 100:
             assert result == 1
         else:
             assert result == 0
 
-    ## >
+    # >
     x.equation = sd.If(productivity > 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
         assert result == 0
 
-    ## <
+    # <
     x.equation = sd.If(productivity < 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
         if i < 100:
             assert result == 0
@@ -98,7 +103,7 @@ def test_spm():
     # <=
     x.equation = sd.If(productivity <= 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
 
         assert result == 1
@@ -106,14 +111,13 @@ def test_spm():
     # >=
     x.equation = sd.If(productivity >= 1.0, 1, 0)
 
-    for i in range(0,120+1):
+    for i in range(0, 120+1):
         result = x(i)
 
         if i < 100:
             assert result == 1
         else:
             assert result == 0
-
 
 
 def test_delay():
@@ -130,12 +134,11 @@ def test_delay():
 
     df_b = b.plot(return_df=True)
 
-    for index  in range(1,100):
-        if index<=20:
-            assert(df_b["b"][index]==10)
+    for index in range(1, 100):
+        if index <= 20:
+            assert(df_b["b"][index] == 10)
         else:
-            assert(df_b["b"][index]==index-20)
-
+            assert(df_b["b"][index] == index-20)
 
     model = Model(starttime=1, stoptime=10, dt=0.25, name='test')
 
@@ -147,11 +150,11 @@ def test_delay():
 
     df_b = b.plot(return_df=True)
 
-    for index  in range(1,10):
-        if index<=3:
-            assert(df_b["b"][index]==0)
+    for index in range(1, 10):
+        if index <= 3:
+            assert(df_b["b"][index] == 0)
         else:
-            assert(df_b["b"][index]==index-3)
+            assert(df_b["b"][index] == index-3)
 
 
 def test_equations():
@@ -189,48 +192,51 @@ def test_equations():
     a.equation = 3.0
     b.equation = 5.0 - a
     c.equation = a**b
-    assert c(1)==9.0
+    assert c(1) == 9.0
+
 
 def test_sddsl_functions():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
     import math
-    bptk=bptk()
+    bptk = bptk()
 
     # abs
     start = 0.0
     dt = 0.1
     stop = 10.0
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='abs')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='abs')
 
     input_converter = model.converter("input_converter")
-    input_converter.equation=sd.time()-5
+    input_converter.equation = sd.time()-5
     abs_converter = model.converter("abs_converter")
     abs_converter.equation = sd.abs(input_converter)
     bptk.register_model(model)
-    data = bptk.run_scenarios(scenario_managers=["smAbs"],scenarios=["base"],equations=["input_converter","abs_converter"])
+    data = bptk.run_scenarios(scenario_managers=["smAbs"], scenarios=[
+                              "base"], equations=["input_converter", "abs_converter"])
 
     for i in np.arange(start, stop, dt):
         assert abs(data.input_converter[i]) == data.abs_converter[i]
-
 
     # delay
     start = 0.0
     dt = 0.5
     stop = 10.0
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='delay')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='delay')
 
     input_function = model.converter("input_function")
-    input_function.equation=sd.time()
+    input_function.equation = sd.time()
     delayed_input = model.converter("delayed_input")
 
     delay_duration = 1.0
     initial_value = 0.0
-    delayed_input.equation = sd.delay(model,input_function, delay_duration, initial_value)
+    delayed_input.equation = sd.delay(
+        model, input_function, delay_duration, initial_value)
 
     bptk.register_model(model)
-    data = bptk.run_scenarios(scenario_managers=["smDelay"],scenarios=["base"],equations=["input_function","delayed_input"])
+    data = bptk.run_scenarios(scenario_managers=["smDelay"], scenarios=[
+                              "base"], equations=["input_function", "delayed_input"])
     for i in np.arange(start, stop, dt):
         if(i < delay_duration + dt):
             assert data.delayed_input[i] == initial_value
@@ -244,20 +250,19 @@ def test_sddsl_functions():
     dt = 0.25
     stop = 12.0
 
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='dt')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='dt')
     dt_converter = model.converter("dt")
     dt_converter.equation = sd.dt(model)
-    data = dt_converter.plot(return_df = True)
+    data = dt_converter.plot(return_df=True)
 
     for i in np.arange(start, stop, dt):
         assert data.dt[i] == dt
-
 
     # exp
     start = 0
     dt = 0.1
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='exp')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='exp')
 
     exp_value = np.log(1)
     growth_rate = model.constant("growth_rate")
@@ -269,22 +274,22 @@ def test_sddsl_functions():
     for i in np.arange(start, stop, dt):
         assert data.exp[i] == math.exp(exp_value * i)
 
-
     # max
     start = 0
     dt = 1
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='max')
-    
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='max')
+
     a = model.converter("a")
     a.equation = 5.0+sd.step(15, 5)
     b = model.converter("b")
     b.equation = 10-sd.step(2, 5)
     c = model.converter("c")
-    c.equation=sd.max(a,b)
+    c.equation = sd.max(a, b)
     bptk.register_model(model)
 
-    data = bptk.plot_scenarios(scenario_managers=["smMax"],scenarios=["base"],equations=["a","b","c"], return_df=True)
+    data = bptk.plot_scenarios(scenario_managers=["smMax"], scenarios=[
+                               "base"], equations=["a", "b", "c"], return_df=True)
 
     for i in np.arange(start, stop, dt):
         if i <= 5:
@@ -292,29 +297,28 @@ def test_sddsl_functions():
             continue
         assert data.c[i] == 20
 
-        
     # min
     start = 0
     dt = 1
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='min')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='min')
 
     a = model.converter("a")
     a.equation = 5.0+sd.step(15, 5)
     b = model.converter("b")
     b.equation = 10-sd.step(2, 5)
     c = model.converter("c")
-    c.equation=sd.min(a,b)
+    c.equation = sd.min(a, b)
     bptk.register_model(model)
 
-    data = bptk.plot_scenarios(scenario_managers=["smMin"],scenarios=["base"],equations=["a","b","c"],return_df=True)
+    data = bptk.plot_scenarios(scenario_managers=["smMin"], scenarios=[
+                               "base"], equations=["a", "b", "c"], return_df=True)
 
     for i in np.arange(start, stop, dt):
         if i <= 5:
             assert data.c[i] == 5
             continue
         assert data.c[i] == 8
-
 
     # pulse
     # dt has to be 1/(2^n) or the pulse function does not properly work.
@@ -323,17 +327,18 @@ def test_sddsl_functions():
     start = 0
     dt = .5
     stop = 9
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='pulse')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='pulse')
     stock = model.stock("stock")
-    stock.initial_value=0.0
+    stock.initial_value = 0.0
     flow = model.flow("flow")
     volume = 9.0
     first_pulse = 1.5
     interval = 3.0
-    flow.equation=sd.pulse(model,volume,first_pulse,interval)
+    flow.equation = sd.pulse(model, volume, first_pulse, interval)
     stock.equation = flow
     bptk.register_model(model)
-    data = bptk.plot_scenarios(scenario_managers=["smPulse"],scenarios=["base"],equations=["stock","flow"],return_df=True)
+    data = bptk.plot_scenarios(scenario_managers=["smPulse"], scenarios=[
+                               "base"], equations=["stock", "flow"], return_df=True)
     for i in np.arange(start, stop, dt):
         if i < first_pulse:
             assert data.flow[i] == 0
@@ -346,8 +351,8 @@ def test_sddsl_functions():
 
         if i % interval == first_pulse:
             assert data.flow[i] == volume * (1 / dt)
-        assert data.stock[i] == volume * (math.ceil((i - first_pulse) / interval))
-
+        assert data.stock[i] == volume * \
+            (math.ceil((i - first_pulse) / interval))
 
     # smooth
     # does not test for exact values
@@ -355,19 +360,20 @@ def test_sddsl_functions():
     start = 1.0
     dt = 0.1
     stop = 10.0
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='smooth')
-    
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='smooth')
+
     step_start = 3.0
     step_height = 10.0
     input_function = model.converter("input_function")
-    input_function.equation=sd.step(step_height,step_start)
+    input_function.equation = sd.step(step_height, step_start)
 
     base_value = 9.0
     smooth = model.converter("smooth")
-    smooth.equation=sd.smooth(model, input_function,1.0,base_value)
+    smooth.equation = sd.smooth(model, input_function, 1.0, base_value)
 
     bptk.register_model(model)
-    data = bptk.run_scenarios(scenario_managers=["smSmooth"],scenarios=["base"],equations=["input_function","smooth"])
+    data = bptk.run_scenarios(scenario_managers=["smSmooth"], scenarios=[
+                              "base"], equations=["input_function", "smooth"])
     last_value = base_value
     last_change = 9999999
     reached_step_height = False
@@ -380,7 +386,7 @@ def test_sddsl_functions():
         if data.smooth[i] == step_height:
             reached_step_height = True
             continue
-        else: 
+        else:
             # ensure the smoothing function never drops below step height once reached
             assert reached_step_height == False
 
@@ -399,12 +405,11 @@ def test_sddsl_functions():
         last_value = data.smooth[i]
         last_change = new_change
 
-
     # starttime
     start = 5
     dt = 0.25
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='starttime')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='starttime')
 
     starttime = model.converter("starttime")
     starttime.equation = sd.starttime(model)
@@ -413,13 +418,12 @@ def test_sddsl_functions():
     for i in np.arange(start, stop, dt):
         assert data.starttime[i] == start
 
-
     # stoptime
     start = 5
     dt = 0.25
     stop = 10
 
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='stoptime')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='stoptime')
     stoptime = model.converter("stoptime")
     stoptime.equation = sd.stoptime(model)
     data = stoptime.plot(return_df=True)
@@ -427,17 +431,16 @@ def test_sddsl_functions():
     for i in np.arange(start, stop, dt):
         assert data.stoptime[i] == stop
 
-
     # step
     start = 1
     dt = 1
     stop = 10
-    model = Model(starttime=1,stoptime=10,dt=1,name='step')
-    
+    model = Model(starttime=1, stoptime=10, dt=1, name='step')
+
     step_timestep = 5.0
     step_height = 10.0
     step = model.converter("step")
-    step.equation=sd.step(step_height,step_timestep)
+    step.equation = sd.step(step_height, step_timestep)
     data = step.plot(return_df=True)
 
     for i in np.arange(start, stop, dt):
@@ -446,15 +449,14 @@ def test_sddsl_functions():
             continue
         assert data.step[i] == step_height
 
-
     # time
     start = 0
     dt = 1
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='time')
-    
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='time')
+
     stock = model.stock("stock")
-    stock.initial_value=0.0
+    stock.initial_value = 0.0
     inflow = model.flow("inflow")
     inflow.equation = sd.time()
     stock.equation = inflow
@@ -464,47 +466,43 @@ def test_sddsl_functions():
     for i in np.arange(start, stop, dt):
         assert data.inflow[i] == i
 
-
     # trend
     # ToDo
-
 
     # round
     start = 0
     dt = 0.1
     stop = 10
-    model = Model(starttime=start,stoptime=stop,dt=dt,name='round')
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='round')
     flow = model.flow("round")
-    flow.equation = sd.round( sd.time(), 0 )
+    flow.equation = sd.round(sd.time(), 0)
     data = flow.plot(return_df=True)
     for i in np.arange(start, stop, dt):
         assert data['round'][i] == round(i)
-
 
     # sqrt
     start = 0
     dt = 1
     stop = 10
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="sqrt")
 
-    val = sd.time() 
+    val = sd.time()
 
     f.equation = sd.sqrt(val)
     data = f.plot(return_df=True)
     for i in np.arange(start, stop, dt):
         assert data.sqrt[i] == math.sqrt(i)
 
-
     # sin cos tan
     start = 0
     dt = 0.1
     stop = 10
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     sin = m.flow(name="sin")
     tan = m.flow(name="tan")
     cos = m.flow(name="cos")
-    x = sd.time() 
+    x = sd.time()
 
     sin.equation = sd.sin(x)
     tan.equation = sd.tan(x)
@@ -520,7 +518,7 @@ def test_sddsl_functions():
 
     # beta
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="beta")
     alpha = 1
     beta = 2
@@ -530,7 +528,7 @@ def test_sddsl_functions():
 
     # binomial
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="binomial")
     n = 100
     p = 0.1
@@ -538,36 +536,34 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # combinations
-    # only works for r < 5? 
+    # only works for r < 5?
     start = 3
     dt = 1
     stop = 10
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="combinations")
     n = 7
     r = 5
-    f.equation = sd.combinations(n,r)
+    f.equation = sd.combinations(n, r)
     data = f.plot(return_df=True)
     for i in np.arange(start, stop, dt):
         assert data.combinations[i] == 21
 
     # exprnd
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="exprnd")
     mean = sd.time()
     f.equation = sd.exprnd(mean)
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # factorial
     start = 0
     dt = 1
     stop = 10
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="factorial")
 
     n = 5
@@ -579,7 +575,7 @@ def test_sddsl_functions():
 
     # gamma
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="gamma")
 
     shape = 10
@@ -589,10 +585,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # gammaln
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="gammaln")
 
     n = sd.time()
@@ -600,10 +595,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # geometric
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="geometric")
 
     p = 0.1
@@ -612,10 +606,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # invnorm
     # only tests if it runs
-    m = Model(starttime=-0.5,stoptime=1,dt=0.1)
+    m = Model(starttime=-0.5, stoptime=1, dt=0.1)
     f = m.flow(name="invnorm")
 
     p = sd.time()
@@ -624,10 +617,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 16
 
-
     # logistic
     # only tests if it runs
-    m = Model(starttime=-1,stoptime=10,dt=0.1)
+    m = Model(starttime=-1, stoptime=10, dt=0.1)
     f = m.flow(name="logistic")
 
     mean = 0
@@ -637,10 +629,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 111
 
-
     # lognormal
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="lognormal")
 
     mean = 0
@@ -649,10 +640,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 101
 
-
     # montecarlo
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=0.1)
+    m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="montecarlo")
 
     probability = 50
@@ -661,10 +651,9 @@ def test_sddsl_functions():
 
     assert len(data) == 101
 
-
     # normal
     # only tests if it runs
-    m = Model(starttime=0,stoptime=10,dt=1)
+    m = Model(starttime=0, stoptime=10, dt=1)
     f = m.flow(name="normal")
 
     mean = 0
@@ -673,10 +662,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 11
 
-
     # normalcdf
     # only tests if it runs
-    m = Model(starttime=-4,stoptime=4,dt=0.1)
+    m = Model(starttime=-4, stoptime=4, dt=0.1)
     f = m.flow(name="normalCDF")
     left = -4
     right = sd.time()
@@ -686,10 +674,9 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 81
 
-
     # paetro
     # only tests if it runs
-    m = Model(starttime=1,stoptime=10,dt=0.1)
+    m = Model(starttime=1, stoptime=10, dt=0.1)
     f = m.flow(name="pareto")
     shape = 1
     scale = 1
@@ -698,25 +685,24 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 91
 
-
     # permutations
     start = 4
     stop = 10
     dt = 1
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="permutations")
     n = sd.time()
     r = 2
 
     f.equation = sd.permutations(n, r)
     data = f.plot(return_df=True)
-    
+
     for i in np.arange(start, stop, dt):
         assert (math.factorial(i) / math.factorial(i - r))
 
     # poisson
     # only tests if it runs
-    m = Model(starttime=1,stoptime=10,dt=0.1)
+    m = Model(starttime=1, stoptime=10, dt=0.1)
     f = m.flow(name="poisson")
     mu = sd.time()
 
@@ -724,12 +710,11 @@ def test_sddsl_functions():
     data = f.plot(return_df=True)
     assert len(data) == 91
 
-
     # random
     start = .2
     dt = .1
     stop = 30
-    m = Model(starttime=start,stoptime=stop,dt=dt)
+    m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="random")
     min_value = 0.1
     max_value = sd.time()
@@ -741,7 +726,7 @@ def test_sddsl_functions():
 
     # triangular
     # only tests if it runs
-    m = Model(starttime=1,stoptime=10,dt=0.1)
+    m = Model(starttime=1, stoptime=10, dt=0.1)
     f = m.flow(name="triangular")
     lower_bound = 0
     mode = 1
@@ -753,7 +738,7 @@ def test_sddsl_functions():
 
     # weibull
     # only tests if it runs
-    m = Model(starttime=1,stoptime=10,dt=0.1)
+    m = Model(starttime=1, stoptime=10, dt=0.1)
     f = m.flow(name="weibull")
     shape = 1
     scale = sd.time()
@@ -763,25 +748,18 @@ def test_sddsl_functions():
     assert len(data) == 91
 
 
-
-
-
-
-
-
-
-
-
-import random
-
 def get_random(t):
     if t == 2:
-        return float(random.randrange(0, 200000) * .1)
-    return float(random.randrange(-200000, 200000) * .1)
+        return float(random.randrange(0, 2000) * .1)
+    return float(random.randrange(-2000, 2000) * .1)
+
 
 def get_element_data(element):
     data = element.plot(return_df=True)
-    return data[element.name][1] # 2 because it is the first timestep to consider stocks
+    # 2 because it is the first timestep to consider stocks
+    return data[element.name][1]
+
+
 def test_vector():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
@@ -789,7 +767,8 @@ def test_vector():
     import pytest
     import numpy as np
 
-    bptk=bptk()
+    bptk = bptk()
+
     def get_element(num, model, name):
         if num == 0:
             return model.converter(name)
@@ -802,30 +781,32 @@ def test_vector():
 
     # Vector tests (flows, stock, converters)
     for t in range(3):
-        elements1=[get_random(t)]
-        elements2=[get_random(t)]
+        elements1 = [get_random(t)]
+        elements2 = [get_random(t)]
         for i in range(1, 10):
-            model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(i))
+            model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                          name='setup_func_vec_' + str(i))
 
-            ### Setup tests
+            # Setup tests
             test_element = get_element(t, model, "test_element_setup_default")
             test_element.setup_vector(i, float(i))
-            
+
             assert(test_element._elements.matrix_size() == [i, 0])
             assert(test_element._elements.vector_size() == i)
-            
+
             for j in range(i):
                 assert(get_element_data(test_element[j]) == i)
                 assert(get_element_data(test_element[j]) != i + 1)
 
-            test_element = get_element(t, model, "test_element_setup_individual")
+            test_element = get_element(
+                t, model, "test_element_setup_individual")
             test_element.setup_vector(i, elements1)
-            #print(test_element[0])
+            # print(test_element[0])
             for j in range(i):
                 assert(get_element_data(test_element[j]) == elements1[j])
                 assert(get_element_data(test_element[j]) != elements1[j] + 1)
 
-            ### Element-wise tests
+            # Element-wise tests
 
             test_element_val = model.converter("test_element_val")
             test_element_val.equation = get_random(t)
@@ -835,52 +816,65 @@ def test_vector():
 
             test_element2 = model.converter("test_element_element_wise2")
             test_element2.setup_vector(i, elements2)
-            
+
             # Add
-            test_element3 = get_element(t, model, "test_element_element_wise_add")
+            test_element3 = get_element(
+                t, model, "test_element_element_wise_add")
             test_element3.equation = test_element1 + test_element2
 
             for j in range(i):
-                assert(get_element_data(test_element3[j]) == elements1[j] + elements2[j])
-                assert(get_element_data(test_element3[j]) != elements1[j] + elements2[j] + 1)
+                assert(get_element_data(
+                    test_element3[j]) == elements1[j] + elements2[j])
+                assert(get_element_data(
+                    test_element3[j]) != elements1[j] + elements2[j] + 1)
 
             # Subtract
-            test_element3 = get_element(t, model, "test_element_element_wise_sub")
+            test_element3 = get_element(
+                t, model, "test_element_element_wise_sub")
             test_element3.equation = test_element1 - test_element2
 
             for j in range(i):
-                if t == 2: # Flows
-                    assert(get_element_data(test_element3[j]) == max(elements1[j] - elements2[j], 0.0))
-                    assert(get_element_data(test_element3[j]) != max(elements1[j] - elements2[j] + 1, 1.0))
+                if t == 2:  # Flows
+                    assert(get_element_data(test_element3[j]) == max(
+                        elements1[j] - elements2[j], 0.0))
+                    assert(get_element_data(test_element3[j]) != max(
+                        elements1[j] - elements2[j] + 1, 1.0))
                 else:
-                    assert(get_element_data(test_element3[j]) == elements1[j] - elements2[j])
-                    assert(get_element_data(test_element3[j]) != elements1[j] - elements2[j] + 1)
+                    assert(get_element_data(
+                        test_element3[j]) == elements1[j] - elements2[j])
+                    assert(get_element_data(
+                        test_element3[j]) != elements1[j] - elements2[j] + 1)
 
-                
             # Multiply
-            test_element3 = get_element(t, model, "test_element_element_wise_mul")
+            test_element3 = get_element(
+                t, model, "test_element_element_wise_mul")
             test_element3.equation = test_element1 * test_element2
 
             for j in range(i):
-                assert(get_element_data(test_element3[j]) == elements1[j] * elements2[j])
-                assert(get_element_data(test_element3[j]) != elements1[j] * elements2[j] + 1)
-
+                assert(get_element_data(
+                    test_element3[j]) == elements1[j] * elements2[j])
+                assert(get_element_data(
+                    test_element3[j]) != elements1[j] * elements2[j] + 1)
 
             # Divide
-            test_element3 = get_element(t, model, "test_element_element_wise_div")
+            test_element3 = get_element(
+                t, model, "test_element_element_wise_div")
             test_element3.equation = test_element1 / test_element2
 
             for j in range(i):
-                assert(get_element_data(test_element3[j]) == elements1[j] / elements2[j])
-                assert(get_element_data(test_element3[j]) != elements1[j] / elements2[j] + 1)
-
+                assert(get_element_data(
+                    test_element3[j]) == elements1[j] / elements2[j])
+                assert(get_element_data(
+                    test_element3[j]) != elements1[j] / elements2[j] + 1)
 
             # Dot tests
             test_element3 = get_element(t, model, "test_element_dot")
             test_element3.equation = test_element1.dot(test_element2)
 
-            assert(get_element_data(test_element3) == np.dot(elements1, elements2))
-            assert(get_element_data(test_element3) != np.dot(elements1, elements2) + 1)
+            assert(get_element_data(test_element3)
+                   == np.dot(elements1, elements2))
+            assert(get_element_data(test_element3) !=
+                   np.dot(elements1, elements2) + 1)
 
             test_element3 = get_element(t, model, "test_element_dot_val_vec")
             test_element3.equation = test_element_val.dot(test_element2)
@@ -890,8 +884,6 @@ def test_vector():
             for j in range(i):
                 assert(get_element_data(test_element3[j]) == np_res[j])
                 assert(get_element_data(test_element3[j]) != np_res[j] + 1)
-
-
 
             test_element3 = get_element(t, model, "test_element_dot_vec_val")
             test_element3.equation = test_element2.dot(test_element_val)
@@ -905,33 +897,39 @@ def test_vector():
             # Functions
             test_element3 = get_element(t, model, "test_element_sum")
             test_element3.equation = test_element1.arr_sum()
-            
-            assert(get_element_data(test_element3) == pytest.approx(np.sum(elements1)))
+
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.sum(elements1)))
             assert(get_element_data(test_element3) != np.sum(elements1) + 1)
-            
+
             test_element3 = get_element(t, model, "test_element_mean")
             test_element3.equation = test_element1.arr_mean()
-            assert(get_element_data(test_element3) == pytest.approx(np.mean(elements1)))
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.mean(elements1)))
             assert(get_element_data(test_element3) != np.mean(elements1) + 1)
-            
+
             test_element3 = get_element(t, model, "test_element_median")
             test_element3.equation = test_element1.arr_median()
-            assert(get_element_data(test_element3) == pytest.approx(np.median(elements1)))
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.median(elements1)))
             assert(get_element_data(test_element3) != np.median(elements1) + 1)
-            
+
             test_element3 = get_element(t, model, "test_element_prod")
             test_element3.equation = test_element1.arr_prod()
-            assert(get_element_data(test_element3) == pytest.approx(np.prod(elements1)))
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.prod(elements1)))
             assert(get_element_data(test_element3) != np.prod(elements1) * 2)
-            
+
             test_element3 = get_element(t, model, "test_element_stddev")
             test_element3.equation = test_element1.arr_stddev()
-            assert(get_element_data(test_element3) == pytest.approx(np.std(elements1)))
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.std(elements1)))
             assert(get_element_data(test_element3) != np.std(elements1) + 1)
 
             test_element3 = get_element(t, model, "test_element_size")
             test_element3.equation = test_element1.arr_size()
-            assert(get_element_data(test_element3) == pytest.approx(np.size(elements1)))
+            assert(get_element_data(test_element3) ==
+                   pytest.approx(np.size(elements1)))
             assert(get_element_data(test_element3) != np.size(elements1) + 1)
 
             for j in range(i + 1):
@@ -941,7 +939,8 @@ def test_vector():
                 temp_val = temp_arr[-j]
 
                 test_element3.equation = test_element1.arr_rank(j)
-                assert(get_element_data(test_element3) == pytest.approx(temp_val))
+                assert(get_element_data(test_element3)
+                       == pytest.approx(temp_val))
                 assert(get_element_data(test_element3) != temp_val + 1)
 
             # Exception testing
@@ -965,7 +964,8 @@ def test_vector():
 
             elements1.append(get_random(t))
             elements2.append(get_random(t))
-    
+
+
 def test_vector_constants():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
@@ -973,19 +973,20 @@ def test_vector_constants():
     import pytest
     import numpy as np
 
-    bptk=bptk()
-    elements1=[get_random(0)]
-    elements2=[get_random(0)]
+    bptk = bptk()
+    elements1 = [get_random(0)]
+    elements2 = [get_random(0)]
     for i in range(1, 10):
-        model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_vec_' + str(i))
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                      name='setup_func_vec_' + str(i))
 
-        ### Setup tests
+        # Setup tests
         test_constant = model.constant("test_constant_setup_default")
         test_constant.setup_vector(i, float(i))
-        
+
         assert(test_constant._elements.matrix_size() == [i, 0])
         assert(test_constant._elements.vector_size() == i)
-        
+
         for j in range(i):
             assert(get_element_data(test_constant[j]) == i)
             assert(get_element_data(test_constant[j]) != i + 1)
@@ -997,7 +998,7 @@ def test_vector_constants():
             assert(get_element_data(test_constant[j]) == elements1[j])
             assert(get_element_data(test_constant[j]) != elements1[j] + 1)
 
-        ### Element-wise tests
+        # Element-wise tests
 
         test_constant_val = model.constant("test_constant_val")
         test_constant_val.equation = get_random(0)
@@ -1007,48 +1008,55 @@ def test_vector_constants():
 
         test_constant2 = model.constant("test_constant_element_wise2")
         test_constant2.setup_vector(i, elements2)
-        
+
         # Add
         test_constant3 = model.converter("test_constant_element_wise_add")
         test_constant3.equation = test_constant1 + test_constant2
 
         for j in range(i):
-            assert(get_element_data(test_constant3[j]) == elements1[j] + elements2[j])
-            assert(get_element_data(test_constant3[j]) != elements1[j] + elements2[j] + 1)
+            assert(get_element_data(
+                test_constant3[j]) == elements1[j] + elements2[j])
+            assert(get_element_data(
+                test_constant3[j]) != elements1[j] + elements2[j] + 1)
 
         # Subtract
         test_constant3 = model.converter("test_constant_element_wise_sub")
         test_constant3.equation = test_constant1 - test_constant2
 
         for j in range(i):
-            assert(get_element_data(test_constant3[j]) == elements1[j] - elements2[j])
-            assert(get_element_data(test_constant3[j]) != elements1[j] - elements2[j] + 1)
+            assert(get_element_data(
+                test_constant3[j]) == elements1[j] - elements2[j])
+            assert(get_element_data(
+                test_constant3[j]) != elements1[j] - elements2[j] + 1)
 
-            
         # Multiply
         test_constant3 = model.converter("test_constant_element_wise_mul")
         test_constant3.equation = test_constant1 * test_constant2
 
         for j in range(i):
-            assert(get_element_data(test_constant3[j]) == elements1[j] * elements2[j])
-            assert(get_element_data(test_constant3[j]) != elements1[j] * elements2[j] + 1)
-
+            assert(get_element_data(
+                test_constant3[j]) == elements1[j] * elements2[j])
+            assert(get_element_data(
+                test_constant3[j]) != elements1[j] * elements2[j] + 1)
 
         # Divide
         test_constant3 = model.converter("test_constant_element_wise_div")
         test_constant3.equation = test_constant1 / test_constant2
 
         for j in range(i):
-            assert(get_element_data(test_constant3[j]) == elements1[j] / elements2[j])
-            assert(get_element_data(test_constant3[j]) != elements1[j] / elements2[j] + 1)
-
+            assert(get_element_data(
+                test_constant3[j]) == elements1[j] / elements2[j])
+            assert(get_element_data(
+                test_constant3[j]) != elements1[j] / elements2[j] + 1)
 
         # Dot tests
         test_constant3 = model.converter("test_constant_dot")
         test_constant3.equation = test_constant1.dot(test_constant2)
 
-        assert(get_element_data(test_constant3) == np.dot(elements1, elements2))
-        assert(get_element_data(test_constant3) != np.dot(elements1, elements2) + 1)
+        assert(get_element_data(test_constant3)
+               == np.dot(elements1, elements2))
+        assert(get_element_data(test_constant3) !=
+               np.dot(elements1, elements2) + 1)
 
         test_constant3 = model.converter("test_constant_dot_val_vec")
         test_constant3.equation = test_constant_val.dot(test_constant2)
@@ -1058,8 +1066,6 @@ def test_vector_constants():
         for j in range(i):
             assert(get_element_data(test_constant3[j]) == np_res[j])
             assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
-
-
 
         test_constant3 = model.converter("test_constant_dot_vec_val")
         test_constant3.equation = test_constant2.dot(test_constant_val)
@@ -1073,33 +1079,39 @@ def test_vector_constants():
         # Functions
         test_constant3 = model.converter("test_constant_sum")
         test_constant3.equation = test_constant1.arr_sum()
-        
-        assert(get_element_data(test_constant3) == pytest.approx(np.sum(elements1)))
+
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.sum(elements1)))
         assert(get_element_data(test_constant3) != np.sum(elements1) + 1)
-        
+
         test_constant3 = model.converter("test_constant_mean")
         test_constant3.equation = test_constant1.arr_mean()
-        assert(get_element_data(test_constant3) == pytest.approx(np.mean(elements1)))
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.mean(elements1)))
         assert(get_element_data(test_constant3) != np.mean(elements1) + 1)
-        
+
         test_constant3 = model.converter("test_constant_median")
         test_constant3.equation = test_constant1.arr_median()
-        assert(get_element_data(test_constant3) == pytest.approx(np.median(elements1)))
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.median(elements1)))
         assert(get_element_data(test_constant3) != np.median(elements1) + 1)
-        
+
         test_constant3 = model.converter("test_constant_prod")
         test_constant3.equation = test_constant1.arr_prod()
-        assert(get_element_data(test_constant3) == pytest.approx(np.prod(elements1)))
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.prod(elements1)))
         assert(get_element_data(test_constant3) != np.prod(elements1) * 2)
-        
+
         test_constant3 = model.converter("test_constant_stddev")
         test_constant3.equation = test_constant1.arr_stddev()
-        assert(get_element_data(test_constant3) == pytest.approx(np.std(elements1)))
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.std(elements1)))
         assert(get_element_data(test_constant3) != np.std(elements1) + 1)
 
         test_constant3 = model.converter("test_constant_size")
         test_constant3.equation = test_constant1.arr_size()
-        assert(get_element_data(test_constant3) == pytest.approx(np.size(elements1)))
+        assert(get_element_data(test_constant3) ==
+               pytest.approx(np.size(elements1)))
         assert(get_element_data(test_constant3) != np.size(elements1) + 1)
 
         for j in range(i + 1):
@@ -1135,38 +1147,6 @@ def test_vector_constants():
         elements2.append(get_random(0))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def test_matrix():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
@@ -1174,7 +1154,8 @@ def test_matrix():
     import pytest
     import numpy as np
 
-    bptk=bptk()
+    bptk = bptk()
+
     def get_element(num, model, name):
         if num == 0:
             return model.converter(name)
@@ -1186,11 +1167,11 @@ def test_matrix():
             return model.constant(name)
 
     # Vector tests (flows, stock, converters)
-    for t in range(3):
-        elements1=[]
-        elements2=[]
+    for t in range(1):
+        elements1 = []
+        elements2 = []
         for i in range(1, 10):
-            for k in range(1,10):
+            for k in range(1, 10):
                 elements1 = []
                 elements2 = []
                 for temp1 in range(i):
@@ -1200,28 +1181,44 @@ def test_matrix():
                         elements1[temp1].append(get_random(t))
                         elements2[temp1].append(get_random(t))
 
-                model = Model(starttime=0.0,stoptime=2.0,dt=1.0,name='setup_func_mat_' + str(i) + "_" + str(k))
-                ### Setup tests
-                test_element = get_element(t, model, "test_element_setup_default")
+                model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                              name='setup_func_mat_' + str(i) + "_" + str(k))
+                # Setup tests
+                test_element = get_element(
+                    t, model, "test_element_setup_default")
                 test_element.setup_matrix([i, k], float(i))
-                
+
+                transposed = []
+                for j in range(k):
+                    cur = []
+                    for x in range(i):
+                        cur.append(elements2[x][j])
+                    transposed.append(cur)
+
+                test_element_2_transposed = model.converter(
+                    "test_element_2_transposed")
+                test_element_2_transposed.setup_matrix([k, i], transposed)
+
                 assert(test_element._elements.matrix_size() == [i, k])
                 assert(test_element._elements.vector_size() == i)
-                
+
                 for j in range(i):
                     for x in range(k):
                         assert(get_element_data(test_element[j][x]) == i)
                         assert(get_element_data(test_element[j][x]) != i + 1)
 
-                test_element = get_element(t, model, "test_element_setup_individual")
+                test_element = get_element(
+                    t, model, "test_element_setup_individual")
                 test_element.setup_matrix([i, k], elements1)
 
                 for j in range(i):
                     for x in range(k):
-                        assert(get_element_data(test_element[j][x]) == elements1[j][x])
-                        assert(get_element_data(test_element[j][x]) != elements1[j][x] + 1)
+                        assert(get_element_data(
+                            test_element[j][x]) == elements1[j][x])
+                        assert(get_element_data(
+                            test_element[j][x]) != elements1[j][x] + 1)
 
-                ### Element-wise tests
+                # Element-wise tests
                 test_element_val = model.converter("test_element_val")
                 test_element_val.equation = get_random(t)
 
@@ -1230,120 +1227,137 @@ def test_matrix():
 
                 test_element2 = model.converter("test_element_element_wise2")
                 test_element2.setup_matrix([i, k], elements2)
-                
+
                 # Add
-                test_element3 = get_element(t, model, "test_element_element_wise_add")
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_add")
                 test_element3.equation = test_element1 + test_element2
 
                 for j in range(i):
                     for x in range(k):
-                        assert(get_element_data(test_element3[j][x]) == elements1[j][x] + elements2[j][x])
-                        assert(get_element_data(test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
+                        assert(get_element_data(
+                            test_element3[j][x]) == elements1[j][x] + elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
 
                 # Subtract
-                test_element3 = get_element(t, model, "test_element_element_wise_sub")
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_sub")
                 test_element3.equation = test_element1 - test_element2
 
                 for j in range(i):
                     for x in range(k):
-                        if t == 2: # Flows
-                            assert(get_element_data(test_element3[j][x]) == max(elements1[j][x] - elements2[j][x], 0.0))
-                            assert(get_element_data(test_element3[j][x]) != max(elements1[j][x] - elements2[j][x] + 1, 1.0))
+                        if t == 2:  # Flows
+                            assert(get_element_data(test_element3[j][x]) == max(
+                                elements1[j][x] - elements2[j][x], 0.0))
+                            assert(get_element_data(test_element3[j][x]) != max(
+                                elements1[j][x] - elements2[j][x] + 1, 1.0))
                         else:
-                            assert(get_element_data(test_element3[j][x]) == elements1[j][x] - elements2[j][x])
-                            assert(get_element_data(test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
+                            assert(get_element_data(
+                                test_element3[j][x]) == elements1[j][x] - elements2[j][x])
+                            assert(get_element_data(
+                                test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
 
-                    
                 # Multiply
-                test_element3 = get_element(t, model, "test_element_element_wise_mul")
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_mul")
                 test_element3.equation = test_element1 * test_element2
 
                 for j in range(i):
                     for x in range(k):
-                        assert(get_element_data(test_element3[j][x]) == elements1[j][x] * elements2[j][x])
-                        assert(get_element_data(test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
-
+                        assert(get_element_data(
+                            test_element3[j][x]) == elements1[j][x] * elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
 
                 # Divide
-                test_element3 = get_element(t, model, "test_element_element_wise_div")
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_div")
                 test_element3.equation = test_element1 / test_element2
 
                 for j in range(i):
                     for x in range(k):
-                        assert(get_element_data(test_element3[j][x]) == elements1[j][x] / elements2[j][x])
-                        assert(get_element_data(test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
-
+                        assert(get_element_data(
+                            test_element3[j][x]) == elements1[j][x] / elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
 
                 # Dot tests
-                # test_element3 = get_element(t, model, "test_element_dot")
-                # test_element3.equation = test_element1.dot(test_element2)
+                test_element3 = get_element(t, model, "test_element_dot")
+                test_element3.equation = test_element1.dot(
+                    test_element_2_transposed)
 
-                # assert(get_element_data(test_element3) == np.dot(elements1, elements2))
-                # assert(get_element_data(test_element3) != np.dot(elements1, elements2) + 1)
+                temp = np.dot(elements1, transposed)
 
-                # test_element3 = get_element(t, model, "test_element_dot_val_vec")
-                # test_element3.equation = test_element_val.dot(test_element2)
+                for j in range(i):
+                    for x in range(i):
+                        assert(get_element_data(
+                            test_element3[j][x]) == pytest.approx(temp[j][x]))
+                        assert(get_element_data(
+                            test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
 
-                # np_res = np.dot(test_element_val, elements2)
+                # Functions
+                test_element3 = get_element(t, model, "test_element_sum")
+                test_element3.equation = test_element1.arr_sum()
 
-                # for j in range(i):
-                #     for x in range(k):
-                #         assert(get_element_data(test_element3[j][x]) == np_res[j])
-                #         assert(get_element_data(test_element3[j][x]) != np_res[j] + 1)
+                assert(get_element_data(test_element3) ==
+                       pytest.approx(np.sum(elements1)))
+                assert(get_element_data(test_element3)
+                       != np.sum(elements1) + 1)
 
+                test_element3 = get_element(t, model, "test_element_mean")
+                test_element3.equation = test_element1.arr_mean()
+                assert(get_element_data(test_element3) ==
+                       pytest.approx(np.mean(elements1)))
+                assert(get_element_data(test_element3)
+                       != np.mean(elements1) + 1)
 
+                test_element3 = get_element(t, model, "test_element_median")
+                test_element3.equation = test_element1.arr_median()
+                assert(get_element_data(test_element3) ==
+                       pytest.approx(np.median(elements1)))
+                assert(get_element_data(test_element3)
+                       != np.median(elements1) + 1)
 
-                # test_element3 = get_element(t, model, "test_element_dot_vec_val")
-                # test_element3.equation = test_element2.dot(test_element_val)
+                test_element3 = get_element(t, model, "test_element_prod")
+                test_element3.equation = test_element1.arr_prod()
+                assert(get_element_data(test_element3) ==
+                       pytest.approx(np.prod(elements1)))
+                assert(get_element_data(test_element3)
+                       != np.prod(elements1) * 200 + 1)
 
-                # np_res = np.dot(elements2, test_element_val)
+                test_element3 = get_element(t, model, "test_element_stddev")
+                test_element3.equation = test_element1.arr_stddev()
+                assert(get_element_data(test_element3) ==
+                       pytest.approx(np.std(elements1)))
+                assert(get_element_data(test_element3)
+                       != np.std(elements1) + 1)
 
-                # for j in range(i):
-                #     for x in range(k):
-                #         assert(get_element_data(test_element3[j][x]) == np_res[j])
-                #         assert(get_element_data(test_element3[j][x]) != np_res[j] + 1)
+                test_element3 = get_element(t, model, "test_element_size")
+                test_element3.equation = test_element1.arr_size()
+                assert(get_element_data(test_element3) == i)
+                assert(get_element_data(test_element3)
+                       != i + 1)
 
-                # # Functions
-                # test_element3 = get_element(t, model, "test_element_sum")
-                # test_element3.equation = test_element1.arr_sum()
-                
-                # assert(get_element_data(test_element3) == pytest.approx(np.sum(elements1)))
-                # assert(get_element_data(test_element3) != np.sum(elements1) + 1)
-                
-                # test_element3 = get_element(t, model, "test_element_mean")
-                # test_element3.equation = test_element1.arr_mean()
-                # assert(get_element_data(test_element3) == pytest.approx(np.mean(elements1)))
-                # assert(get_element_data(test_element3) != np.mean(elements1) + 1)
-                
-                # test_element3 = get_element(t, model, "test_element_median")
-                # test_element3.equation = test_element1.arr_median()
-                # assert(get_element_data(test_element3) == pytest.approx(np.median(elements1)))
-                # assert(get_element_data(test_element3) != np.median(elements1) + 1)
-                
-                # test_element3 = get_element(t, model, "test_element_prod")
-                # test_element3.equation = test_element1.arr_prod()
-                # assert(get_element_data(test_element3) == pytest.approx(np.prod(elements1)))
-                # assert(get_element_data(test_element3) != np.prod(elements1) * 2)
-                
-                # test_element3 = get_element(t, model, "test_element_stddev")
-                # test_element3.equation = test_element1.arr_stddev()
-                # assert(get_element_data(test_element3) == pytest.approx(np.std(elements1)))
-                # assert(get_element_data(test_element3) != np.std(elements1) + 1)
+                temp = []
+                for j in range(i):
+                    for x in range(k):
+                        temp.append(elements1[j][x])
 
-                # test_element3 = get_element(t, model, "test_element_size")
-                # test_element3.equation = test_element1.arr_size()
-                # assert(get_element_data(test_element3) == pytest.approx(np.size(elements1)))
-                # assert(get_element_data(test_element3) != np.size(elements1) + 1)
+                temp = np.sort(temp)
 
-                # for j in range(i + 1):
-                #     test_element3 = get_element(t, model, "test_element_rank")
+                for j in range(i * k):
+                    test_element3 = get_element(
+                        t, model, "test_element_rank_" + str(j))
 
-                #     temp_arr = np.sort(elements1)
-                #     temp_val = temp_arr[-j]
+                    temp_val = temp[-j]
 
-                #     test_element3.equation = test_element1.arr_rank(j)
-                #     assert(get_element_data(test_element3) == pytest.approx(temp_val))
-                #     assert(get_element_data(test_element3) != temp_val + 1)
+                    test_element3.equation = test_element1.arr_rank(j)
+
+                    print(temp, j, temp_val, get_element_data(test_element3))
+                    assert(get_element_data(test_element3)
+                           == pytest.approx(temp_val))
+                    assert(get_element_data(test_element3) != temp_val + 1)
 
                 # Exception testing
                 # for j in range(i + 1):
@@ -1363,7 +1377,3 @@ def test_matrix():
                 #         assert(j == i)
                 #     except:
                 #         assert(j != i)
-
-                # elements1.append(get_random(t))
-                # elements2.append(get_random(t))
-    

@@ -209,32 +209,42 @@ def _array_resolve(operator, element, time, dimensions, include_all):
         for a in element._elements.number_equations:
             string_term_cur = rec_resolve(element[a], index + 1)
             if(string_term_cur != ""):
-                string_term += rec_resolve(element[a], index + 1) + operator
+                string_term += string_term_cur + operator
         if(include_all):
             for a in element._elements.str_equations:
                 string_term_cur = rec_resolve(element[a], index + 1)
                 if(string_term_cur != ""):
-                    string_term += rec_resolve(element[a], index + 1) + operator
+                    string_term += string_term_cur + operator
         return string_term[:-len(operator)]
     return rec_resolve(element, 0)
 
-def _array_element_to_string(element, time, include_all):
+def _matrix_element_to_string(element, time, flat = False):
     """
-    Recursively converts an array element to array form. The array [[2,3],[4,5]] is converted to the string "[[2,3],[4,5]]" using this function.
+    Converts an array element to a string.
+
+    Parameters:
+        operator: string - The operator used to concatenate elements.
+        element: sddsl.Element
+        time
+        dimensions: int - The dimensions to resolve. An array with dimensions [2,5,6] and passed dimensions parameter 2 will resolve elements [2,5]
+        include_all: bool - If true, both number and string elements will be used, if false only number equations are used.
     """
-
-    if(element._elements.total_count() == 0) or (not include_all and element._elements.vector_size() == 0):
-        return ""
-
-    string_term = "["
-
-    for a in element._elements.number_equations:
-        string_term += "{},".format(extractTerm(element[a], time))
-    if(include_all):
-        for a in element._elements.str_equations:
-            string_term += "{},".format(extractTerm(element[a], time))
-    return string_term[:-1] + "]"
-
+    def rec_resolve(element, index):
+        if(element._elements.vector_size() == 0):
+            if isinstance(element.equation, (float, int)):
+                return str(element)
+            return "{}".format(extractTerm(element, time))
+        string_term = ""
+        for a in element._elements.number_equations:
+            string_term_cur = rec_resolve(element[a], index + 1)
+            if(string_term_cur != ""):
+                string_term += string_term_cur + ","
+        if not flat:
+            return "[" + string_term[:-1] + "]"
+        return string_term[:-1]
+    if not flat:
+        return rec_resolve(element, 0)
+    return "[" + rec_resolve(element, 0) + "]"
 class ArrayProductOperator(Operator):
     """
     Returns the product of an array (element-wise). 
@@ -306,7 +316,7 @@ class ArrayRankOperator(Operator):
         if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time, False)
+        string_term = _matrix_element_to_string(self.element, time, True)
 
         return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element._elements.number_equations))
          
@@ -328,7 +338,7 @@ class ArrayMeanOperator(Operator):
         if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time, self.include_all)
+        string_term = _matrix_element_to_string(self.element, time)
 
         return "np.mean({arr})".format(arr=string_term)
     
@@ -352,7 +362,7 @@ class ArrayMedianOperator(Operator):
         if self.element._elements.total_count() == 0:
             return "0.0"
         
-        string_term = _array_element_to_string(self.element, time, self.include_all)
+        string_term = _matrix_element_to_string(self.element, time)
 
         return "np.median({arr})".format(arr=string_term)
          
@@ -374,7 +384,7 @@ class ArrayStandardDeviationOperator(Operator):
         if self.element._elements.total_count() == 0:
             return "0.0"
 
-        string_term = _array_element_to_string(self.element, time, self.include_all)
+        string_term = _matrix_element_to_string(self.element, time)
 
         return "np.std({arr})".format(arr=string_term)
          
