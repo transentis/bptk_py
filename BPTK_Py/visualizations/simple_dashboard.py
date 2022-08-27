@@ -4,7 +4,6 @@ from typing import Callable, List, Union
 import matplotlib.pyplot as plt
 from ipywidgets import interact
 import ipywidgets as widgets
-from prometheus_client import Enum
 from enum import Enum
 
 class ScenarioWidget:

@@ -41,10 +41,8 @@ Hence, for building, tagging and publishing to docker, run ``make publish_docker
 
 To build the documentation, run ``make html`` in the root directory of the repository. 
 
-A subsequent ```make publish_docu``` publishes it to S3. 
+The resulting documentation is then copied into the documentation repository on GitHub. As soon as the branch is pushed this rebuilds the website on DigitalOcean.
 
-It will take some time for the changes to reflect on the website as we are using CloudFront as a CDN. 
-It usually updates its caches within 24 hours.
 
 ```
 make html

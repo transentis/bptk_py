@@ -345,7 +345,7 @@ class bptk():
 
         This resets the internal session cache, there can only be one session at any time.
 
-        At also resets the scenario cache for all scenarios that are passed to the session.
+        It also resets the scenario cache for all scenarios that are passed to the session.
 
         The start time is set to be the max of start and the start time of all the scenarios.
 

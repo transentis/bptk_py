@@ -38,6 +38,11 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.1
+
+* SimpleDashboard: Deleted superfluous import statement
+* bptk: Small improvements to documentation
+
 ### 1.6.0
 
 * BPTK Server: The run_step methods now also support agent-based models
