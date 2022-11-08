@@ -234,11 +234,17 @@ class bptk():
         self.session_state = state
 
     def lock(self):
-        self.session_state["lock"] = True
+        if self.session_state is not None:
+            self.session_state["lock"] = True
     def unlock(self):
-        self.session_state["lock"] = False
+        if self.session_state is not None:
+            self.session_state["lock"] = False
     def is_locked(self):
-        return self.session_state["lock"]
+        if self.session_state is not None:
+            if(not "lock" in self.session_state.keys()):
+                return False
+            return self.session_state["lock"]
+        return False
 
     def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
                            agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
