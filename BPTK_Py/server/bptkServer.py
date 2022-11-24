@@ -521,6 +521,8 @@ class BptkServer(Flask):
         else:
             resp = make_response('{"error": "instance could not be started"}', 500)
 
+        resp.headers['Content-Type']='application/json'
+        resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
     def _begin_session_resource(self, instance_uuid):
