@@ -38,6 +38,11 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.2
+
+* BPTK Server: Fixed unsafe external state adapter code
+* BPTK Server: start_instance now returns correct content type
+
 ### 1.6.1
 
 * SimpleDashboard: Deleted superfluous import statement
