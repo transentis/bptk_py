@@ -35,10 +35,11 @@ class ExternalStateAdapter(metaclass=ABCMeta):
     
     def load_state(self) -> list[InstanceState]:
         state = self._load_state()
-        if(self.compress and state is not None and state.state is not None):
+        if(self.compress):
             for cur_state in state:
-                cur_state.state["settings_log"] = statecompression.decompress_settings(cur_state.state["settings_log"])
-                cur_state.state["results_log"] = statecompression.decompress_results(cur_state.state["results_log"])
+                if(cur_state is not None and cur_state.state is not None):
+                    cur_state.state["settings_log"] = statecompression.decompress_settings(cur_state.state["settings_log"])
+                    cur_state.state["results_log"] = statecompression.decompress_results(cur_state.state["results_log"])
         return state
     
     def load_instance(self, instance_uuid: str) -> InstanceState:
