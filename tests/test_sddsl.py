@@ -932,13 +932,14 @@ def test_vector():
                    pytest.approx(np.size(elements1)))
             assert(get_element_data(test_element3) != np.size(elements1) + 1)
 
-            for j in range(i + 1):
+            for j in range(i):
                 test_element3 = get_element(t, model, "test_element_rank")
 
                 temp_arr = np.sort(elements1)
-                temp_val = temp_arr[-j]
+                temp_val = temp_arr[-(j + 1)]
 
-                test_element3.equation = test_element1.arr_rank(j)
+                test_element3.equation = test_element1.arr_rank(j + 1)
+                
                 assert(get_element_data(test_element3)
                        == pytest.approx(temp_val))
                 assert(get_element_data(test_element3) != temp_val + 1)
@@ -1344,17 +1345,16 @@ def test_matrix():
                     for x in range(k):
                         temp.append(elements1[j][x])
 
-                temp = np.sort(temp)
+                temp.sort(reverse=True)
 
                 for j in range(i * k):
                     test_element3 = get_element(
                         t, model, "test_element_rank_" + str(j))
 
-                    temp_val = temp[-j]
+                    temp_val = temp[j]
 
-                    test_element3.equation = test_element1.arr_rank(j)
+                    test_element3.equation = test_element1.arr_rank(j + 1)
 
-                    print(temp, j, temp_val, get_element_data(test_element3))
                     assert(get_element_data(test_element3)
                            == pytest.approx(temp_val))
                     assert(get_element_data(test_element3) != temp_val + 1)

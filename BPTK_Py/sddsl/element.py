@@ -53,6 +53,7 @@ class Element:
             self._function_string = function_string
         self._equation = None
         self._elements = ArrayedEquation(self)
+        self.arrayed = False
         self.generate_function()
 
     @classmethod
@@ -67,8 +68,12 @@ class Element:
 
 
     def __getitem__(self, key):
+        if(not self.arrayed):
+            raise Exception("Element is not arrayed")
         return self._elements[key]
     def __setitem__(self, key, value):
+        if(not self.arrayed):
+            raise Exception("Element is not arrayed")
         self._elements[key] = value
 
     @classmethod
@@ -308,7 +313,7 @@ class Element:
             size: int - Size of the vector
             default_value: float | List[float] - The default value or values of the vector
         """
-
+        self.arrayed = True
         if isinstance(default_value, (float,int)):
             for i in range(size):
                 self[i] = default_value
@@ -328,17 +333,17 @@ class Element:
         """
         if isinstance(size, int) or len(size) != 2:
             raise Exception("Expected two-element size to be passed to setup_matrix. Received size {}!".format(size))
-        
+
+        self.arrayed = True
         if isinstance(default_value, (float,int)):
             for i in range(size[0]):
-                for j in range(size[1]):
-                    self[i][j] = default_value
+                self[i].setup_vector(size[1], default_value)
         else:
             if len(default_value) != size[0] or len(default_value[0]) != size[1]:
                 raise Exception("Expected passed default_value to have the same size as passed matrix size. Received default_value of size {} and matrix of size {}!".format([len(default_value), len(default_value[1])], size))
             for i in range(size[0]):
-                for j in range(size[1]):
-                    self[i][j] = default_value[i][j]
+                self[i].setup_vector(size[1], default_value[i])
+
 
 class ElementError(Exception):
     def __init__(self, value):

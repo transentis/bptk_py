@@ -318,7 +318,11 @@ class ArrayRankOperator(Operator):
 
         string_term = _matrix_element_to_string(self.element, time, True)
 
-        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=len(self.element._elements.number_equations))
+        matrix_size = self.element._elements.matrix_size()
+        if matrix_size[1] <= 0:
+            matrix_size[1] = 1
+        
+        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=matrix_size[0] * matrix_size[1])
          
     def clone_with_index(self, index):
         a = ArrayRankOperator(self.element, self.rank)
