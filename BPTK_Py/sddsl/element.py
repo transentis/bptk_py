@@ -73,7 +73,10 @@ class Element:
         return self._elements[key]
     def __setitem__(self, key, value):
         if(not self.arrayed):
-            raise Exception("Element is not arrayed")
+            if(isinstance(key, str)):
+                self.arrayed = True
+            else:
+                raise Exception("Element is not arrayed")
         self._elements[key] = value
 
     @classmethod
@@ -172,10 +175,20 @@ class Element:
         dt = self.model.dt if dt is None else dt
         stoptime = self.model.stoptime if stoptime is None else stoptime
         starttime = self.model.starttime if starttime is None else starttime
-        try:
-            df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(starttime,stoptime+dt,dt)}})
-        except:
-            df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(self.model.starttime,self.model.stoptime+dt, dt)}})
+        if(self.arrayed):
+            dict = {}
+            for(i,element_name) in enumerate(self._elements.number_equations):
+                element = self._elements[element_name]
+                dict[element_name] = element.plot(starttime,stoptime,dt,return_df=True)
+            for(i,element_name) in enumerate(self._elements.str_equations):
+                element = self._elements[element_name]
+                dict[element_name] = element.plot(starttime,stoptime,dt,return_df=True)
+            df = pd.DataFrame({self.name: dict})
+        else:
+            try:
+                df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(starttime,stoptime+dt,dt)}})
+            except:
+                df = pd.DataFrame({self.name: {t: self.model.memoize(self.name,t) for t in np.arange(self.model.starttime,self.model.stoptime+dt, dt)}})
         # ensure column is of float type and not e.g. an integer
 
         if return_df:

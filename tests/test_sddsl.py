@@ -1360,20 +1360,21 @@ def test_matrix():
                     assert(get_element_data(test_element3) != temp_val + 1)
 
                 # Exception testing
-                # for j in range(i + 1):
-                #     test_element4 = get_element(t, model, "test_element4")
-                #     test_element4.setup_vector(j, 2.0)
+                for j in range(1, i + 1):
+                    for x in range(1, k + 1):
+                        test_element4 = get_element(t, model, "test_element4_exc_" + str(j) + "_" + str(x))
+                        test_element4.setup_matrix([j,x], 2.0)
+                        try:
+                            test_element3 = get_element(t, model, "test_element_exc")
+                            test_element3.equation = test_element4.dot(test_element2)
+                            assert(x == i)
+                        except:
+                            assert(x != i)
 
-                #     try:
-                #         test_element3 = get_element(t, model, "test_element_exc")
-                #         test_element3.equation = test_element4.dot(test_element2)
-                #         assert(j == i)
-                #     except:
-                #         assert(j != i)
-
-                #     try:
-                #         test_element3 = get_element(t, model, "test_element_exc")
-                #         test_element3.setup_vector(j, elements1)
-                #         assert(j == i)
-                #     except:
-                #         assert(j != i)
+                        try:
+                            test_element3 = get_element(t, model, "test_element_exc")
+                            test_element3.setup_matrix([j, x], elements1)
+                            assert(j == i and x == k)
+                        except:
+                            assert(not (j == i and x == k))
+ 
