@@ -763,6 +763,43 @@ def get_element_data(element):
     return data[element.name][1]
 
 
+def setup_vector(element, i, elements, n):
+    if(n == 1):
+        if isinstance(elements, (float, int)):
+            names = {}
+            for j in range(i):
+                names[str(j)] = elements
+            element.setup_named_vector(names)
+        else:
+            names = {}
+            for j in range(i):
+                names[str(j)] = elements[j]
+            element.setup_named_vector(names)
+    else:
+        element.setup_vector(i, elements)
+
+
+def setup_matrix(element, i, elements, n):
+    if(n == 1):
+        if isinstance(elements, (float, int)):
+            names = {}
+            for j in range(i[0]):
+                cur = {}
+                for x in range(i[1]):
+                    cur[str(x)] = elements
+                names[str(j)] = cur
+            element.setup_named_matrix(names)
+        else:
+            names = {}
+            for j in range(i[0]):
+                cur = {}
+                for x in range(i[1]):
+                    cur[str(x)] = elements[j][x]
+                names[str(j)] = cur
+            element.setup_named_matrix(names)
+    else:
+        element.setup_matrix(i, elements)
+
 def test_matrix_constant():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
@@ -775,205 +812,209 @@ def test_matrix_constant():
     # Vector tests (flows, stock, converters)
     elements1 = []
     elements2 = []
-    for i in range(1, 10):
-        for k in range(1, 10):
-            elements1 = []
-            elements2 = []
-            for temp1 in range(i):
-                elements1.append([])
-                elements2.append([])
-                for temp2 in range(k):
-                    elements1[temp1].append(get_random(0))
-                    elements2[temp1].append(get_random(0))
+    for n in range(2):
+        for i in range(1, 10):
+            for k in range(1, 10):
+                elements1 = []
+                elements2 = []
+                for temp1 in range(i):
+                    elements1.append([])
+                    elements2.append([])
+                    for temp2 in range(k):
+                        elements1[temp1].append(get_random(0))
+                        elements2[temp1].append(get_random(0))
 
-            model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
-                          name='setup_func_mat_' + str(i) + "_" + str(k))
-            # Setup tests
-            test_element = model.constant("test_element_setup_default")
-            test_element.setup_matrix([i, k], float(i))
+                index = str(i) + "_" + str(k) + "_" + str(n)
+                model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                            name='setup_func_mat_' + str(i) + "_" + str(k))
+                # Setup tests
+                test_element = model.constant("test_element_setup_default" + index)
+                setup_matrix(test_element, [i, k], float(i), n)
 
-            transposed = []
-            for j in range(k):
-                cur = []
-                for x in range(i):
-                    cur.append(elements2[x][j])
-                transposed.append(cur)
+                transposed = []
+                for j in range(k):
+                    cur = []
+                    for x in range(i):
+                        cur.append(elements2[x][j])
+                    transposed.append(cur)
 
-            test_element_2_transposed = model.converter(
-                "test_element_2_transposed")
-            test_element_2_transposed.setup_matrix([k, i], transposed)
+                test_element_2_transposed = model.constant(
+                    "test_element_2_transposed" + index)
+                setup_matrix(test_element_2_transposed, [k, i], transposed, n)
 
-            assert(test_element._elements.matrix_size() == [i, k])
-            assert(test_element._elements.vector_size() == i)
-            for j in range(i):
-                for x in range(k):
-                    assert(get_element_data(test_element[j][x]) == i)
-                    assert(get_element_data(test_element[j][x]) != i + 1)
+                assert(test_element._elements.matrix_size() == [i, k])
+                assert(test_element._elements.vector_size() == i)
+                for j in range(i):
+                    for x in range(k):
+                        assert(get_element_data(test_element[j][x]) == i)
+                        assert(get_element_data(test_element[j][x]) != i + 1)
 
-            test_element = model.constant("test_element_setup_individual")
-            test_element.setup_matrix([i, k], elements1)
+                test_element = model.constant("test_element_setup_individual" + index)
+                setup_matrix(test_element, [i, k], elements1, n)
 
-            for j in range(i):
-                for x in range(k):
-                    assert(get_element_data(
-                        test_element[j][x]) == elements1[j][x])
-                    assert(get_element_data(
-                        test_element[j][x]) != elements1[j][x] + 1)
-
-            # Element-wise tests
-            test_element_val = model.converter("test_element_val")
-            test_element_val.equation = get_random(0)
-
-            test_element1 = model.converter("test_element_element_wise1")
-            test_element1.setup_matrix([i, k], elements1)
-
-            test_element2 = model.converter("test_element_element_wise2")
-            test_element2.setup_matrix([i, k], elements2)
-
-            # Add
-            test_element3 = model.converter("test_element_element_wise_add")
-            test_element3.equation = test_element1 + test_element2
-
-            for j in range(i):
-                for x in range(k):
-                    assert(get_element_data(
-                        test_element3[j][x]) == elements1[j][x] + elements2[j][x])
-                    assert(get_element_data(
-                        test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
-
-            # Subtract
-            test_element3 = model.converter("test_element_element_wise_sub")
-            test_element3.equation = test_element1 - test_element2
-
-            for j in range(i):
-                for x in range(k):
-                    assert(get_element_data(
-                        test_element3[j][x]) == elements1[j][x] - elements2[j][x])
-                    assert(get_element_data(
-                        test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
-
-            # Multiply
-            test_element3 = model.converter("test_element_element_wise_mul")
-            test_element3.equation = test_element1 * test_element2
-
-            for j in range(i):
-                for x in range(k):
-                    assert(get_element_data(
-                        test_element3[j][x]) == elements1[j][x] * elements2[j][x])
-                    assert(get_element_data(
-                        test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
-
-            # Divide
-            test_element3 = model.converter("test_element_element_wise_div")
-            test_element3.equation = test_element1 / test_element2
-            for j in range(i):
-                for x in range(k):
-                    if(elements2[j][x] == 0):
+                for j in range(i):
+                    for x in range(k):
                         assert(get_element_data(
-                            test_element3[j][x]) == 0)
-                    else:
+                            test_element[j][x]) == elements1[j][x])
                         assert(get_element_data(
-                            test_element3[j][x]) == elements1[j][x] / elements2[j][x])
+                            test_element[j][x]) != elements1[j][x] + 1)
+
+                # Element-wise tests
+                test_element_val = model.converter("test_element_val" + index)
+                test_element_val.equation = get_random(0)
+
+                test_element1 = model.converter("test_element_element_wise1" + index)
+                setup_matrix(test_element1, [i, k], elements1, n)
+
+                test_element2 = model.converter("test_element_element_wise2" + index)
+                setup_matrix(test_element2, [i, k], elements2, n)
+
+                # Add
+                test_element3 = model.converter("test_element_element_wise_add" + index)
+                test_element3.equation = test_element1 + test_element2
+
+                for j in range(i):
+                    for x in range(k):
                         assert(get_element_data(
-                            test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
+                            test_element3[j][x]) == elements1[j][x] + elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
 
-            # Dot tests
-            test_element3 = model.converter("test_element_dot")
-            test_element3.equation = test_element1.dot(
-                test_element_2_transposed)
+                # Subtract
+                test_element3 = model.converter("test_element_element_wise_sub" + index)
+                test_element3.equation = test_element1 - test_element2
 
-            temp = np.dot(elements1, transposed)
+                for j in range(i):
+                    for x in range(k):
+                        assert(get_element_data(
+                            test_element3[j][x]) == elements1[j][x] - elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
 
-            for j in range(i):
-                for x in range(i):
-                    assert(get_element_data(
-                        test_element3[j][x]) == pytest.approx(temp[j][x]))
-                    assert(get_element_data(
-                        test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
+                # Multiply
+                test_element3 = model.converter("test_element_element_wise_mul" + index)
+                test_element3.equation = test_element1 * test_element2
 
-            # Functions
-            test_element3 = model.converter("test_element_sum")
-            test_element3.equation = test_element1.arr_sum()
+                for j in range(i):
+                    for x in range(k):
+                        assert(get_element_data(
+                            test_element3[j][x]) == elements1[j][x] * elements2[j][x])
+                        assert(get_element_data(
+                            test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
 
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.sum(elements1)))
-            assert(get_element_data(test_element3)
-                   != np.sum(elements1) + 1)
+                # Divide
+                test_element3 = model.converter("test_element_element_wise_div" + index)
+                test_element3.equation = test_element1 / test_element2
+                for j in range(i):
+                    for x in range(k):
+                        if(elements2[j][x] == 0):
+                            assert(get_element_data(
+                                test_element3[j][x]) == 0)
+                        else:
+                            assert(get_element_data(
+                                test_element3[j][x]) == elements1[j][x] / elements2[j][x])
+                            assert(get_element_data(
+                                test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
 
-            test_element3 = model.converter("test_element_mean")
-            test_element3.equation = test_element1.arr_mean()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.mean(elements1)))
-            assert(get_element_data(test_element3)
-                   != np.mean(elements1) + 1)
+                # Dot tests
+                try:
+                    test_element3 = model.converter("test_element_dot" + index)
+                    test_element3.equation = test_element1.dot(
+                        test_element_2_transposed)
 
-            test_element3 = model.converter("test_element_median")
-            test_element3.equation = test_element1.arr_median()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.median(elements1)))
-            assert(get_element_data(test_element3)
-                   != np.median(elements1) + 1)
+                    temp = np.dot(elements1, transposed)
 
-            test_element3 = model.converter("test_element_prod")
-            test_element3.equation = test_element1.arr_prod()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.prod(elements1)))
-            assert(get_element_data(test_element3)
-                   != np.prod(elements1) * 200 + 1)
+                    for j in range(i):
+                        for x in range(i):
+                            assert(get_element_data(
+                                test_element3[j][x]) == pytest.approx(temp[j][x]))
+                            assert(get_element_data(
+                                test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
+                except:
+                    assert(n == 1)
 
-            test_element3 = model.converter("test_element_stddev")
-            test_element3.equation = test_element1.arr_stddev()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.std(elements1)))
-            assert(get_element_data(test_element3)
-                   != np.std(elements1) + 1)
+                # Functions
+                test_element3 = model.converter("test_element_sum" + index)
+                test_element3.equation = test_element1.arr_sum()
 
-            test_element3 = model.converter("test_element_size")
-            test_element3.equation = test_element1.arr_size()
-            assert(get_element_data(test_element3) == i)
-            assert(get_element_data(test_element3)
-                   != i + 1)
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.sum(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.sum(elements1) + 1)
 
-            temp = []
-            for j in range(i):
-                for x in range(k):
-                    temp.append(elements1[j][x])
+                test_element3 = model.converter("test_element_mean" + index)
+                test_element3.equation = test_element1.arr_mean()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.mean(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.mean(elements1) + 1)
 
-            temp.sort(reverse=True)
+                test_element3 = model.converter("test_element_median" + index)
+                test_element3.equation = test_element1.arr_median()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.median(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.median(elements1) + 1)
 
-            # for j in range(i * k):
-            #     test_element3 = get_element(
-            #         t, model, "test_element_rank_" + str(j))
+                test_element3 = model.converter("test_element_prod" + index)
+                test_element3.equation = test_element1.arr_prod()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.prod(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.prod(elements1) * 200 + 1)
 
-            temp_val = temp[j]
+                test_element3 = model.converter("test_element_stddev" + index)
+                test_element3.equation = test_element1.arr_stddev()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.std(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.std(elements1) + 1)
 
-            test_element3.equation = test_element1.arr_rank(j + 1)
+                test_element3 = model.converter("test_element_size" + index)
+                test_element3.equation = test_element1.arr_size()
+                assert(get_element_data(test_element3) == i)
+                assert(get_element_data(test_element3)
+                    != i + 1)
 
-            assert(get_element_data(test_element3)
-                   == pytest.approx(temp_val))
-            assert(get_element_data(test_element3) != temp_val + 1)
+                temp = []
+                for j in range(i):
+                    for x in range(k):
+                        temp.append(elements1[j][x])
 
-            # Exception testing
-            for j in range(1, i + 1):
-                for x in range(1, k + 1):
-                    test_element4 = model.constant(
-                        "test_element4_exc_" + str(j) + "_" + str(x))
-                    test_element4.setup_matrix([j, x], 2.0)
-                    try:
-                        test_element3 = model.constant("test_element_exc")
-                        test_element3.equation = test_element4.dot(
-                            test_element2)
-                        assert(x == i)
-                    except:
-                        assert(x != i)
+                temp.sort(reverse=True)
 
-                    try:
-                        test_element3 = model.constant("test_element_exc")
-                        test_element3.setup_matrix([j, x], elements1)
-                        assert(j == i and x == k)
-                    except:
-                        assert(not (j == i and x == k))
+                # for j in range(i * k):
+                #     test_element3 = get_element(
+                #         t, model, "test_element_rank_" + str(j))
 
+                temp_val = temp[j]
+
+                test_element3.equation = test_element1.arr_rank(j + 1)
+
+                assert(get_element_data(test_element3)
+                    == pytest.approx(temp_val))
+                assert(get_element_data(test_element3) != temp_val + 1)
+
+                # Exception testing
+                for j in range(1, i + 1):
+                    for x in range(1, k + 1):
+                        test_element4 = model.constant(
+                            "test_element4_exc_" + str(j) + "_" + str(x) + index)
+                        setup_matrix(test_element4, [j, x], 2.0, n)
+                        try:
+                            test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                            test_element3.equation = test_element4.dot(
+                                test_element2)
+                            assert(x == i)
+                        except:
+                            assert(x != i or n == 1)
+
+                        try:
+                            test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                            setup_matrix(test_element3, [j, x], elements1, n)
+                            assert(j == i and x == k)
+                        except:
+                            assert(not (j == i and x == k))
 
 def test_vector():
     from BPTK_Py import Model
@@ -995,192 +1036,195 @@ def test_vector():
             return model.constant(name)
 
     # Vector tests (flows, stock, converters)
-    for t in range(3):
-        elements1 = [get_random(t)]
-        elements2 = [get_random(t)]
-        for i in range(1, 10):
-            model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
-                          name='setup_func_vec_' + str(i))
+    for n in range(2):
+        for t in range(3):
+            elements1 = [get_random(t)]
+            elements2 = [get_random(t)]
+            for i in range(1, 10):
+                model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                            name='setup_func_vec_' + str(i))
+                index = str(n) + "_" + str(t) + "_" + str(i)
+                # Setup tests
+                test_element = get_element(t, model, "test_element_setup_default")
+                setup_vector(test_element, i, float(i), n)
 
-            # Setup tests
-            test_element = get_element(t, model, "test_element_setup_default")
-            test_element.setup_vector(i, float(i))
+                assert(test_element._elements.matrix_size() == [i, 0])
+                assert(test_element._elements.vector_size() == i)
 
-            assert(test_element._elements.matrix_size() == [i, 0])
-            assert(test_element._elements.vector_size() == i)
+                for j in range(i):
+                    assert(get_element_data(test_element[j]) == i)
+                    assert(get_element_data(test_element[j]) != i + 1)
 
-            for j in range(i):
-                assert(get_element_data(test_element[j]) == i)
-                assert(get_element_data(test_element[j]) != i + 1)
+                test_element = get_element(
+                    t, model, "test_element_setup_individual")
+                setup_vector(test_element, i, elements1, n)
+                # print(test_element[0])
+                for j in range(i):
+                    assert(get_element_data(test_element[j]) == elements1[j])
+                    assert(get_element_data(test_element[j]) != elements1[j] + 1)
 
-            test_element = get_element(
-                t, model, "test_element_setup_individual")
-            test_element.setup_vector(i, elements1)
-            # print(test_element[0])
-            for j in range(i):
-                assert(get_element_data(test_element[j]) == elements1[j])
-                assert(get_element_data(test_element[j]) != elements1[j] + 1)
+                # Element-wise tests
 
-            # Element-wise tests
+                test_element_val = model.converter("test_element_val" + index)
+                test_element_val.equation = get_random(t)
 
-            test_element_val = model.converter("test_element_val")
-            test_element_val.equation = get_random(t)
+                test_element1 = model.converter("test_element_element_wise1" + index)
+                setup_vector(test_element1, i, elements1, n)
 
-            test_element1 = model.converter("test_element_element_wise1")
-            test_element1.setup_vector(i, elements1)
+                test_element2 = model.converter("test_element_element_wise2" + index)
+                setup_vector(test_element2, i, elements2, n)
 
-            test_element2 = model.converter("test_element_element_wise2")
-            test_element2.setup_vector(i, elements2)
+                # Add
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_add")
+                test_element3.equation = test_element1 + test_element2
 
-            # Add
-            test_element3 = get_element(
-                t, model, "test_element_element_wise_add")
-            test_element3.equation = test_element1 + test_element2
-
-            for j in range(i):
-                assert(get_element_data(
-                    test_element3[j]) == elements1[j] + elements2[j])
-                assert(get_element_data(
-                    test_element3[j]) != elements1[j] + elements2[j] + 1)
-
-            # Subtract
-            test_element3 = get_element(
-                t, model, "test_element_element_wise_sub")
-            test_element3.equation = test_element1 - test_element2
-
-            for j in range(i):
-                if t == 2:  # Flows
-                    assert(get_element_data(test_element3[j]) == max(
-                        elements1[j] - elements2[j], 0.0))
-                    assert(get_element_data(test_element3[j]) != max(
-                        elements1[j] - elements2[j] + 1, 1.0))
-                else:
+                for j in range(i):
                     assert(get_element_data(
-                        test_element3[j]) == elements1[j] - elements2[j])
+                        test_element3[j]) == elements1[j] + elements2[j])
                     assert(get_element_data(
-                        test_element3[j]) != elements1[j] - elements2[j] + 1)
+                        test_element3[j]) != elements1[j] + elements2[j] + 1)
 
-            # Multiply
-            test_element3 = get_element(
-                t, model, "test_element_element_wise_mul")
-            test_element3.equation = test_element1 * test_element2
+                # Subtract
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_sub")
+                test_element3.equation = test_element1 - test_element2
 
-            for j in range(i):
-                assert(get_element_data(
-                    test_element3[j]) == elements1[j] * elements2[j])
-                assert(get_element_data(
-                    test_element3[j]) != elements1[j] * elements2[j] + 1)
+                for j in range(i):
+                    if t == 2:  # Flows
+                        assert(get_element_data(test_element3[j]) == max(
+                            elements1[j] - elements2[j], 0.0))
+                        assert(get_element_data(test_element3[j]) != max(
+                            elements1[j] - elements2[j] + 1, 1.0))
+                    else:
+                        assert(get_element_data(
+                            test_element3[j]) == elements1[j] - elements2[j])
+                        assert(get_element_data(
+                            test_element3[j]) != elements1[j] - elements2[j] + 1)
 
-            # Divide
-            test_element3 = get_element(
-                t, model, "test_element_element_wise_div")
-            test_element3.equation = test_element1 / test_element2
+                # Multiply
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_mul")
+                test_element3.equation = test_element1 * test_element2
 
-            for j in range(i):
-                assert(get_element_data(
-                    test_element3[j]) == elements1[j] / elements2[j])
-                assert(get_element_data(
-                    test_element3[j]) != elements1[j] / elements2[j] + 1)
+                for j in range(i):
+                    assert(get_element_data(
+                        test_element3[j]) == elements1[j] * elements2[j])
+                    assert(get_element_data(
+                        test_element3[j]) != elements1[j] * elements2[j] + 1)
 
-            # Dot tests
-            test_element3 = get_element(t, model, "test_element_dot")
-            test_element3.equation = test_element1.dot(test_element2)
+                # Divide
+                test_element3 = get_element(
+                    t, model, "test_element_element_wise_div")
+                test_element3.equation = test_element1 / test_element2
 
-            assert(get_element_data(test_element3)
-                   == np.dot(elements1, elements2))
-            assert(get_element_data(test_element3) !=
-                   np.dot(elements1, elements2) + 1)
-
-            test_element3 = get_element(t, model, "test_element_dot_val_vec")
-            test_element3.equation = test_element_val.dot(test_element2)
-
-            np_res = np.dot(test_element_val, elements2)
-
-            for j in range(i):
-                assert(get_element_data(test_element3[j]) == np_res[j])
-                assert(get_element_data(test_element3[j]) != np_res[j] + 1)
-
-            test_element3 = get_element(t, model, "test_element_dot_vec_val")
-            test_element3.equation = test_element2.dot(test_element_val)
-
-            np_res = np.dot(elements2, test_element_val)
-
-            for j in range(i):
-                assert(get_element_data(test_element3[j]) == np_res[j])
-                assert(get_element_data(test_element3[j]) != np_res[j] + 1)
-
-            # Functions
-            test_element3 = get_element(t, model, "test_element_sum")
-            test_element3.equation = test_element1.arr_sum()
-
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.sum(elements1)))
-            assert(get_element_data(test_element3) != np.sum(elements1) + 1)
-
-            test_element3 = get_element(t, model, "test_element_mean")
-            test_element3.equation = test_element1.arr_mean()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.mean(elements1)))
-            assert(get_element_data(test_element3) != np.mean(elements1) + 1)
-
-            test_element3 = get_element(t, model, "test_element_median")
-            test_element3.equation = test_element1.arr_median()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.median(elements1)))
-            assert(get_element_data(test_element3) != np.median(elements1) + 1)
-
-            test_element3 = get_element(t, model, "test_element_prod")
-            test_element3.equation = test_element1.arr_prod()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.prod(elements1)))
-            assert(get_element_data(test_element3) != np.prod(elements1) * 2)
-
-            test_element3 = get_element(t, model, "test_element_stddev")
-            test_element3.equation = test_element1.arr_stddev()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.std(elements1)))
-            assert(get_element_data(test_element3) != np.std(elements1) + 1)
-
-            test_element3 = get_element(t, model, "test_element_size")
-            test_element3.equation = test_element1.arr_size()
-            assert(get_element_data(test_element3) ==
-                   pytest.approx(np.size(elements1)))
-            assert(get_element_data(test_element3) != np.size(elements1) + 1)
-
-            for j in range(i):
-                test_element3 = get_element(t, model, "test_element_rank")
-
-                temp_arr = np.sort(elements1)
-                temp_val = temp_arr[-(j + 1)]
-
-                test_element3.equation = test_element1.arr_rank(j + 1)
-
-                assert(get_element_data(test_element3)
-                       == pytest.approx(temp_val))
-                assert(get_element_data(test_element3) != temp_val + 1)
-
-            # Exception testing
-            for j in range(i + 1):
-                test_element4 = get_element(t, model, "test_element4")
-                test_element4.setup_vector(j, 2.0)
+                for j in range(i):
+                    assert(get_element_data(
+                        test_element3[j]) == elements1[j] / elements2[j])
+                    assert(get_element_data(
+                        test_element3[j]) != elements1[j] / elements2[j] + 1)
 
                 try:
-                    test_element3 = get_element(t, model, "test_element_exc")
-                    test_element3.equation = test_element4.dot(test_element2)
-                    assert(j == i)
+                    # Dot tests
+                    test_element3 = get_element(t, model, "test_element_dot")
+                    test_element3.equation = test_element1.dot(test_element2)
+
+                    assert(get_element_data(test_element3)
+                        == np.dot(elements1, elements2))
+                    assert(get_element_data(test_element3) !=
+                        np.dot(elements1, elements2) + 1)
+                        
+                    test_element3 = get_element(t, model, "test_element_dot_val_vec")
+                    test_element3.equation = test_element_val.dot(test_element2)
+
+                    np_res = np.dot(test_element_val, elements2)
+
+                    for j in range(i):
+                        assert(get_element_data(test_element3[j]) == np_res[j])
+                        assert(get_element_data(test_element3[j]) != np_res[j] + 1)
+
+                    test_element3 = get_element(t, model, "test_element_dot_vec_val")
+                    test_element3.equation = test_element2.dot(test_element_val)
+
+                    np_res = np.dot(elements2, test_element_val)
+
+                    for j in range(i):
+                        assert(get_element_data(test_element3[j]) == np_res[j])
+                        assert(get_element_data(test_element3[j]) != np_res[j] + 1)
                 except:
-                    assert(j != i)
+                    assert(n == 1)
 
-                try:
-                    test_element3 = get_element(t, model, "test_element_exc")
-                    test_element3.setup_vector(j, elements1)
-                    assert(j == i)
-                except:
-                    assert(j != i)
+                # Functions
+                test_element3 = get_element(t, model, "test_element_sum")
+                test_element3.equation = test_element1.arr_sum()
 
-            elements1.append(get_random(t))
-            elements2.append(get_random(t))
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.sum(elements1)))
+                assert(get_element_data(test_element3) != np.sum(elements1) + 1)
 
+                test_element3 = get_element(t, model, "test_element_mean")
+                test_element3.equation = test_element1.arr_mean()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.mean(elements1)))
+                assert(get_element_data(test_element3) != np.mean(elements1) + 1)
+
+                test_element3 = get_element(t, model, "test_element_median")
+                test_element3.equation = test_element1.arr_median()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.median(elements1)))
+                assert(get_element_data(test_element3) != np.median(elements1) + 1)
+
+                test_element3 = get_element(t, model, "test_element_prod")
+                test_element3.equation = test_element1.arr_prod()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.prod(elements1)))
+                assert(get_element_data(test_element3) != np.prod(elements1) * 2)
+
+                test_element3 = get_element(t, model, "test_element_stddev")
+                test_element3.equation = test_element1.arr_stddev()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.std(elements1)))
+                assert(get_element_data(test_element3) != np.std(elements1) + 1)
+
+                test_element3 = get_element(t, model, "test_element_size")
+                test_element3.equation = test_element1.arr_size()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.size(elements1)))
+                assert(get_element_data(test_element3) != np.size(elements1) + 1)
+
+                for j in range(i):
+                    test_element3 = get_element(t, model, "test_element_rank")
+
+                    temp_arr = np.sort(elements1)
+                    temp_val = temp_arr[-(j + 1)]
+
+                    test_element3.equation = test_element1.arr_rank(j + 1)
+
+                    assert(get_element_data(test_element3)
+                        == pytest.approx(temp_val))
+                    assert(get_element_data(test_element3) != temp_val + 1)
+
+                # Exception testing
+                for j in range(i + 1):
+                    test_element4 = get_element(t, model, "test_element4")
+                    setup_vector(test_element4, j, 2.0, n)
+
+                    try:
+                        test_element3 = get_element(t, model, "test_element_exc")
+                        test_element3.equation = test_element4.dot(test_element2)
+                        assert(j == i)
+                    except:
+                        assert(j != i or n == 1)
+
+                    try:
+                        test_element3 = get_element(t, model, "test_element_exc")
+                        setup_vector(test_element3, j, elements1, n)
+                        assert(j == i)
+                    except:
+                        assert(j != i)
+
+                elements1.append(get_random(t))
+                elements2.append(get_random(t))
 
 def test_vector_constants():
     from BPTK_Py import Model
@@ -1190,177 +1234,185 @@ def test_vector_constants():
     import numpy as np
 
     bptk = bptk()
-    elements1 = [get_random(0)]
-    elements2 = [get_random(0)]
-    for i in range(1, 10):
-        model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
-                      name='setup_func_vec_' + str(i))
+    elements1 = []
+    elements2 = []
+    for n in range(2):
+        elements1 = [get_random(0)]
+        elements2 = [get_random(0)]
+        for i in range(1, 10):
+            index = "_" + str(i) + "_" + str(n)
+            print(i,n)
+            model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                        name='setup_func_vec_' + str(i))
 
-        # Setup tests
-        test_constant = model.constant("test_constant_setup_default")
-        test_constant.setup_vector(i, float(i))
+            # Setup tests
+            test_constant = model.constant("test_constant_setup_default" + index)
+            setup_vector(test_constant, i, float(i), n)
+            print(elements1, elements2)
+            assert(test_constant._elements.matrix_size() == [i, 0])
+            assert(test_constant._elements.vector_size() == i)
 
-        assert(test_constant._elements.matrix_size() == [i, 0])
-        assert(test_constant._elements.vector_size() == i)
+            for j in range(i):
+                assert(get_element_data(test_constant[j]) == i)
+                assert(get_element_data(test_constant[j]) != i + 1)
 
-        for j in range(i):
-            assert(get_element_data(test_constant[j]) == i)
-            assert(get_element_data(test_constant[j]) != i + 1)
+            test_constant = model.constant("test_constant_setup_individual" + index)
+            setup_vector(test_constant, i, elements1, n)
 
-        test_constant = model.constant("test_constant_setup_individual")
-        test_constant.setup_vector(i, elements1)
+            for j in range(i):
+                assert(get_element_data(test_constant[j]) == elements1[j])
+                assert(get_element_data(test_constant[j]) != elements1[j] + 1)
 
-        for j in range(i):
-            assert(get_element_data(test_constant[j]) == elements1[j])
-            assert(get_element_data(test_constant[j]) != elements1[j] + 1)
+            # Element-wise tests
 
-        # Element-wise tests
+            test_constant_val = model.constant("test_constant_val" + index)
+            test_constant_val.equation = get_random(0)
 
-        test_constant_val = model.constant("test_constant_val")
-        test_constant_val.equation = get_random(0)
+            test_constant1 = model.constant("test_constant_element_wise1" + index)
+            setup_vector(test_constant1, i, elements1, n)
 
-        test_constant1 = model.constant("test_constant_element_wise1")
-        test_constant1.setup_vector(i, elements1)
+            test_constant2 = model.constant("test_constant_element_wise2" + index)
+            setup_vector(test_constant2, i, elements2, n)
 
-        test_constant2 = model.constant("test_constant_element_wise2")
-        test_constant2.setup_vector(i, elements2)
+            # Add
+            test_constant3 = model.converter("test_constant_element_wise_add" + index)
+            test_constant3.equation = test_constant1 + test_constant2
 
-        # Add
-        test_constant3 = model.converter("test_constant_element_wise_add")
-        test_constant3.equation = test_constant1 + test_constant2
+            for j in range(i):
+                assert(get_element_data(
+                    test_constant3[j]) == elements1[j] + elements2[j])
+                assert(get_element_data(
+                    test_constant3[j]) != elements1[j] + elements2[j] + 1)
 
-        for j in range(i):
-            assert(get_element_data(
-                test_constant3[j]) == elements1[j] + elements2[j])
-            assert(get_element_data(
-                test_constant3[j]) != elements1[j] + elements2[j] + 1)
+            # Subtract
+            test_constant3 = model.converter("test_constant_element_wise_sub" + index)
+            test_constant3.equation = test_constant1 - test_constant2
 
-        # Subtract
-        test_constant3 = model.converter("test_constant_element_wise_sub")
-        test_constant3.equation = test_constant1 - test_constant2
+            for j in range(i):
+                assert(get_element_data(
+                    test_constant3[j]) == elements1[j] - elements2[j])
+                assert(get_element_data(
+                    test_constant3[j]) != elements1[j] - elements2[j] + 1)
 
-        for j in range(i):
-            assert(get_element_data(
-                test_constant3[j]) == elements1[j] - elements2[j])
-            assert(get_element_data(
-                test_constant3[j]) != elements1[j] - elements2[j] + 1)
+            # Multiply
+            test_constant3 = model.converter("test_constant_element_wise_mul" + index)
+            test_constant3.equation = test_constant1 * test_constant2
 
-        # Multiply
-        test_constant3 = model.converter("test_constant_element_wise_mul")
-        test_constant3.equation = test_constant1 * test_constant2
+            for j in range(i):
+                assert(get_element_data(
+                    test_constant3[j]) == elements1[j] * elements2[j])
+                assert(get_element_data(
+                    test_constant3[j]) != elements1[j] * elements2[j] + 1)
 
-        for j in range(i):
-            assert(get_element_data(
-                test_constant3[j]) == elements1[j] * elements2[j])
-            assert(get_element_data(
-                test_constant3[j]) != elements1[j] * elements2[j] + 1)
+            # Divide
+            test_constant3 = model.converter("test_constant_element_wise_div" + index)
+            test_constant3.equation = test_constant1 / test_constant2
 
-        # Divide
-        test_constant3 = model.converter("test_constant_element_wise_div")
-        test_constant3.equation = test_constant1 / test_constant2
-
-        for j in range(i):
-            assert(get_element_data(
-                test_constant3[j]) == elements1[j] / elements2[j])
-            assert(get_element_data(
-                test_constant3[j]) != elements1[j] / elements2[j] + 1)
-
-        # Dot tests
-        test_constant3 = model.converter("test_constant_dot")
-        test_constant3.equation = test_constant1.dot(test_constant2)
-
-        assert(get_element_data(test_constant3)
-               == np.dot(elements1, elements2))
-        assert(get_element_data(test_constant3) !=
-               np.dot(elements1, elements2) + 1)
-
-        test_constant3 = model.converter("test_constant_dot_val_vec")
-        test_constant3.equation = test_constant_val.dot(test_constant2)
-
-        np_res = np.dot(test_constant_val, elements2)
-
-        for j in range(i):
-            assert(get_element_data(test_constant3[j]) == np_res[j])
-            assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
-
-        test_constant3 = model.converter("test_constant_dot_vec_val")
-        test_constant3.equation = test_constant2.dot(test_constant_val)
-
-        np_res = np.dot(elements2, test_constant_val)
-
-        for j in range(i):
-            assert(get_element_data(test_constant3[j]) == np_res[j])
-            assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
-
-        # Functions
-        test_constant3 = model.converter("test_constant_sum")
-        test_constant3.equation = test_constant1.arr_sum()
-
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.sum(elements1)))
-        assert(get_element_data(test_constant3) != np.sum(elements1) + 1)
-
-        test_constant3 = model.converter("test_constant_mean")
-        test_constant3.equation = test_constant1.arr_mean()
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.mean(elements1)))
-        assert(get_element_data(test_constant3) != np.mean(elements1) + 1)
-
-        test_constant3 = model.converter("test_constant_median")
-        test_constant3.equation = test_constant1.arr_median()
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.median(elements1)))
-        assert(get_element_data(test_constant3) != np.median(elements1) + 1)
-
-        test_constant3 = model.converter("test_constant_prod")
-        test_constant3.equation = test_constant1.arr_prod()
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.prod(elements1)))
-        assert(get_element_data(test_constant3) != np.prod(elements1) * 2)
-
-        test_constant3 = model.converter("test_constant_stddev")
-        test_constant3.equation = test_constant1.arr_stddev()
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.std(elements1)))
-        assert(get_element_data(test_constant3) != np.std(elements1) + 1)
-
-        test_constant3 = model.converter("test_constant_size")
-        test_constant3.equation = test_constant1.arr_size()
-        assert(get_element_data(test_constant3) ==
-               pytest.approx(np.size(elements1)))
-        assert(get_element_data(test_constant3) != np.size(elements1) + 1)
-
-        for j in range(i + 1):
-            test_constant3 = model.converter("test_constant_rank")
-
-            temp_arr = np.sort(elements1)
-            temp_val = temp_arr[-j]
-
-            test_constant3.equation = test_constant1.arr_rank(j)
-            assert(get_element_data(test_constant3) == pytest.approx(temp_val))
-            assert(get_element_data(test_constant3) != temp_val + 1)
-
-        # Exception testing
-        for j in range(i + 1):
-            test_constant4 = model.constant("test_constant4")
-            test_constant4.setup_vector(j, 2.0)
+            for j in range(i):
+                assert(get_element_data(
+                    test_constant3[j]) == elements1[j] / elements2[j])
+                assert(get_element_data(
+                    test_constant3[j]) != elements1[j] / elements2[j] + 1)
 
             try:
-                test_constant3 = model.converter("test_constant_exc")
-                test_constant3.equation = test_constant4.dot(test_constant2)
-                assert(j == i)
-            except:
-                assert(j != i)
+                # Dot tests
+                test_constant3 = model.converter("test_constant_dot" + index)
+                test_constant3.equation = test_constant1.dot(test_constant2)
 
-            try:
-                test_constant3 = model.converter("test_constant_exc")
-                test_constant3.setup_vector(j, elements1)
-                assert(j == i)
-            except:
-                assert(j != i)
+                assert(get_element_data(test_constant3)
+                    == np.dot(elements1, elements2))
+                assert(get_element_data(test_constant3) !=
+                    np.dot(elements1, elements2) + 1)
 
-        elements1.append(get_random(0))
-        elements2.append(get_random(0))
+                test_constant3 = model.converter("test_constant_dot_val_vec" + index)
+                test_constant3.equation = test_constant_val.dot(test_constant2)
+
+                np_res = np.dot(test_constant_val, elements2)
+
+                for j in range(i):
+                    assert(get_element_data(test_constant3[j]) == np_res[j])
+                    assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
+
+                test_constant3 = model.converter("test_constant_dot_vec_val" + index)
+                test_constant3.equation = test_constant2.dot(test_constant_val)
+
+                np_res = np.dot(elements2, test_constant_val)
+
+                for j in range(i):
+                    assert(get_element_data(test_constant3[j]) == np_res[j])
+                    assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
+            except:
+                assert(n == 1)
+
+            # Functions
+            test_constant3 = model.converter("test_constant_sum" + index)
+            test_constant3.equation = test_constant1.arr_sum()
+
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.sum(elements1)))
+            assert(get_element_data(test_constant3) != np.sum(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_mean" + index)
+            test_constant3.equation = test_constant1.arr_mean()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.mean(elements1)))
+            assert(get_element_data(test_constant3) != np.mean(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_median" + index)
+            test_constant3.equation = test_constant1.arr_median()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.median(elements1)))
+            assert(get_element_data(test_constant3) != np.median(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_prod" + index)
+            test_constant3.equation = test_constant1.arr_prod()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.prod(elements1)))
+            assert(get_element_data(test_constant3) != np.prod(elements1) * 2)
+
+            test_constant3 = model.converter("test_constant_stddev" + index)
+            test_constant3.equation = test_constant1.arr_stddev()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.std(elements1)))
+            assert(get_element_data(test_constant3) != np.std(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_size" + index)
+            test_constant3.equation = test_constant1.arr_size()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.size(elements1)))
+            assert(get_element_data(test_constant3) != np.size(elements1) + 1)
+
+            for j in range(i + 1):
+                test_constant3 = model.converter("test_constant_rank" + index)
+
+                temp_arr = np.sort(elements1)
+                temp_val = temp_arr[-j]
+
+                test_constant3.equation = test_constant1.arr_rank(j)
+                assert(get_element_data(test_constant3) == pytest.approx(temp_val))
+                assert(get_element_data(test_constant3) != temp_val + 1)
+
+            # Exception testing
+            for j in range(i + 1):
+                test_constant4 = model.constant("test_constant4" + index)
+                setup_vector(test_constant4, j, 2.0, n)
+
+                try:
+                    test_constant3 = model.converter("test_constant_exc" + index)
+                    test_constant3.equation = test_constant4.dot(test_constant2)
+                    assert(j == i)
+                except:
+                    assert(j != i or n == 1)
+
+                try:
+                    test_constant3 = model.converter("test_constant_exc" + index)
+                    setup_vector(test_constant3, j, elements1, n)
+                    assert(j == i)
+                except:
+                    assert(j != i)
+
+            elements1.append(get_random(0))
+            elements2.append(get_random(0))
 
 
 def test_matrix():
@@ -1371,231 +1423,250 @@ def test_matrix():
     import numpy as np
 
     bptk = bptk()
-
+    element_count = 0
     def get_element(num, model, name):
         if num == 0:
-            return model.converter(name)
+            return model.converter(name + "_" + str(element_count))
         if num == 1:
-            return model.stock(name)
+            return model.stock(name + "_" + str(element_count))
         if num == 2:
-            return model.flow(name)
+            return model.flow(name + "_" + str(element_count))
         if num == 3:
-            return model.constant(name)
+            return model.constant(name + "_" + str(element_count))
 
     # Vector tests (flows, stock, converters)
-    for t in range(3):
-        elements1 = []
-        elements2 = []
-        for i in range(1, 10):
-            for k in range(1, 10):
-                elements1 = []
-                elements2 = []
-                for temp1 in range(i):
-                    elements1.append([])
-                    elements2.append([])
-                    for temp2 in range(k):
-                        elements1[temp1].append(get_random(t))
-                        elements2[temp1].append(get_random(t))
+    for n in range(2):
+        for t in range(3):
+            elements1 = []
+            elements2 = []
+            for i in range(1, 10):
+                for k in range(1, 10):
+                    elements1 = []
+                    elements2 = []
+                    for temp1 in range(i):
+                        elements1.append([])
+                        elements2.append([])
+                        for temp2 in range(k):
+                            elements1[temp1].append(get_random(t))
+                            elements2[temp1].append(get_random(t))
+                    index = str(i) + "_" + str(k) + "_" + str(t) + "_" + str(n)
+                    model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
+                                name='setup_func_mat_' + str(i) + "_" + str(k))
+                    # Setup tests
+                    test_element = get_element(
+                        t, model, "test_element_setup_default")
+                    setup_matrix(test_element, [i, k], float(i), n)
 
-                model = Model(starttime=0.0, stoptime=2.0, dt=1.0,
-                              name='setup_func_mat_' + str(i) + "_" + str(k))
-                # Setup tests
-                test_element = get_element(
-                    t, model, "test_element_setup_default")
-                test_element.setup_matrix([i, k], float(i))
+                    transposed = []
+                    for j in range(k):
+                        cur = []
+                        for x in range(i):
+                            cur.append(elements2[x][j])
+                        transposed.append(cur)
 
-                transposed = []
-                for j in range(k):
-                    cur = []
-                    for x in range(i):
-                        cur.append(elements2[x][j])
-                    transposed.append(cur)
+                    test_element_2_transposed = model.converter(
+                        "test_element_2_transposed" + index)
+                    setup_matrix(test_element_2_transposed, [k, i], transposed, n)
 
-                test_element_2_transposed = model.converter(
-                    "test_element_2_transposed")
-                test_element_2_transposed.setup_matrix([k, i], transposed)
+                    assert(test_element._elements.matrix_size() == [i, k])
+                    assert(test_element._elements.vector_size() == i)
 
-                assert(test_element._elements.matrix_size() == [i, k])
-                assert(test_element._elements.vector_size() == i)
+                    for j in range(i):
+                        for x in range(k):
+                            assert(get_element_data(test_element[j][x]) == i)
+                            assert(get_element_data(test_element[j][x]) != i + 1)
 
-                for j in range(i):
-                    for x in range(k):
-                        assert(get_element_data(test_element[j][x]) == i)
-                        assert(get_element_data(test_element[j][x]) != i + 1)
+                    test_element = get_element(
+                        t, model, "test_element_setup_individual")
+                    setup_matrix(test_element, [i, k], elements1, n)
 
-                test_element = get_element(
-                    t, model, "test_element_setup_individual")
-                test_element.setup_matrix([i, k], elements1)
-
-                for j in range(i):
-                    for x in range(k):
-                        assert(get_element_data(
-                            test_element[j][x]) == elements1[j][x])
-                        assert(get_element_data(
-                            test_element[j][x]) != elements1[j][x] + 1)
-
-                # Element-wise tests
-                test_element_val = model.converter("test_element_val")
-                test_element_val.equation = get_random(t)
-
-                test_element1 = model.converter("test_element_element_wise1")
-                test_element1.setup_matrix([i, k], elements1)
-
-                test_element2 = model.converter("test_element_element_wise2")
-                test_element2.setup_matrix([i, k], elements2)
-
-                # Add
-                test_element3 = get_element(
-                    t, model, "test_element_element_wise_add")
-                test_element3.equation = test_element1 + test_element2
-
-                for j in range(i):
-                    for x in range(k):
-                        assert(get_element_data(
-                            test_element3[j][x]) == elements1[j][x] + elements2[j][x])
-                        assert(get_element_data(
-                            test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
-
-                # Subtract
-                test_element3 = get_element(
-                    t, model, "test_element_element_wise_sub")
-                test_element3.equation = test_element1 - test_element2
-
-                for j in range(i):
-                    for x in range(k):
-                        if t == 2:  # Flows
-                            assert(get_element_data(test_element3[j][x]) == max(
-                                elements1[j][x] - elements2[j][x], 0.0))
-                            assert(get_element_data(test_element3[j][x]) != max(
-                                elements1[j][x] - elements2[j][x] + 1, 1.0))
-                        else:
+                    for j in range(i):
+                        for x in range(k):
                             assert(get_element_data(
-                                test_element3[j][x]) == elements1[j][x] - elements2[j][x])
+                                test_element[j][x]) == elements1[j][x])
                             assert(get_element_data(
-                                test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
+                                test_element[j][x]) != elements1[j][x] + 1)
 
-                # Multiply
-                test_element3 = get_element(
-                    t, model, "test_element_element_wise_mul")
-                test_element3.equation = test_element1 * test_element2
+                    # Element-wise tests
+                    test_element_val = model.converter("test_element_val" + index)
+                    test_element_val.equation = get_random(t)
 
-                for j in range(i):
-                    for x in range(k):
-                        assert(get_element_data(
-                            test_element3[j][x]) == elements1[j][x] * elements2[j][x])
-                        assert(get_element_data(
-                            test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
+                    test_element1 = model.converter("test_element_element_wise1" + index)
+                    setup_matrix(test_element1, [i, k], elements1, n)
 
-                # Divide
-                test_element3 = get_element(
-                    t, model, "test_element_element_wise_div")
-                test_element3.equation = test_element1 / test_element2
-                for j in range(i):
-                    for x in range(k):
-                        if(elements2[j][x] == 0):
+                    test_element2 = model.converter("test_element_element_wise2" + index)
+                    setup_matrix(test_element2, [i, k], elements2, n)
+
+                    # Add
+                    test_element3 = get_element(
+                        t, model, "test_element_element_wise_add")
+                    test_element3.equation = test_element1 + test_element2
+
+                    for j in range(i):
+                        for x in range(k):
                             assert(get_element_data(
-                                test_element3[j][x]) == 0)
-                        else:
+                                test_element3[j][x]) == elements1[j][x] + elements2[j][x])
                             assert(get_element_data(
-                                test_element3[j][x]) == elements1[j][x] / elements2[j][x])
+                                test_element3[j][x]) != elements1[j][x] + elements2[j][x] + 1)
+
+                    # Subtract
+                    test_element3 = get_element(
+                        t, model, "test_element_element_wise_sub")
+                    test_element3.equation = test_element1 - test_element2
+
+                    for j in range(i):
+                        for x in range(k):
+                            if t == 2:  # Flows
+                                assert(get_element_data(test_element3[j][x]) == max(
+                                    elements1[j][x] - elements2[j][x], 0.0))
+                                assert(get_element_data(test_element3[j][x]) != max(
+                                    elements1[j][x] - elements2[j][x] + 1, 1.0))
+                            else:
+                                assert(get_element_data(
+                                    test_element3[j][x]) == elements1[j][x] - elements2[j][x])
+                                assert(get_element_data(
+                                    test_element3[j][x]) != elements1[j][x] - elements2[j][x] + 1)
+
+                    # Multiply
+                    test_element3 = get_element(
+                        t, model, "test_element_element_wise_mul")
+                    test_element3.equation = test_element1 * test_element2
+
+                    for j in range(i):
+                        for x in range(k):
                             assert(get_element_data(
-                                test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
+                                test_element3[j][x]) == elements1[j][x] * elements2[j][x])
+                            assert(get_element_data(
+                                test_element3[j][x]) != elements1[j][x] * elements2[j][x] + 1)
 
-                # Dot tests
-                test_element3 = get_element(t, model, "test_element_dot")
-                test_element3.equation = test_element1.dot(
-                    test_element_2_transposed)
+                    # Divide
+                    test_element3 = get_element(
+                        t, model, "test_element_element_wise_div")
+                    test_element3.equation = test_element1 / test_element2
+                    for j in range(i):
+                        for x in range(k):
+                            if(elements2[j][x] == 0):
+                                assert(get_element_data(
+                                    test_element3[j][x]) == 0)
+                            else:
+                                assert(get_element_data(
+                                    test_element3[j][x]) == elements1[j][x] / elements2[j][x])
+                                assert(get_element_data(
+                                    test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
+                    try:
+                        # Dot tests
+                        test_element3 = get_element(t, model, "test_element_dot")
+                        test_element3.equation = test_element1.dot(
+                            test_element_2_transposed)
 
-                temp = np.dot(elements1, transposed)
+                        temp = np.dot(elements1, transposed)
 
-                for j in range(i):
-                    for x in range(i):
-                        assert(get_element_data(
-                            test_element3[j][x]) == pytest.approx(temp[j][x]))
-                        assert(get_element_data(
-                            test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
+                        for j in range(i):
+                            for x in range(i):
+                                assert(get_element_data(
+                                    test_element3[j][x]) == pytest.approx(temp[j][x]))
+                                assert(get_element_data(
+                                    test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
 
-                # Functions
-                test_element3 = get_element(t, model, "test_element_sum")
-                test_element3.equation = test_element1.arr_sum()
+                    except:
+                        assert(n == 1)
+                    # Functions
+                    test_element3 = get_element(t, model, "test_element_sum")
+                    test_element3.equation = test_element1.arr_sum()
 
-                assert(get_element_data(test_element3) ==
-                       pytest.approx(np.sum(elements1)))
-                assert(get_element_data(test_element3)
-                       != np.sum(elements1) + 1)
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.sum(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.sum(elements1) + 1)
 
-                test_element3 = get_element(t, model, "test_element_mean")
-                test_element3.equation = test_element1.arr_mean()
-                assert(get_element_data(test_element3) ==
-                       pytest.approx(np.mean(elements1)))
-                assert(get_element_data(test_element3)
-                       != np.mean(elements1) + 1)
+                    test_element3 = get_element(t, model, "test_element_mean")
+                    test_element3.equation = test_element1.arr_mean()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.mean(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.mean(elements1) + 1)
 
-                test_element3 = get_element(t, model, "test_element_median")
-                test_element3.equation = test_element1.arr_median()
-                assert(get_element_data(test_element3) ==
-                       pytest.approx(np.median(elements1)))
-                assert(get_element_data(test_element3)
-                       != np.median(elements1) + 1)
+                    test_element3 = get_element(t, model, "test_element_median")
+                    test_element3.equation = test_element1.arr_median()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.median(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.median(elements1) + 1)
 
-                test_element3 = get_element(t, model, "test_element_prod")
-                test_element3.equation = test_element1.arr_prod()
-                assert(get_element_data(test_element3) ==
-                       pytest.approx(np.prod(elements1)))
-                assert(get_element_data(test_element3)
-                       != np.prod(elements1) * 200 + 1)
+                    test_element3 = get_element(t, model, "test_element_prod")
+                    test_element3.equation = test_element1.arr_prod()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.prod(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.prod(elements1) * 200 + 1)
 
-                test_element3 = get_element(t, model, "test_element_stddev")
-                test_element3.equation = test_element1.arr_stddev()
-                assert(get_element_data(test_element3) ==
-                       pytest.approx(np.std(elements1)))
-                assert(get_element_data(test_element3)
-                       != np.std(elements1) + 1)
+                    test_element3 = get_element(t, model, "test_element_stddev")
+                    test_element3.equation = test_element1.arr_stddev()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.std(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.std(elements1) + 1)
 
-                test_element3 = get_element(t, model, "test_element_size")
-                test_element3.equation = test_element1.arr_size()
-                assert(get_element_data(test_element3) == i)
-                assert(get_element_data(test_element3)
-                       != i + 1)
+                    test_element3 = get_element(t, model, "test_element_size")
+                    test_element3.equation = test_element1.arr_size()
+                    assert(get_element_data(test_element3) == i)
+                    assert(get_element_data(test_element3)
+                        != i + 1)
 
-                temp = []
-                for j in range(i):
-                    for x in range(k):
-                        temp.append(elements1[j][x])
+                    temp = []
+                    for j in range(i):
+                        for x in range(k):
+                            temp.append(elements1[j][x])
 
-                temp.sort(reverse=True)
+                    temp.sort(reverse=True)
 
-                # for j in range(i * k):
-                #     test_element3 = get_element(
-                #         t, model, "test_element_rank_" + str(j))
+                    # for j in range(i * k):
+                    #     test_element3 = get_element(
+                    #         t, model, "test_element_rank_" + str(j))
 
-                temp_val = temp[j]
+                    temp_val = temp[j]
 
-                test_element3.equation = test_element1.arr_rank(j + 1)
+                    test_element3.equation = test_element1.arr_rank(j + 1)
 
-                assert(get_element_data(test_element3)
-                       == pytest.approx(temp_val))
-                assert(get_element_data(test_element3) != temp_val + 1)
+                    assert(get_element_data(test_element3)
+                        == pytest.approx(temp_val))
+                    assert(get_element_data(test_element3) != temp_val + 1)
 
-                # Exception testing
-                for j in range(1, i + 1):
-                    for x in range(1, k + 1):
-                        test_element4 = get_element(
-                            t, model, "test_element4_exc_" + str(j) + "_" + str(x))
-                        test_element4.setup_matrix([j, x], 2.0)
-                        try:
-                            test_element3 = get_element(
-                                t, model, "test_element_exc")
-                            test_element3.equation = test_element4.dot(
-                                test_element2)
-                            assert(x == i)
-                        except:
-                            assert(x != i)
+                    # Exception testing
+                    for j in range(1, i + 1):
+                        for x in range(1, k + 1):
+                            test_element4 = get_element(
+                                t, model, "test_element4_exc_" + str(j) + "_" + str(x))
+                            setup_matrix(test_element4, [j, x], 2.0, n)
+                            try:
+                                test_element3 = get_element(
+                                    t, model, "test_element3_exc_" + str(j) + "_" + str(x))
+                                test_element3.equation = test_element4.dot(
+                                    test_element2)
+                                assert(x == i)
+                            except:
+                                assert(x != i or n == 1)
 
-                        try:
-                            test_element3 = get_element(
-                                t, model, "test_element_exc")
-                            test_element3.setup_matrix([j, x], elements1)
-                            assert(j == i and x == k)
-                        except:
-                            assert(not (j == i and x == k))
+                            try:
+                                test_element3 = get_element(
+                                    t, model, "test_element_exc_" + str(j) + "_" + str(x))
+                                setup_matrix(test_element3, [j, x], elements1, n)
+                                assert(j == i and x == k)
+                            except:
+                                assert(not (j == i and x == k))
+
+
+
+
+
+
+# def test_vector_stock_flow():
+#     from BPTK_Py import Model
+#     from BPTK_Py import sd_functions as sd
+#     from BPTK_Py.bptk import bptk
+#     import pytest
+#     import numpy as np
+
+#     bptk = bptk()
+
+

@@ -33,7 +33,7 @@ class Element:
 
     Parameters:
         Model: Model.
-            The model the element belongs to. 
+            The model the element belongs to.
         Name: String.
             The name of the model.
         Function_string: String (Default=None)
@@ -54,6 +54,7 @@ class Element:
         self._equation = None
         self._elements = ArrayedEquation(self)
         self.arrayed = False
+        self.named_arrayed = False
         self.generate_function()
 
     @classmethod
@@ -105,22 +106,65 @@ class Element:
             Handles arrayed equations. Returns true if the equation is arrayed.
         """
         arrayed_equation = False
-        if isinstance(equation, Operator):
+        # TODO add tests and exceptions for this (all if statements)
+        handled_by_stock = False
+        if(self.type == "Stock") and self.arrayed:
+            if isinstance(equation, Element) and equation.arrayed:
+                handled_by_stock = True
+                if self._elements.vector_size() != equation._elements.vector_size():
+                    raise Exception(
+                        "Stock {} and {} have different vector sizes".format(self.name, equation.name))
+                else:
+                    if(equation.named_arrayed):
+                        for i in self._elements.equations:
+                            self._elements[i].equation = equation._elements[i]
+                    else:
+                        for i in range(self._elements.vector_size()):
+                            self._elements[i].equation = equation._elements[i]
+            elif isinstance(equation, Operator) and equation.is_any_subelement_arrayed() and equation.index == None:
+                handled_by_stock = True
+                dims = equation.resolve_dimensions()
+                if(dims != -1):  # It is an arrayed equation
+                    arrayed_equation = True
+                    if len(dims) < 2 or dims[1] == 0:
+                        # Copy equations with relevant indices
+                        if(equation.is_named()):
+                            for i in range(dims[0]):
+                                name = equation.index_to_string(i)
+                                self[name].equation = equation.clone_with_index([name])
+                        else:
+                            for i in range(dims[0]):
+                                self[i].equation = equation.clone_with_index([i])
+                    else:
+                        for i in range(dims[0]):
+                            for j in range(dims[1]):
+                                self[i][j].equation = equation.clone_with_index([i, j])
+        if isinstance(equation, Operator) and not handled_by_stock:
             if equation.is_any_subelement_arrayed() and equation.index == None:
                 # Resolve equations
                 dims = equation.resolve_dimensions()
                 if(dims != -1):  # It is an arrayed equation
                     arrayed_equation = True
                     if len(dims) < 2 or dims[1] == 0:
-                        self.setup_vector(dims[0])
                         # Copy equations with relevant indices
-                        for i in range(dims[0]):
-                            self[i] = equation.clone_with_index([i])
+                        if(equation.is_named()):
+                            names = {}
+                            for i in range(dims[0]):
+                                name = equation.index_to_string(i)
+                                names[name] = equation.clone_with_index([name])
+
+                            self.setup_named_vector(names)
+                        else:
+                            self.setup_vector(dims[0])
+                            for i in range(dims[0]):
+                                self[i] = equation.clone_with_index([i])
+
                     else:
                         self.setup_matrix(dims)
                         for i in range(dims[0]):
                             for j in range(dims[1]):
                                 self[i][j] = equation.clone_with_index([i, j])
+
         return arrayed_equation
 
     @equation.setter
@@ -144,7 +188,7 @@ class Element:
 
     @property
     def function_string(self):
-        """Returns a string representation of the underlying function.    
+        """Returns a string representation of the underlying function.
         """
         return self._function_string
 
@@ -158,7 +202,7 @@ class Element:
         Parameters:
             starttime: Integer (Default None).
                 The timestep where to begin the plot. If set to None the plot starts at the Models starttime.
-            stoptime: Integer (Default None) 
+            stoptime: Integer (Default None)
                 The timestep when to end the plot.
             dt:  Fraction of 1 (Default None)
                 The timestep to plot. If set to None, then the plot uses the Models dt.
@@ -177,9 +221,18 @@ class Element:
             dict = {}
             for(i, element_name) in enumerate(self._elements.equations):
                 element = self._elements[element_name]
-                dict[element_name] = element.plot(
-                    starttime, stoptime, dt, return_df=True)
-            df = pd.DataFrame({self.name: dict})
+
+                # dict[element_name] = element.plot(
+                #     starttime, stoptime, dt, return_df=True)
+
+                try:
+                    dict[element_name] = {t: element.model.memoize(
+                        element.name, t) for t in np.arange(starttime, stoptime+dt, dt)}
+                except:
+                    dict[element_name] = {t: element.model.memoize(element.name, t) for t in np.arange(
+                        element.model.starttime, element.model.stoptime+dt, dt)}
+
+            df = pd.DataFrame(dict)
         else:
             try:
                 df = pd.DataFrame({self.name: {t: self.model.memoize(
@@ -310,7 +363,7 @@ class Element:
         "Power Operator"
         return PowerOperator(self, power)
 
-    @classmethod
+    @ classmethod
     def update_plot_formats(self, ax):
         # TODO: check if we couldn't just remove this ... the visualizer could be used directly in the calling method.
         from BPTK_Py.visualizations import visualizer
@@ -327,6 +380,10 @@ class Element:
         self.arrayed = True
         if isinstance(default_value, (float, int)):
             for i in range(size):
+                # if(self.type == "Stock"):
+                #     self[i] = None
+                #     self[i].initial_value = default_value
+                # else:
                 self[i] = default_value
         else:
             if len(default_value) != size:
@@ -334,7 +391,11 @@ class Element:
                     size, len(default_value)))
             self._equation = None
             for i in range(size):
-                self[i] = default_value[i]
+                if(self.type == "Stock"):
+                    self[i] = None
+                    self[i].initial_value = default_value[i]
+                else:
+                    self[i] = default_value[i]
 
     def setup_named_vector(self, values):
         """
@@ -344,7 +405,12 @@ class Element:
             values: dict(str, int | float) - Names of vectors
         """
         self.arrayed = True
+        self.named_arrayed = True
         for name in values:
+            # if(self.type == "Stock"):
+            #     self[name] = None
+            #     self[name].initial_value = values[name]
+            # else:
             self[name] = values[name]
 
     def setup_matrix(self, size, default_value=0.0):
@@ -382,22 +448,15 @@ class Element:
             default_value: float | List[float] - The default value or values of the vector
         """
         # Check if names is a correct dict
-        size = [len(names), 0]
         if not isinstance(names, dict):
             raise Exception(
                 "Expected a dict to be passed to setup_named_matrix. Received {}!".format(names))
-        for key in names:
-            if not innerSize == 0 and not innerSize == len(names[key]):
-                raise Exception(
-                    "Expected all lists in names to have the same size. Received sizes {} and {}!".format(len(names[key]), innerSize))
-            innerSize = len(names[key])
-            if not isinstance(names[key], list):
-                raise Exception(
-                    "Expected a list to be passed to setup_named_matrix. Received {}!".format(names[key]))
 
         self.arrayed = True
+        self.named_arrayed = True
         self._equation = None
         for i, name in enumerate(names):
+            self[name] = None
             self[name].setup_named_vector(names[name])
 
 

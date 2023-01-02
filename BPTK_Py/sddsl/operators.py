@@ -19,11 +19,11 @@ class ArrayedEquation:
 
     def __getitem__(self, key):
         if not str(key) in self.equations:
-            if isinstance(key, int):
-                return self._element.get_arr_equation(self.equations[key])
-            else:
-                raise Exception("Arrayed equation " +
-                                str(key) + " does not exist!")
+            # if isinstance(key, int):
+            #     return self._element.get_arr_equation(self.equations[key])
+            # else:
+            raise Exception("Arrayed equation " +
+                            str(key) + " does not exist!")
         return self._element.get_arr_equation(str(key))
 
     def __setitem__(self, key, value):
@@ -98,6 +98,22 @@ class Operator:
             This function is used to create the necessary sub-elements and to follow dot product rules in the dot operator.
         """
         return -1
+
+    def is_named(self) -> bool:
+        """
+            This function returns true if the arrayed equation is named.
+        """
+        return False
+
+    def index_to_string(self, index):
+        """
+            This function returns the name of the index of an operator. This will be equal to the index in not named vectors and matrices.
+            In named vectors and matrices this index becomes the name of the element. Examples:
+
+            Element with subelements [1,2,3,4] with index 2 will return "2"
+            Element with subelements [One,Two,Three,Four] with index 2 will return "Three"
+        """
+        raise Exception("Index to string not implemented for this operator!")
 
     def __str__(self):
         """
@@ -395,10 +411,26 @@ class ArrayStandardDeviationOperator(Operator):
 
 
 class BinaryOperator(Operator):
-    def __init__(self, element_1, element_2, index=None):
-        arrayed = (isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size()) > 0 or (
-            isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0)
-        super().__init__(arrayed)
+    def __init__(self, element_1, element_2, index=None, allow_different_sized_arrays=False):
+        arrayed1 = isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size() > 0
+        arrayed2 = isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0
+        super().__init__(arrayed1 or arrayed2)
+
+        
+        if arrayed1 and arrayed2 and not allow_different_sized_arrays:
+            if(element_1._elements.vector_size() != element_2._elements.vector_size()):
+                raise Exception("Cannot perform binary operation on arrays with different sizes.")
+            if(element_1.named_arrayed != element_2.named_arrayed):
+                    raise Exception("Cannot perform binary operation on arrays with different indices.")
+            for e in element_1._elements.equations:
+                found = False
+                for e2 in element_2._elements.equations:
+                    if(e == e2):
+                        found = True
+                        break
+                if(not found):
+                    raise Exception("Cannot perform binary operation on arrays with different indices.")
+
         self.element_1 = UnaryOperator(element_1) if issubclass(
             type(element_1), (int, float)) else element_1
         self.element_2 = UnaryOperator(element_2) if issubclass(
@@ -540,6 +572,13 @@ class AdditionOperator(BinaryOperator):
             return dim1
         return dim2
 
+    def index_to_string(self, index):
+        if self.element_1.named_arrayed:
+            return self.element_1._elements.equations[index]
+
+    def is_named(self):
+        return self.element_1.named_arrayed
+
     def clone_with_index(self, index):
         element_1 = self.element_1 if isinstance(
             self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
@@ -549,6 +588,7 @@ class AdditionOperator(BinaryOperator):
 
 
 class SubtractionOperator(BinaryOperator):
+    #TODO implement for named arrays - float and float - named arrays 
     def term(self, time="t"):
         if self.arrayed:
             if self.index == None:  # Can not resolve arrayed equations without index
@@ -599,6 +639,13 @@ class SubtractionOperator(BinaryOperator):
         element_2 = self.element_2 if isinstance(
             self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
         return SubtractionOperator(element_1, element_2, index)
+
+    def index_to_string(self, index):
+        if self.element_1.named_arrayed:
+            return self.element_1._elements.equations[index]
+
+    def is_named(self):
+        return self.element_1.named_arrayed
 
 
 class DivisionOperator(BinaryOperator):
@@ -653,6 +700,12 @@ class DivisionOperator(BinaryOperator):
             self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
         return DivisionOperator(element_1, element_2, index)
 
+    def index_to_string(self, index):
+        if self.element_1.named_arrayed:
+            return self.element_1._elements.equations[index]
+
+    def is_named(self):
+        return self.element_1.named_arrayed
 
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
@@ -660,10 +713,10 @@ class NumericalMultiplicationOperator(BinaryOperator):
             if self.index == None:  # Can not resolve arrayed equations without index
                 return "0.0"
 
-            el1_arrayed = isinstance(
+            self.el1_arrayed = isinstance(
                 self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
 
-            if(el1_arrayed):
+            if(self.el1_arrayed):
                 cur_el1 = self.element_1
                 for i in self.index:
                     cur_el1 = cur_el1[i]
@@ -694,6 +747,17 @@ class NumericalMultiplicationOperator(BinaryOperator):
             self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
         return NumericalMultiplicationOperator(element_1, element_2, index)
 
+    def index_to_string(self, index):
+        if self.el1_arrayed:
+            return self.element_1._elements.equations[index]
+        else:
+            return self.element_2._elements.equations[index]
+
+    def is_named(self):
+        if self.el1_arrayed:
+            return self.element_1.named_arrayed
+        else:
+            return self.element_2.named_arrayed
 
 class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
@@ -727,6 +791,16 @@ class MultiplicationOperator(BinaryOperator):
         else:
             return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
 
+
+    def index_to_string(self, index):
+        if self.element_1.named_arrayed:
+            return self.element_1._elements.equations[index]
+        elif self.element_2.named_arrayed:
+            return self.element_2._elements.equations[index]
+
+    def is_named(self):
+        return self.element_1.named_arrayed
+
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
         dim2 = _get_element_dimensions(self.element_2)
@@ -754,10 +828,14 @@ class DotOperator(BinaryOperator):
     """
 
     def __init__(self, element_1, element_2, index=None):
-        super().__init__(element_1, element_2, index)
-        if not self.arrayed:
-            raise Exception(
-                "Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
+        super().__init__(element_1, element_2, index, True)
+        arrayed1 = isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size() > 0
+        arrayed2 = isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0
+        if arrayed1 and element_1.named_arrayed:
+            raise Exception("The Dot operator is currently not supported for named arrayed elements!.")
+        if arrayed2 and element_2.named_arrayed:
+            raise Exception("The Dot operator is currently not supported for named arrayed elements!.")
+
 
     def term(self, time="t"):
         """
