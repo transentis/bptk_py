@@ -178,6 +178,7 @@ class SdSimulation():
         :param value: either a lambda method or a numerical value (int/float)
         :return: None
         """
+
         # Store numeric values
         if not callable(value):
             self.mod.equations[name] = lambda t: eval(str(value))

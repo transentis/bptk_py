@@ -22,3 +22,12 @@ class Converter(Element):
     type = "Converter"
 
 
+    def add_arr_equation(self, name, value):
+        s = self.model.converter(self.name + "[" + name + "]")
+        s.equation = value
+    def add_arr_empty(self, name):
+        return self.model.converter(self.name + "[" + name + "]")
+
+    def get_arr_equation(self, name):
+        return self.model.converters[self.name + "[" + name + "]"]
+

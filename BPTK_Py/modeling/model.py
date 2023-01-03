@@ -732,9 +732,7 @@ class Model:
         return self.memoize(equation,t)
 
     def memoize(self, equation, arg):
-        
         #TODO: consider making this into an internal method
-
         try:
             mymemo = self.memo[equation]
         except:
