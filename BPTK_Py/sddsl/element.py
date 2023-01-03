@@ -153,9 +153,9 @@ class Element:
                                 name = equation.index_to_string(i)
                                 names[name] = equation.clone_with_index([name])
 
-                            self.setup_named_vector(names)
+                            self.setup_named_vector(names, True)
                         else:
-                            self.setup_vector(dims[0])
+                            self.setup_vector(dims[0], 0, True)
                             for i in range(dims[0]):
                                 self[i] = equation.clone_with_index([i])
 
@@ -166,6 +166,7 @@ class Element:
                                 self[i][j] = equation.clone_with_index([i, j])
 
         return arrayed_equation
+
 
     @equation.setter
     def equation(self, equation):
@@ -369,49 +370,51 @@ class Element:
         from BPTK_Py.visualizations import visualizer
         return visualizer().update_plot_formats(ax)
 
-    def setup_vector(self, size, default_value=0.0):
+    def setup_vector(self, size, default_value=0.0, set_stack_equation = False):
         """
         Creates sub-elements for this element.
 
         Parameters:
             size: int - Size of the vector
             default_value: float | List[float] - The default value or values of the vector
+            set_stack_equation: bool - If false and the element is a stock, the stock initial value is set.
         """
         self.arrayed = True
         if isinstance(default_value, (float, int)):
             for i in range(size):
-                # if(self.type == "Stock"):
-                #     self[i] = None
-                #     self[i].initial_value = default_value
-                # else:
-                self[i] = default_value
+                if(self.type == "Stock" and not set_stack_equation):
+                    self[i] = None
+                    self[i].initial_value = default_value
+                else:
+                    self[i] = default_value
         else:
             if len(default_value) != size:
                 raise Exception("The passed size of the vector {} does not match the size of the default values {}.".format(
                     size, len(default_value)))
             self._equation = None
             for i in range(size):
-                if(self.type == "Stock"):
+                if(self.type == "Stock" and not set_stack_equation):
                     self[i] = None
                     self[i].initial_value = default_value[i]
                 else:
                     self[i] = default_value[i]
 
-    def setup_named_vector(self, values):
+    def setup_named_vector(self, values, set_stack_equation = False):
         """
         Creates sub-elements for this element.
 
         Parameters:
             values: dict(str, int | float) - Names of vectors
+            set_stack_equation: bool - If false and the element is a stock, the stock initial value is set.
         """
         self.arrayed = True
         self.named_arrayed = True
         for name in values:
-            # if(self.type == "Stock"):
-            #     self[name] = None
-            #     self[name].initial_value = values[name]
-            # else:
-            self[name] = values[name]
+            if(self.type == "Stock" and not set_stack_equation):
+                self[name] = None
+                self[name].initial_value = values[name]
+            else:
+                self[name] = values[name]
 
     def setup_matrix(self, size, default_value=0.0):
         """
