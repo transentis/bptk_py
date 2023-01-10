@@ -80,7 +80,7 @@ def exp(x): return Exp(x)
 def delay(model, input_function, delay_duration, initial_value=None):
     if not isinstance(input_function, Element):
         raise OperatorError("The input function must be a model element")
-    if not isinstance(delay_duration, (Element, float)):
+    if not isinstance(delay_duration, (Element, float, int)):
         raise OperatorError("The delay duration must be a model element or a floating point value")
     if initial_value is not None and not isinstance(initial_value, (float, Constant)):
         raise OperatorError("The initial value must be a floating point values or a constant")
