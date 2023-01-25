@@ -28,6 +28,9 @@ import jsonpickle
 import copy
 import threading
 from BPTK_Py.externalstateadapter import InstanceState, ExternalStateAdapter
+import os
+from dotenv import load_dotenv
+from functools import wraps
 
 class InstanceManager:
     """
@@ -228,6 +231,27 @@ class BptkServer(Flask):
         self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
         self.route("/<instance_uuid>/stop-instance", methods=['GET'], strict_slashes=False)(self._stop_instance)
 
+    def token_required(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            token = None
+            if "Authorization" in request.headers:
+                token = request.headers["Authorization"].split(" ")[1]
+
+            if token is None:
+                resp = make_response('{"Unauthorized": "Authentication Token is missing!"}', 401)
+                return resp
+            
+            load_dotenv()
+            if token != os.getenv("SECRET_KEY"):
+                resp = make_response('{"Unauthorized": "Authentication Token is wrong!"}', 401)
+                return resp
+
+            return f(*args, **kwargs)
+
+        return decorated
+
+    @token_required
     def _stop_instance(self, instance_uuid):
         self._instance_manager._delete_instance(instance_uuid)
         if self._external_state_adapter != None:
@@ -238,6 +262,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _save_state_resource(self):
         """
         Save all instances with the provided external state adapter.
@@ -253,6 +278,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
     
+    @token_required
     def _load_state_resource(self):
         """
         Loads all instances using the external state adapter
@@ -270,6 +296,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _metrics(self):
         """
         Returns metrics in a prometheus compatible format.
@@ -289,6 +316,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _home_resource(self):
         """
         The root endpoint returns a simple html page for test purposes.
@@ -365,6 +393,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _scenarios_resource(self):
         """
         The endpoint returns all available scenarios for the current simulation.
@@ -447,6 +476,7 @@ class BptkServer(Flask):
 
         return resp
 
+    @token_required
     def _agents_resource(self):
         """
         For an agent-based or hybrid model, this endpoint returns all the agents in the model with their corresponding states and properties.
@@ -500,6 +530,7 @@ class BptkServer(Flask):
 
         return resp
 
+    @token_required
     def _start_instance_resource(self):
         """
         This endpoint starts a new instance of BPTK on the server side, so that simulations can run in a "private" session. The endpoint returns an instance_id, which is needed to identify the instance in later calls.
@@ -525,6 +556,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _begin_session_resource(self, instance_uuid):
         """This endpoint starts a session for single step simulation. There can only be one session per instance at a time.
         Currently only System Dynamics scenarios are supported for both SD DSL and XMILE models.
@@ -605,6 +637,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _end_session_resource(self, instance_uuid):
         """This endpoint ends a session for single step simulation and resets the internal cache.
         """
@@ -623,7 +656,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
-
+    @token_required
     def _flat_session_results_resource(self,instance_uuid):
         """
         Returns the accumulated results of a session, from the first step to the last step that was run in a flat format.
@@ -655,7 +688,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp
 
-
+    @token_required
     def _run_step_resource(self, instance_uuid):
         """
         This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
@@ -703,6 +736,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _run_steps_resource(self, instance_uuid):
         """
         This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
@@ -764,7 +798,7 @@ class BptkServer(Flask):
         return resp
 
 
-
+    @token_required
     def _stream_steps_resource(self, instance_uuid):
         """
         This endpoint is used to stream a simulation.
@@ -829,7 +863,7 @@ class BptkServer(Flask):
         return resp
 
 
-
+    @token_required
     def _keep_alive_resource(self,instance_uuid):
         """
         This endpoint sets the "last accessed time" of the instance to the current time to prevent the instance from timeing out.
@@ -847,6 +881,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
+    @token_required
     def _ensure_instance_exists(self, instance_uuid) -> bool:
         if self._instance_manager.is_valid_instance(instance_uuid):
             return True
