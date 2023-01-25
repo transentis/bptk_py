@@ -115,6 +115,12 @@ class Operator:
         """
         raise Exception("Index to string not implemented for this operator!")
 
+    def get_indices(self):
+        """
+            Returns a list of indices of the operator. This is used to ensure index compatability.
+        """
+        return []
+
     def __str__(self):
         """
         Operator override
@@ -122,6 +128,11 @@ class Operator:
         """
         return self.term()
 
+    def __getitem__(self, key):
+        if(not self.arrayed):
+            raise Exception("Element is not arrayed")
+        return self.clone_with_index(key)
+    
     def __truediv__(self, other):
         return DivisionOperator(self, other)
 
@@ -221,6 +232,9 @@ def _array_resolve(operator, element, time, dimensions):
         return string_term[:-len(operator)]
     return rec_resolve(element, 0)
 
+def _clone_element_with_index(element, index):
+    return element if isinstance(
+        element, BPTK_Py.sddsl.element.Element) else element.clone_with_index(index)
 
 def _matrix_element_to_string(element, time, flat=False):
     """
@@ -250,55 +264,70 @@ def _matrix_element_to_string(element, time, flat=False):
     return "[" + rec_resolve(element, 0) + "]"
 
 
-class ArrayProductOperator(Operator):
+class ArrayedOperator(Operator):
+    def __init__(self, element, index=None):
+        arrayed = (isinstance(element, BPTK_Py.sddsl.element.Element) and element._elements.vector_size() > 0) or (isinstance(element, Operator) and element.is_any_subelement_arrayed())
+        
+        if not arrayed:
+            raise ValueError("Element is not arrayed!")
+        
+        super().__init__(True)
+        self.element = element
+        
+        if isinstance(index, str):
+            self.index = [index]
+        else:
+            self.index = index
+            
+    def is_named(self):
+        return self.element.is_named() if self.arrayed else False
+    def is_any_subelement_arrayed(self):
+        return True
+    def get_indices(self):
+        return self.element.get_indices()
+        
+
+class ArrayProductOperator(ArrayedOperator):
     """
     Returns the product of an array (element-wise). 
     Example: [2,3,4] => "2*3*4"
     """
 
-    def __init__(self, element, dimensions):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, dimensions, index=None):
+        super().__init__(element, index)
         self.dimensions = dimensions
 
     def term(self, time="t"):
         return _array_resolve("*", self.element, time, self.dimensions)
 
     def clone_with_index(self, index):
-        a = ArrayProductOperator(
-            self.element, self.dimensions)
-        a.index = index
-        return a
+        return ArrayProductOperator(self.element, self.dimensions, index)
 
 
-class ArraySumOperator(Operator):
+class ArraySumOperator(ArrayedOperator):
     """
     Returns the sum of an array (element-wise). 
     Example: [2,3,4] => "2+3+4"
     """
 
-    def __init__(self, element, dimensions):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, dimensions, index=None):
+        super().__init__(element, index)
         self.dimensions = dimensions
 
     def term(self, time="t"):
         return _array_resolve("+", self.element, time, self.dimensions)
 
     def clone_with_index(self, index):
-        a = ArraySumOperator(self.element, self.dimensions)
-        a.index = index
-        return a
+        return ArraySumOperator(self.element, self.dimensions, index)
 
 
-class ArraySizeOperator(Operator):
+class ArraySizeOperator(ArrayedOperator):
     """
     Returns the size of an array vector. For example: [2,3] => 2
     """
 
-    def __init__(self, element):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, index=None):
+        super().__init__(element, index)
 
     def term(self, time="t"):
         vector_size = self.element._elements.vector_size()
@@ -307,20 +336,17 @@ class ArraySizeOperator(Operator):
         return str(vector_size)
 
     def clone_with_index(self, index):
-        a = ArraySizeOperator(self.element)
-        a.index = index
-        return a
+        return ArraySizeOperator(self.element, index)
 
 
-class ArrayRankOperator(Operator):
+class ArrayRankOperator(ArrayedOperator):
     """
     Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
     Example: array_rank([3,6,2,4,1], 2) -> 4
     """
 
-    def __init__(self, element, rank):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, rank, index=None):
+        super().__init__(element, index)
         self.rank = rank
 
     def term(self, time="t"):
@@ -336,19 +362,16 @@ class ArrayRankOperator(Operator):
         return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=matrix_size[0] * matrix_size[1])
 
     def clone_with_index(self, index):
-        a = ArrayRankOperator(self.element, self.rank)
-        a.index = index
-        return a
+        return ArrayRankOperator(self.element, self.rank, index)
 
 
-class ArrayMeanOperator(Operator):
+class ArrayMeanOperator(ArrayedOperator):
     """
     Returns the mean of an array.
     """
 
-    def __init__(self, element):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, index=None):
+        super().__init__(element, index)
 
     def term(self, time="t"):
         if self.element._elements.vector_size() == 0:
@@ -359,19 +382,16 @@ class ArrayMeanOperator(Operator):
         return "np.mean({arr})".format(arr=string_term)
 
     def clone_with_index(self, index):
-        a = ArrayMeanOperator(self.element)
-        a.index = index
-        return a
+        return ArrayMeanOperator(self.element, index)
 
 
-class ArrayMedianOperator(Operator):
+class ArrayMedianOperator(ArrayedOperator):
     """
     Returns the median of an array.
     """
 
-    def __init__(self, element):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, index=None):
+        super().__init__(element, index)
 
     def term(self, time="t"):
         if self.element._elements.vector_size() == 0:
@@ -382,19 +402,16 @@ class ArrayMedianOperator(Operator):
         return "np.median({arr})".format(arr=string_term)
 
     def clone_with_index(self, index):
-        a = ArrayMedianOperator(self.element)
-        a.index = index
-        return a
+        return ArrayMedianOperator(self.element, index)
 
 
-class ArrayStandardDeviationOperator(Operator):
+class ArrayStandardDeviationOperator(ArrayedOperator):
     """
     Returns the standard deviation of an array.
     """
 
-    def __init__(self, element):
-        super().__init__()
-        self.element = element
+    def __init__(self, element, index=None):
+        super().__init__(element, index)
 
     def term(self, time="t"):
         if self.element._elements.vector_size() == 0:
@@ -405,84 +422,131 @@ class ArrayStandardDeviationOperator(Operator):
         return "np.std({arr})".format(arr=string_term)
 
     def clone_with_index(self, index):
-        a = ArrayStandardDeviationOperator(self.element)
-        a.index = index
-        return a
+        return ArrayStandardDeviationOperator(self.element, index)
 
 
 class BinaryOperator(Operator):
     def __init__(self, element_1, element_2, index=None, allow_different_sized_arrays=False):
-        arrayed1 = isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size() > 0
-        arrayed2 = isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0
-        super().__init__(arrayed1 or arrayed2)
-
+        self.element_1 = UnaryOperator(element_1) if issubclass(
+            type(element_1), (int, float)) else element_1
+        self.element_2 = UnaryOperator(element_2) if issubclass(
+            type(element_2), (int, float)) else element_2
         
-        if arrayed1 and arrayed2 and not allow_different_sized_arrays:
-            if(element_1._elements.vector_size() != element_2._elements.vector_size()):
+        self.element_1_is_operator = isinstance(self.element_1, Operator)
+        self.element_2_is_operator = isinstance(self.element_2, Operator)
+        self.element_1_arrayed = (not self.element_1_is_operator and self.element_1._elements.vector_size() > 0) or (self.element_1_is_operator and self.element_1.is_any_subelement_arrayed())
+        self.element_2_arrayed = (not self.element_2_is_operator and self.element_2._elements.vector_size() > 0) or (self.element_2_is_operator and self.element_2.is_any_subelement_arrayed())
+        super().__init__(self.element_1_arrayed or self.element_2_arrayed)
+        
+        if self.element_1_arrayed and self.element_2_arrayed and not allow_different_sized_arrays:
+            if(_get_element_dimensions(self.element_1) != _get_element_dimensions(self.element_1)):
                 raise Exception("Cannot perform binary operation on arrays with different sizes.")
-            if(element_1.named_arrayed != element_2.named_arrayed):
-                    raise Exception("Cannot perform binary operation on arrays with different indices.")
-            for e in element_1._elements.equations:
+            if(self.element_1.is_named() != self.element_2.is_named()):
+                raise Exception("Cannot perform binary operation on arrays with different indices.")
+            for e in self.element_1.get_indices():
                 found = False
-                for e2 in element_2._elements.equations:
+                for e2 in self.element_2.get_indices():
                     if(e == e2):
                         found = True
                         break
                 if(not found):
                     raise Exception("Cannot perform binary operation on arrays with different indices.")
 
-        self.element_1 = UnaryOperator(element_1) if issubclass(
-            type(element_1), (int, float)) else element_1
-        self.element_2 = UnaryOperator(element_2) if issubclass(
-            type(element_2), (int, float)) else element_2
-        self.index = index
+        if isinstance(index, str):
+            self.index = [index]
+        else:
+            self.index = index
 
     def term(self, time="t"):
         pass
 
-    def _is_arrayed(self, element):
-        return self.arrayed or (isinstance(element, BPTK_Py.sddsl.element.Element) and element._elements.vector_size() > 0) or (isinstance(element, Operator) and element.is_any_subelement_arrayed())
-
     def is_any_subelement_arrayed(self):
-        return self._is_arrayed(self.element_1) or self._is_arrayed(self.element_2)
+        return self.arrayed
 
-
+    def index_to_string(self, index):
+        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
+            return self.element_1._elements.equations[index]
+        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
+            return self.element_2._elements.equations[index]
+        
+        if isinstance(self.element_1, Operator) and self.element_1.is_named():
+            return self.element_1.index_to_string(index)
+        if isinstance(self.element_2, Operator) and self.element_2.is_named():
+            return self.element_2.index_to_string(index)
+        raise Exception("Tried to call index to string on non named element.")
+    def is_named(self):
+        return (self.element_1.is_named() or self.element_2.is_named())
+    def get_indices(self):
+        return self.element_1.get_indices() if self.element_1_arrayed else self.element_2.get_indices()
 class UnaryOperator(Operator):
     """
     UnaryOperator class is used to wrap input values who might be a float, ensuring that even floats are provided with a "term" method. For all other elements or operators, the term function just calls the elements/operators term function.
     """
 
-    def __init__(self, element, arrayed=False):
+    def __init__(self, element, index=None):
+        arrayed = (isinstance(element, BPTK_Py.sddsl.element.Element) and element._elements.vector_size() > 0) or (isinstance(element, Operator) and element.is_any_subelement_arrayed())
         super().__init__(arrayed)
         self.element = element
+        
+        if isinstance(index, str):
+            self.index = [index]
+        else:
+            self.index = index
 
     def term(self, time="t"):
         if isinstance(self.element, (float, int)):
             return str(self.element)
         else:
             return self.element.term(time)
+        
+    def is_named(self):
+        return self.element.is_named() if self.arrayed else False
+    def is_any_subelement_arrayed(self):
+        return self.arrayed
+    def get_indices(self):
+        return self.element.get_indices() if self.arrayed else []
 
+    def index_to_string(self, index):
+        if isinstance(self.element, BPTK_Py.sddsl.element.Element) and self.element.named_arrayed:
+            return self.element._elements.equations[index]
+        if isinstance(self.element, Operator) and self.element.is_named():
+            return self.element.index_to_string(index)
+        raise Exception("Tried to call index to string on non named element.")
 
-class PowerOperator(Operator):
-    def __init__(self, element, power):
-        super().__init__()
-        self.element = element
-        self.power = power
+class PowerOperator(BinaryOperator):
+    def __init__(self, element, power, index=None):
+        super().__init__(element, power, index)
 
     def term(self, time="t"):
+        if(self.arrayed):
+            if self.index == None:  # Can not resolve arrayed equations without index
+                return "0.0"
+            
+            cur_el = self.element_1
+            for i in self.index:
+                cur_el = cur_el[i]
+            return "({} ** {} )".format(extractTerm(cur_el, time), extractTerm(self.element_2, time))
 
-        element = extractTerm(self.element, time)
-        power = extractTerm(self.power, time)
+
+        element = extractTerm(self.element_1, time)
+        power = extractTerm(self.element_2, time)
 
         return "({} ** {} )".format(element, power)
 
+    def resolve_dimensions(self):
+        return _get_element_dimensions(self.element_1)
 
+    def clone_with_index(self, index):
+        element = _clone_element_with_index(self.element_1, index)
+        return PowerOperator(element, self.element_2, index)
+
+# TODO Arrayed support
 class ComparisonOperator(BinaryOperator):
     """
     ComparisonOperators ("<",">",">=","<=","==", "!=")
     """
 
-    def __init__(self, element_1, element_2, sign):
+    def __init__(self, element_1, element_2, sign): 
         self.sign = sign
         super().__init__(element_1, element_2)
 
@@ -521,229 +585,128 @@ class NaryOperator(Operator):
 
         return fn_str
 
+def _binary_arrayed_term(operator: BinaryOperator, time, operator_str, is_pointwise = False):
+    if(is_pointwise):
+        if operator.arrayed:
+            if operator.index == None:  # Can not resolve arrayed equations without index
+                return "0.0"
+
+            if(operator.element_1_arrayed):
+                cur_el1 = operator.element_1
+                for i in operator.index:
+                    cur_el1 = cur_el1[i]
+                if(operator.element_2_arrayed):
+                    cur_el2 = operator.element_2
+                    for i in operator.index:
+                        cur_el2 = cur_el2[i]
+                    return "{} {} {}".format(cur_el1.term(time), operator_str, cur_el2.term(time))
+                else:
+                    return "{} {} {}".format(cur_el1.term(time), operator_str, operator.element_2.term(time))
+            elif(operator.element_2_arrayed):
+                cur_el2 = operator.element_2
+                for i in operator.index:
+                    cur_el2 = cur_el2[i]
+                return "{} {} {}".format(operator.element_1.term(time), operator_str, cur_el2.term(time))
+            else:
+                return operator.element_1.term(time) + operator_str + operator.element_2.term(time)
+        else:
+            return operator.element_1.term(time) + operator_str + operator.element_2.term(time)
+
+    else:
+        if operator.arrayed:
+            if operator.index == None:  # Can not resolve arrayed equations without index
+                return "0.0"
+
+            if(operator.element_1_arrayed):
+                cur_el1 = operator.element_1
+                for i in operator.index:
+                    cur_el1 = cur_el1[i]
+                if(operator.element_2_arrayed):
+                    cur_el2 = operator.element_2
+                    for i in operator.index:
+                        cur_el2 = cur_el2[i]
+                    return "({}) {} ({})".format(cur_el1.term(time), operator_str, cur_el2.term(time))
+                else:
+                    return "({}) {} ({})".format(cur_el1.term(time), operator_str, operator.element_2.term(time))
+            elif(operator.element_2_arrayed):
+                cur_el2 = operator.element_2
+                for i in operator.index:
+                    cur_el2 = cur_el2[i]
+                return "({}) {} ({})".format(operator.element_1.term(time), operator_str, cur_el2.term(time))
+            else:
+                return "(" + operator.element_1.term(time) + ")" + operator_str + "(" + operator.element_2.term(time) + ")"
+        else:
+            return"(" +  operator.element_1.term(time) + ")" + operator_str + "(" + operator.element_2.term(time) + ")"
+
+def _resolve_arrayed_binary_dimensions(operator: BinaryOperator, error_name):
+    dim1 = _get_element_dimensions(operator.element_1)
+    dim2 = _get_element_dimensions(operator.element_2)
+    if dim1 != -1 and dim2 != -1:
+        if(dim1 != dim2):
+            raise Exception("Attempted invalid array {} (sizes [{}, {}] and [{}, {}])".format(error_name,
+                dim1[0], dim1[1], dim2[0], dim2[1]))
+        return dim1
+
+    if dim1 != -1:
+        return dim1
+    return dim2
 
 class ModOperator(BinaryOperator):
     def term(self, time="t"):
-        return self.element_1.term(time) + "%" + self.element_2.term(time)
-
-
-class AdditionOperator(BinaryOperator):
-    def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "{} + {}".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "{} + {}".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "{} + {}".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return self.element_1.term(time) + "+" + self.element_2.term(time)
-        else:
-            return self.element_1.term(time) + "+" + self.element_2.term(time)
-
+        return _binary_arrayed_term(self, time, "%")
+    
     def resolve_dimensions(self):
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
-        if dim1 != -1 and dim2 != -1:
-            if(dim1 != dim2):
-                raise Exception("Attempted invalid array addition (sizes [{}, {}] and [{}, {}])".format(
-                    dim1[0], dim1[1], dim2[0], dim2[1]))
-            return dim1
-
-        if dim1 != -1:
-            return dim1
-        return dim2
-
-    def index_to_string(self, index):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
-        
-        if isinstance(self.element_1, Operator) and self.element_1.is_named():
-            return self.element_1.index_to_string(index)
-        if isinstance(self.element_2, Operator) and self.element_2.is_named():
-            return self.element_2.index_to_string(index)
-
-    def is_named(self):
-        return (
-            (isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed) or 
-            (isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed) or
-
-            (isinstance(self.element_1, Operator) and self.element_1.is_named()) or 
-            (isinstance(self.element_2, Operator) and self.element_2.is_named())
-        )
+        return _resolve_arrayed_binary_dimensions(self, "modulus")
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
+        return ModOperator(element_1, element_2, index)
+
+class AdditionOperator(BinaryOperator):
+    def __init__(self, element_1, element_2, index=None):
+        super().__init__(element_1, element_2, index, True)
+
+    def term(self, time="t"):
+        return _binary_arrayed_term(self, time, "+")
+    def resolve_dimensions(self):
+        return _resolve_arrayed_binary_dimensions(self, "addition")
+    
+    def clone_with_index(self, index):
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return AdditionOperator(element_1, element_2, index)
 
 
 class SubtractionOperator(BinaryOperator):
     #TODO implement for named arrays - float and float - named arrays 
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "{} - {}".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "{} - {}".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "{} - {}".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return self.element_1.term(time) + "-" + self.element_2.term(time)
-        else:
-            return self.element_1.term(time) + "-" + self.element_2.term(time)
-
+       return _binary_arrayed_term(self, time, "-")
+    
     def resolve_dimensions(self):
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
-        if dim1 != -1 and dim2 != -1:
-            if(dim1 != dim2):
-                raise Exception("Attempted invalid array subtraction (sizes [{}, {}] and [{}, {}])".format(
-                    dim1[0], dim1[1], dim2[0], dim2[1]))
-            return dim1
-
-        if dim1 != -1:
-            return dim1
-        return dim2
+        return _resolve_arrayed_binary_dimensions(self, "subtraction")
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return SubtractionOperator(element_1, element_2, index)
 
-    def index_to_string(self, index):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
-        
-        if isinstance(self.element_1, Operator) and self.element_1.is_named():
-            return self.element_1.index_to_string(index)
-        if isinstance(self.element_2, Operator) and self.element_2.is_named():
-            return self.element_2.index_to_string(index)
 
-    def is_named(self):
-        return (
-            (isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed) or 
-            (isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed) or
-
-            (isinstance(self.element_1, Operator) and self.element_1.is_named()) or 
-            (isinstance(self.element_2, Operator) and self.element_2.is_named())
-        )
+    
 
 class DivisionOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "({}) / ({})".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "({}) / ({})".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "({}) / ({})".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
-        else:
-            return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
-
+        return _binary_arrayed_term(self, time, "/", True)
     def resolve_dimensions(self):
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
-        if dim1 != -1 and dim2 != -1:
-            if(dim1 != dim2):
-                raise Exception("Attempted invalid array division (sizes [{}, {}] and [{}, {}])".format(
-                    dim1[0], dim1[1], dim2[0], dim2[1]))
-            return dim1
-
-        if dim1 != -1:
-            return dim1
-        return dim2
+        return _resolve_arrayed_binary_dimensions(self, "division")
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return DivisionOperator(element_1, element_2, index)
 
-    def index_to_string(self, index):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
-        
-        if isinstance(self.element_1, Operator) and self.element_1.is_named():
-            return self.element_1.index_to_string(index)
-        if isinstance(self.element_2, Operator) and self.element_2.is_named():
-            return self.element_2.index_to_string(index)
 
-    def is_named(self):
-        return (
-            (isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed) or 
-            (isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed) or
-
-            (isinstance(self.element_1, Operator) and self.element_1.is_named()) or 
-            (isinstance(self.element_2, Operator) and self.element_2.is_named())
-        )
+    
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
         if self.arrayed:
@@ -778,103 +741,27 @@ class NumericalMultiplicationOperator(BinaryOperator):
         return dim2
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return NumericalMultiplicationOperator(element_1, element_2, index)
 
-    def index_to_string(self, index):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
-        
-        if isinstance(self.element_1, Operator) and self.element_1.is_named():
-            return self.element_1.index_to_string(index)
-        if isinstance(self.element_2, Operator) and self.element_2.is_named():
-            return self.element_2.index_to_string(index)
 
-    def is_named(self):
-        return (
-            (isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed) or 
-            (isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed) or
-
-            (isinstance(self.element_1, Operator) and self.element_1.is_named()) or 
-            (isinstance(self.element_2, Operator) and self.element_2.is_named())
-        )
+    
 class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "({}) * ({})".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "({}) * ({})".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "({}) * ({})".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
-        else:
-            return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
+        return _binary_arrayed_term(self, time, "*", True)
 
     def resolve_dimensions(self):
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
-        if dim1 != -1 and dim2 != -1:
-            if(dim1 != dim2):
-                raise Exception("Attempted invalid array multiplication (sizes [{}, {}] and [{}, {}])".format(
-                    dim1[0], dim1[1], dim2[0], dim2[1]))
-            return dim1
-
-        if dim1 != -1:
-            return dim1
-        return dim2
+        return _resolve_arrayed_binary_dimensions(self, "multiplication")
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return MultiplicationOperator(element_1, element_2, index)
 
 
-    def index_to_string(self, index):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        if isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
-        
-        if isinstance(self.element_1, Operator) and self.element_1.is_named():
-            return self.element_1.index_to_string(index)
-        if isinstance(self.element_2, Operator) and self.element_2.is_named():
-            return self.element_2.index_to_string(index)
 
-    def is_named(self):
-        return (
-            (isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1.named_arrayed) or 
-            (isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2.named_arrayed) or
-
-            (isinstance(self.element_1, Operator) and self.element_1.is_named()) or 
-            (isinstance(self.element_2, Operator) and self.element_2.is_named())
-        )
+    
 class DotOperator(BinaryOperator):
     """
         Multiply two matrices or vectors.
@@ -1102,11 +989,47 @@ class DotOperator(BinaryOperator):
         return [dim1[0], dim2[1]]
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
         return DotOperator(element_1, element_2, index)
+
+def _arrayed_binary_function(operator: BinaryOperator, time, operator_name):
+    if(operator.arrayed):
+        if operator.index == None:  # Can not resolve arrayed equations without index
+            return "0.0"
+        if(operator.element_1_arrayed):
+            cur_el1 = operator.element_1
+            for i in operator.index:
+                cur_el1 = cur_el1[i]
+            if(operator.element_2_arrayed):
+                cur_el2 = operator.element_2
+                for i in operator.index:
+                    cur_el2 = cur_el2[i]
+                return "{}({}, {})".format(operator_name, cur_el1.term(time), cur_el2.term(time))
+            else:
+                return "{}({}, {})".format(operator_name, cur_el1.term(time), operator.element_2.term(time))
+        elif(operator.element_2_arrayed):
+            cur_el2 = operator.element_2
+            for i in operator.index:
+                cur_el2 = cur_el2[i]
+            return "{}({}, {})".format(operator_name, operator.element_1.term(time), cur_el2.term(time))
+        else:
+            return "{}({}, {})".format(operator_name, operator.element_1.term(time), operator.element_2.term(time))
+    else:
+        return operator_name + "(" + operator.element_1.term(time) + ", " + operator.element_2.term(time) + ")"
+
+def _arrayed_unary_function(operator: UnaryOperator, time, operator_name):
+    if(operator.arrayed):
+        if operator.index == None:  # Can not resolve arrayed equations without index
+            return "0.0"
+        cur_el = operator.element
+        for i in operator.index:
+            cur_el = cur_el[i]
+        
+        return "{}({})".format(operator_name, cur_el.term(time))
+    else:
+        return "{}({})".format(operator_name, operator.element.term(time))
+
 
 
 class AbsOperator(UnaryOperator):
@@ -1115,20 +1038,41 @@ class AbsOperator(UnaryOperator):
     """
 
     def term(self, time="t"):
-        return "abs("+self.element.term(time)+")"
+        return _arrayed_unary_function(self, time, "abs")
+    def resolve_dimensions(self):
+        return _get_element_dimensions(self.element)
+
+    def clone_with_index(self, index):
+        element = _clone_element_with_index(self.element, index)
+        return AbsOperator(element, index)
+
 
 
 class MaxOperator(BinaryOperator):
-
     def term(self, time="t"):
-        return "max( " + self.element_1.term(time)+", " + self.element_2.term(time)+")"
+        return _arrayed_binary_function(self, time, "max")
+
+    def resolve_dimensions(self):
+        return _resolve_arrayed_binary_dimensions(self, "max")
+
+    def clone_with_index(self, index):
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
+        return MaxOperator(element_1, element_2, index)
 
 
 class MinOperator(BinaryOperator):
 
     def term(self, time="t"):
-        return "min( " + self.element_1.term(time)+", " + self.element_2.term(time)+")"
+        return _arrayed_binary_function(self, time, "min")
 
+    def resolve_dimensions(self):
+        return _resolve_arrayed_binary_dimensions(self, "min")
+
+    def clone_with_index(self, index):
+        element_1 = _clone_element_with_index(self.element_1, index)
+        element_2 = _clone_element_with_index(self.element_2, index)
+        return MinOperator(element_1, element_2, index)
 
 class Exp(UnaryOperator):
     """
@@ -1136,7 +1080,13 @@ class Exp(UnaryOperator):
     """
 
     def term(self, time="t"):
-        return "np.exp("+self.element.term(time)+")"
+        return _arrayed_unary_function(self, time, "np.exp")
+    def resolve_dimensions(self):
+        return _get_element_dimensions(self.element)
+
+    def clone_with_index(self, index):
+        element = _clone_element_with_index(self.element, index)
+        return Exp(element, index)
 
 
 class DT(Function):

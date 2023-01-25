@@ -463,6 +463,18 @@ class Element:
             self[name].setup_named_vector(names[name])
 
 
+    def is_named(self) -> bool:
+        """
+            This function returns true if the arrayed equation is named.
+        """
+        return self.named_arrayed
+    
+    
+    def get_indices(self):
+        """
+            Returns a list of indices of the operator. This is used to ensure index compatability.
+        """
+        return self._elements.equations
 class ElementError(Exception):
     def __init__(self, value):
         """Initialize element"""
