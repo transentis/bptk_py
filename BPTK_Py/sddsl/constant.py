@@ -21,14 +21,14 @@ class Constant(Element):
     type = "Constant"
 
     def add_arr_equation(self, name, value):
-        s = self.model.constant(self.name + "[" + name + "]")
+        s = self.model.constant(self.name + "." + name)
         s.equation = value
 
     def add_arr_empty(self, name):
-        return self.model.constant(self.name + "[" + name + "]")
+        return self.model.constant(self.name + "." + name)
 
     def get_arr_equation(self, name):
-        return self.model.constants[self.name + "[" + name + "]"]
+        return self.model.constants[self.name + "." + name]
 
     @property
     def equation(self):
@@ -40,7 +40,7 @@ class Constant(Element):
             self._equation = equation
             if isinstance(equation, (float, int)):
                 self._function_string = "lambda model, t: {}".format(equation)
-            elif equation == None:
+            elif equation is None:
                 self._equation = None
             else:
                 raise ElementError(

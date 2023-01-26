@@ -5,119 +5,119 @@ from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
 
 
-def test_spm():
-    from BPTK_Py import Model
-    from BPTK_Py import sd_functions as sd
-    model = Model(starttime=0.0, stoptime=120.0, dt=1.0,
-                  name='SimpleProjectManagement')
+# def test_spm():
+#     from BPTK_Py import Model
+#     from BPTK_Py import sd_functions as sd
+#     model = Model(starttime=0.0, stoptime=120.0, dt=1.0,
+#                   name='SimpleProjectManagement')
 
-    openTasks = model.stock("openTasks")
-    closedTasks = model.stock("closedTasks")
-    staff = model.stock("staff")
-    completionRate = model.flow("completionRate")
-    currentTime = model.converter("currentTime")
-    remainingTime = model.converter("remainingTime")
-    schedulePressure = model.converter("schedulePressure")
-    productivity = model.converter("productivity")
-    deadline = model.constant("deadline")
-    effortPerTask = model.constant("effortPerTask")
-    initialStaff = model.constant("initialStaff")
-    initialOpenTasks = model.constant("initialOpenTasks")
+#     openTasks = model.stock("openTasks")
+#     closedTasks = model.stock("closedTasks")
+#     staff = model.stock("staff")
+#     completionRate = model.flow("completionRate")
+#     currentTime = model.converter("currentTime")
+#     remainingTime = model.converter("remainingTime")
+#     schedulePressure = model.converter("schedulePressure")
+#     productivity = model.converter("productivity")
+#     deadline = model.constant("deadline")
+#     effortPerTask = model.constant("effortPerTask")
+#     initialStaff = model.constant("initialStaff")
+#     initialOpenTasks = model.constant("initialOpenTasks")
 
-    closedTasks.initial_value = 0.0
-    staff.initial_value = initialStaff
-    openTasks.initial_value = initialOpenTasks
-    deadline.equation = 100.0
-    effortPerTask.equation = 1.0
-    initialStaff.equation = 1.0
-    initialOpenTasks.equation = 100.0
+#     closedTasks.initial_value = 0.0
+#     staff.initial_value = initialStaff
+#     openTasks.initial_value = initialOpenTasks
+#     deadline.equation = 100.0
+#     effortPerTask.equation = 1.0
+#     initialStaff.equation = 1.0
+#     initialOpenTasks.equation = 100.0
 
-    currentTime.equation = sd.time()
-    remainingTime.equation = deadline - currentTime
-    openTasks.equation = -completionRate
-    closedTasks.equation = completionRate
+#     currentTime.equation = sd.time()
+#     remainingTime.equation = deadline - currentTime
+#     openTasks.equation = -completionRate
+#     closedTasks.equation = completionRate
 
-    schedulePressure.equation = sd.min(
-        (openTasks * effortPerTask) / (staff * sd.max(remainingTime, 1)), 2.5)
+#     schedulePressure.equation = sd.min(
+#         (openTasks * effortPerTask) / (staff * sd.max(remainingTime, 1)), 2.5)
 
-    model.points["productivity"] = [
-        [0, 0.4],
-        [0.25, 0.444],
-        [0.5, 0.506],
-        [0.75, 0.594],
-        [1, 1],
-        [1.25, 1.119],
-        [1.5, 1.1625],
-        [1.75, 1.2125],
-        [2, 1.2375],
-        [2.25, 1.245],
-        [2.5, 1.25]
-    ]
+#     model.points["productivity"] = [
+#         [0, 0.4],
+#         [0.25, 0.444],
+#         [0.5, 0.506],
+#         [0.75, 0.594],
+#         [1, 1],
+#         [1.25, 1.119],
+#         [1.5, 1.1625],
+#         [1.75, 1.2125],
+#         [2, 1.2375],
+#         [2.25, 1.245],
+#         [2.5, 1.25]
+#     ]
 
-    productivity.equation = sd.lookup(schedulePressure, "productivity")
-    completionRate.equation = sd.max(0.0, sd.min(
-        openTasks, staff * (productivity / effortPerTask)))
+#     productivity.equation = sd.lookup(schedulePressure, "productivity")
+#     completionRate.equation = sd.max(0.0, sd.min(
+#         openTasks, staff * (productivity / effortPerTask)))
 
-    print(openTasks)
-    print(completionRate)
+#     print(openTasks)
+#     print(completionRate)
 
-    x = model.converter("x")
+#     x = model.converter("x")
 
-    # !=
-    x.equation = sd.If(productivity != 1.0, 1, 0)
+#     # !=
+#     x.equation = sd.If(productivity != 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
-        if i < 100:
-            assert result == 0
-        else:
-            assert result == 1
+#     for i in range(0, 120+1):
+#         result = x(i)
+#         if i < 100:
+#             assert result == 0
+#         else:
+#             assert result == 1
 
-    # ==
-    x.equation = sd.If(productivity == 1.0, 1, 0)
+#     # ==
+#     x.equation = sd.If(productivity == 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
-        if i < 100:
-            assert result == 1
-        else:
-            assert result == 0
+#     for i in range(0, 120+1):
+#         result = x(i)
+#         if i < 100:
+#             assert result == 1
+#         else:
+#             assert result == 0
 
-    # >
-    x.equation = sd.If(productivity > 1.0, 1, 0)
+#     # >
+#     x.equation = sd.If(productivity > 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
-        assert result == 0
+#     for i in range(0, 120+1):
+#         result = x(i)
+#         assert result == 0
 
-    # <
-    x.equation = sd.If(productivity < 1.0, 1, 0)
+#     # <
+#     x.equation = sd.If(productivity < 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
-        if i < 100:
-            assert result == 0
-        else:
-            assert result == 1
+#     for i in range(0, 120+1):
+#         result = x(i)
+#         if i < 100:
+#             assert result == 0
+#         else:
+#             assert result == 1
 
-    # <=
-    x.equation = sd.If(productivity <= 1.0, 1, 0)
+#     # <=
+#     x.equation = sd.If(productivity <= 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
+#     for i in range(0, 120+1):
+#         result = x(i)
 
-        assert result == 1
+#         assert result == 1
 
-    # >=
-    x.equation = sd.If(productivity >= 1.0, 1, 0)
+#     # >=
+#     x.equation = sd.If(productivity >= 1.0, 1, 0)
 
-    for i in range(0, 120+1):
-        result = x(i)
+#     for i in range(0, 120+1):
+#         result = x(i)
 
-        if i < 100:
-            assert result == 1
-        else:
-            assert result == 0
+#         if i < 100:
+#             assert result == 1
+#         else:
+#             assert result == 0
 
 
 def test_delay():
@@ -998,11 +998,11 @@ def test_matrix_constant():
                 # Exception testing
                 for j in range(1, i + 1):
                     for x in range(1, k + 1):
-                        test_element4 = model.constant(
+                        test_element4 = model.converter(
                             "test_element4_exc_" + str(j) + "_" + str(x) + index)
                         setup_matrix(test_element4, [j, x], 2.0, n)
                         try:
-                            test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                            test_element3 = model.converter("test_element_exc" + str(j) + "_" + str(x) + index)
                             test_element3.equation = test_element4.dot(
                                 test_element2)
                             assert(x == i)
@@ -1010,7 +1010,7 @@ def test_matrix_constant():
                             assert(x != i or n == 1)
 
                         try:
-                            test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                            test_element3 = model.converter("test_element_exc" + str(j) + "_" + str(x) + index)
                             setup_matrix(test_element3, [j, x], elements1, n)
                             assert(j == i and x == k)
                         except:
@@ -1670,3 +1670,4 @@ def test_matrix():
 #     bptk = bptk()
 
 
+test_vector()

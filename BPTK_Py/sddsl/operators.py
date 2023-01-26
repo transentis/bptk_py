@@ -274,7 +274,7 @@ class ArrayedOperator(Operator):
         super().__init__(True)
         self.element = element
         
-        if isinstance(index, str):
+        if not index is None and not isinstance(index, list):
             self.index = [index]
         else:
             self.index = index
@@ -451,8 +451,7 @@ class BinaryOperator(Operator):
                         break
                 if(not found):
                     raise Exception("Cannot perform binary operation on arrays with different indices.")
-
-        if isinstance(index, str):
+        if not index is None and not isinstance(index, list):
             self.index = [index]
         else:
             self.index = index
@@ -488,7 +487,7 @@ class UnaryOperator(Operator):
         super().__init__(arrayed)
         self.element = element
         
-        if isinstance(index, str):
+        if not index is None and not isinstance(index, list):
             self.index = [index]
         else:
             self.index = index

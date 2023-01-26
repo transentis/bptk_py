@@ -139,6 +139,7 @@ class Element:
                         for i in range(dims[0]):
                             for j in range(dims[1]):
                                 self[i][j].equation = equation.clone_with_index([i, j])
+
         if isinstance(equation, Operator) and not handled_by_stock:
             if equation.is_any_subelement_arrayed() and equation.index == None:
                 # Resolve equations
@@ -157,14 +158,24 @@ class Element:
                         else:
                             self.setup_vector(dims[0], 0, True)
                             for i in range(dims[0]):
-                                self[i] = equation.clone_with_index([i])
+                                self[i].equation = equation.clone_with_index([i])
 
                     else:
                         self.setup_matrix(dims)
                         for i in range(dims[0]):
                             for j in range(dims[1]):
-                                self[i][j] = equation.clone_with_index([i, j])
-
+                                self[i][j].equation = equation.clone_with_index([i, j])
+        elif isinstance(equation, Element) and equation.arrayed and not handled_by_stock and not self.arrayed:
+            # Copy equations with relevant indices
+            if(equation.named_arrayed):
+                names = {}
+                for i in equation._elements.equations:
+                    names[i] = equation._elements[i]
+                self.setup_named_vector(names, True)
+            else:
+                self.setup_vector(equation._elements.vector_size(), 0, True)
+                for i in range(equation._elements.vector_size()):
+                    self[i].equation = equation[i]
         return arrayed_equation
 
 

@@ -44,14 +44,14 @@ class Stock(Element):
                 "Initial values must be floating point values, constants or converters")
 
     def add_arr_equation(self, name, value):
-        s = self.model.stock(self.name + "[" + name + "]")
+        s = self.model.stock(self.name + "." + name)
         s.equation = value
 
     def add_arr_empty(self, name):
-        return self.model.stock(self.name + "[" + name + "]")
+        return self.model.stock(self.name + "." + name)
 
     def get_arr_equation(self, name):
-        return self.model.stocks[self.name + "[" + name + "]"]
+        return self.model.stocks[self.name + "." + name]
 
     @property
     def equation(self):
