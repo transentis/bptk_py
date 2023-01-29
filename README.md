@@ -38,6 +38,9 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.3
+
+* BPTK Server: Added optional bearer token authentication
 ### 1.6.2
 
 * BPTK Server: Fixed unsafe external state adapter code

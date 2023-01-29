@@ -25,7 +25,7 @@ author = 'transentis labs GmbH'
 # The short X.Y version
 version = '1.6'
 # The full version, including alpha/beta/rc tags
-release = '1.6.2'
+release = '1.6.3'
 
 
 # -- General configuration ---------------------------------------------------
