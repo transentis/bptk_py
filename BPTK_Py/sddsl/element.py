@@ -233,16 +233,22 @@ class Element:
             dict = {}
             for(i, element_name) in enumerate(self._elements.equations):
                 element = self._elements[element_name]
-
-                # dict[element_name] = element.plot(
-                #     starttime, stoptime, dt, return_df=True)
-
-                try:
-                    dict[element_name] = {t: element.model.memoize(
-                        element.name, t) for t in np.arange(starttime, stoptime+dt, dt)}
-                except:
-                    dict[element_name] = {t: element.model.memoize(element.name, t) for t in np.arange(
-                        element.model.starttime, element.model.stoptime+dt, dt)}
+                if element.arrayed:
+                    for(j, subelement_name) in enumerate(element._elements.equations):
+                        subelement = element._elements[subelement_name]
+                        try:
+                            dict["[" + element_name + "][" + subelement_name + "]"] = {t: subelement.model.memoize(
+                                subelement.name, t) for t in np.arange(starttime, stoptime+dt, dt)}
+                        except:
+                            dict["[" + element_name + "][" + subelement_name + "]"] = {t: subelement.model.memoize(subelement.name, t) for t in np.arange(
+                                subelement.model.starttime, subelement.model.stoptime+dt, dt)}
+                else:
+                    try:
+                        dict[element_name] = {t: element.model.memoize(
+                            element.name, t) for t in np.arange(starttime, stoptime+dt, dt)}
+                    except:
+                        dict[element_name] = {t: element.model.memoize(element.name, t) for t in np.arange(
+                            element.model.starttime, element.model.stoptime+dt, dt)}
 
             df = pd.DataFrame(dict)
         else:
