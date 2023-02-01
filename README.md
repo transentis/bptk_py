@@ -38,6 +38,9 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.4
+
+* BPTK Server: Simplify bearer token authentication
 ### 1.6.3
 
 * BPTK Server: Added optional bearer token authentication

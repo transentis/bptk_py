@@ -19,13 +19,13 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = 'BPTK_PY'
-copyright = '2022, transentis labs GmbH'
+copyright = '2023, transentis labs GmbH'
 author = 'transentis labs GmbH'
 
 # The short X.Y version
 version = '1.6'
 # The full version, including alpha/beta/rc tags
-release = '1.6.3'
+release = '1.6.4'
 
 
 # -- General configuration ---------------------------------------------------
