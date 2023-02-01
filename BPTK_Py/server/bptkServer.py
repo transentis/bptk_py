@@ -191,7 +191,7 @@ class BptkServer(Flask):
     """
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
     """
-    def __init__(self, import_name, bptk_factory=None, external_state_adapter=None, authenticate = False, bearer_token=None):
+    def __init__(self, import_name, bptk_factory=None, external_state_adapter=None, bearer_token=None):
         """
         Initialize the server with the import name and the bptk.
         :param import_name: the name of the application package. Usually __name__. This helps locate the root_path for the blueprint.
@@ -201,8 +201,7 @@ class BptkServer(Flask):
         self._bptk = bptk_factory() if bptk_factory is not None else None
         self._external_state_adapter = external_state_adapter
         self._instance_manager = InstanceManager(bptk_factory)
-        self._bearer_token = bearer_token		
-        self._authenticate = authenticate
+        self._bearer_token = bearer_token
 
         # Loading the full state on startup
         if external_state_adapter != None:
@@ -234,7 +233,7 @@ class BptkServer(Flask):
     def token_required(f):
         @wraps(f)
         def decorated(self, *args, **kwargs):
-            if self._authenticate:
+            if self._bearer_token is not None:
                 token = None
                 if "Authorization" in request.headers:
                     token = request.headers["Authorization"].split(" ")[1]
