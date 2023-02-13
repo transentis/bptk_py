@@ -88,11 +88,13 @@ class ScenarioManagerFactory():
             if "type" in model_dictionary[scenario_manager_name].keys() and model_dictionary[scenario_manager_name][
                 "type"].lower() == "abm":
 
-                self.scenario_managers[scenario_manager_name] = ScenarioManagerHybrid(
-                    model_dictionary[scenario_manager_name],
-                    scenario_manager_name,
-                    filenames=[filename], model=model)
-                self.scenario_managers[scenario_manager_name].instantiate_model()
+                if scenario_manager_name not in self.scenario_managers:
+                    self.scenario_managers[scenario_manager_name] = ScenarioManagerHybrid(
+                        model_dictionary[scenario_manager_name],
+                        scenario_manager_name, model=model)
+                    self.scenario_managers[scenario_manager_name].instantiate_model()
+                else:
+                    self.scenario_managers[scenario_manager_name].add_scenarios(model_dictionary[scenario_manager_name]["scenarios"])
 
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:

@@ -38,6 +38,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.5
+
+* BPTK: Hybrid scenarios can now be spread accross multiple scenario files
+* BPTK: Remove filename attribute from hybrid scenario manager as it is obsolete
 ### 1.6.4
 
 * BPTK Server: Simplify bearer token authentication
