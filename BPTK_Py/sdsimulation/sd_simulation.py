@@ -204,4 +204,14 @@ class SdSimulation():
         else:
             self.mod.points[name] = eval(str(value))
 
+    def change_runspecs(self,starttime,stoptime,dt):
+        """
+        Set the runspecs of the simulation model
+        :param runspecs: Dictionary setting startime, stoptime and dt
+        :return: None
+        """
+        self.mod.startime = starttime
+        self.mod.stoptime = stoptime
+        self.mod.dt = dt
+
 ### END OF SIMULATOR CLASS

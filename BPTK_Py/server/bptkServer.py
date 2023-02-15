@@ -349,6 +349,14 @@ class BptkServer(Flask):
                         points = scenario_settings["points"]
                         for points_name, points_settings in points.items():
                             scenario.points[points_name]=points_settings
+                    if "runspecs" in scenario_settings:
+                        runspecs = scenario_settings["runspecs"]
+                        if "starttime" in runspecs:
+                            scenario.starttime = runspecs["starttime"]
+                        if "stoptime" in runspecs:
+                            scenario.stoptime = runspecs["stoptime"]
+                        if "dt" in runspecs:
+                            scenario.dt = runspecs["dt"]
                     self._bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             pass
@@ -599,6 +607,7 @@ class BptkServer(Flask):
         agent_properties=[]
         agent_property_types=[]
         individual_agent_properties=[]
+        settings = {}
 
         if(not "agents" in content.keys() and not "equations" in content.keys()):
             resp = make_response('{"error": "expecting either equations or agents to be set"}', 500)
@@ -617,6 +626,8 @@ class BptkServer(Flask):
             agent_property_types = content["agent_property_types"]
         if("individual_agent_properties" in content.keys()):
             individual_agent_properties = content["individual_agent_properties"]
+        if("settings" in content.keys()):
+            settings = content["settings"]
 
 
 
@@ -625,6 +636,7 @@ class BptkServer(Flask):
         instance.begin_session(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
+            settings=settings,
             equations=equations,
             agents=agents,
             agent_states=agent_states,

@@ -345,7 +345,7 @@ class bptk():
                                         )
 
 
-    def begin_session(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
+    def begin_session(self, scenarios, scenario_managers, settings={},agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0):
         """Begins a session to allow stepwise simulation.
 
@@ -362,12 +362,16 @@ class bptk():
                 Names of scenarios to plot
             scenario_managers: List.
                 Names of scenario managers to plot
+            settings: Dict.
+                Dictionary of settings that can override default scenario settings
             agents: List.
                 List of agents to plot (Agent based modelling)
             agent_states: List.
                 List of agent states to plot, REQUIRES "AGENTS" param
             agent_properties: List.
                 List of agent properties to plot, REQUIRES "AGENTS" param
+            individual_agent_properties: List.
+                List of individual agent properties
             equations: list.
                 Names of equations to plot (System Dynamics).
             starttime: Float (Default=0.0)
@@ -381,6 +385,7 @@ class bptk():
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
         scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
         equations = equations if isinstance(equations, list) else equations.split(",")
+        settings = settings if isinstance(settings,dict) else json.loads(settings)
         agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
         agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
             
@@ -417,27 +422,30 @@ class bptk():
             log(
                 "[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder: \"{}\"".format(
                     self.config.configuration["scenario_storage"]))
-            import pandas as pd
             return None
 
-        #TODO add handling regarding "errouneous names" in analogy to run_scenarios
+        #TODO add handling regarding "erroneous names" in analogy to run_scenarios
 
         #TODO need methods in scenario_manager_factory to make the following easier ...
 
-        startime_ = starttime
+        starttime_ = starttime
         stoptime_ = None
 
         for _, manager in self.scenario_manager_factory.scenario_managers.items():
             if manager.name in scenario_managers:
                 for scenario,scenario_object in manager.scenarios.items():
                     if scenario in scenarios:
-                        starttime_ = max(startime_, scenario_object.starttime)
+                        if manager.name in settings:
+                            if scenario in settings[manager.name]:
+                                scenario_object.configure_settings(settings[manager.name][scenario])
+                        starttime_ = max(starttime_, scenario_object.starttime)
                         stoptime_ = min(stoptime_,scenario_object.stoptime) if stoptime_ is not None else scenario_object.stoptime
                         self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
 
         self.session_state = {
             "scenarios": scenarios,
             "scenario_managers": scenario_managers,
+            "settings": settings,
             "agents": agents,
             "agent_states": agent_states,
             "agent_properties":agent_properties,

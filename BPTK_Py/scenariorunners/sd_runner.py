@@ -106,6 +106,7 @@ class SdRunner(ScenarioRunner):
                     sc.sd_simulation.change_equation(name=name, value=value)
                 for name, points in sc.points.items():
                     sc.sd_simulation.change_points(name=name, value=points)
+                sc.sd_simulation.change_runspecs(starttime=sc.starttime,stoptime=sc.stoptime,dt=sc.dt)
 
             # now the settings relevant for this step
             
@@ -215,6 +216,7 @@ class SdRunner(ScenarioRunner):
                     simu.change_equation(name=const, value=sc.constants[const])
                 for name, points in sc.points.items():
                     simu.change_points(name=name, value=points)
+                simu.change_runspecs(starttime=sc.starttime,stoptime=sc.stoptime,dt=sc.dt)
 
                 sc.result = simu.start(output=output, equations=equations)
 

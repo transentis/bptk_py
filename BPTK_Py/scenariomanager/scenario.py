@@ -44,33 +44,60 @@ class SimulationScenario():
         self.model = model
         self.sd_simulation = None # stores a live simulation when running a session
 
+        self.stoptime = 0.0
+        self.starttime = 0.0
+        self.dt = 0.0
+
         if model is not None:
             self.stoptime = model.stoptime
             self.starttime = model.starttime
             self.dt = model.dt
-
-        else:
-            self.stoptime = 0
-            self.starttime = 0
-            self.dt = 0
-
-
-        if "constants" in dictionary.keys():
+ 
+        if "constants" in dictionary:
             # Overwrite base constants (if any)
             self.constants = dictionary["constants"]
         else:
             self.constants = {}
 
-        if "points" in dictionary.keys():
+        if "points" in dictionary:
             self.points = dictionary["points"]
             if model is not None:
                 self.model.points = self.points
         else:
             self.points = {}
 
-        self.name = name
+        if "runspecs" in dictionary:
+            if "starttime" in dictionary["runspecs"]:
+                self.starttime = dictionary["runspecs"]["starttime"]
+            if "stoptime" in dictionary["runspecs"]:
+                self.stoptime = dictionary["runspecs"]["stoptime"]
+            if "dt" in dictionary["runspecs"]:
+                self.dt = dictionary["runspecs"]["dt"]
 
+        self.name = name
         self.result = None  # Stores the result of a simulation run
+
+    def configure_settings(self, dictionary):
+        if "constants" in dictionary:
+            # Overwrite base constants (if any)
+            for key, value in dictionary["constants"].items():
+                self.constants[key] = value
+
+        if "points" in dictionary:
+            for key, value in dictionary["points"].items():
+                print(f"Overriding {key}")
+                self.points[key] = value
+
+        if "runspecs" in dictionary:
+            if "starttime" in dictionary["runspecs"]:
+                self.starttime = dictionary["runspecs"]["starttime"]
+            if "stoptime" in dictionary["runspecs"]:
+                self.stoptime = dictionary["runspecs"]["stoptime"]
+            if "dt" in dictionary["runspecs"]:
+                self.dt = dictionary["runspecs"]["dt"]
+
+
+
 
     @property
     def sd_simulation(self):

@@ -42,9 +42,13 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 * BPTK: Hybrid scenarios can now be spread accross multiple scenario files
 * BPTK: Remove filename attribute from hybrid scenario manager as it is obsolete
+* BPTK: Scenario definitions for SD DSL scenarios now accept a runspecs setting to override starttime, stoptime and dt
+* BPTK: begin_session now accepts a settings parameter to override scenario settings
+* BPTK Server: begin_session now accepts a settings parameter to override scenario settings
+
 ### 1.6.4
 
-* BPTK Server: Simplify bearer token authentication
+* BPTK Server: Simplified bearer token authentication
 ### 1.6.3
 
 * BPTK Server: Added optional bearer token authentication
