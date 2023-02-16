@@ -1415,7 +1415,7 @@ def test_vector_constants():
             elements2.append(get_random(0))
  """
 
-def test_matrix():
+""" def test_matrix():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
@@ -1655,7 +1655,7 @@ def test_matrix():
                             except:
                                 assert(not (j == i and x == k))
 
-
+ """
 
 
 

@@ -15,12 +15,8 @@ import threading
 
 import json
 
-import ipywidgets as widgets
-import numpy as np
-from IPython.display import display
 import pandas as pd
-from IPython import get_ipython
-
+import numpy as np
 import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod
 from .logger import log
@@ -31,7 +27,6 @@ from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
-from .visualizations import SimpleDashboard
 
 
 #plt.interactive(True)
@@ -209,6 +204,10 @@ class bptk():
 
         progress_widget = None
         if progress_bar:
+            import ipywidgets as widgets
+            from IPython.display import display
+            from IPython import get_ipython
+
             progress_widget = widgets.FloatProgress(
                 value=0.0,
                 min=0.0,

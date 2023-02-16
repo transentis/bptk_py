@@ -38,6 +38,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.6.6
+
+* BPTK: Defer import of matplotlib and ipywidgets until they are needed
+
 ### 1.6.5
 
 * BPTK: Hybrid scenarios can now be spread accross multiple scenario files

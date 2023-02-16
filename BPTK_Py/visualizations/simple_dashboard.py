@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 import dataclasses
 from typing import Callable, List, Union
-import matplotlib.pyplot as plt
-from ipywidgets import interact
-import ipywidgets as widgets
 from enum import Enum
 
 class ScenarioWidget:
@@ -15,6 +12,10 @@ class ScenarioWidget:
 
 
     def __init__(self, widget, element, trigger, points=None, multiply=1.0, pre_trigger=None):
+        import matplotlib.pyplot as plt
+        from ipywidgets import interact
+        import ipywidgets as widgets
+
         self.multiply = multiply
         self.widget = widget
         self.points = points
@@ -186,6 +187,8 @@ class SimpleDashboard:
         Returns:
             Plot id (used for identification when plot data is updated).
         """
+        import ipywidgets as widgets
+
         series_names = dict()
 
         for i in range(len(equations)):
@@ -212,7 +215,8 @@ class SimpleDashboard:
 
         return output
 
-    def add_custom_plot(self, plot: Callable) -> widgets.Output:
+    def add_custom_plot(self, plot: Callable):
+
         """
         Adds custom plot. Plotting must be handeled in the function.
         Args:
@@ -222,6 +226,7 @@ class SimpleDashboard:
         Returns:
             widgets.Output: The output the plot gets drawn on.
         """
+        import ipywidgets as widgets
         output = widgets.Output()
         self.outputs.append({'output': output, 'plot_function': plot})
 
