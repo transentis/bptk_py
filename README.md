@@ -38,6 +38,12 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.7.0
+* BPTK Server: Remote authorization for root, full-metrics and metrics endpoints
+* BPTK Server: Add /healthy endpoint
+* BPTK Server: stop-instance and load-state are now POST resources
+* Bug Fix: Remove debug print message
+
 ### 1.6.6
 
 * BPTK: Defer import of matplotlib and ipywidgets until they are needed

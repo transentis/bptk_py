@@ -210,7 +210,8 @@ class BptkServer(Flask):
                 self._instance_manager.reconstruct_instance(instance_data.instance_id, instance_data.timeout, instance_data.time, instance_data.state)
 
         # specifying the routes and methods of the api
-        self.route("/", methods=['GET'])(self._home_resource)
+        self.route("/", methods=['GET'],strict_slashes=False)(self._home_resource)
+        self.route("/healthy", methods=['GET'],strict_slashes=False)(self._healthy_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self._scenarios_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self._equations_resource)
@@ -224,11 +225,11 @@ class BptkServer(Flask):
         self.route("/<instance_uuid>/session-results", methods=['GET'], strict_slashes=False)(self._session_results_resource)
         self.route("/<instance_uuid>/flat-session-results", methods=['GET'], strict_slashes=False)(self._flat_session_results_resource)
         self.route("/<instance_uuid>/keep-alive", methods=['POST'], strict_slashes=False)(self._keep_alive_resource)
-        self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics)
-        self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics)
+        self.route("/metrics", methods=['GET'], strict_slashes=False)(self._metrics_resource)
+        self.route("/full-metrics", methods=['GET'], strict_slashes=False)(self._full_metrics_resource)
         self.route("/save-state", methods=['GET'], strict_slashes=False)(self._save_state_resource)
-        self.route("/load-state", methods=['GET'], strict_slashes=False)(self._load_state_resource)
-        self.route("/<instance_uuid>/stop-instance", methods=['GET'], strict_slashes=False)(self._stop_instance)
+        self.route("/load-state", methods=['POST'], strict_slashes=False)(self._load_state_resource)
+        self.route("/<instance_uuid>/stop-instance", methods=['POST'], strict_slashes=False)(self._stop_instance_resource)
 
     def token_required(f):
         @wraps(f)
@@ -250,7 +251,7 @@ class BptkServer(Flask):
         return decorated
 
     @token_required
-    def _stop_instance(self, instance_uuid):
+    def _stop_instance_resource(self, instance_uuid):
         self._instance_manager._delete_instance(instance_uuid)
         if self._external_state_adapter != None:
             self._external_state_adapter.delete_instance(instance_uuid)
@@ -294,8 +295,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
-    @token_required
-    def _metrics(self):
+    def _metrics_resource(self):
         """
         Returns metrics in a prometheus compatible format.
         """
@@ -303,8 +303,7 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
-    @token_required
-    def _full_metrics(self):
+    def _full_metrics_resource(self):
         """
         Returns metrics in JSON format. Following metrics are returned:
         - Instance count
@@ -315,12 +314,17 @@ class BptkServer(Flask):
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
 
-    @token_required
     def _home_resource(self):
         """
         The root endpoint returns a simple html page for test purposes.
         """
-        return "<h1>BPTK-Py REST API Server</h1>"
+        return "<h1>BPTK REST API Server</h1>"
+
+    def _healthy_resource(self):
+        """
+        The root endpoint returns a simple html page for test purposes.
+        """
+        return "<h1>BPTK Health Check</h1>"
 
     @token_required
     def _run_resource(self):

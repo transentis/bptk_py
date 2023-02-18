@@ -98,7 +98,7 @@ def client(app):
 def test_instance_timeouts(app, client):
     def assert_in_full_metrics(instance_id, contains: bool):
         response = client.get('/full-metrics')
-        assert response.status_code == 200
+        assert response.status_code == 200, "full-metrics should return 200"
         result = json.loads(response.data)
         if contains:
             assert instance_id in result
@@ -122,7 +122,7 @@ def test_instance_timeouts(app, client):
 
 
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
-    assert response.status_code == 200
+    assert response.status_code == 200, "start-instance should return 200"
     instance_id = json.loads(response.data)['instance_uuid']
     
     content = {
@@ -137,8 +137,8 @@ def test_instance_timeouts(app, client):
         ]
     }
 
-    response = client.post(f'http://localhost:5000/{instance_id}/begin-session', data=json.dumps(content), content_type='application/json')
-    assert response.status_code == 200
+    response = client.post(f'http://localhost:500/{instance_id}/begin-session', data=json.dumps(content), content_type='application/json')
+    assert response.status_code == 200, "begin-session should return 200"
 
     run_content = {
         "settings": {
@@ -148,7 +148,7 @@ def test_instance_timeouts(app, client):
     }
 
     response = client.post(f'http://localhost:5000/{instance_id}/run-step', data=json.dumps(run_content), content_type='application/json')
-    assert response.status_code == 200
+    assert response.status_code == 200,"run-step should return 200"
 
     dir_content = os.listdir("state/")
     assert instance_id + ".json" in dir_content
@@ -159,7 +159,7 @@ def test_instance_timeouts(app, client):
     assert_in_full_metrics(instance_id, False)
 
     response = client.post(f'http://localhost:5000/{instance_id}/run-step', data=json.dumps(run_content), content_type='application/json')
-    assert response.status_code == 200
+    assert response.status_code == 200, "run-step should return 200"
 
     assert_in_full_metrics(instance_id, True)
     
@@ -167,8 +167,8 @@ def test_instance_timeouts(app, client):
 
     assert_in_full_metrics(instance_id, False)
 
-    response = client.get('http://localhost:5000/load-state')
-    assert response.status_code == 200
+    response = client.post('http://localhost:5000/load-state')
+    assert response.status_code == 200, "load-state should return 200"
 
     assert_in_full_metrics(instance_id, True)
 
@@ -176,30 +176,30 @@ def test_instance_timeouts(app, client):
 
     assert_in_full_metrics(instance_id, False)
 
-    response = client.get('http://localhost:5000/load-state')
-    assert response.status_code == 200
+    response = client.post('http://localhost:5000/load-state')
+    assert response.status_code == 200, "load-state should return 200"
 
     os.remove(os.path.join("state/", instance_id + ".json"))
 
     response = client.get('http://localhost:5000/save-state')
-    assert response.status_code == 200
+    assert response.status_code == 200, "save-state should return 200"
 
 
     dir_content = os.listdir("state/")
     assert instance_id + ".json" in dir_content
     
-    response = client.get('http://localhost:5000/load-state')
-    assert response.status_code == 200
+    response = client.post('http://localhost:5000/load-state')
+    assert response.status_code == 200, "load-state should return 200"
 
     assert_in_full_metrics(instance_id, True)
 
-    response = client.get(f'http://localhost:5000/{instance_id}/stop-instance')
-    assert response.status_code == 200
+    response = client.post(f'http://localhost:5000/{instance_id}/stop-instance')
+    assert response.status_code == 200, "stop-instance should return 200"
     
     assert_in_full_metrics(instance_id, False)
 
     response = client.get('http://localhost:5000/save-state')
-    assert response.status_code == 200
+    assert response.status_code == 200, "save-state should return 200"
 
     dir_content = os.listdir("state/")
     assert not instance_id + ".json" in dir_content

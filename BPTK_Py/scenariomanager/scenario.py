@@ -85,7 +85,6 @@ class SimulationScenario():
 
         if "points" in dictionary:
             for key, value in dictionary["points"].items():
-                print(f"Overriding {key}")
                 self.points[key] = value
 
         if "runspecs" in dictionary:
