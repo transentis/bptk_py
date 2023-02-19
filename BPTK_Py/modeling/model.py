@@ -875,8 +875,14 @@ class Model:
         return self.memoize(name,t)
 
     def reset_cache(self):
-        """Reset cache of all System Dynamics equations.
+        """Reset cache of all System Dynamics equations and of the ABM data collector
         """
+        if self.data_collector:
+            self.data_collector.reset()
+
+        for agent in self.agents:
+            agent.reset_cache()
+
         for equation in self.memo:
             self.memo[equation] = {}
 

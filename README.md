@@ -38,6 +38,11 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.7.1
+* BPTK: reset_cache now also resets the data collector in agent based models
+* BPTK: reset_cache calls the reset_cache method on all agents
+* BPTK: agents now have a reset_cache method that can be used to reset agent state
+
 ### 1.7.0
 * BPTK Server: Remote authorization for root, full-metrics and metrics endpoints
 * BPTK Server: Add /healthy endpoint

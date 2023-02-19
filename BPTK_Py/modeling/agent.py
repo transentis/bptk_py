@@ -314,6 +314,20 @@ class Agent:
         """
         pass
 
+    def reset_cache(self):
+        """Called by the model when the scenario cache is cleared via reset_scenario_cache
+        
+        Useful to allow a soft reset of the agent.
+        
+        The default implementation does nothing.
+
+        Args:
+            None
+        """
+        pass
+
+
+
     def begin_episode(self, episode_no):
         """Called by the framework at the beginning of each episode.
         
