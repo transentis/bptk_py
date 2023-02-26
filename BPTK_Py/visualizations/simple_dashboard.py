@@ -2,6 +2,10 @@ from dataclasses import dataclass
 import dataclasses
 from typing import Callable, List, Union
 from enum import Enum
+import matplotlib.pyplot as plt
+from ipywidgets import interact
+import ipywidgets as widgets
+
 
 class ScenarioWidget:
     def _event_handler(self, change):
@@ -12,10 +16,6 @@ class ScenarioWidget:
 
 
     def __init__(self, widget, element, trigger, points=None, multiply=1.0, pre_trigger=None):
-        import matplotlib.pyplot as plt
-        from ipywidgets import interact
-        import ipywidgets as widgets
-
         self.multiply = multiply
         self.widget = widget
         self.points = points
