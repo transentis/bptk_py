@@ -38,6 +38,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.7.3
+* BPTK: Update dependencies of Pandas/Matplotlib/Sympy/Parsimonious/Pyyaml/Xlsxwriter/Jinja2/Requests/Jsonpickle/Flask
+* Successfully tested with Python 3.11
+
 ### 1.7.2
 * BPTK: Fix imports of SimpleDashboard class
 * BPTK: Update dependency of Scipy, Numpy and Pyyaml
