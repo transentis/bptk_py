@@ -38,6 +38,8 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.7.4
+* BPTK: Fix bug in reset_scenarios for Hybrid Scenario Managers
 ### 1.7.3
 * BPTK: Update dependencies of Pandas/Matplotlib/Sympy/Parsimonious/Pyyaml/Xlsxwriter/Jinja2/Requests/Jsonpickle/Flask
 * Successfully tested with Python 3.11
