@@ -6,9 +6,10 @@ The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modelin
 
 Next to providing the necessary SD and ABM language constructs to build simulation models directly in Python, the framework also includes a compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](http://www.iseesystems.com) or [iThink](http://www.iseesystems.com))) and then use them _independently_ in an Python environment.
+This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](http://www.iseesystems.com) or [iThink](http://www.iseesystems.com)) and then use them _independently_ in an Python environment.
 
-The best way to get started with BPTK-Py is our tutorial, which contains a number of simulation models and Jupyter notebooks that illustrate how to use BPTK. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial/) on Github.
+The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](http://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
+  
 
 ## Main Features
 
@@ -22,21 +23,24 @@ The best way to get started with BPTK-Py is our tutorial, which contains a numbe
 
 BPTK-Py is developed and maintained by [transentis labs](http://www.transentis.com/business-prototyping-toolki/en/). 
 
-The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com).
+The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com). 
 
-Our [Introduction to the Business Prototyping Toolkit](https://github.com/transentis/bptk_intro/blob/master/intro_to_bptk.ipynb) provides a "single notebook" overview of all the modeling techniques supported by BPTK. 
+The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK. 
 
-You should also study the BPTK-Py tutorial, which contains the sample models and Jupyter notebooks referenced in the online documentation. You can clone or download the tutorial from our [git repository](https://github.com/transentis/bptk_py_tutorial). 
+The online documentation is generated from an extensive set of Jupyter notebooks, the __BPTK Tutorial__. The tutorial is available as a [git repository](https://github.com/transentis/bptk_py_tutorial) on GitHub. 
 
 Our [Business Prototyping Toolkit Meetup Group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) gathers online regularly. This is a good place to see BPTK in action, ask questions and suggest new features. We record every session and you can _view past recordings_ on the [meetup homepage](https://www.transentis.com/resources/business-prototyping-toolkit-meetup).
 
-You might also like to clone our [model library repository](https://github.com/transentis/bptk-model-library), which contains a number of models that illustrate how to model socio-economic systems using Agent-based modeling, System Dynamics and BPTK.
+We used BPTK to build our implementation of the infamous [Beer Distribution Game](https://beergame.transentis.com).
 
-BPTK was also used to build our implementation of the infamous Beer Distribution Game. Our [beergame repository](https://github.com/transentis/beergame) contains Jupyter notebooks that analyse the Beergame in-depth and also provides XMILE, SD DSL and Agent-based versions of the Beergame.
+Our [beergame repository](https://github.com/transentis/bptk_py_tutorial/tree/master/model_library/beergame) contains Jupyter notebooks that analyse the Beergame in-depth and also provides XMILE, SD DSL and Agent-based versions of the Beergame.
 
 For any questions our suggestions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 1.7.5
+* BPTK: Fix that caused a crash when using multiple scenario files for hybrid models
 
 ### 1.7.4
 * BPTK: Fix bug in reset_scenarios for Hybrid Scenario Managers
@@ -316,160 +320,3 @@ why we decided to implement an update mechanism. Details are available in the [d
     *   Trigonometric operators (ARCSIN, ARCCOS, ARCTAN)
 *   The ``plot_scenarios`` API now supports array calls such as ``stock[*]`` or ``stock[dim1,dim2]``
 *   SD DSL: ABS, DT, PULSE, STARTTIME, STOPTIME
-
-### 0.9.0
-We removed the JavaScript SD Compiler and programmed a whole new transpiler that converts XMILE to Python __in Python__ to obtain large performance increases and stability when working with XMILE models. No longer you will need Node.js for transpiling models into Python.
-
-*   With the new XMILE Transpiler, we also ship support for the following XMILE operators: SMTH1, TREND
-
-### 0.8.9
-
-*   Added new operators for the SD DSL along with in depth documentation that shows how to use the functions: DELAY, EXP, SMOOTH, STEP, TREND.
-*   The SD DSL is now stricter, all constant values must be floats, ints are no longer accepted.
-*   Added a new ``register_model`` method to bptk, to ensure quick setup of scenario managers and scenarios.
-*   Internal optimizations and bug fixes.
-
-### 0.8.8
-
-*   Extended the `export` function, it now also exports data to allow comparison between scenarios
-
-### 0.8.7
-
-*   Fixed an error in requirements.txt
-
-### 0.8.6
-*   Added a new export method to the bptk class to simplify the export of simulation results.
-*   Added some new methods to the bptk class to allow easy access to scenarios - accessing the scenarioManagerFactory is now no longer necessary.
-*   Updated and simplified the documentation.
-
-### 0.8.5
-*   System Dynamics DSL: Extended the operator overrides, to ensure stocks can have more than two inflows or outflows.
-
-### 0.8.4
-*   Bug fix to bptk.add_scenario that occurred when adding a new scenario to an existing scenario manager
-
-### 0.8.3
-
-*   Little fix for requirements.txt
-
-### 0.8.2
-*   We are working on making BPTK-Py even more flexible. The Scheduler interface now has an attribute ``running``. You can modify this during runtime in order to cancel long-standing jobs. This may be useful for third-party applications that use BPTK-Py and need to be able to cancel jobs.
-*   The YAML Model parser now supports custom Model files for ABM simulations!
-
-### 0.8.1
-*   Bugfix for agent: Property type can also be of type "Agent".
-
-### 0.8.0
-*   Fixed an annoying bug: We forgot to include the threads that watch the scenario JSON files into the ``bptk.destroy()`` method. Now it runs properly and once executed all monitors will stop monitoring.
-*   YAML Support! Now you can easily define your models using YAML notation. This is much simpler than JSON. 
-*   As a perk, you do not need the model implementation for AB models anymore. When using YAML notation, BPTK will create the necessary objects without requiring code. So now you can concentrate onyour agents without the need of registering agent factories!
-*   Choose Data collector class within the model file: The YAML file now supports the directive ``datacollector``. Here you can link to custom data collector classes. Try the included ones such as ``BPTK_Py.abm.CSVDAtaCollector``. Using custom data collectors reduces simulation time tremendously as ``BPTK-Py`` will not use its slow mechanism to create dataframes anymore.
-*   We also included a meta model creator feeding on parser results. You only need to implement the model parser and feed the model creator. The model creator then builds the actual simulation model. This way, you can add modelling languages easily!
-
-
-### 0.7.0
-*   Added Delayed Events in Agent based modelling. Now each agent can send events that trigger in the future. Instantiate a ```DelayedEvent``` and set the ``trigger_in`` parameter with the number of periods to wait before trigger. The framework will make sure to trigger the event at the right time.
-*   Multithreading for scenario execution: Speeding up multi-scenario simulation siginificantly by using one thread per scenario
-*   Added ``agent_type`` as optional parameter for Agent. Now you do not need to add the agent type in the initialize method anymore if that is what you prefer
-*   Better handling of progress bar in ABM simulation using ``ipywidgets.Out`` to make bar disappear after executiob. Removed running scheduler as thread because this is not required here.
-*   ABM: If you still have scenario manager files but deleted the code, execution will not be stopped anymore but faulty scenario is skipped with an Error message. 
-
-
-### 0.6.6
-*   Little improvements and bugfixes to data collectors. For Kinesis, you will be warned if ``boto`` (required for AWS access) is not installed as it is not a package dependency.
-
-### 0.6.5
-*   We want to make data analysis easy for you. Hence, we added data collectors as standard for model output: ``CSVDataCollector`` outputs each agents' events to CSV, one file per agent. ``KinesisDataCollector`` outputs the agent statistics to Kinesis, an AWS service. For both, the data output is event-wise
-
-### 0.6.4
-
-*   New methods model.begin_round and model.end_round. Model.act is now obsolete
-*   Added a bptk.train_simulation method which runs simulation in episodes to allow training
-*   Small changes to the scenario definition syntax (JSON) for agent-based models
-*   Renamed the progressBar attribute of bptk.plot_simulation to progress_bar
-
-### 0.6.3  
-
-*   Bug fix to bptk.run_simulations: the parameter AgentPropertyTypes was not handled correctly
-
-
-### 0.6.2 
-
-*   Bug fix: all agents were receiving the same properties object on initialization. Fixed by using Python's copy module. Each agent now receives a deep copy. Changes on one agent's properties do not interfere with changes on other agents' properties anymore.
-
-### 0.6.1
-
-*   Bug fix: valuate_function was renamed to evaluate_equation in 0.6.0 , but not everywhere
-
-### 0.6.0
-
-*   New functionality: you can now define a function in Python and use it within an SD model.
-
-### 0.5.3
-
-*   First Release of documentation for Readthedocs. Check it out at: http://bptk.transentis.com
-*   You can now run AB models with a custom data_collector without plotting using "run_simulations()". This allows you to create custom data collectors that do not emit data back to BPTK, e.g. a streaming data collector
-*   Fixed an issue regarding absolute and relative imports in the Model class
-*   Various improvements to ABM module
-
-### 0.5.2
-
-*   Models now have their own act method, to allow updating of dynamic properties.
-*   Internal changes to event handling in agents
-*   Fixed a bug regarding lookup handling.
-
-### 0.5.1
-
-*   Bugfix for ABM module
-
-### 0.5
-
-*   Large improvements for the Agent Based Modeling component! Main changes:
-*   Agents can now have properties.
-*   Agent properties can be set via the JSON config file. Properties can be accessed using dot-notation, i.e. agent.property
-*   The necessary property get/set methods are added automatically using Python metaprogramming facilities - this keeps the code that needs to implemented by the modeler to a mimimum.The same is true of model properties - these can now also be accessed using dot-notation.
-*   Statistics for properties are automatically collected and can be plotted using the plot_scenarios method. Currently the following statistics are collected: total, min, max, mean.
-
-### 0.4.1
-
-*   Bugfix in Model class: dt param was not properly instantiated
-
-### 0.4.0
-
-*   Framework for Agent Based models
-*   Framework for defining System Dynamics models in code with less effort. No need for complex recursive calls anymore. Simply define your equations as easy as element.equation = element * anotherElement. Example in the tutorial!
-*   Simplify API: use comma-seperated values to specify scenarios/scenario managers or equations, no need for Python lists anymore!
-*   Many more internal improvements under the hood.
-
-### 0.3.7
-
-*   PULSE functions can now be defined within Jupyter environment. Just use the new pulse_function_create(scenarios,scenario_managers) method and be surprised.
-*   Cleaner method for strategy simulation. Now running stepwise, not using a complex while loop anymore. Improves readability tremendously!
-*   Optimize imports using __init__.py properly.
-*   Correct handling of decimal dt values within simulator.
-
-### 0.3.6.1
-
-*   Bugfix to reduce size of the package
-
-### 0.3.6
-
-*   Now interpreting strategies that modify at '0' as constants values and overwrite the constants
-*   Use DT of simulation model
-
-### 0.3.5.5
-
-*   Fixed a bug that prevented from plotting properly when giving multiple scenario managers where one of them did not store the given scenario name
-
-### 0.3.5.4
-
-*   Monitoring of Scenario JSON files:
-*   Reload scenarios upon change (also works if Scenario manager spreads over multiple files)
-*   Find added scenarios
-*   Merge base values spread over multiple files
-
-### 0.3.5.3
-
-*   horizontal lines in graphs to improve readability
-*   Improvements to readme file
-*   Small bug fixes

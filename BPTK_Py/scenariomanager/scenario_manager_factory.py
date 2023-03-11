@@ -96,7 +96,7 @@ class ScenarioManagerFactory():
                 else:
                     self.scenario_managers[scenario_manager_name].add_scenarios(model_dictionary[scenario_manager_name]["scenarios"])
                     if filename not in self.scenario_managers[scenario_manager_name].filenames: 
-                        self.scenario_managers[scenario_manager_name]+=[filename]
+                        self.scenario_managers[scenario_manager_name].filenames +=[filename]
 
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
             else:

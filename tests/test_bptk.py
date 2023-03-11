@@ -244,7 +244,7 @@ def abm_model():
 
 def abm_results(bptk):
     """
-    The function returns the dataframe results based on the agent based model provided inside the abm_folder.
+    The function returns the dataframe results based on scenario 1 of the agent based model provided inside the abm_folder.
     "inputs":
     bptk: a varible that stores the whole agent-based model
     "returns":
@@ -261,6 +261,10 @@ def abm_results(bptk):
         return_df=True
     )    
     return results
+
+def test_abm_get_scenarios(abm_model):
+    assert abm_model.get_scenario_names(scenario_managers=["testAbmManager"])==["testScenario2","testScenario"]
+
 
 def test_abm_results_data_type(abm_model):
     """
