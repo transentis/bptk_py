@@ -578,7 +578,7 @@ class bptk():
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
 
                 # Handle Hybrid scenarios
-                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and self.session_state["agents"] > 0:
+                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and len(self.session_state["agents"]) > 0:
                     print("run_step currently only supports SD scenarios")
                     # Handle SD scenarios and sort by scenarios
                 elif manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
