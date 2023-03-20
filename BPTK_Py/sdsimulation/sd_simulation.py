@@ -19,6 +19,8 @@ import pandas as pd
 
 from ..logger import log
 
+from ..util import timerange
+
 class SdSimulation():
     """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
 
@@ -136,7 +138,7 @@ class SdSimulation():
         """
 
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
-        for i in np.arange(start, until + self.mod.dt, self.mod.dt):
+        for i in timerange(start, until+self.mod.dt, self.mod.dt):
             try:
                 result = self.mod.equation(equation, i)
             except KeyError:

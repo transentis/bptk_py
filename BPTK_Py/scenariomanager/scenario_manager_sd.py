@@ -167,6 +167,13 @@ class ScenarioManagerSd(ScenarioManager):
             new_flow.generate_function()
             new_mod.memo[flow.name] = {}
 
+        for name, biflow in model.biflows.items():
+            new_biflow = new_mod.biflow(biflow.name)
+            new_biflow._elements = biflow._elements
+            new_biflow.function_string = biflow.function_string
+            new_biflow.generate_function()
+            new_mod.memo[biflow.name] = {}
+
         for name, stock in model.stocks.items():
             new_stock = new_mod.stock(stock.name)
             new_stock._elements = stock._elements

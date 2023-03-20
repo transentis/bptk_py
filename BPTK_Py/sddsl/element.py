@@ -23,6 +23,8 @@ import scipy
 import scipy.stats
 from scipy.stats import norm
 
+from BPTK_Py.util import timerange
+
 
 class Element:
     """Generic element in a SD DSL model.
@@ -81,7 +83,7 @@ class Element:
 
     @classmethod
     def default_function_string(self):
-        return "lambda model, t: 0"
+        return "lambda model, t: 0.0"
 
     def generate_function(self):
         fn = eval(self._function_string)
@@ -228,18 +230,18 @@ class Element:
 
                 try:
                     dict[element_name] = {t: element.model.memoize(
-                        element.name, t) for t in np.arange(starttime, stoptime+dt, dt)}
+                        element.name, t) for t in timerange(starttime, stoptime+dt, dt)}
                 except:
-                    dict[element_name] = {t: element.model.memoize(element.name, t) for t in np.arange(
+                    dict[element_name] = {t: element.model.memoize(element.name, t) for t in timerange(
                         element.model.starttime, element.model.stoptime+dt, dt)}
 
             df = pd.DataFrame(dict)
         else:
             try:
                 df = pd.DataFrame({self.name: {t: self.model.memoize(
-                    self.name, t) for t in np.arange(starttime, stoptime+dt, dt)}})
+                    self.name, t) for t in timerange(starttime, stoptime+dt, dt)}})
             except:
-                df = pd.DataFrame({self.name: {t: self.model.memoize(self.name, t) for t in np.arange(
+                df = pd.DataFrame({self.name: {t: self.model.memoize(self.name, t) for t in timerange(
                     self.model.starttime, self.model.stoptime+dt, dt)}})
         # ensure column is of float type and not e.g. an integer
 

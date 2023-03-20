@@ -39,6 +39,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.7.6
+* BPTK: Improve handling of floating point numbers when using small DTs
+* ScenarioManagerSD: Fixed an issue that caused models with biflows to be cloned incorrectly
+
 ### 1.7.5
 * BPTK: Fix that caused a crash when using multiple scenario files for hybrid models
 

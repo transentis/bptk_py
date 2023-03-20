@@ -8,6 +8,7 @@ import json
 from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
 import BPTK_Py
+from BPTK_Py.util import timerange, normalize
 
 
 
@@ -84,6 +85,18 @@ def sd_results(bptk):
         return_df = True
     )
     return results
+
+def test_floating_point():
+    assert normalize(3.6,base=0.25,offset=0.0,precision=2) == 3.5
+    assert normalize(3.6,base=0.25,offset=0.1,precision=2) == 3.6
+    assert normalize(3.6,base=0.25,offset=0.3,precision=2) == 3.55 
+    assert timerange(1,10,1) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
+    assert timerange(3.3,7,0.25) == [3.3,3.55,3.8,4.05,4.3,4.55,4.8,5.05,5.3,5.55,5.8,6.05,6.3,6.55,6.8]
+    assert timerange(0.0,0.0005,0.0001) == [0.0,0.0001,0.0002,0.0003,0.0004]
+    assert timerange(1,10,1,exclusive=False) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,10.0]
+    assert timerange(3.3,7,0.25,exclusive=False) == [3.3,3.55,3.8,4.05,4.3,4.55,4.8,5.05,5.3,5.55,5.8,6.05,6.3,6.55,6.8]
+    assert timerange(0.0,0.0005,0.0001,exclusive=False) == [0.0,0.0001,0.0002,0.0003,0.0004,0.0005]
+ 
     
 def test_sd_model_results_data_type(sd_model):
     """
@@ -119,7 +132,7 @@ def test_sd_model_results_content(sd_model):
     test_df = pd.DataFrame({'stock': pd.Series(list(range(10)), dtype='float'),
                             'flow': pd.Series([1.0]*10, dtype='float')})
     test_df.index.name =  "t"
-    test_df.index += 1
+    test_df.index += 1.0
       
     assert_frame_equal(results, test_df)
     
@@ -150,7 +163,7 @@ def test_sd_run_scenarios_df_results(sd_model):
     test_df = pd.DataFrame({'stock': pd.Series(list(range(10)), dtype='float'),
                             'flow': pd.Series([1.0]*10, dtype='float')})
     test_df.index.name =  "t"
-    test_df.index += 1
+    test_df.index += 1.0
       
     assert_frame_equal(results, test_df)
     

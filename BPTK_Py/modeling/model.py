@@ -18,6 +18,8 @@ import math
 from IPython.display import display
 from scipy.interpolate import interp1d
 
+from ..util import floating_point as fp
+
 from .agent import Agent
 from .event import Event
 from ..logger import log
@@ -40,7 +42,7 @@ class Model:
     """
 
 
-    def __init__(self, starttime=0, stoptime=0, dt=1,name="", scheduler=None,data_collector=None):
+    def __init__(self, starttime=0.0, stoptime=0.0, dt=1.0,name="", scheduler=None,data_collector=None):
 
         self._caching_on = False
 
@@ -54,9 +56,9 @@ class Model:
         self.events = []
 
         # Global Model variables (for SD as well as ABM)
-        self.starttime = starttime
-        self.stoptime = stoptime
-        self.dt = dt
+        self.starttime = starttime*1.0
+        self.stoptime = stoptime*1.0
+        self.dt = dt*1.0
         self.scenario_manager = ""
 
 
@@ -733,17 +735,21 @@ class Model:
 
     def memoize(self, equation, arg):
         #TODO: consider making this into an internal method
+
+        #normalize the arg
+
+        normalized_arg= fp.normalize(arg, self.dt, self.starttime, max(fp.scale(self.starttime), fp.scale(self.dt)))
         try:
             mymemo = self.memo[equation]
         except:
             # In case the equation does not exist in memo
             self.memo[equation] = {}
             mymemo = self.memo[equation]
-        if arg in mymemo.keys():
-            return mymemo[arg]
+        if normalized_arg in mymemo.keys():
+            return mymemo[normalized_arg]
         else:
-            result = self.equations[equation](arg)
-            mymemo[arg] = result
+            result = self.equations[equation](normalized_arg)
+            mymemo[normalized_arg] = result
 
         return result
 

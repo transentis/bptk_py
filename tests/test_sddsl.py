@@ -3,7 +3,7 @@ import os
 import numpy as np
 from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
-
+from BPTK_Py.util import timerange
 
 def test_spm():
     from BPTK_Py import Model
@@ -194,6 +194,51 @@ def test_equations():
     c.equation = a**b
     assert c(1) == 9.0
 
+def test_small_dt():
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+    from BPTK_Py.bptk import bptk
+    from BPTK_Py.util import timerange
+
+    model = Model(starttime=0.0,stoptime=10.0,dt=0.001,name='Oscillator')
+
+    # variables
+    position = model.stock("position")
+    velocity = model.stock("velocity")
+    change_in_position = model.biflow("change_in_position")
+    change_in_velocity = model.biflow("change_in_velocity")
+    acceleration= model.converter("acceleration")
+    mass = model.constant("mass")
+    stiffness = model.constant("stiffness")
+    analytical_solution = model.converter("analytical_solution")
+
+    # equations
+
+    position.initial_value = 1.0
+    position.equation = change_in_position
+
+    change_in_position.equation = velocity
+
+    velocity.initial_value = 0.0
+    velocity.equation = change_in_velocity
+
+    change_in_velocity.equation = acceleration
+
+    acceleration.equation = -mass*stiffness*position
+
+    mass.equation = 1.0
+    stiffness.equation = 1.0
+
+    analytical_solution.equation= (-1)*sd.cos(sd.pi()+sd.time())
+    bptk=bptk()
+    bptk.register_model(model)
+    df=bptk.run_scenarios(
+    scenario_managers=["smOscillator"],
+    scenarios=["base"],
+    equations=["position","analytical_solution"])
+
+    assert df.index.to_list() == timerange(0.0,10.0,0.001,exclusive=False)
+
 
 def test_sddsl_functions():
     from BPTK_Py import Model
@@ -216,7 +261,7 @@ def test_sddsl_functions():
     data = bptk.run_scenarios(scenario_managers=["smAbs"], scenarios=[
                               "base"], equations=["input_converter", "abs_converter"])
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert abs(data.input_converter[i]) == data.abs_converter[i]
 
     # delay
@@ -237,7 +282,7 @@ def test_sddsl_functions():
     bptk.register_model(model)
     data = bptk.run_scenarios(scenario_managers=["smDelay"], scenarios=[
                               "base"], equations=["input_function", "delayed_input"])
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         if(i < delay_duration + dt):
             assert data.delayed_input[i] == initial_value
             continue
@@ -255,7 +300,7 @@ def test_sddsl_functions():
     dt_converter.equation = sd.dt(model)
     data = dt_converter.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.dt[i] == dt
 
     # exp
@@ -271,7 +316,7 @@ def test_sddsl_functions():
     exp.equation = sd.exp(growth_rate*sd.time())
     data = exp.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.exp[i] == math.exp(exp_value * i)
 
     # max
@@ -291,7 +336,7 @@ def test_sddsl_functions():
     data = bptk.plot_scenarios(scenario_managers=["smMax"], scenarios=[
                                "base"], equations=["a", "b", "c"], return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         if i <= 5:
             assert data.c[i] == 10
             continue
@@ -314,7 +359,7 @@ def test_sddsl_functions():
     data = bptk.plot_scenarios(scenario_managers=["smMin"], scenarios=[
                                "base"], equations=["a", "b", "c"], return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         if i <= 5:
             assert data.c[i] == 5
             continue
@@ -339,7 +384,7 @@ def test_sddsl_functions():
     bptk.register_model(model)
     data = bptk.plot_scenarios(scenario_managers=["smPulse"], scenarios=[
                                "base"], equations=["stock", "flow"], return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         if i < first_pulse:
             assert data.flow[i] == 0
             assert data.stock[i] == 0
@@ -377,8 +422,7 @@ def test_sddsl_functions():
     last_value = base_value
     last_change = 9999999
     reached_step_height = False
-    for i in np.arange(start, stop, dt):
-
+    for i in timerange(start, stop, dt):
         # smoothing function never exceeds height
         assert data.smooth[i] <= step_height
 
@@ -395,7 +439,7 @@ def test_sddsl_functions():
             assert data.smooth[i] == base_value
             continue
 
-        # the value of the function should always increase
+        # the value of the function should always increase or stay the same
         assert data.smooth[i] > last_value
 
         # calculate the rate of change and ensure it is lower than in previous runs.
@@ -415,7 +459,7 @@ def test_sddsl_functions():
     starttime.equation = sd.starttime(model)
     data = starttime.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.starttime[i] == start
 
     # stoptime
@@ -428,7 +472,7 @@ def test_sddsl_functions():
     stoptime.equation = sd.stoptime(model)
     data = stoptime.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.stoptime[i] == stop
 
     # step
@@ -443,7 +487,7 @@ def test_sddsl_functions():
     step.equation = sd.step(step_height, step_timestep)
     data = step.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         if i <= step_timestep:
             assert data.step[i] == 0
             continue
@@ -463,7 +507,7 @@ def test_sddsl_functions():
 
     data = inflow.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.inflow[i] == i
 
     # trend
@@ -477,7 +521,7 @@ def test_sddsl_functions():
     flow = model.flow("round")
     flow.equation = sd.round(sd.time(), 0)
     data = flow.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data['round'][i] == round(i)
 
     # sqrt
@@ -491,7 +535,7 @@ def test_sddsl_functions():
 
     f.equation = sd.sqrt(val)
     data = f.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.sqrt[i] == math.sqrt(i)
 
     # sin cos tan
@@ -511,7 +555,7 @@ def test_sddsl_functions():
     data_sin = sin.plot(return_df=True)
     data_tan = tan.plot(return_df=True)
     data_cos = cos.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data_sin.sin[i] == max(math.sin(i), 0.0)
         assert data_cos.cos[i] == max(math.cos(i), 0.0)
         assert data_tan.tan[i] == max(math.tan(i), 0.0)
@@ -547,7 +591,7 @@ def test_sddsl_functions():
     r = 5
     f.equation = sd.combinations(n, r)
     data = f.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.combinations[i] == 21
 
     # exprnd
@@ -560,9 +604,9 @@ def test_sddsl_functions():
     assert len(data) == 101
 
     # factorial
-    start = 0
-    dt = 1
-    stop = 10
+    start = 0.0
+    dt = 1.0
+    stop = 10.0
     m = Model(starttime=start, stoptime=stop, dt=dt)
     f = m.flow(name="factorial")
 
@@ -570,12 +614,12 @@ def test_sddsl_functions():
 
     f.equation = sd.factorial(sd.time())
     data = f.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
-        assert data.factorial[i] == math.factorial(i)
+    for i in timerange(start, stop, dt):
+        assert data.factorial[i] == 1.0*math.factorial(int(i))
 
     # gamma
     # only tests if it runs
-    m = Model(starttime=0, stoptime=10, dt=0.1)
+    m = Model(starttime=0.0, stoptime=10.0, dt=0.1)
     f = m.flow(name="gamma")
 
     shape = 10
@@ -697,8 +741,8 @@ def test_sddsl_functions():
     f.equation = sd.permutations(n, r)
     data = f.plot(return_df=True)
 
-    for i in np.arange(start, stop, dt):
-        assert (math.factorial(i) / math.factorial(i - r))
+    for i in timerange(start, stop, dt):
+        assert (math.factorial(int(i)) / math.factorial(int(i) - int(r)))
 
     # poisson
     # only tests if it runs
@@ -721,7 +765,7 @@ def test_sddsl_functions():
 
     f.equation = sd.random(min_value, max_value)
     data = f.plot(return_df=True)
-    for i in np.arange(start, stop, dt):
+    for i in timerange(start, stop, dt):
         assert data.random[i] >= min_value and data.random[i] <= i
 
     # triangular

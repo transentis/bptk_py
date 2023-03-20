@@ -22,6 +22,8 @@ import logging
 from copy import copy
 import random
 
+from ..util import timerange
+
 import itertools
 
 def cartesian_product(listoflists):
@@ -133,7 +135,7 @@ class SDModel():
             return f(x)
 
         results = []
-        for t in np.arange(self.starttime, self.stoptime + self.dt,
+        for t in timerange(self.starttime, self.stoptime + self.dt,
                            self.dt):  # Compute all y values for graphical functions using standard interpolate (LERP)
             results += [(LERP(t, self.points[gf]), t)] # y,x
 
@@ -191,7 +193,7 @@ class SDModel():
 
         def compute_npv(stock_name, t, i, missing):
             I = missing if missing else self.equation(stock_name, self.starttime)
-            return I + sum( [self.memoize(stock_name, t) / (1 + i) ** t for t in np.arange(self.starttime+self.dt , t, self.dt)])
+            return I + sum( [self.memoize(stock_name, t) / (1 + i) ** t for t in timerange(self.starttime+self.dt , t, self.dt)])
 
         i = 0
         try:

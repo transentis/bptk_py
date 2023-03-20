@@ -1450,7 +1450,7 @@ class Factorial(Function):
     def __init__(self, n):
         self.n = n
 
-    def term(self, time="t"): return "math.factorial({})".format(
+    def term(self, time="t"): return "1.0*math.factorial(int({}))".format(
         extractTerm(self.n, time))
 
 
@@ -1556,7 +1556,7 @@ class Permutations(Function):
         self.n = n
         self.r = r
 
-    def term(self, time="t"): return "( math.factorial( {} ) / math.factorial( {} - {} ) )".format(
+    def term(self, time="t"): return "( math.factorial( int({}) ) / math.factorial( int({}) - int({}) ) )".format(
         extractTerm(self.n, time), extractTerm(self.n, time), extractTerm(self.r, time))
 
 
