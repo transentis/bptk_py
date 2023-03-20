@@ -361,6 +361,19 @@ class BptkServer(Flask):
                             scenario.stoptime = runspecs["stoptime"]
                         if "dt" in runspecs:
                             scenario.dt = runspecs["dt"]
+                    if "agents" in scenario_settings:
+                        agents = scenario_settings["agents"]
+                        for agent in agents:
+                            agent_type = agent["agent_type"]
+                            agent_name = agent["agent_name"]
+                            property_name = agent["property"]
+                            new_value = agent["new_value"]
+                            ids = scenario.agent_ids(agent_type=agent_type)
+                            tuples = []
+                            for id in ids:
+                                tuples.append((scenario.agent(id).name,id))
+                            setattr(scenario.agent([item[1] for item in tuples if item[0] == agent_name][0]), property_name, new_value)
+                    
                     self._bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
         except KeyError:
             pass
