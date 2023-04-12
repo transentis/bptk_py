@@ -214,6 +214,7 @@ class BptkServer(Flask):
         self.route("/healthy", methods=['GET'],strict_slashes=False)(self._healthy_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self._scenarios_resource)
+        self.route("/get-scenario-data", methods=['POST'], strict_slashes=False)(self._get_scenario_data_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self._equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
         self.route("/start-instance", methods=['POST'], strict_slashes=False)(self._start_instance_resource)
@@ -417,6 +418,54 @@ class BptkServer(Flask):
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
         return resp
+
+    def _get_scenario_data_resource(self):
+        if not request.is_json:
+            resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+
+        content = request.get_json()
+
+        try:
+            scenario_manager = content["scenario_manager"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario_manager to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        try:
+            scenario = content["scenario"]
+        except KeyError:
+            resp = make_response('{"error": "expecting scenario to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
+        try:
+            agent_type = content["agent_type"]
+        except KeyError:
+            resp = make_response('{"error": "expecting agent_type to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
+        try:
+            property_name = content["property"]
+        except KeyError:
+            resp = make_response('{"error": "expecting property to be set"}',500)
+            resp.headers['Content-Type']='application/json'
+            resp.headers['Access-Control-Allow-Origin']='*'
+            return resp
+        
+        scenario = self._bptk.get_scenario(scenario_manager,scenario)
+
+        array = []
+        for id in scenario.agent_ids(agent_type=agent_type):
+            array.append((getattr(scenario.agent(id),property_name),id))
+
+        return json.dumps(array)
 
     @token_required
     def _scenarios_resource(self):
