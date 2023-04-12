@@ -398,15 +398,50 @@ class BptkServer(Flask):
         try:
             equations = content["equations"]
         except KeyError:
-            resp = make_response('{"error": "expecting equations to be set"}', 500)
-            resp.headers['Content-Type']='application/json'
-            resp.headers['Access-Control-Allow-Origin']='*'
-            return resp
+            equations = []
+        
+        # Input for the agents model
+        try:
+            agents = content["agents"]
+        except KeyError:
+            agents = []
+
+        try:
+            agent_states = content["agent_states"]
+        except KeyError:
+            agent_states = []
+
+        try:
+            agent_properties = content["agent_properties"]
+        except KeyError:
+            agent_properties = []
+
+        try: 
+            agent_property_types = content["agent_property_types"]
+        except KeyError:
+            agent_property_types = []
+
+        try:
+            progress_bar = content["progress_bar"]
+        except KeyError:
+            progress_bar = False
+
+        try:
+            series_names = content["series_names"]
+        except KeyError:
+            series_names = {}
 
         result = self._bptk.run_scenarios(
+            scenarios = scenarios,
             scenario_managers=scenario_managers,
+            agents = agents,
+            agent_states = agent_states,
+            agent_properties = agent_properties,
+            agent_property_types = agent_property_types,
             scenarios=scenarios,
             equations=equations,
+            series_names = series_names,
+            progress_bar = progress_bar,
             return_format="json"
         )
 
