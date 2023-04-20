@@ -433,16 +433,15 @@ class BptkServer(Flask):
 
         result = self._bptk.run_scenarios(
             scenarios = scenarios,
-            scenario_managers=scenario_managers,
+            scenario_managers = scenario_managers,
             agents = agents,
             agent_states = agent_states,
             agent_properties = agent_properties,
             agent_property_types = agent_property_types,
-            scenarios=scenarios,
-            equations=equations,
+            equations = equations,
             series_names = series_names,
             progress_bar = progress_bar,
-            return_format="json"
+            return_format = "json"
         )
 
         if result is not None:
