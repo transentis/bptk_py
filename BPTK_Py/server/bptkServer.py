@@ -573,11 +573,7 @@ class BptkServer(Flask):
     @token_required
     def _start_instances_resource(self):
         """
-        This endpoint start N new instances/sessions of BPTK on the server side. The endpoint returns a list of instance_ids, which is needed to identify the instance in later calls.
-
-        Arguments: timeout (dict,optional)
-            The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
-                   
+        This endpoint start N new instances/sessions of BPTK on the server side. The endpoint returns a list of instance_ids, which is needed to identify the instance in later calls.         
         """
         content = request.get_json()
         instances_uuid = []
