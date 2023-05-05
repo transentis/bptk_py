@@ -573,7 +573,7 @@ class BptkServer(Flask):
     @token_required
     def _start_instances_resource(self):
         """
-        This endpoint start N new instances of BPTK on the server side. The endpoint returns a list of instance_ids, which is needed to identify the instance in later calls.
+        This endpoint start N new instances/sessions of BPTK on the server side. The endpoint returns a list of instance_ids, which is needed to identify the instance in later calls.
 
         Arguments: timeout (dict, optional),
                    
@@ -592,6 +592,7 @@ class BptkServer(Flask):
 
                 if instance_uuid is not None:
                     instances_uuid.append(instance_uuid)
+                    self._begin_session_resource(instance_uuid)
                 else:
                     resp = make_response('{"error": "instance could not be started"}', 500)
 
