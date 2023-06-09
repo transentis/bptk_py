@@ -217,6 +217,7 @@ class BptkServer(Flask):
         self.route("/equations", methods=['POST'], strict_slashes=False)(self._equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
         self.route("/start-instance", methods=['POST'], strict_slashes=False)(self._start_instance_resource)
+        self.route("/start-instances", methods=['POST'], strict_slashes=False)(self._start_instances_resource)
         self.route("/<instance_uuid>/run-step", methods=['POST'], strict_slashes=False)(self._run_step_resource)
         self.route("/<instance_uuid>/run-steps", methods=['POST'], strict_slashes=False)(self._run_steps_resource)
         self.route("/<instance_uuid>/stream-steps", methods=['POST'], strict_slashes=False)(self._stream_steps_resource)
@@ -567,6 +568,36 @@ class BptkServer(Flask):
 
         resp.headers['Content-Type']='application/json'
         resp.headers['Access-Control-Allow-Origin']='*'
+        return resp
+
+    @token_required
+    def _start_instances_resource(self):
+        """
+        This endpoint start N new instances/sessions of BPTK on the server side. The endpoint returns a list of instance_ids, which is needed to identify the instance in later calls.         
+        """
+        content = request.get_json()
+        instances_uuid = []
+        if "numberInstances" in content:
+            for i in range(0,content["numberInstances"]):
+                resp = self._start_instance_resource()
+                if resp.status_code != 200:
+                    return resp
+                
+                timeout = resp.json['timeout']
+                instances_uuid.append(resp.json['instance_uuid'])
+                
+                resp = self._begin_session_resource(resp.json['instance_uuid'])
+                if resp.status_code != 200:
+                    return resp
+        else:
+            resp = make_response('{"error": "expecting a number of instances to be provided in the body as a json {"numberInstances": int}"}', 500)
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+        
+        resp = make_response(f'{{"instances_uuid":"{instances_uuid}","timeout":"{timeout}"}}', 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp
 
     @token_required
