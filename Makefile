@@ -26,6 +26,8 @@ publish_without_test:
 publish_docker:
 	python3 ./build_docker.py
 
+cloc:
+	cloc . --exclude-dir venv,__pycache__,_templates,docker_conf,docs
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

@@ -305,7 +305,7 @@ def test_instance_timeouts(app, client):
 def test_keep_alive(app, client):
     import time
 
-    timeout = {
+    timeout_data = {
         "timeout": {
             "weeks":0,
             "days":0,
@@ -317,18 +317,38 @@ def test_keep_alive(app, client):
         }
     }
 
+    instances_data = {
+        "timeout": {
+            "weeks":0,
+            "days":0,
+            "hours":0,
+            "minutes":0,
+            "seconds":5,
+            "milliseconds":0,
+            "microseconds":0
+        },
+        "instances":2
+    }
 
-    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+
+    response = client.post('/start-instance', data=json.dumps(timeout_data), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     id = json.loads(response.data)['instance_uuid']
     
-    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    response = client.post('/start-instance', data=json.dumps(timeout_data), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
+
+    response = client.post('/start-instances', data=json.dumps(instances_data), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    result = json.loads(response.data)
+    assert len(result["instance_uuids"])==2
+
+
     
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
-    assert result['instanceCount'] == 2
+    assert result['instanceCount'] == 4
     time.sleep(3)
     
     response = client.post('/' + id + "/keep-alive",headers={"Authorization": f"Bearer {token}"})
@@ -337,7 +357,7 @@ def test_keep_alive(app, client):
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
-    assert result['instanceCount'] == 2
+    assert result['instanceCount'] == 4
     time.sleep(3)
     
     response = client.get('/full-metrics')
@@ -351,6 +371,8 @@ def test_keep_alive(app, client):
     result = json.loads(response.data)
     assert result['instanceCount'] == 0
 
+   
+    
 
 
 

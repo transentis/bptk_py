@@ -39,6 +39,9 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.8.0
+* BPTKServer: Add new endpoint start-instances that starts multiple instances in one goo
+
 ### 1.7.6
 * BPTK: Improve handling of floating point numbers when using small DTs
 * ScenarioManagerSD: Fixed an issue that caused models with biflows to be cloned incorrectly
