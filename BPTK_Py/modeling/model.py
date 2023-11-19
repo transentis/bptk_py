@@ -472,7 +472,7 @@ class Model:
         return None
 
     def random_agents(self, agent_type, num_agents):
-        """Retreive a number of random agents
+        """Retrieve a number of random agents
 
         Args:
             agent_type: String.
@@ -533,19 +533,14 @@ class Model:
         for agent_id in self.agent_type_map[agent_type]:
             self.enqueue_event(event_factory(agent_id))
 
-
-    def configure(self, config):
+    def configure_properties(self,properties):
         """
-        Called to configure the model using a dictionary. This method is called by the framework if you instantiate models from scenario files. But you can also call the method directly.
-
+        Called to configure model proerties using a dictionary. 
         Args:
             config: Dict.
                 Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
         """
-        self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
-
-        properties = config["properties"]
-
+         
         if type(properties) == list:
             for property in properties:
                 try:
@@ -572,10 +567,43 @@ class Model:
                 if property["type"] == "Lookup":
                     self.points[name] = property["value"]
 
+
+    def configure_agents(self,config):
+        """
+        Called to configure agent proerties using a dictionary. This removes all agents first.1 
+        Args:
+            config: Dict.
+                Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
+        """
+
+        for agent_type in self.agent_type_map:
+            self.agent_type_map[agent_type] = []
+
+        self.agents = []
+        
+        for agent in config:
+            self.create_agents(agent)
+        
+         
+    def configure(self, config):
+        """
+        Called to configure the model using a dictionary. This method is called by the framework if you instantiate models from scenario files. But you can also call the method directly.
+
+        Args:
+            config: Dict.
+                Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
+        """
+        self.run_specs(config["runspecs"]["starttime"], config["runspecs"]["stoptime"], config["runspecs"]["dt"])
+
+        properties = config["properties"]
+
+        self.configure_properties(properties)
+
         agents = config["agents"]
 
-        for agent in agents:
-            self.create_agents(agent)
+        self.configure_agents(agents)
+
+       
 
     def agent_count(self, agent_type):
         """Get count of agents of a given type.

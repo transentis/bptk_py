@@ -344,7 +344,9 @@ class BptkServer(Flask):
             settings = content["settings"]
 
             for scenario_manager_name, scenario_manager_data in settings.items():
+                
                 for scenario_name, scenario_settings in scenario_manager_data.items():
+                    self._bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
                     scenario = self._bptk.get_scenario(scenario_manager_name,scenario_name)
                     if "constants" in scenario_settings:
                         constants = scenario_settings["constants"]
@@ -362,7 +364,12 @@ class BptkServer(Flask):
                             scenario.stoptime = runspecs["stoptime"]
                         if "dt" in runspecs:
                             scenario.dt = runspecs["dt"]
-                    self._bptk.reset_scenario_cache(scenario_manager=scenario_manager_name,scenario=scenario_name)
+                    if "properties" in scenario_settings:
+                        scenario.configure_properties(scenario_settings["properties"])
+                    if "agents" in scenario_settings:
+                        scenario.configure_agents(scenario_settings["agents"])
+                        
+                    
         except KeyError:
             pass
 
@@ -382,18 +389,39 @@ class BptkServer(Flask):
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
 
-        try:
-            equations = content["equations"]
-        except KeyError:
-            resp = make_response('{"error": "expecting equations to be set"}', 500)
+        equations = []
+        agents = []
+        agent_states=[]
+        agent_properties=[]
+        agent_property_types=[]
+        
+
+        if(not "agents" in content.keys() and not "equations" in content.keys()):
+            resp = make_response('{"error": "expecting either equations or agents to be set"}', 500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp
+        if("agents" in content.keys()):
+            agents = content["agents"]
+        if("equations" in content.keys()):
+            equations = content["equations"]
+        if("agent_states" in content.keys()):
+            agent_states = content["agent_states"]
+        if("agent_properties" in content.keys()):
+            agent_properties = content["agent_properties"]
+        if("agent_property_types" in content.keys()):
+            agent_property_types = content["agent_property_types"]
+       
+
 
         result = self._bptk.run_scenarios(
             scenario_managers=scenario_managers,
             scenarios=scenarios,
             equations=equations,
+            agents=agents,
+            agent_states=agent_states,
+            agent_properties=agent_properties,
+            agent_property_types=agent_property_types,
             return_format="json"
         )
 
