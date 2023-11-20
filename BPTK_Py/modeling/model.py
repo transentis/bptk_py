@@ -49,6 +49,7 @@ class Model:
         # for ABM models
         self.properties = {}
         self.agents = []
+        self.next_agent_id=0
         self.name = name
         self.agent_type_map = {}
         self.data_collector = data_collector
@@ -153,7 +154,7 @@ class Model:
     def agent(self, agent_id):
         """Get an agent by ID.
         
-        Retrieve one agent by its ID
+        Retrieve an agent by its ID
 
         Args:
             agent_id: Integer.
@@ -162,11 +163,15 @@ class Model:
         Returns:
             Agent object
         """
+        for agent in self.agents:
+            if agent.id==agent_id:
+                return agent
 
-        return self.agents[agent_id]
+        return None
+    
 
     def create_agents(self, agent_spec):
-        """Create agents according to the agent specificaction.
+        """Create agents according to the agent specification.
         
         The agent specification is a dictionary containing the agent name and properties. Internally, this method then uses the registered agent factories to actually create the agents.
         
@@ -194,7 +199,9 @@ class Model:
         class NotAnAgentException(Exception):
             pass
 
-        agent = self.agent_factories[agent_type](len(self.agents), self, agent_properties)
+        agent = self.agent_factories[agent_type](self.next_agent_id, self, agent_properties)
+
+        self.next_agent_id += 1
 
         if not isinstance(agent,Agent):
             raise NotAnAgentException("{} is not an instance of BPTK_Py.Agent. Please only use subclasses of Agent".format(agent))
@@ -203,6 +210,30 @@ class Model:
         self.agents.append(agent)
         self.agent_type_map[agent_type].append(agent.id)
         return agent
+
+    def delete_agent(self,agent_id):
+        self.delete_agents([agent_id])
+
+    def delete_agents(self,agent_ids):
+        temp_agents=[]
+        agent_types=[]
+
+        for agent in self.agents:
+            if agent.id not in agent_ids:
+                temp_agents.append(agent)
+            else:
+                agent_types.append(agent.agent_type)
+
+        self.agents=temp_agents
+
+        for agent_type in agent_types:
+            self.agent_type_map[agent_type]=[]
+            for agent in self.agents:
+                if agent.agent_type == agent_type:
+                    self.agent_type_map[agent_type].append(agent.id)
+            
+        
+                    
 
     def set_property(self, name, property_spec):
         """Configure a property of the model itself, as opposed to the properties of individual agents.

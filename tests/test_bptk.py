@@ -408,3 +408,31 @@ def test_abm_run_scenarios_json_results(abm_model):
     }
     expected_json = json.dumps(expected_json, indent=2)
     assert results==expected_json
+
+def test_abm_delete_agent(abm_model):
+    model = abm_model.get_scenario(scenario_manager="testAbmManager",scenario="testScenario2")
+
+    assert len(model.agents)==5
+    assert len(model.agent_type_map["agent_1"])==2
+    assert len(model.agent_type_map["agent_2"])==3
+    
+    agentIds=[]
+    agents=[]
+
+    for agent in model.agents:
+        agents.append(agent)
+        agentIds.append(agent.id)
+
+    model.delete_agent(agentIds.pop(0))
+
+    assert len(model.agents)==4
+    assert len(model.agent_type_map["agent_1"])==1
+
+    agentIds.pop(0)
+    agentIds.pop(0)
+    
+    model.delete_agents(agentIds)
+    assert len(model.agents)==2
+
+    
+    

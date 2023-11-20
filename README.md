@@ -39,8 +39,13 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.9.0
+* BPTKServer: `run` endpoint now also works for agent-based models
+* Model: Add `configure_agent`, `configure_properties` and `delete_agent(s)` methods
+* Bump versions of key dependencies
+
 ### 1.8.0
-* BPTKServer: Add new endpoint start-instances that starts multiple instances in one goo
+* BPTKServer: Add new endpoint `start-instances` that starts multiple instances in one goo
 
 ### 1.7.6
 * BPTK: Improve handling of floating point numbers when using small DTs

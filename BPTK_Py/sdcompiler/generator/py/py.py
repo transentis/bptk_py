@@ -347,8 +347,8 @@ def mean_(*args):
 def prod_(*args):
     args = remove_nesting(args)
     if len(args) > 1:
-        return 'np.product([' + "+".join([str(parseExpression(x)) for x in args]) + '])'
-    return 'np.product(' + " , ".join([str(parseExpression(x)) for x in args]) + ')'
+        return 'np.prod([' + "+".join([str(parseExpression(x)) for x in args]) + '])'
+    return 'np.prod(' + " , ".join([str(parseExpression(x)) for x in args]) + ')'
 
 
 def montecarlo_(*args):
