@@ -433,6 +433,8 @@ def test_abm_delete_agent(abm_model):
     
     model.delete_agents(agentIds)
     assert len(model.agents)==2
+    assert len(model.agent_type_map["agent_1"])==1
+    assert len(model.agent_type_map["agent_2"])==1
 
     
     
