@@ -6,24 +6,24 @@ The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modelin
 
 Next to providing the necessary SD and ABM language constructs to build simulation models directly in Python, the framework also includes a compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](http://www.iseesystems.com) or [iThink](http://www.iseesystems.com)) and then use them _independently_ in an Python environment.
+This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](https://www.iseesystems.com) or [iThink](https://www.iseesystems.com)) and then use them _independently_ in an Python environment.
 
-The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](http://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
+The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](https://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
   
 
 ## Main Features
 
 *   The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
 *   The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
-*   All plotting is done using [Matplotlib](http://www.matplotlib.org).
-*   Simulation results are returned as [Pandas dataframes](http://pandas.pydata.org) and thus can easily be used for analytics.
+*   All plotting is done using [Matplotlib](https://www.matplotlib.org).
+*   Simulation results are returned as [Pandas dataframes](https://pandas.pydata.org) and thus can easily be used for analytics.
 *   Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
 ## Getting Help
 
-BPTK-Py is developed and maintained by [transentis labs](http://www.transentis.com/business-prototyping-toolki/en/). 
+BPTK-Py is developed and maintained by [transentis labs](https://www.transentis.com/business-prototyping-toolki/en/). 
 
-The first place to go to for help and installation instructions is the [online documentation](http://bptk.transentis.com). 
+The first place to go to for help and installation instructions is the [online documentation](https://bptk.transentis.com). 
 
 The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK. 
 
