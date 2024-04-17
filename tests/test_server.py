@@ -1,5 +1,4 @@
 from BPTK_Py.server import BptkServer
-import requests
 import json
 import pytest
 
@@ -39,7 +38,7 @@ def bptk_factory():
     bptk.register_scenario_manager(scenario_manager2)
 
     bptk.register_scenarios(
-    
+
         scenario_manager="firstManager",
         scenarios=
         {
@@ -49,14 +48,14 @@ def bptk_factory():
                     "constant":1.0
                 }
             }
-        
+
         }
-    
+
 
     )
 
     bptk.register_scenarios(
-    
+
         scenario_manager="secondManager",
         scenarios=
         {
@@ -76,9 +75,9 @@ def bptk_factory():
                     "constant":3.0
                 }
             }
-        
+
         }
-    
+
 
     )
 
@@ -93,17 +92,17 @@ def app():
 @pytest.fixture
 def client(app):
     return app.test_client()
-        
+
 def test_home_resource(app, client):
     response = client.get('/')
-    assert response.status_code ==  200 
+    assert response.status_code ==  200
     assert response.data == b"<h1>BPTK REST API Server</h1>"
 
 def test_healthy_resource(app, client):
     response = client.get('/healthy')
-    assert response.status_code ==  200 
+    assert response.status_code ==  200
     assert response.data == b"<h1>BPTK Health Check</h1>"
-    
+
 
 def test_run_resource(app, client):
     query={
@@ -111,24 +110,24 @@ def test_run_resource(app, client):
         "scenarios":["1"],
         "equations":["stock","flow","constant"],
         "settings":{
-            
+
                          "firstManager":
                              {
                                  "1":
                                      {
                                          "constants":
                                          {
-                                            "constant":7.0 
+                                            "constant":7.0
                                          }
                                      }
                              }
                      }
-            
-        
+
+
     }
 
     response = client.post('/run', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
-    
+
     assert response.status_code == 200 # checking the status code
 
 def test_run_steps_resource(app, client):
@@ -171,7 +170,7 @@ def test_run_steps_resource(app, client):
             "firstManager": {
                 "1": {
                     "constants": {
-                        "constant":7.0 
+                        "constant":7.0
                     }
                 }
             }
@@ -222,7 +221,7 @@ def test_stream_steps_resource(app, client):
             "firstManager": {
                 "1": {
                     "constants": {
-                        "constant":7.0 
+                        "constant":7.0
                     }
                 }
             }
@@ -238,7 +237,7 @@ def test_scenarios_resource(app, client):
     assert data["firstManager"] == ["1"]
     assert data["secondManager"] == ["1","2","3"]
     assert response.status_code == 200 # checking the status code
-    
+
 def test_equations_resource(app, client):
     query = {
         "scenarioManager": "firstManager",
@@ -249,10 +248,10 @@ def test_equations_resource(app, client):
     equations = [b"constants", b"converters", b"flows", b"points"]
     for equation in equations: # checking words in request data
         assert equation in response.data
-    
+
 def test_agents_resource(app, client):
     response = client.post('/agents', content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 400 # System dynamics systems shouldn't have agents 
+    assert response.status_code == 400 # System dynamics systems shouldn't have agents
 
 def test_metrics(app, client):
     response = client.get('/metrics')
@@ -283,25 +282,25 @@ def test_instance_timeouts(app, client):
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     id = json.loads(response.data)['instance_uuid']
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
     time.sleep(6)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
     time.sleep(6)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 0
-    
-    
+
+
 def test_keep_alive(app, client):
     import time
 
@@ -334,7 +333,7 @@ def test_keep_alive(app, client):
     response = client.post('/start-instance', data=json.dumps(timeout_data), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     id = json.loads(response.data)['instance_uuid']
-    
+
     response = client.post('/start-instance', data=json.dumps(timeout_data), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
 
@@ -344,35 +343,35 @@ def test_keep_alive(app, client):
     assert len(result["instance_uuids"])==2
 
 
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 4
     time.sleep(3)
-    
+
     response = client.post('/' + id + "/keep-alive",headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 4
     time.sleep(3)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
     time.sleep(3)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 0
 
-   
-    
+
+
 
 
 
@@ -395,25 +394,25 @@ def test_instance_timeouts(app, client):
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     id = json.loads(response.data)['instance_uuid']
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
     time.sleep(6)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
     time.sleep(6)
-    
+
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 0
-    
-    
+
+
 
 def test_run_steps(app, client):
 
@@ -456,7 +455,7 @@ def test_run_steps(app, client):
             "firstManager": {
                 "1": {
                     "constants": {
-                        "constant":7.0 
+                        "constant":7.0
                     }
                 }
             }
@@ -476,10 +475,6 @@ def test_run_steps(app, client):
 
     response = client.post(f"/{id}/stop-instance", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "stop-instance response should be 200"
-
-   
-
-
 
 
 def test_run_steps_lock(app, client):
@@ -522,7 +517,7 @@ def test_run_steps_lock(app, client):
             "firstManager": {
                 "1": {
                     "constants": {
-                        "constant":7.0 
+                        "constant":7.0
                     }
                 }
             }
@@ -537,8 +532,8 @@ def test_run_steps_lock(app, client):
 
     import threading
     import time
-    t1 = threading.Thread(target=_run_steps_lock, args=[thread_results, 0])
-    t2 = threading.Thread(target=_run_steps_lock, args=[thread_results, 1])
+    t1 = threading.Thread(target=_run_steps_lock, daemon=True, args=[thread_results, 0])
+    t2 = threading.Thread(target=_run_steps_lock, daemon=True, args=[thread_results, 1])
     t1.start()
     t2.start()
 
@@ -547,7 +542,7 @@ def test_run_steps_lock(app, client):
 
     assert thread_results[0].status_code == 200
     assert thread_results[1].status_code == 500
-    
+
     result = json.loads(thread_results[0].data)
     assert len(result) == 20
 
@@ -556,9 +551,6 @@ def test_run_steps_lock(app, client):
     assert request.status_code == 200
     result = json.loads(request.data)
     assert len(result) == 20
-
-    
-
 
 
 def test_stream_steps_lock(app, client):
@@ -596,13 +588,13 @@ def test_stream_steps_lock(app, client):
     response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
 
-   
+
     query={
         "settings": {
             "firstManager": {
                 "1": {
                     "constants": {
-                        "constant":7.0 
+                        "constant":7.0
                     }
                 }
             }
@@ -616,8 +608,8 @@ def test_stream_steps_lock(app, client):
 
     import threading
     import time
-    t1 = threading.Thread(target=_stream_steps_lock, args=[thread_results, 0])
-    t2 = threading.Thread(target=_stream_steps_lock, args=[thread_results, 1])
+    t1 = threading.Thread(target=_stream_steps_lock, daemon=True, args=[thread_results, 0])
+    t2 = threading.Thread(target=_stream_steps_lock, daemon=True, args=[thread_results, 1])
     t1.start()
     t2.start()
 
@@ -626,6 +618,6 @@ def test_stream_steps_lock(app, client):
 
     assert thread_results[0].status_code == 200
     assert thread_results[1].status_code == 500
-    
+
     result = json.loads(thread_results[0].data)
     assert len(result) == 50
