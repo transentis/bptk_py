@@ -1,408 +1,333 @@
-import os
+from pathlib import Path
+import pytest
 import numpy as np
 from BPTK_Py.sdcompiler.compile import compile_xmile
 
-def test_compilation():
+
+@pytest.fixture
+def test_models_path():
+    # Construct the path to the data file dynamically
+    current_directory = Path(__file__).resolve().parent
+    return current_directory / 'test_models'
+
+
+def test_compilation(test_models_path):
     """
     Compile models and make sure they exist afterwards. Not more, not less
     :return:
     """
 
-    import os
-
-    src = "./test_models/test_expressions.stmx"
-    dest = "./test_models/test_expressions.py"
+    src = test_models_path / "test_expressions.stmx"
+    dest = test_models_path / "test_expressions.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_safediv.stmx"
-    dest = "./test_models/test_safediv.py"
+    src = test_models_path / "test_safediv.stmx"
+    dest = test_models_path / "test_safediv.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_pareto.stmx"
-    dest = "./test_models/test_pareto.py"
+    src = test_models_path / "test_pareto.stmx"
+    dest = test_models_path / "test_pareto.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_weibull.stmx"
-    dest = "./test_models/test_weibull.py"
+    src = test_models_path / "test_weibull.stmx"
+    dest = test_models_path / "test_weibull.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_delayn.stmx"
-    dest = "./test_models/test_delayn.py"
+    src = test_models_path / "test_delayn.stmx"
+    dest = test_models_path / "test_delayn.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_sinwave.stmx"
-    dest = "./test_models/test_sinwave.py"
+    src = test_models_path / "test_sinwave.stmx"
+    dest = test_models_path / "test_sinwave.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_smthn.stmx"
-    dest = "./test_models/test_smthn.py"
+    src = test_models_path / "test_smthn.stmx"
+    dest = test_models_path / "test_smthn.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-    import numpy as np
-
-    src = "./test_models/test_lookup.stmx"
-    dest = "./test_models/test_lookup.py"
+    src = test_models_path / "test_lookup.stmx"
+    dest = test_models_path / "test_lookup.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_ramp.stmx"
-    dest = "./test_models/test_ramp.py"
+    src = test_models_path / "test_ramp.stmx"
+    dest = test_models_path / "test_ramp.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_trend.stmx"
-    dest = "./test_models/test_trend.py"
+    src = test_models_path / "test_trend.stmx"
+    dest = test_models_path / "test_trend.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_poisson.stmx"
-    dest = "./test_models/test_poisson.py"
+    src = test_models_path / "test_poisson.stmx"
+    dest = test_models_path / "test_poisson.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_logistic.stmx"
-    dest = "./test_models/test_logistic.py"
+    src = test_models_path / "test_logistic.stmx"
+    dest = test_models_path / "test_logistic.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    os.remove("./test_models/test_logistic.py")
+    dest.unlink()
 
-    import os
-    import numpy as np
-
-    src = "./test_models/test_negbinomial.stmx"
-    dest = "./test_models/test_negbinomial.py"
+    src = test_models_path / "test_negbinomial.stmx"
+    dest = test_models_path / "test_negbinomial.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-    import numpy as np
-
-    src = "./test_models/test_lognormal.stmx"
-    dest = "./test_models/test_lognormal.py"
+    src = test_models_path / "test_lognormal.stmx"
+    dest = test_models_path / "test_lognormal.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
-    os.remove( "./test_models/test_lognormal.py")
+    assert dest.is_file()
+    dest.unlink()
 
-    import os
-
-    src = "./test_models/test_financials.stmx"
-    dest = "./test_models/test_financials.py"
+    src = test_models_path / "test_financials.stmx"
+    dest = test_models_path / "test_financials.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_log10.stmx"
-    dest = "./test_models/test_log10.py"
+    src = test_models_path / "test_log10.stmx"
+    dest = test_models_path / "test_log10.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_lookuparea.stmx"
-    dest = "./test_models/test_lookuparea.py"
+    src = test_models_path / "test_lookuparea.stmx"
+    dest = test_models_path / "test_lookuparea.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_sqrt.stmx"
-    dest = "./test_models/test_sqrt.py"
+    src = test_models_path / "test_sqrt.stmx"
+    dest = test_models_path / "test_sqrt.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_percent.stmx"
-    dest = "./test_models/test_percent.py"
+    src = test_models_path / "test_percent.stmx"
+    dest = test_models_path / "test_percent.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_clocktime.stmx"
-    dest = "./test_models/test_clocktime.py"
+    src = test_models_path / "test_clocktime.stmx"
+    dest = test_models_path / "test_clocktime.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_if.stmx"
-    dest = "./test_models/test_if.py"
+    src = test_models_path / "test_if.stmx"
+    dest = test_models_path / "test_if.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-    import numpy as np
-
-    src = "./test_models/test_triangular.stmx"
-    dest = "./test_models/test_triangular.py"
+    src = test_models_path / "test_triangular.stmx"
+    dest = test_models_path / "test_triangular.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_step.stmx"
-    dest = "./test_models/test_step.py"
+    src = test_models_path / "test_step.stmx"
+    dest = test_models_path / "test_step.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_dt_fraction.stmx"
-    dest = "./test_models/test_dt_fraction.py"
+    src = test_models_path / "test_dt_fraction.stmx"
+    dest = test_models_path / "test_dt_fraction.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_dt_rational.stmx"
-    dest = "./test_models/test_dt_rational.py"
+    src = test_models_path / "test_dt_rational.stmx"
+    dest = test_models_path / "test_dt_rational.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_no_dimensions.stmx"
-    dest = "./test_models/test_no_dimensions.py"
+    src = test_models_path / "test_no_dimensions.stmx"
+    dest = test_models_path / "test_no_dimensions.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_rootn.stmx"
-    dest = "./test_models/test_rootn.py"
+    src = test_models_path / "test_rootn.stmx"
+    dest = test_models_path / "test_rootn.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_time.stmx"
-    dest = "./test_models/test_time.py"
+    src = test_models_path / "test_time.stmx"
+    dest = test_models_path / "test_time.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_smooth.stmx"
-    dest = "./test_models/test_smooth.py"
+    src = test_models_path / "test_smooth.stmx"
+    dest = test_models_path / "test_smooth.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_abs.stmx"
-    dest = "./test_models/test_abs.py"
+    src = test_models_path / "test_abs.stmx"
+    dest = test_models_path / "test_abs.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_npv.stmx"
-    # src ="./test_models/delay_example.itmx"
-    dest = "./test_models/test_npv.py"
+    src = test_models_path / "test_npv.stmx"
+    # src =test_models_path / "delay_example.itmx"
+    dest = test_models_path / "test_npv.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    src = "./test_models/test_cos.stmx"
-    dest = "./test_models/test_cos.py"
+    src = test_models_path / "test_cos.stmx"
+    dest = test_models_path / "test_cos.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_tan.stmx"
-    dest = "./test_models/test_tan.py"
+    src = test_models_path / "test_tan.stmx"
+    dest = test_models_path / "test_tan.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_sim_builtins.stmx"
-    dest = "./test_models/test_sim_builtins.py"
+    src = test_models_path / "test_sim_builtins.stmx"
+    dest = test_models_path / "test_sim_builtins.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    src = "./test_models/test_random.stmx"
-    dest = "./test_models/test_random.py"
+    src = test_models_path / "test_random.stmx"
+    dest = test_models_path / "test_random.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_array.stmx"
-    dest = "./test_models/test_array.py"
+    src = test_models_path / "test_array.stmx"
+    dest = test_models_path / "test_array.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_delay.stmx"
-    dest = "./test_models/test_delay.py"
+    src = test_models_path / "test_delay.stmx"
+    dest = test_models_path / "test_delay.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-    import numpy as np
-
-    src = "./test_models/test_endval.stmx"
-    dest = "./test_models/test_endval.py"
+    src = test_models_path / "test_endval.stmx"
+    dest = test_models_path / "test_endval.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_array_extended.stmx"
-    dest = "./test_models/test_array_extended.py"
+    src = test_models_path / "test_array_extended.stmx"
+    dest = test_models_path / "test_array_extended.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_array_3dimensional.stmx"
-    dest = "./test_models/test_array_3dimensional.py"
+    src = test_models_path / "test_array_3dimensional.stmx"
+    dest = test_models_path / "test_array_3dimensional.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-
-    import os
-
-    src = "./test_models/test_array_2dimensional.stmx"
-    dest = "./test_models/test_array_2dimensional.py"
+    src = test_models_path / "test_array_2dimensional.stmx"
+    dest = test_models_path / "test_array_2dimensional.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_permutation.stmx"
-    dest = "./test_models/test_permutation.py"
+    src = test_models_path / "test_permutation.stmx"
+    dest = test_models_path / "test_permutation.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_forecast.stmx"
-    dest = "./test_models/test_forecast.py"
+    src = test_models_path / "test_forecast.stmx"
+    dest = test_models_path / "test_forecast.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import os
-
-    src = "./test_models/test_smth3.stmx"
-    dest = "./test_models/test_smth3.py"
+    src = test_models_path / "test_smth3.stmx"
+    dest = test_models_path / "test_smth3.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
 
 def test_trend_model():
@@ -509,7 +434,6 @@ def test_trend_model():
         assert round(sim.equation('trendOfInputFunction', i), 3) == round(test_data[i], 3)
 
 
-
 def test_smooth():
     """
     SMTH1
@@ -525,14 +449,11 @@ def test_smooth():
         assert sim.equation('exponentialAverage', i) == sim.equations['smooth'](i)
 
 
-
 def test_abs():
     """
     ABS(x)
     :return:
     """
-    import numpy as np
-    import os
     from test_models.test_abs import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -541,7 +462,6 @@ def test_abs():
 
     assert sum([sim.equation("stock1", t) for t in np.arange(sim.starttime, sim.stoptime, sim.dt)]) == (
             sim.stoptime - 1) * (1 / sim.dt) * 100
-
 
 
 def test_dt_fraction():
@@ -612,8 +532,6 @@ def test_cos():
     COS(X)
     :return:
     """
-    import numpy as np
-    import os
     from test_models.test_cos import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -629,8 +547,6 @@ def test_tan():
     TAN(x)
     :return:
     """
-    import numpy as np
-    import os
     from test_models.test_tan import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -646,8 +562,6 @@ def test_sim_builtins():
     DT, starttime, stoptime
     :return:
     """
-    import numpy as np
-    import os
     from test_models.test_sim_builtins import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -665,8 +579,6 @@ def test_random():
     Random and Random with seed
     :return:
     '''
-    import numpy as np
-    import os
     from test_models.test_random import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -686,8 +598,6 @@ def test_random():
 
 
 def test_step():
-    import numpy as np
-    import os
     from test_models.test_step import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -700,8 +610,6 @@ def test_step():
 
 
 def test_delay():
-    import numpy as np
-    import os
     from test_models.test_delay import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -714,8 +622,6 @@ def test_delay():
 
 
 def test_if():
-    import numpy as np
-    import os
     from test_models.test_if import simulation_model
     sim = simulation_model()
     assert sim.dt == 0.25
@@ -781,7 +687,6 @@ def test_array():
                        12.5: 11.5,
                        12.75: 11.75,
                        13.0: 12.0}
-    import numpy as np
     result = {}
     from test_models.test_array import simulation_model
     mod = simulation_model()
@@ -940,7 +845,6 @@ def test_counter_his():
 
     counter_expected_result = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0, 5.25, 5.5, 5.75, 6.0, 6.25, 6.5, 6.75, 7.0, 7.25, 7.5, 7.75, 0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0, 5.25, 5.5, 5.75, 6.0]
 
-    import numpy as np
     result_counter = []
     for t in np.arange(starttime, stoptime + dt, dt):
         result_counter += [sim.equation("ctr", t)]
@@ -951,7 +855,6 @@ def test_counter_his():
 
 def test_npv():
     from test_models.test_npv import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -969,7 +872,6 @@ def test_npv():
 
 def test_financials():
     from test_models.test_financials import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -988,7 +890,6 @@ def test_financials():
 
 def test_percent():
     from test_models.test_percent import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -1002,7 +903,6 @@ def test_percent():
 
 def test_sqrt():
     from test_models.test_sqrt import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -1015,7 +915,6 @@ def test_sqrt():
 
 def test_log10():
     from test_models.test_log10 import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -1029,7 +928,6 @@ def test_log10():
 
 def test_permutation():
     from test_models.test_permutation import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -1044,7 +942,6 @@ def test_permutation():
 
 def test_forcst():
     from test_models.test_forecast import simulation_model
-    import numpy as np
 
     sim = simulation_model()
     dt = sim.dt
@@ -1109,7 +1006,6 @@ def test_negbinomial():
 
 
 def test_lookup():
-    import numpy as np
     from test_models.test_lookup import simulation_model
     sim = simulation_model()
 
@@ -1125,7 +1021,6 @@ def test_lookup():
 
 
 def test_lookuparea():
-    import numpy as np
     from test_models.test_lookuparea import simulation_model
     sim = simulation_model()
 
@@ -1147,7 +1042,6 @@ def test_lookuparea():
 
 
 def test_poisson():
-    import numpy as np
     from test_models.test_poisson import simulation_model
     sim = simulation_model()
 
@@ -1163,7 +1057,6 @@ def test_poisson():
 
 
 def test_ramp():
-    import numpy as np
     from test_models.test_ramp import simulation_model
     sim = simulation_model()
 
@@ -1187,7 +1080,6 @@ def test_ramp():
 
 
 def test_rootn():
-    import numpy as np
     from test_models.test_rootn import simulation_model
     sim = simulation_model()
 
@@ -1202,7 +1094,6 @@ def test_rootn():
 
 
 def test_sinwave():
-    import numpy as np
     from test_models.test_sinwave import simulation_model
     sim = simulation_model()
 
@@ -1222,7 +1113,6 @@ def test_sinwave():
 
 
 def test_smth3():
-    import numpy as np
     from test_models.test_smth3 import simulation_model
     sim = simulation_model()
 
@@ -1241,7 +1131,6 @@ def test_smth3():
 
 
 def test_smthn():
-    import numpy as np
     from test_models.test_smthn import simulation_model
     sim = simulation_model()
 
@@ -1261,7 +1150,6 @@ def test_smthn():
 
 
 def test_delayn():
-    import numpy as np
     from test_models.test_delayn import simulation_model
     sim = simulation_model()
 
@@ -1299,7 +1187,6 @@ def test_delayn():
 
 
 def test_weibull():
-    import numpy as np
     from test_models.test_weibull import simulation_model
     sim = simulation_model()
 
@@ -1333,7 +1220,6 @@ def test_weibull():
 
 
 def test_pareto():
-    import numpy as np
     from test_models.test_pareto import simulation_model
     sim = simulation_model()
 
@@ -1362,17 +1248,16 @@ def test_pareto():
 
     assert distseed_results_run2 == distseed_results_run1
 
-def test_cgrowth():
-    import os
 
-    src = "./test_models/test_cgrowth.stmx"
-    dest = "./test_models/test_cgrowth.py"
+def test_cgrowth(test_models_path):
+
+    src = test_models_path / "test_cgrowth.stmx"
+    dest = test_models_path / "test_cgrowth.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import numpy as np
     from test_models.test_cgrowth import simulation_model
     sim = simulation_model()
 
@@ -1386,17 +1271,16 @@ def test_cgrowth():
         if t % 1 == 0:
             assert round(sim.equation("stock1", t), 3) == round((100 * 1.1 ** (t - 1)), 3)
 
-def test_derivn():
-    import os
 
-    src = "./test_models/test_derivn.stmx"
-    dest = "./test_models/test_derivn.py"
+def test_derivn(test_models_path):
+
+    src = test_models_path / "test_derivn.stmx"
+    dest = test_models_path / "test_derivn.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import numpy as np
     from test_models.test_derivn import simulation_model
     sim = simulation_model()
 
@@ -1411,17 +1295,15 @@ def test_derivn():
 
     assert derivn_expected_result == derivn_result
 
-def test_interpolate():
-    import os
+def test_interpolate(test_models_path):
 
-    src = "./test_models/test_interpolate.stmx"
-    dest = "./test_models/test_interpolate.py"
+    src = test_models_path / "test_interpolate.stmx"
+    dest = test_models_path / "test_interpolate.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import numpy as np
     from test_models.test_interpolate import simulation_model
     sim = simulation_model()
 
@@ -1429,17 +1311,16 @@ def test_interpolate():
         assert round(sim.equation("inter1", t), 3) == 17.5
         assert round(sim.equation("inter2", t), 3) == 2.5
 
-def test_normalcdf():
-    import os
 
-    src = "./test_models/test_normalcdf.stmx"
-    dest = "./test_models/test_normalcdf.py"
+def test_normalcdf(test_models_path):
+
+    src = test_models_path / "test_normalcdf.stmx"
+    dest = test_models_path / "test_normalcdf.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import numpy as np
     from test_models.test_normalcdf import simulation_model
     sim = simulation_model()
 
@@ -1454,18 +1335,17 @@ def test_normalcdf():
 
     assert expected_results == results
 
-def test_invnorm():
-    import os
 
-    src = "./test_models/test_invnorm.stmx"
-    dest = "./test_models/test_invnorm.py"
+def test_invnorm(test_models_path):
+
+    src = test_models_path / "test_invnorm.stmx"
+    dest = test_models_path / "test_invnorm.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
     from scipy.stats import norm
-    import numpy as np
     from test_models.test_invnorm import simulation_model
     sim = simulation_model()
 
@@ -1477,18 +1357,15 @@ def test_invnorm():
         if t > 1.0: assert np.isnan(sim.equation("inv", t))
 
 
-def test_safediv():
-    import os
+def test_safediv(test_models_path):
 
-    src = "./test_models/test_safediv.stmx"
-    dest = "./test_models/test_safediv.py"
+    src = test_models_path / "test_safediv.stmx"
+    dest = test_models_path / "test_safediv.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    from scipy.stats import norm
-    import numpy as np
     from test_models.test_safediv import simulation_model
     sim = simulation_model()
 
@@ -1498,19 +1375,16 @@ def test_safediv():
         assert sim.equations["converter3"](t) == 48
 
 
-
-def test_doublequote():
-    import os
-    import numpy as np
+def test_doublequote(test_models_path):
     from BPTK_Py.sdcompiler.compile import compile_xmile
-    src = "./test_models/test_doublequote.stmx"
-    dest = "./test_models/test_doublequote.py"
+
+    src = test_models_path / "test_doublequote.stmx"
+    dest = test_models_path / "test_doublequote.py"
     target = "py"
 
     compile_xmile(src, dest, target)
-    assert os.path.isfile(dest)
+    assert dest.is_file()
 
-    import numpy as np
     from test_models.test_doublequote import simulation_model
     sim = simulation_model()
 
@@ -1519,10 +1393,7 @@ def test_doublequote():
         assert sim.equation("otherconverter(fooBar)",t) == 2*t
 
 
-def test_teardown():
-    import os
-    files = os.listdir("test_models/")
+def test_teardown(test_models_path):
 
-    for file in files:
-        if file.endswith(".py"):
-            os.remove("test_models/" + file)
+    for file_path in test_models_path.glob("*.py"):
+        file_path.unlink()

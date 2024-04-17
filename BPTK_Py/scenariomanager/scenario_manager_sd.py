@@ -13,6 +13,7 @@
 
 import importlib
 import os
+from pathlib import Path
 
 import BPTK_Py.config.config as config
 from ..logger import log
@@ -219,13 +220,15 @@ class ScenarioManagerSd(ScenarioManager):
             last_stamp_source = 0
             last_stamp_model = 0
 
-        if not os.path.isfile(self.model_file + ".py") or last_stamp_source > last_stamp_model:
+        py_model_file_path = self.model_file + ".py"
+
+        if not os.path.isfile(py_model_file_path) or last_stamp_source > last_stamp_model:
             if not self.source is None and os.path.isfile(self.source):  ## <- Only do if the source actually exists
-                compile(target="py", src=self.source, dest=self.model_file + ".py")
+                compile(target="py", src=self.source, dest=py_model_file_path)
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"
-            package_link = self.model_file.replace("/", ".").replace("\\",
-                                                                     ".")  # The last change is for windows path notation
+            full_file_path = Path(py_model_file_path)
+            package_link = full_file_path.parent.name + "." + full_file_path.stem
 
             class_link = "simulation_model"
 
