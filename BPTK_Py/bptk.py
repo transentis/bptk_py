@@ -11,7 +11,7 @@
 
 import itertools
 import sys
-import threading 
+import threading
 
 import json
 
@@ -64,7 +64,7 @@ class bptk():
         """Update BPTK to latest version
 
         This method updates BPTK to the newest version that's available on PyPi.
-        
+
         """
         def isnotebook():
             try:
@@ -110,7 +110,7 @@ class bptk():
 
     def __init__(self, loglevel="WARN", configuration=None):
         """Initialize BPTK.
-        
+
         Configures the loglevel and the matplotlib config. Set up the scenario manager factory and instantiates the scenario manager factory and visualizer
 
         Args:
@@ -163,19 +163,19 @@ class bptk():
                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
                           progress_bar=False):
         """Used to run a scenario repeatedly in episodes.
-        
+
         Ensures that the begin_epsiode and end_epsisode methods are called on the underlying model.
 
         The method plots the agent states and properties that are passed to the method ... this will typically be data used to evaluate whether training was successful.
 
         Once the scenario has been trained, it can be used in plot_scenarios like any other scenario.
-        
+
         This method only works for agent-based and hybrid models.
 
         Args:
             scenarios: List.
                 The scenarios to run.
-            scenario_managers: List. 
+            scenario_managers: List.
                 The scenario managers to select the scenarios from
             episodes: Integer (Default=1).
                 The number of episodes to run
@@ -374,7 +374,7 @@ class bptk():
             equations: list.
                 Names of equations to plot (System Dynamics).
             starttime: Float (Default=0.0)
-                Timestep at which to start. 
+                Timestep at which to start.
             dt: Dt (Default=1.0)
                 Deltatime.
 
@@ -387,7 +387,7 @@ class bptk():
         settings = settings if isinstance(settings,dict) else json.loads(settings)
         agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
         agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
-            
+
         agent_property_types = agent_property_types if type(
         agent_property_types) is list else agent_property_types.split(",")
 
@@ -399,7 +399,7 @@ class bptk():
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
             return
-            
+
         if len(individual_agent_properties) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!")
             return
@@ -471,12 +471,12 @@ class bptk():
             self.session_state=None
 
 
-    
+
     def progress(self):
         """Returns the progress of a simulation as float.
         """
         return float(self.session_state["step"]) / float(self.session_state["stoptime"])
-    
+
 
 
     def run_step(self, settings=None, flat=False):
@@ -536,16 +536,16 @@ class bptk():
                     scenario_manager=manager.name,
                     settings = settings
                 )
-                
+
                 if(flat):
                     flat_results[manager.name] = dict()
-                    
+
                     for scenario in simulation_results[manager.name]:
                         flat_results[manager.name][scenario] = dict()
-                        
+
                         for value in simulation_results[manager.name][scenario]:
                             value_content = simulation_results[manager.name][scenario][value]
-                            flat_results[manager.name][scenario][value] = value_content[list(value_content.keys())[0]]                    
+                            flat_results[manager.name][scenario][value] = value_content[list(value_content.keys())[0]]
 
         # log settings and results
         self.session_state["settings_log"][step] = settings
@@ -553,7 +553,7 @@ class bptk():
 
         # move session step forward
         self.session_state["step"]=step+dt
-       
+
         return flat_results if flat else simulation_results
 
     def session_results(self, index_by_time=True, flat=False):
@@ -633,7 +633,7 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
                 The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
-        
+
         Returns:
             Based on the return_format value, results are returned as df, dict, or a json string
         """
@@ -643,10 +643,10 @@ class bptk():
         equations = equations if isinstance(equations, list) else equations.split(",")
         agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
         agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
-            
+
         agent_property_types = agent_property_types if type(
             agent_property_types) is list else agent_property_types.split(",")
-        
+
 
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
@@ -697,13 +697,13 @@ class bptk():
 
             # Handle Hybrid scenarios
             if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
-                
+
                 consumed_scenario_managers += [manager.name]
                 consumed_scenarios += [scenario for scenario in manager.scenarios.keys() if scenario in scenarios]
 
-                
+
                 runner = HybridRunner(self.scenario_manager_factory)
-                
+
                 simulation_results += [runner.run_scenario(
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     agents=agents, agent_states=agent_states, agent_properties=agent_properties,
@@ -792,8 +792,8 @@ class bptk():
             df = df.rename(columns=series_names)
         except:
             pass
-        
-       
+
+
         return df
 
 
@@ -832,7 +832,7 @@ class bptk():
             stacked: Boolean
                 If trues, use stacked charts (only relevant for kind="bar").
             freq: String.
-                Frequency of time series. Uses the pandas offset aliases. 
+                Frequency of time series. Uses the pandas offset aliases.
             start_date: String.
                 Start date for time series.
             title: String.
@@ -851,11 +851,11 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations).
             return_df: Boolean.
                 Set True if you want to receive a dataFrame instead of the plot
-        
+
         Returns:
             Dataframe with simulation results if return_df=True.
          """
-        
+
         df = self.run_scenarios(scenarios=scenarios,
                                   scenario_managers=scenario_managers,
                                   agents=agents,
@@ -866,7 +866,7 @@ class bptk():
                                   series_names=series_names,
                                   progress_bar=progress_bar
                                  )
-                                 
+
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     visualize_from_period=visualize_from_period,
@@ -887,16 +887,16 @@ class bptk():
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
                     freq="D", series_names={}, kind=None):
         """Plot lookup functions.
-        
+
         If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
-            
+
         Args:
             scenarios: List.
                 names of scenarios to plot.
             scenario_managers: List.
                 Names of scenario managers to plot.
             lookup_names: List.
-                List of lookups to plot. 
+                List of lookups to plot.
             kind: String.
                 Type of graph to plot ("line" or "area").
             alpha: Float (0 < x <=1).
@@ -979,7 +979,7 @@ class bptk():
 
     def destroy(self):
         """ Destroy the BPTK object without stopping the Python Kernel.
-        
+
         Kills all the file monitors and makes sure the Python process can die happily.
         """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
@@ -1001,7 +1001,7 @@ class bptk():
 
     def reset_scenario(self, scenario_manager, scenario):
         """Reset a scenario
-        
+
         Reload a scenario from its file. All scenarios for the relevant file are reloaded. NOTE: If the scenario wasn't defined via a file, this removes the scenario from the scenario manager. If you just want to reset the scenario memory, call reset_senario_cache.
 
         Args:
@@ -1023,7 +1023,7 @@ class bptk():
         """ List scenarios for selected scenario managers.
 
         List all scenarios or scenarios from selected scenario managers
-        
+
         Args:
             scenario_managers: List.
                 The list of scenario managers whose scenarios you want to list. Default is an empty list.
@@ -1043,53 +1043,56 @@ class bptk():
 
     def get_scenario(self, scenario_manager, scenario):
         """Get a scenario object from a scenario manager
-        
+
         Args:
             scenario_manager: String.
                 Name of the scenario manager
             scenario: String.
                 Name of the scenario.
-        
+
         Returns:
             For models built using the Model class (ABM, SD DSL, hybrid) this returns the model. For XMILE-models, this returns a SimulationScenario object.
         """
         return self.scenario_manager_factory.get_scenario(scenario_manager, scenario)
 
-    def get_scenario_names(self, scenario_managers=[],format="list"):
+    def get_scenario_names(self, scenario_managers=[], format="list", path=None):
         """Returns a concatenated list of all the scenario names from a list of scenario managers
-        
+
         Args:
             scenario_managers: List.
                 List of scenario manager names. Default is an empty list.
 
             format: String.
                 Either "list" (=Default) or "dict"
-            
+
         Returns:
             List of scenario names or a dictionary.
         """
 
+        if not path:
+            path = default_config.configuration["scenario_storage"]
+
         if format=="list":
             scenarios = []
-            managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+            managers = self.scenario_manager_factory.get_scenario_managers(path=path, scenario_managers_to_filter=scenario_managers)
             for manager in managers.values():
                 scenarios.extend(manager.get_scenario_names())
             return scenarios
 
         if format=="dict":
             scenarios={}
-            managers = self.scenario_manager_factory.get_scenario_managers(scenario_managers_to_filter=scenario_managers)
+            managers = self.scenario_manager_factory.get_scenario_managers(path=path, scenario_managers_to_filter=scenario_managers)
             for manager in managers.values():
                 scenarios[manager.name]=manager.get_scenario_names()
             return scenarios
-            
+
         return []
 
     def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
         """Get a dictionary of scenario objects.
-        
+
         The keys of the dictionary are the scenario names, unless more than one scenario manager is passed, in which case the name of the scenario manager is used to prefixes the scenario name (i.e. <scenario_manager>_<scenario>).
-        
+
         Args:
             scenario_managers: List.
                 List of scenario managers to get the scenarios from.
@@ -1097,8 +1100,8 @@ class bptk():
                 Names of the scenarios to get.
             scenario_manager_type: String.
                 Type of the scenario manager, ("sd"|"abm"|""). Default is "".
-            
-        Returns:    
+
+        Returns:
                 Dictionary of scenario objects.
         """
 
@@ -1116,7 +1119,7 @@ class bptk():
                 List of scenario managers to pull the scenarios' equations for. If empty, list for all scenario managers (default)
             scenarios: List.
                 List of scenarios to pull the equations for. If empty, list for all scenarios of the given scenario managers(s) (default)
-            
+
         Returns:
             This method prints the equation(s) and doesn't return anything.
         """
@@ -1157,10 +1160,10 @@ class bptk():
 
     def register_model(self, model, scenario_manager=None, scenario=None):
         """Registers the given model with bptk.
-        
+
         Automatically creates both a scenario manager and an initial scenario. If no scenario manager or scenario is passed, a scenario manager is created whose name is "sm<Model.name>" along with a scenario named "base". Internally, this method calls register_scenario_manager and then register_scenarios.
-            
-        Args:    
+
+        Args:
             model: Model.
                 The model that is registered, of type bptk.Model.
             scenario_manager: String.
@@ -1192,13 +1195,13 @@ class bptk():
 
     def register_scenario_manager(self, scenario_manager):
         """Manually register a scenario manager.
-        
+
         Register a manually defined Scenario manager using the common dictionary notation. Keep in mind that it HAS TO contain a reference to a live model instance.
-        
+
         Args:
             scenario_manager: Dict.
                 Dictionary notation as used in the scenarios definitions. The scenario manager definition does not necessarily need to contain scenarios, but it can.
-        
+
         """
 
         # TODO refactoring - much of this code should be part of scenario_manager_factory
@@ -1217,7 +1220,7 @@ class bptk():
                         name=scenario_manager_name,
                         model=model
                     )
-                else:    
+                else:
                     manager = ScenarioManagerSd(
                         scenarios={},
                         model=model,
@@ -1274,15 +1277,15 @@ class bptk():
         """Export scenario data into a spreadsheet.
 
         Export data for the given scenarios in a structure that is amenable to analysis in BI tools. By default, the data is returned in a dictionary of dataframes. The first dataframe named scenario_df_name will contain all the data for all the scenarios, indexed by the scenario name. The second dataframe named interactive_df_name will contain all the data for the interactive scenarios. The interactive scenarios are generated by the export function according to the interactive settings. If you provide a filename, the data will not be returned in a dictionary but will be writen directly to an Excel (.xlsx) file. The data will be split into two tabs, one named <scenario_df_name> for the scenario data and one named <interactive_df_name> for the interactive data. Currently the export function only works for System Dynamics models (both XMILE and SD DSL).
-         
+
         Args:
-            scenario_manager: string. 
+            scenario_manager: string.
                 Name of the scenario manager
             scenarios: list, default None.
                 List of scenarios to export
             equations: list, default None.
                 List of equations to export.
-        
+
         Returns:
             If passed a filename, then the data is exported to the file and nothing is returned. Else the method returns a dictionary of dataframes.
         """
@@ -1374,6 +1377,3 @@ class bptk():
         else:
             return {scenario_df_name: scenarios_tab, indicator_df_name: indicators_tab,
                     interactive_df_name: interactive_tab}
-
-
-

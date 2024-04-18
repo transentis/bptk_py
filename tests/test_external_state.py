@@ -37,7 +37,7 @@ def bptk_factory():
     bptk.register_scenario_manager(scenario_manager2)
 
     bptk.register_scenarios(
-    
+
         scenario_manager="firstManager",
         scenarios=
         {
@@ -47,14 +47,14 @@ def bptk_factory():
                     "constant":1.0
                 }
             }
-        
+
         }
-    
+
 
     )
 
     bptk.register_scenarios(
-    
+
         scenario_manager="secondManager",
         scenarios=
         {
@@ -74,9 +74,9 @@ def bptk_factory():
                     "constant":3.0
                 }
             }
-        
+
         }
-    
+
 
     )
 
@@ -94,7 +94,7 @@ def app():
 @pytest.fixture
 def client(app):
     return app.test_client()
-        
+
 def test_instance_timeouts(app, client):
     def assert_in_full_metrics(instance_id, contains: bool):
         response = client.get('/full-metrics')
@@ -124,7 +124,7 @@ def test_instance_timeouts(app, client):
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json')
     assert response.status_code == 200, "start-instance should return 200"
     instance_id = json.loads(response.data)['instance_uuid']
-    
+
     content = {
         "scenario_managers": [
             "firstManager"
@@ -162,7 +162,7 @@ def test_instance_timeouts(app, client):
     assert response.status_code == 200, "run-step should return 200"
 
     assert_in_full_metrics(instance_id, True)
-    
+
     time.sleep(4)
 
     assert_in_full_metrics(instance_id, False)
@@ -187,7 +187,7 @@ def test_instance_timeouts(app, client):
 
     dir_content = os.listdir("state/")
     assert instance_id + ".json" in dir_content
-    
+
     response = client.post('http://localhost:5000/load-state')
     assert response.status_code == 200, "load-state should return 200"
 
@@ -195,7 +195,7 @@ def test_instance_timeouts(app, client):
 
     response = client.post(f'http://localhost:5000/{instance_id}/stop-instance')
     assert response.status_code == 200, "stop-instance should return 200"
-    
+
     assert_in_full_metrics(instance_id, False)
 
     response = client.get('http://localhost:5000/save-state')

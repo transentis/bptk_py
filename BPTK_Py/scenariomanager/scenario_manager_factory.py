@@ -13,6 +13,8 @@
 import glob
 import json
 import os
+from pathlib import Path
+
 
 import BPTK_Py.config.config as config
 from ..modelmonitor import FileMonitor
@@ -95,7 +97,7 @@ class ScenarioManagerFactory():
                     self.scenario_managers[scenario_manager_name].instantiate_model()
                 else:
                     self.scenario_managers[scenario_manager_name].add_scenarios(model_dictionary[scenario_manager_name]["scenarios"])
-                    if filename not in self.scenario_managers[scenario_manager_name].filenames: 
+                    if filename not in self.scenario_managers[scenario_manager_name].filenames:
                         self.scenario_managers[scenario_manager_name].filenames +=[filename]
 
             # HANDLE SD SCENARIOS _ COMPLEX STUFF WITH ALL THE BASE CONSTANTS / BASE POINTS AND POSSIBLE DISTRIBUTION OVER FILES
@@ -118,12 +120,18 @@ class ScenarioManagerFactory():
                 # ScenarioManager -> "scenarios" ->
                 scen_dict = model_dictionary[scenario_manager_name]["scenarios"]
                 model_file = model_dictionary[scenario_manager_name]["model"]
-                source = None
 
-                try:
-                    source = model_dictionary[scenario_manager_name]["source"]
-                except:
-                    pass
+                source = model_dictionary[scenario_manager_name].get(
+                    "source", None)
+
+                # this holds if there is a scenarios and a models folder in the
+                # project directory
+                main_dir = Path(filename).parent.parent
+
+                if source:
+                    source = str(main_dir / source)
+
+                model_file = str(main_dir / model_file)
 
                 # Create simulation scenarios from structure
                 manager.load_scenarios(scen_dict=scen_dict, model_file=model_file, source=source)

@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 from jupyter_core.paths import jupyter_data_dir
+from traitlets.config import get_config
 import subprocess
 import os
 import errno
