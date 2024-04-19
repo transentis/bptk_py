@@ -106,6 +106,7 @@ def test_sd_model_results_data_type(sd_model):
     results = sd_results(bptk)
     assert isinstance(results, pd.DataFrame)
 
+
 def test_sd_model_results_col_names(sd_model):
     """
     Testing the column names of the dataframe generated from the model.
@@ -135,6 +136,7 @@ def test_sd_model_results_content(sd_model):
 
     assert_frame_equal(results, test_df)
 
+
 def sd_run_scenarios_results(bptk):
     """
     The function returns the dataframe results using the run_scenarios method, based on a simple system dynamics model.
@@ -151,6 +153,7 @@ def sd_run_scenarios_results(bptk):
     )
     return results
 
+
 def test_sd_run_scenarios_df_results(sd_model):
     """
     Testing the df return of run simulations in a simple system dynamics model.
@@ -165,6 +168,7 @@ def test_sd_run_scenarios_df_results(sd_model):
     test_df.index += 1.0
 
     assert_frame_equal(results, test_df)
+
 
 def test_sd_run_scenarios_json_results(sd_model):
     """
@@ -254,6 +258,7 @@ def abm_model():
     """
     from abm_model.abmModel import bptk
     yield bptk
+    bptk.destroy()
 
 
 def abm_results(bptk):
@@ -292,6 +297,7 @@ def test_abm_results_data_type(abm_model):
     results = abm_results(abm_model)
     assert isinstance(results, pd.DataFrame)
 
+
 def test_abm_results_col_names(abm_model):
     """
     Testing the column names of the dataframe generated from the model.
@@ -311,6 +317,7 @@ def test_abm_results_col_names(abm_model):
             expected_column_names.append(col_name)
 
     assert all(col in expected_column_names for col in columns_names) # making sure that the column names exist
+
 
 def test_abm_results_content(abm_model):
     """
@@ -362,6 +369,7 @@ def test_abm_run_scenarios_df_results(abm_model):
 
     assert_frame_equal(results, test_df)
 
+
 def test_abm_run_scenarios_json_results(abm_model):
     """
     Testing the json return of run simulations in a simple agent-based model.
@@ -412,6 +420,7 @@ def test_abm_run_scenarios_json_results(abm_model):
     }
     expected_json = json.dumps(expected_json, indent=2)
     assert results==expected_json
+
 
 def test_abm_delete_agent(abm_model):
     model = abm_model.get_scenario(scenario_manager="testAbmManager",scenario="testScenario2")
