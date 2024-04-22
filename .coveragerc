@@ -1,0 +1,3 @@
+[run]
+omit = tests/test_models/*
+       tests/run_pytests.py

@@ -1,4 +1,6 @@
-# Business Prototyping Toolkit for Python 
+# Business Prototyping Toolkit for Python
+
+[![Coverage Status](https://coveralls.io/repos/github/transentis/bptk_py/badge.svg)](https://coveralls.io/github/transentis/bptk_py)
 
 __System Dynamics and Agent-based Modeling in Python__
 
@@ -9,7 +11,7 @@ Next to providing the necessary SD and ABM language constructs to build simulati
 This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](https://www.iseesystems.com) or [iThink](https://www.iseesystems.com)) and then use them _independently_ in an Python environment.
 
 The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](https://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
-  
+
 
 ## Main Features
 
@@ -21,13 +23,13 @@ The best way to get started with BPTK-Py is to read the [Quickstart](https://bpt
 
 ## Getting Help
 
-BPTK-Py is developed and maintained by [transentis labs](https://www.transentis.com/business-prototyping-toolki/en/). 
+BPTK-Py is developed and maintained by [transentis labs](https://www.transentis.com/business-prototyping-toolki/en/).
 
-The first place to go to for help and installation instructions is the [online documentation](https://bptk.transentis.com). 
+The first place to go to for help and installation instructions is the [online documentation](https://bptk.transentis.com).
 
-The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK. 
+The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK.
 
-The online documentation is generated from an extensive set of Jupyter notebooks, the __BPTK Tutorial__. The tutorial is available as a [git repository](https://github.com/transentis/bptk_py_tutorial) on GitHub. 
+The online documentation is generated from an extensive set of Jupyter notebooks, the __BPTK Tutorial__. The tutorial is available as a [git repository](https://github.com/transentis/bptk_py_tutorial) on GitHub.
 
 Our [Business Prototyping Toolkit Meetup Group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) gathers online regularly. This is a good place to see BPTK in action, ask questions and suggest new features. We record every session and you can _view past recordings_ on the [meetup homepage](https://www.transentis.com/resources/business-prototyping-toolkit-meetup).
 
@@ -121,7 +123,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 ### 1.5.1
 
 * BPTK Server: Improvements to the new state externalisation feature
-* BPTK Server: Improve cleanup of resources when an instance times out 
+* BPTK Server: Improve cleanup of resources when an instance times out
 
 ### 1.5.0
 
@@ -261,15 +263,15 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 1.1.11
 *   SD-DSL: Added support for right-hand side addition and subtraction to support equations such as ``converter.equation = 1 - b``
-*   Visualisation for SD-DSL elements now follows conventions to work properly with Matplotlib 3.3+ 
+*   Visualisation for SD-DSL elements now follows conventions to work properly with Matplotlib 3.3+
 
 ### 1.1.10
-*   Visualisation using matplotlib now follows conventions to work properly with Matplotlib 3.3+ 
+*   Visualisation using matplotlib now follows conventions to work properly with Matplotlib 3.3+
 
 ### 1.1.9
 *   SD-DSL: System Dynamics element such as converters did not implement comparison operators (">", "<", ">=", "==", "!="). They have been added
 
-### 1.1.8 
+### 1.1.8
 *   Another bugfix for series renaming. Simplified the code for renaming by using Pandas' standard method ``rename``
 
 ### 1.1.7
@@ -290,21 +292,21 @@ XMILE equations make use of double-quote enclosed identifiers in case it actuall
 Update BPTK-Py using the new update mechanism: [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
 ### 1.1.3
-We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is 
+We figured that the update mechanisms via ``pip`` might be confusing sometimes, especially for non-programmers. This is
 why we decided to implement an update mechanism. Details are available in the [documentation](https://bptk.transentis.com/en/latest/docs/usage/installation.html#keeping-bptk-py-up-to-date)
 
 ### 1.1.2
 *   Bugfix to (XMILE) SD Compiler: Added support for array expressions within function calls. We had trouble with equations that contain another expression within a function call. E.g. ``DELAY(arrayedElement[1,2]*5, 1, 1)`` was not supported.
 *   Improvement to (XMILE) SD Compiler: Removed replacement of currency symbols (``€``, ``$`` etc.) and percentage signs with abbreviations. We had implemented this in earlier releases but figured it leads to confusion with modellers.
 
-### 1.1.1 
+### 1.1.1
 *   The SD DSL now differentiates flows and biflows. Simply add a biflow using ```biflow = model.biflow(<name>)```.
-*   The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT, ROUND and all trigonometric and statistical builtins you know from XMILE. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y). 
+*   The SD DSL now supports: RANDOM, IF, NOT, AND, OR, NAN, SQRT, ROUND and all trigonometric and statistical builtins you know from XMILE. Furthermore the operators support Comparison Operators (>, <, >=, <=, ==, !=) and the modulo operator (x % y).
     *   RANDOM: ``converter.equation = sd.Random(<min>, <max>)`` draws a uniformly distributed float random number between <min> and <max>
     *   ROUND: ``converter.equation = sd.Round(sd.random(0,1),2))`` rounds a random number between 0 and 1 to a 2 digit float
-    *   IF: ```converter.equation = sd.If( <condition>, <then> , <else> ) ``` corresponds to ```IF <condition> THEN <then> ELSE <else>```. Each term inside the IF clause can be a SD term again. Example for a valid If clause: ``equation = sd.If(sd.time()>10,sd.random(1,2), 100)`` 
+    *   IF: ```converter.equation = sd.If( <condition>, <then> , <else> ) ``` corresponds to ```IF <condition> THEN <then> ELSE <else>```. Each term inside the IF clause can be a SD term again. Example for a valid If clause: ``equation = sd.If(sd.time()>10,sd.random(1,2), 100)``
     *   AND/OR: ```sd.Or(<left hand side>, <right hand side>)``` and ```sd.And(<left hand side>, <right hand side>)``` for multiple conditions
-    *   NOT: Use ```sd.Not(<condition>)``` for "not" conditions, e.g:  ```sd.If(sd.Not(sd.time()>10), 1, 0 )``` 
+    *   NOT: Use ```sd.Not(<condition>)``` for "not" conditions, e.g:  ```sd.If(sd.Not(sd.time()>10), 1, 0 )```
     *   NAN / INF / PI: ``sd.nan()`` returns a NAN value, ``sd.Inf()`` gives you the infinity value, ```sd.pi()``` returns the number pi.
     *   SQRT: ``sd.sqrt(<value of function>)`` computes the square root
     *   SIN / TAN / COS: ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians) and of course we also support ARCCOS, ARCSIN, ARCTAN with the same syntax
@@ -322,7 +324,7 @@ why we decided to implement an update mechanism. Details are available in the [d
 
 ### 1.0.1
 
-*   Bugfix release: Fixed an issue with plot_lookup 
+*   Bugfix release: Fixed an issue with plot_lookup
 
 ### 1.0.0
 
