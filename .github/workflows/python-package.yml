@@ -40,7 +40,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest-cov
       run: |
-        pytest --cov-config=.coveragerc --cov=./tests/
+        pytest --cov-config=.coveragerc --cov=./
         coverage xml
     - name: Upload coverage to Coveralls
       if: ${{ matrix.python-version == 3.9 }}
