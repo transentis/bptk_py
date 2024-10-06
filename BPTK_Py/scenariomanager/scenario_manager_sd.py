@@ -228,7 +228,13 @@ class ScenarioManagerSd(ScenarioManager):
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"
             full_file_path = Path(py_model_file_path)
-            package_link = full_file_path.parent.name + "." + full_file_path.stem
+
+            ## need to check whether this is in model/model_name notation (XMILE) or model.model_name notation (SDDSL)
+           
+            if full_file_path.parent.name: 
+                package_link = full_file_path.parent.name + "." + full_file_path.stem
+            else:
+                package_link = full_file_path.stem
 
             class_link = "simulation_model"
 

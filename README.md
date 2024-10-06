@@ -41,6 +41,13 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.9.1
+
+* Bump versions of key dependencies
+* Update XMILE parser grammar to remove depreciation warning
+* Remove obsolete documentation files
+* Update setup to use pyproject.toml
+
 ### 1.9.0
 * BPTKServer: `run` endpoint now also works for agent-based models
 * Model: Add `configure_agent`, `configure_properties` and `delete_agent(s)` methods

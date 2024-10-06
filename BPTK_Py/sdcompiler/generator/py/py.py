@@ -1004,7 +1004,7 @@ builtins = {
 
     'lookupinv' : lambda *args : "( self.lookupinv(\"{}\", {}) )".format(remove_nesting(args)[0]["name"],parseExpression(remove_nesting(args)[1])),
 
-    'lookuparea' : lambda *args : "(np.trapz([LERP(  i , self.points[\"{}\"]) for i in np.arange(self.starttime,{} + self.dt,self.dt)], dx=self.dt)) ".format(remove_nesting(args)[0]["name"],parseExpression(remove_nesting(args)[1])),
+    'lookuparea' : lambda *args : "(np.trapezoid([LERP(  i , self.points[\"{}\"]) for i in np.arange(self.starttime,{} + self.dt,self.dt)], dx=self.dt)) ".format(remove_nesting(args)[0]["name"],parseExpression(remove_nesting(args)[1])),
 
     'ramp' : lambda *args : ramp_(args),
 

@@ -29,7 +29,8 @@ echo "-------------------------------------"
 cd ../tests
 python3 -m venv venv
 source ./venv/bin/activate
-pip install -r ../requirements.txt
+pip install .
+pip install twine
 pip install pytest
 pip install -e ../
 
@@ -80,7 +81,7 @@ echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
 python3 -m venv ./venv
 source ./venv/bin/activate
-pip install -r ../requirements.txt
+pip install .
 pip install pytest
 pip install -U --index-url https://test.pypi.org/simple/ bptk_py
 

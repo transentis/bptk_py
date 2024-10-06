@@ -1,15 +1,4 @@
 from setuptools import setup
-import conf, pytest
-
-#########################
-### LOAD REQUIREMENTS ###
-#########################
-
-requirements = []
-req_file = open("requirements.txt","r")
-for line in req_file.readlines():
-    requirements += [line.replace("\n","")]
-
 
 ###################
 ### LOAD README ###
@@ -24,11 +13,11 @@ with open("README.md", "r") as fh:
 
 
 setup(name='BPTK_Py',
-      version=conf.release,
+      version='1.9.1',
       description='A python simulation engine for System Dynamics & Agent based models',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      url='https://www.transentis.com/business-prototyping-toolkit/en',
+      url='https://bptk.transentis.com',
       author='transentis labs GmbH',
       author_email='support@transentis.com',
       license='MIT',
@@ -57,10 +46,6 @@ setup(name='BPTK_Py',
                 "BPTK_Py.server",
                 "BPTK_Py.externalstateadapter"
                 ],
-
-      install_requires=requirements,
-      setup_requires=["pytest-runner"],
-        tests_require=["pytest"],
       include_package_data=True,
 
       classifiers=[

@@ -282,7 +282,7 @@ grammar = Grammar(
     r"""
     equation                =  Sentence 
     Sentence                =  _  ( Comment / ConditionalExpression / ConditionalStatement / Expression / nothing ) _
-    Comment                 = _ "{" ~"[\w\d\s]*"iu "}" _
+    Comment                 = _ "{" ~r"[\w\s]*"iu "}" _
     ConditionalExpression   =  (if _ Sentence _ then _ Sentence _ else _ Sentence)  / (if _ Sentence _ then _ Sentence)
     ConditionalStatement    = (ComparisonExpression BooleanOperator ConditionalStatement) / (ComparisonExpression)
     Not                     = ~"NOT"i 
@@ -307,7 +307,7 @@ grammar = Grammar(
     exponent                = ( 'e-' / 'e' ) digits 
     fraction                = '.'digits
 
-    digits                  = ~"[\d]+"
+    digits                  = ~r"[\d]+"
 
     AdditiveOperator        = _ ('+' / '-' ) _  
     MultiplicativeOperator  = _ ( Asterisk / '/' / '^' / ~"MOD"i ) _    
@@ -342,8 +342,8 @@ grammar = Grammar(
     or                      =  ~"OR"i &Separator
 
 
-    Name                    = ~r"[\w\d_%$€£¥&§#']+"
-    NameWithSpecialChars    = ~r"([\w\d_%$€£¥&§#'+\-*#<>\\.,;:–()]|(\\\"))+" 
+    Name                    = ~r"[\w_%$€£¥&§#']+"
+    NameWithSpecialChars    = ~r"([\w_%$€£¥&§#'+\-*#<>\\.,;:–()]|(\\\"))+" 
     Separator               = strict_whitespace / bracket_open
     bracket_open            = '('
     bracket_closed          = ')'
