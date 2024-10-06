@@ -3,10 +3,10 @@ requires = ["setuptools >= 65.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bptk_py"
+name = "bptk-py"
 dynamic = ["version"]
 dependencies = [
-  "pandas==2.2.3",
+"pandas==2.2.3",
 "matplotlib==3.9.2",
 "scipy==1.14.1",
 "numpy==2.1.2",
@@ -31,13 +31,13 @@ authors = [
 maintainers = [
   {name = "transentis", email = "support@transentis.com"}
 ]
-description = "System Dynamics and Agent-based Modeling in Python"
+description = "A python simulation engine for System Dynamics & Agent based models"
 readme = "README.md"
-license = {file = "LICENSE"}
 keywords = ["system dynamics", "agent based modeling"]
 classifiers = [
-
-  "Programming Language :: Python :: 3.11"
+   "Programming Language :: Python :: 3",
+       "License :: OSI Approved :: MIT License",
+          "Operating System :: OS Independent"
 ]
 
 [project.optional-dependencies]

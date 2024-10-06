@@ -29,8 +29,6 @@ echo "-------------------------------------"
 cd ../tests
 python3 -m venv venv
 source ./venv/bin/activate
-pip install .
-pip install twine
 pip install pytest
 pip install -e ../
 
@@ -52,18 +50,21 @@ echo "-------------------------------------"
 echo "Generating Distribution"
 echo "-------------------------------------"
 cd ..
-git submodule update --recursive --remote
-python3 setup.py sdist bdist_wheel
+
+pip install twine
+pip install build
+python3 -m build --sdist
+python3 -m build --wheel
+
 
 ## Upload to Test PyPi
 echo "-------------------------------------"
-echo "Uploading to Test-PyPi! Please login"
+echo "Uploading to Test-PyPi!"
 echo "-------------------------------------"
-if ! twine upload --repository-url https://test.pypi.org/legacy/ dist/* ; then
+if ! twine upload --verbose --repository bptk-py-test dist/* ; then
   echo "Upload to Test PyPi failed! Aborting"
   rm -rf dist/
   rm -rf build/
-  rm build
   rm -rf BPTK_Py.egg-info
   exit 1
 fi
@@ -81,9 +82,8 @@ echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
 python3 -m venv ./venv
 source ./venv/bin/activate
-pip install .
 pip install pytest
-pip install -U --index-url https://test.pypi.org/simple/ bptk_py
+pip install --index-url https://test.pypi.org/simple/ bptk_py --extra-index-url https://pypi.org/simple
 
 if ! python ./run_pytests.py; then
     echo "Tests failed! Not continuing. Please fix your code"
@@ -104,10 +104,8 @@ echo "-------------------------"
 ## Push to official PyPi Mirror ##
 ##################################
 
-echo ""
-echo "Login to PyPi Please"
 
-if ! twine upload dist/* ; then
+if ! twine upload --verbose --repository bptk-py dist/* ; then
   echo "Upload to PyPi failed! Aborting. Please retry!"
   rm -rf dist/
   rm -rf build/

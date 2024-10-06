@@ -14,38 +14,41 @@
 ## MAGIC Build Script that also tests your code!
 
 
-pip3 install -r ../requirements-dev.txt
-
-git submodule update --remote --recursive
-
-
 
 ###################
 ## Generate Dist ##
 ###################
 
+
 echo "-------------------------------------"
 echo "Generating Distribution"
 echo "-------------------------------------"
 cd ..
-git submodule update --recursive --remote
-python3 setup.py sdist bdist_wheel
 
+pip install twine
+pip install build
+python3 -m build --sdist
+python3 -m build --wheel
 
 ##################################
 ## Push to official PyPi Mirror ##
 ##################################
 
 echo ""
-echo "Login to PyPi Please"
+echo "Uploading to PyPi"
 
-if ! twine upload dist/* ; then
+if ! twine upload --verbose --repository bptk-py dist/* ; then
   echo "Upload to PyPi failed! Aborting. Please retry!"
   rm -rf dist/
   rm -rf build/
   rm -rf BPTK_Py.egg-info
   exit 1
 fi
+
+rm -rf dist/
+rm -rf build/
+rm -rf BPTK_Py.egg-info
+
 
 rm -rf dist/
 rm -rf build/

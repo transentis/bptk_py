@@ -11,17 +11,11 @@ with open("README.md", "r") as fh:
 ### BUILD EGG ###
 #################
 
+def get_version():
+    return '1.9.2'
 
-setup(name='BPTK_Py',
-      version='1.9.1',
-      description='A python simulation engine for System Dynamics & Agent based models',
-      long_description=long_description,
-      long_description_content_type="text/markdown",
-      url='https://bptk.transentis.com',
-      author='transentis labs GmbH',
-      author_email='support@transentis.com',
-      license='MIT',
-      packages=['BPTK_Py',
+setup(version=get_version(),
+     packages=['BPTK_Py',
                 'BPTK_Py.scenariomanager',
                 "BPTK_Py.logger",
                 "BPTK_Py.visualizations",
@@ -47,10 +41,4 @@ setup(name='BPTK_Py',
                 "BPTK_Py.externalstateadapter"
                 ],
       include_package_data=True,
-
-      classifiers=[
-          "Programming Language :: Python :: 3",
-          'License :: OSI Approved :: MIT License',
-          "Operating System :: OS Independent",
-      ],
       zip_safe=False)
