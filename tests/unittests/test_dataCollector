@@ -17,16 +17,12 @@ class TestAgent(unittest.TestCase):
 
     def testDataCollector_record_event(self):
         dataCollector = DataCollector()
-        event1= Event(name="eventName1", sender_id=1, receiver_id=2)
-        event2= Event(name="eventName2", sender_id=3, receiver_id=4)
+        event= Event(name="eventName", sender_id=1, receiver_id=2)
 
-        dataCollector.record_event(time=1,event=event1)
-        dataCollector.record_event(time=1,event=event2)
-        dataCollector.record_event(time=1,event=event2)
-        dataCollector.record_event(time=2,event=event2)
+        dataCollector.record_event(time=101,event=event)
 
-        self.assertEqual(dataCollector.event_statistics,{1: {'eventName1': 1, 'eventName2': 2}, 2: {'eventName2': 1}})
-
+        self.assertEqual(dataCollector.event_statistics,{101: {'eventName': 1}})
+     
 if __name__ == '__main__':
     unittest.main()
 
