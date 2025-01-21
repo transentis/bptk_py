@@ -27,10 +27,10 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").properties,properties)
         self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").agent_type, "testAgent")
 
-        self.assertRaises(ValueError,Agent,agent_id=1, model="model", properties={}, agent_type="testAgent")
+        self.assertRaises(ValueError, Agent, agent_id=1, model="model", properties={}, agent_type="testAgent")
         self.assertRaises(ValueError, Agent, agent_id="1", model=model, properties={}, agent_type="testAgent")
         self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties={}, agent_type=1)
-        self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type=1)
+        self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type="testAgent")
 
 
     def testAgentSerialize(self):
@@ -61,6 +61,8 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(len(agent.eventHandlers.keys()), 1)
         self.assertEqual(agent.eventHandlers["active"]["event"], agent.handler)
 
+        self.assertRaises(ValueError, agent.register_event_handler,"states","event",handler)       
+        self.assertRaises(ValueError, agent.register_event_handler,["active"],1,handler)        
 
     def test_ReceiveEvent(self):
         from BPTK_Py import Event
