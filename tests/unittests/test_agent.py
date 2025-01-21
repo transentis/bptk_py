@@ -35,7 +35,7 @@ class TestAgent(unittest.TestCase):
 
     def testAgentSerialize(self):
         model = Model()
-        self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").serialize(), {'id': 1, 'state': 'active', 'type': 'testAgent'})
+        self.assertEqual(Agent(agent_id=1, model=model, properties={"name": {"type" : "String", "value": "testName"}}, agent_type="testAgent").serialize(), {'name': 'testName', 'id': 1, 'state': 'active', 'type': 'testAgent'})
 
     def testAgentRegister_event_handler(self):
         from BPTK_Py import Event
@@ -106,10 +106,15 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_Integer["name"])
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_String["name"])
 
-        invalid_property_Type = {"name": {"type" : "Invalid", "value": 0.01}}
+        invalid_property_type_value = {"name": {"type" : "Invalid", "value": 0.01}}
+        invalid_property_type = {"name": {"invalid_type" : "Double", "value": 0.01}}
 
-        self.assertRaises(ValueError, agent.set_property, name="Name", data=invalid_property_Type["name"])
-        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_Type)
+        self.assertRaises(ValueError, agent.set_property, name="Name", data=invalid_property_type_value["name"])
+        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_type["name"])
+
+        invalid_property_value = {"name": {"type" : "Integer", "invalid_value": 0.01}}
+
+        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_value["name"])        
         
     def test_set_property_value(self):
         model = Model()
@@ -138,6 +143,11 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(WrongTypeException,agent.set_property_value,name="str",value=1.0)
         self.assertRaises(WrongTypeException, agent.set_property_value, name="doub", value="hallo")
         self.assertRaises(WrongTypeException, agent.set_property_value, name="int", value="hallo")
+
+        valid_property_dictionary = {"name": {"type" : "Dictionary", "value": "testName"}}
+
+        agent.set_property("name",valid_property_dictionary["name"])
+        self.assertRaises(WrongTypeException,agent.set_property_value,name="name",value="string")
 
 
     def test_get_property(self):
@@ -205,7 +215,7 @@ class TestAgent(unittest.TestCase):
 
         self.assertRaises(KeyError,agent.receive_instantaneous_event, event=invalid_event)
 
-        self.assertEqual(agent.receive_instantaneous_event(valid_event),1)
+        self.assertEqual(agent.receive_instantaneous_event(valid_event),1)       
 
     def test_reset_cache(self):
         model = Model()

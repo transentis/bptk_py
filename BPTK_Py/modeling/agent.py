@@ -68,7 +68,7 @@ class Agent:
 
         output = {}
         for key, value in self.properties.items():
-            output[key] = self.properties[value]['value']
+            output[key] = value['value']
 
         output['id'] = self.id
         output['state'] = self.state
