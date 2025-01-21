@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from BPTK_Py import Agent
 
@@ -200,6 +201,49 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(agent.receive_instantaneous_event(valid_event),1)
 
+    def test_reset_cache(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.reset_cache()
+
+        self.assertIsNone(result)
+
+    def test_begin_episode(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.begin_episode(1)
+
+        self.assertIsNone(result)  
+
+    def test_end_episode(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.end_episode(1)
+
+        self.assertIsNone(result)   
+
+    @patch('random.random')
+    def test_is_event_relevant_true(self,mock_random):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")  
+
+        mock_random.return_value = 0.3
+        treshold_value = 0.5
+
+        self.assertTrue(agent.is_event_relevant(treshold_value))            
+
+    @patch('random.random')
+    def test_is_event_relevant_false(self,mock_random):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")  
+
+        mock_random.return_value = 0.7
+        treshold_value = 0.5
+
+        self.assertFalse(agent.is_event_relevant(treshold_value))  
 
 if __name__ == '__main__':
     unittest.main()
