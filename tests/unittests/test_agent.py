@@ -99,7 +99,6 @@ class TestAgent(unittest.TestCase):
         agent.set_property("name", valid_property_String["name"])
         self.assertEqual(agent.properties["name"], valid_property_String["name"])
 
-
         self.assertRaises(ValueError,agent.set_property,name=1,data=valid_property_Double["name"])
 
         from BPTK_Py.exceptions import  WrongTypeException
@@ -107,6 +106,11 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_Integer["name"])
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_String["name"])
 
+        invalid_property_Type = {"name": {"type" : "Invalid", "value": 0.01}}
+
+        self.assertRaises(ValueError, agent.set_property, name="Name", data=invalid_property_Type["name"])
+        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_Type)
+        
     def test_set_property_value(self):
         model = Model()
         agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")
