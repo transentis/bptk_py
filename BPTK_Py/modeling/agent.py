@@ -351,11 +351,6 @@ class Agent:
         """
         pass
 
-
-    def to_string(self):
-        #TODO might want to rename this or just remove it ...
-        return self.state
-
     @staticmethod
     def is_event_relevant(threshold):
         """Helper function used to differentiate relevant and irrelevant events.
