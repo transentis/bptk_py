@@ -5,7 +5,7 @@ from BPTK_Py import Event
 from BPTK_Py import DataCollector
 
 
-class TestAgent(unittest.TestCase):
+class TestDataCollector(unittest.TestCase):
     def setUp(self):
         pass
 

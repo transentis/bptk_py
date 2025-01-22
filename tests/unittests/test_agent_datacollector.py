@@ -4,7 +4,7 @@ from BPTK_Py import Agent
 from BPTK_Py import Model
 from BPTK_Py.modeling.datacollectors.agent_datacollector import AgentDataCollector
 
-class TestAgent(unittest.TestCase):
+class TestAgentDataCollector(unittest.TestCase):
     def setUp(self):
         pass
 

@@ -43,7 +43,7 @@ class CSVDataCollector:
 
         self.headlines = None
 
-
+        self.cache = {}
 
     def record_event(self, time, event):
         """
@@ -96,12 +96,14 @@ class CSVDataCollector:
             with open(filename, "a") as outfile:
 
                 if not id in self.observed_ids:
-                    self.observed_ids[id] = ""
+                    self.observed_ids.append(id)
                     outfile.write(";".join(stats.keys()))
 
+                if filename not in self.cache:
+                    self.cache[filename] = []
                 self.cache[filename] += [stats.values()]
-                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
+                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
     def statistics(self):
         """
