@@ -18,6 +18,7 @@ class TestCSVDataCollector(unittest.TestCase):
         self.assertIsNone(csvDataCollector.column_names)
         self.assertEqual(csvDataCollector.observed_ids,[])
         self.assertIsNone(csvDataCollector.headlines)
+        self.assertEqual(csvDataCollector.cache,{})      
 
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)          
@@ -29,14 +30,12 @@ class TestCSVDataCollector(unittest.TestCase):
         csvDataCollector.record_event(time=101,event=event)
 
         self.assertEqual(csvDataCollector.event_statistics,{101: {'eventName': 1}})   
-        self.assertEqual(csvDataCollector.cache,{})      
 
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)          
 
     def testCSVDataCollector_collect_agent_statistics(self):
         csvDataCollector = CSVDataCollector(prefix="testDir")  
-
 
         model = Model()
         agent = Agent(agent_id=101, model=model, properties={"name": {"type" : "String", "value": "agentName"}},agent_type="testAgent1")
@@ -54,6 +53,40 @@ class TestCSVDataCollector(unittest.TestCase):
             self.assertEqual(lines[1].strip(), f"{agent.id};1;{agent.properties['name']['value']}")
 
         self.assertEqual(csvDataCollector.observed_ids,[agent.id])
+
+        #overwrite existing file
+
+        csvDataCollector.collect_agent_statistics(sim_time=2,agents=[agent])
+
+        self.assertTrue(os.path.isfile(fileName))
+
+        with open(fileName, "r") as file:
+            lines = file.readlines()
+            self.assertEqual(len(lines), 2)
+            self.assertEqual(lines[0].strip(), "id;time;name")
+            self.assertEqual(lines[1].strip(), f"{agent.id};2;{agent.properties['name']['value']}")
+
+        self.assertEqual(csvDataCollector.observed_ids,[agent.id])
+    
+        #Cleanup the folder
+        shutil.rmtree(csvDataCollector.prefix)  
+
+    def testCSVCollector_reset(self):
+        csvDataCollector = CSVDataCollector(prefix="testDir")  
+
+        model = Model()
+        agent = Agent(agent_id=101, model=model, properties={"name": {"type" : "String", "value": "agentName"}},agent_type="testAgent1")
+
+        csvDataCollector.collect_agent_statistics(sim_time=1,agents=[agent])
+
+        event= Event(name="eventName", sender_id=1, receiver_id=2)
+
+        csvDataCollector.record_event(time=101,event=event)        
+
+        csvDataCollector.reset()
+
+        self.assertEqual(csvDataCollector.agent_statistics,{})
+        self.assertEqual(csvDataCollector.event_statistics,{101: {'eventName': 1}})
 
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)  

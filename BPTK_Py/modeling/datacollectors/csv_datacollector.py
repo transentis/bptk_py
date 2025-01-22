@@ -97,12 +97,12 @@ class CSVDataCollector:
 
                 if not id in self.observed_ids:
                     self.observed_ids.append(id)
-                    outfile.write(";".join(stats.keys()))
-
+                
                 if filename not in self.cache:
                     self.cache[filename] = []
                 self.cache[filename] += [stats.values()]
 
+                outfile.write(";".join(stats.keys()))
                 outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
     def statistics(self):
