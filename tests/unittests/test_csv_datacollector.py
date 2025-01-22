@@ -86,7 +86,9 @@ class TestCSVDataCollector(unittest.TestCase):
         csvDataCollector.reset()
 
         self.assertEqual(csvDataCollector.agent_statistics,{})
-        self.assertEqual(csvDataCollector.event_statistics,{101: {'eventName': 1}})
+        self.assertEqual(csvDataCollector.event_statistics,{})
+        self.assertEqual(csvDataCollector.cache,{})
+        self.assertEqual(csvDataCollector.observed_ids,[])
 
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)  
