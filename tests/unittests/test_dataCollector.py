@@ -13,7 +13,7 @@ class TestAgent(unittest.TestCase):
         dataCollector = DataCollector()
 
         self.assertEqual(dataCollector.event_statistics,{})
-        self.assertEqual(dataCollector.event_statistics,{})
+        self.assertEqual(dataCollector.agent_statistics,{})
 
     def testDataCollector_record_event(self):
         dataCollector = DataCollector()
