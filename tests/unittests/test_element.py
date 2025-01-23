@@ -144,6 +144,50 @@ class TestElement(unittest.TestCase):
         self.assertRaises(Exception,stock.setup_named_matrix,names="string")
         self.assertRaises(Exception,stock.setup_named_matrix,names=True)
 
+
+    #Check these tests again from functional perspective
+
+    def testElement_handle_arrayed_named(self):
+        model = Model()
+
+        stock1 = Stock(model=model,name="testStock1")
+        stock2 = Stock(model=model,name="testStock2")
+
+        stock1.setup_named_vector(values={1: 1.0, 2: 2.0},set_stack_equation=False)
+        stock2.setup_named_vector(values={1: 3.0, 2: 4.0},set_stack_equation=False)
+
+        return_value = stock1._handle_arrayed(equation=stock2)
+
+        self.assertFalse(return_value)
+        self.assertEqual(stock1._elements[1].equation,stock2._elements[1])
+        self.assertEqual(stock1._elements[2].equation,stock2._elements[2])
+
+    def testElement_handle_arrayed_not_named(self):
+        model = Model()
+
+        stock1 = Stock(model=model,name="testStock1")
+        stock2 = Stock(model=model,name="testStock2")
+
+        stock1.setup_vector(size=2,default_value=1.0,set_stack_equation=False)
+        stock2.setup_vector(size=2,default_value=2.0,set_stack_equation=False) 
+
+        return_value = stock1._handle_arrayed(equation=stock2)
+
+        self.assertFalse(return_value)
+        self.assertEqual(stock1._elements[0].equation,stock2._elements[0])
+        self.assertEqual(stock1._elements[1].equation,stock2._elements[1])        
+
+    def testElement_handle_arrayed_exception(self):
+        model = Model()
+
+        stock1 = Stock(model=model,name="testStock1")
+        stock2 = Stock(model=model,name="testStock2")
+
+        stock1.setup_vector(size=2,default_value=1.0,set_stack_equation=False)
+        stock2.setup_vector(size=3,default_value=2.0,set_stack_equation=False)  
+
+        self.assertRaises(Exception,stock1._handle_arrayed,equation=stock2)  
+
 class TestElementError(unittest.TestCase):
     def setUp(self):
         pass
