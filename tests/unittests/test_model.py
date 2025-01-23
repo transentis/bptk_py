@@ -68,5 +68,15 @@ class Test_Model(unittest.TestCase):
 
         self.assertEqual(model.events,[event])
 
+    def test_agent_ids(self):
+        model = Model()
+        from BPTK_Py import Agent
+        agent1 = Agent(agent_id=101, model=model, properties={},agent_type="testTypeA")
+        agent2 = Agent(agent_id=102, model=model, properties={},agent_type="testTypeB")
+        agent2 = Agent(agent_id=103, model=model, properties={},agent_type="testTypeB")
+
+        
+
+
 if __name__ == '__main__':
     unittest.main()

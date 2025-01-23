@@ -17,7 +17,7 @@ class TestArrayedEquation(unittest.TestCase):
         arrayedEquation = ArrayedEquation(element=element)
 
         self.assertEqual(arrayedEquation.equations,[])
-        self.assertEqual(arrayedEquation._element,element)
+        self.assertIs(arrayedEquation._element,element)
 
     def testOperator_getitem_exception(self):
         model = Model()

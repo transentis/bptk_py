@@ -15,7 +15,7 @@ class TestElement(unittest.TestCase):
 
         element = Element(model=model,name="testElement",function_string=None)
 
-        self.assertEqual(element.model,model)
+        self.assertIs(element.model,model)
         self.assertEqual(element.name,"testElement")
         self.assertEqual(element.converters,[])
         self.assertEqual(element._function_string,element.default_function_string())
@@ -23,7 +23,7 @@ class TestElement(unittest.TestCase):
 
         self.assertIsInstance(element._elements, ArrayedEquation)
         self.assertListEqual(element._elements.equations, [])
-        self.assertEqual(element._elements._element,element) 
+        self.assertIs(element._elements._element,element) 
 
         self.assertFalse(element.arrayed)
         self.assertFalse(element.named_arrayed)
@@ -33,7 +33,7 @@ class TestElement(unittest.TestCase):
 
         element = Element(model=model,name="testElement",function_string="1+1")
 
-        self.assertEqual(element.model,model)
+        self.assertIs(element.model,model)
         self.assertEqual(element.name,"testElement")
         self.assertEqual(element.converters,[])
         self.assertEqual(element._function_string,"1+1")
@@ -41,7 +41,7 @@ class TestElement(unittest.TestCase):
 
         self.assertIsInstance(element._elements, ArrayedEquation)
         self.assertListEqual(element._elements.equations, [])
-        self.assertEqual(element._elements._element,element) 
+        self.assertIs(element._elements._element,element) 
 
         self.assertFalse(element.arrayed)
         self.assertFalse(element.named_arrayed)                
