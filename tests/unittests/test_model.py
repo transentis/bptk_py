@@ -1,6 +1,6 @@
 import unittest
 
-from BPTK_Py import Model, Agent 
+from BPTK_Py import Model, Agent, Event, DataCollector
 
 class Test_Model(unittest.TestCase):
     def test_set_scenario_manager(self):
@@ -30,6 +30,55 @@ class Test_Model(unittest.TestCase):
         model.register_agent_factory(agent_factory=func,agent_type=valid_agent_type)
 
         self.assertEqual(model.agent_factories[valid_agent_type],func)
+
+    def test_reset(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "String", "value": "testAgent"}}) 
+
+        dataCollector = DataCollector()
+        model.data_collector = dataCollector
+        event= Event(name="eventName", sender_id=1, receiver_id=2)
+        model.data_collector.record_event(time=101,event=event)
+        model.data_collector.collect_agent_statistics(time=201,agents=model.agents)
+
+        model.reset()
+
+        self.assertEqual(model.agent_type_map,{'testType': []})
+        self.assertEqual(model.agents,[])
+        self.assertEqual(model.data_collector.agent_statistics,{})
+        self.assertEqual(model.data_collector.event_statistics,{})
+
+    def test_reset_cache(self):
+        model = Model()
+
+        class TestableAgent(Agent):
+            def __init__(self, agent_id, model, properties, agent_type="agent"):
+                super().__init__(agent_id, model, properties, agent_type)
+                self.reset_cache_called = 0
+
+            def reset_cache(self):
+                self.reset_cache_called = 1      
+
+        func = lambda agent_id, model, properties: TestableAgent(agent_id=agent_id,model=model,properties=properties)
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "String", "value": "testAgent"}})    
+
+        dataCollector = DataCollector()
+        model.data_collector = dataCollector
+        event= Event(name="eventName", sender_id=1, receiver_id=2)
+        model.data_collector.record_event(time=101,event=event)
+        model.data_collector.collect_agent_statistics(time=201,agents=model.agents)
+
+        model.reset_cache()
+
+        self.assertEqual(model.data_collector.agent_statistics,{})
+        self.assertEqual(model.data_collector.event_statistics,{})
+        for agent in model.agents:
+            self.assertEqual(agent.reset_cache_called,1)             
+
 
     def test_agent_ids(self):
         model = Model()
@@ -103,12 +152,12 @@ class Test_Model(unittest.TestCase):
         self.assertTrue(model.get_property_value(name="active"))
 
     def test_getattr(self):
-        model = Model(name="testModelName")
+        model = Model()
 
         model.set_property(name="description",property_spec={"type" : "String", "value": "testModelDescription"}) 
         model.set_property(name="number",property_spec={"type" : "Integer", "value": 113})
 
-        self.assertEqual(model.name,"testModelName")
+        self.assertEqual(model.agents,[])
         self.assertEqual(model.description,"testModelDescription")
         self.assertEqual(model.number,113)
 
@@ -269,6 +318,43 @@ class Test_Model(unittest.TestCase):
         model.broadcast_event(agent_type="testAgent",event_factory=factory)
 
         self.assertEqual(model.events,[event])
+
+    def test_agent_count(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType1")
+        model.register_agent_factory(agent_factory=func,agent_type="testType2")
+
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "String", "value": "testAgent1"}}) 
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "String", "value": "testAgent2"}}) 
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "String", "value": "testAgent3"}}) 
+
+        self.assertEqual(model.agent_count(agent_type="testType1"),1)    
+        self.assertEqual(model.agent_count(agent_type="testType2"),2)      
+
+    def test_agent_count_per_state(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType1")
+        model.register_agent_factory(agent_factory=func,agent_type="testType2")
+
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "String", "value": "testAgent1"}}) #id=0 (inactive)
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "String", "value": "testAgent2"}}) #id=1 (active)
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "String", "value": "testAgent3"}}) #id=2 (inactive)
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "String", "value": "testAgent4"}}) #id=3 (active)
+
+        for agent in model.agents:
+            if agent.id == 0 or agent.id == 2:
+                agent.state = "inactive"
+
+        self.assertEqual(model.agent_count_per_state(agent_type="testType1",state="active"),0)        
+        self.assertEqual(model.agent_count_per_state(agent_type="testType1",state="inactive"),1)        
+        self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="inactive"),1)        
+        self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="active"),2)        
 
 if __name__ == '__main__':
     unittest.main()
