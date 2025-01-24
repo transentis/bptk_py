@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from BPTK_Py import Agent
+from BPTK_Py import Agent, Event
 
 from BPTK_Py import Model
 
@@ -216,6 +216,25 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(KeyError,agent.receive_instantaneous_event, event=invalid_event)
 
         self.assertEqual(agent.receive_instantaneous_event(valid_event),1)       
+
+    def test_handle_events(self):
+        model = Model()
+        agent1 = Agent(agent_id=1, model=model, properties={},agent_type="testAgent1")
+        agent2 = Agent(agent_id=2, model=model, properties={},agent_type="testAgent1")
+        event = Event(name="testEvent",receiver_id=1,sender_id=2)
+
+        handler1 = lambda event : None
+        handler2 = lambda t : None
+
+        agent1.register_event_handler(states=["active"],event="testEvent",handler=handler1)
+        agent1.receive_event(event=event)
+        agent1.handle_events(time=1,sim_round=1,step=1)
+        self.assertEqual(agent1.events,[])
+
+        agent2.register_event_handler(states=["active"],event="testEvent",handler=handler2)
+        agent2.receive_event(event=event)
+        agent2.handle_events(time=1,sim_round=1,step=1)
+        self.assertEqual(agent2.events,[])
 
     def test_reset_cache(self):
         model = Model()
