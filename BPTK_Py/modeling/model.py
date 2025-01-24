@@ -548,8 +548,6 @@ class Model:
         Args:
             agent_type: String.
                 Agent type that is to receive the event
-            num_agents: Integer.
-                Number of random agents that should receive the event
             event_factory: Function.
                 The factory (typicalla a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
         """
@@ -569,31 +567,13 @@ class Model:
                 Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
         """
          
-        if type(properties) == list:
-            for property in properties:
-                try:
-                    prop_name = property["name"]
-                    prop_val = property["value"]
-                    prop_type = property["type"]
-                except KeyError as e:
-                    prop_name = list(property.keys())[0]
-                    prop_val = property[prop_name]["value"]
-                    prop_type = property[prop_name]["type"]
+        for name, property in properties.items():
+            self.set_property(name, property)
 
-                self.set_property(prop_name,prop_val)
+            #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
 
-                if prop_type == "Lookup":
-                    self.points[prop_name] = prop_val
-
-        else:
-            for name, property in properties.items():
-
-                self.set_property(name, property)
-
-                #Lookup properties need to be added to the point dictionary also, for compatibilty with SD models
-
-                if property["type"] == "Lookup":
-                    self.points[name] = property["value"]
+            if property["type"] == "Lookup":
+                self.points[name] = property["value"]
 
 
     def configure_agents(self,config):

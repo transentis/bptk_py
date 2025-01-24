@@ -47,6 +47,8 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 * Removed to_string method of agent.py
 * Fix csv_datacollector.py 
 * Removed kinesis_datacollector.py
+* Fix model.py reset method
+* Adjusted model.py configure_properties method (only dict-values allowed)
 * added unittests
 
 ### 1.9.2
