@@ -223,15 +223,14 @@ class TestAgent(unittest.TestCase):
         agent2 = Agent(agent_id=2, model=model, properties={},agent_type="testAgent1")
         event = Event(name="testEvent",receiver_id=1,sender_id=2)
 
-        handler1 = lambda event : None
-        handler2 = lambda t : None
+        handler = lambda event : None
 
-        agent1.register_event_handler(states=["active"],event="testEvent",handler=handler1)
+        agent1.register_event_handler(states=["active"],event="testEvent",handler=handler)
         agent1.receive_event(event=event)
         agent1.handle_events(time=1,sim_round=1,step=1)
         self.assertEqual(agent1.events,[])
 
-        agent2.register_event_handler(states=["active"],event="testEvent",handler=handler2)
+        agent2.register_event_handler(states=["active"],event="testEventDifferent",handler=handler)
         agent2.receive_event(event=event)
         agent2.handle_events(time=1,sim_round=1,step=1)
         self.assertEqual(agent2.events,[])
