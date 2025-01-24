@@ -1,6 +1,6 @@
 import unittest
 
-from BPTK_Py import Model
+from BPTK_Py import Model, Agent 
 
 class Test_Model(unittest.TestCase):
     def test_set_scenario_manager(self):
@@ -31,6 +31,158 @@ class Test_Model(unittest.TestCase):
 
         self.assertEqual(model.agent_factories[valid_agent_type],func)
 
+    def test_agent_ids(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType1")
+        model.register_agent_factory(agent_factory=func,agent_type="testType2")
+
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent2"}})
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "Integer", "value": "testAgent3"}})
+
+        self.assertEqual(model.agent_ids(agent_type="testType1"),[0,1])
+        self.assertEqual(model.agent_ids(agent_type="testType2"),[2])
+
+    def test_agent(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent2"}})
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent3"}})        
+
+        self.assertEqual(model.agent(agent_id=0).get_property_value(name="name"),"testAgent1")
+        self.assertEqual(model.agent(agent_id=1).get_property_value(name="name"),"testAgent2")
+        self.assertEqual(model.agent(agent_id=2).get_property_value(name="name"),"testAgent3")
+        self.assertIsNone(model.agent(agent_id=3))
+
+    def test_create_agent_exception(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: 1
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+
+        self.assertRaises(Exception, model.create_agent,agent_type="testType",agent_properties={})
+
+    def test_get_property(self):
+        model = Model()
+
+        model.set_property(name="name",property_spec={"type" : "String", "value": "testModelName"})
+        model.set_property(name="number",property_spec={"type" : "Integer", "value": 111})
+
+        self.assertEqual(model.get_property(name="name"),{"type" : "String", "value": "testModelName"})
+        self.assertEqual(model.get_property(name="number"),{"type" : "Integer", "value": 111})
+
+        self.assertIsNone(model.get_property(name="NOT"))
+
+    def test_set_property_value(self):
+        model = Model()
+
+        model.set_property(name="name",property_spec={"type" : "String", "value": "testModelName"}) 
+
+        model.set_property_value(name="name",value="testModelNameEdited")      
+
+        self.assertEqual(model.get_property(name="name"),{"type" : "String", "value": "testModelNameEdited"})  
+
+    def test_get_property_value(self):
+        model = Model()
+
+        model.set_property(name="name",property_spec={"type" : "String", "value": "testModelName"}) 
+        model.set_property(name="number",property_spec={"type" : "Integer", "value": 112})
+        model.set_property(name="active",property_spec={"type" : "Integer", "value": True})
+
+        self.assertEqual(model.get_property_value(name="name"),"testModelName")
+        self.assertEqual(model.get_property_value(name="number"),112)
+        self.assertTrue(model.get_property_value(name="active"))
+
+    def test_getattr(self):
+        model = Model(name="testModelName")
+
+        model.set_property(name="description",property_spec={"type" : "String", "value": "testModelDescription"}) 
+        model.set_property(name="number",property_spec={"type" : "Integer", "value": 113})
+
+        self.assertEqual(model.name,"testModelName")
+        self.assertEqual(model.description,"testModelDescription")
+        self.assertEqual(model.number,113)
+
+        with self.assertRaises(AttributeError) as context:
+            model.invalid_property
+
+    def test_settattr(self):
+        model = Model(name="testModelName")
+
+        model.set_property(name="description",property_spec={"type" : "String", "value": "testModelDescription"}) 
+        model.set_property(name="lookup",property_spec={"type" : "Lookup", "value": {0 : 0, 1 : 1}})
+
+        model.name="testModelNameEdited"
+        model.description = "testModelDescriptionEdited"
+        model.lookup = {0 : 0.1 , 1 : 0.9}
+
+        self.assertEqual(model.name,"testModelNameEdited")
+        self.assertEqual(model.description,"testModelDescriptionEdited")
+        self.assertEqual(model.lookup,{0 : 0.1 , 1 : 0.9})
+        self.assertEqual(model.points,{'lookup': {0: 0.1, 1: 0.9}})
+
+    def test_begin_episode(self):
+        model = Model()
+
+        class TestableAgent(Agent):
+            def __init__(self, agent_id, model, properties, agent_type="agent"):
+                super().__init__(agent_id, model, properties, agent_type)
+                self.begin_called_with = None
+
+            def begin_episode(self, episode_no):
+                self.begin_called_with = episode_no   
+
+        func = lambda agent_id, model, properties: TestableAgent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})     
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})    
+
+        model.begin_episode(episode_no=3)
+
+        for agent in model.agents:
+            self.assertEqual(agent.begin_called_with,3) 
+
+    def test_end_episode(self):
+        model = Model()
+
+        class TestableAgent(Agent):
+            def __init__(self, agent_id, model, properties, agent_type="agent"):
+                super().__init__(agent_id, model, properties, agent_type)
+                self.end_called_with = None
+
+            def end_episode(self, episode_no):
+                self.end_called_with = episode_no   
+
+        func = lambda agent_id, model, properties: TestableAgent(agent_id=agent_id,model=model,properties=properties)
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType")
+
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})     
+        model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})    
+
+        model.end_episode(episode_no=4)
+
+        for agent in model.agents:
+            self.assertEqual(agent.end_called_with,4)             
+
+    def test_instantiate_model(self):
+        model = Model()
+
+        result_value = model.instantiate_model()
+
+        self.assertIsNone(result_value)
+
     def test_enqueue_event(self):
         model = Model()
 
@@ -48,6 +200,56 @@ class Test_Model(unittest.TestCase):
         model.enqueue_event(valid_event)
 
         self.assertEqual(model.events[0],valid_event)
+
+    def test_next_agent(self):
+        model = Model()
+
+        func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties,agent_type="testType1")
+
+        model.register_agent_factory(agent_factory=func,agent_type="testType1")
+
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent"}})
+
+        self.assertEqual(model.next_agent(agent_type="testType1",state="active").name,"testAgent")
+        self.assertIsNone(model.next_agent(agent_type="testType",state="active"))
+
+    def test_random_agents(self):
+        model = Model()
+
+        func1 = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties,agent_type="testType1")
+        func2 = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties,agent_type="testType2")
+
+        model.register_agent_factory(agent_factory=func1,agent_type="testType1")
+        model.register_agent_factory(agent_factory=func2,agent_type="testType2")
+
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent11"}})  #id=0
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent12"}})  #id=1
+        model.create_agent(agent_type="testType1",agent_properties={"name": {"type" : "Integer", "value": "testAgent13"}})  #id=2
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "Integer", "value": "testAgent21"}})  #id=3
+        model.create_agent(agent_type="testType2",agent_properties={"name": {"type" : "Integer", "value": "testAgent22"}})  #id=4
+
+        agent_list1 = model.random_agents(agent_type="testType1",num_agents=2)
+        self.assertEqual(len(agent_list1),2)
+        for id_number in agent_list1:
+            self.assertIn(id_number,[0, 1, 2])
+
+        #at most the number of actually available agents
+        agent_list2 = model.random_agents(agent_type="testType1",num_agents=20)
+        self.assertEqual(len(agent_list2),3)
+        for id_number in agent_list2:
+            self.assertIn(id_number,[0, 1, 2])
+
+        agent_list3 = model.random_agents(agent_type="testType2",num_agents=1)
+        self.assertEqual(len(agent_list3),1)
+        self.assertIn(agent_list3[0],[3, 4])
+
+        agent_list4 = model.random_agents(agent_type="testType2",num_agents=0)
+        self.assertEqual(len(agent_list4),0)
+        self.assertEqual(agent_list4,[]
+                         )
+        agent_list4 = model.random_agents(agent_type="testType2",num_agents=-1)
+        self.assertEqual(len(agent_list4),0)
+        self.assertEqual(agent_list4,[])
 
     def test_broadcast_event(self):
         model = Model()
@@ -68,14 +270,19 @@ class Test_Model(unittest.TestCase):
 
         self.assertEqual(model.events,[event])
 
-    def test_agent_ids(self):
+    def test_configure_properties(self):
         model = Model()
-        from BPTK_Py import Agent
-        agent1 = Agent(agent_id=101, model=model, properties={},agent_type="testTypeA")
-        agent2 = Agent(agent_id=102, model=model, properties={},agent_type="testTypeB")
-        agent2 = Agent(agent_id=103, model=model, properties={},agent_type="testTypeB")
 
-        
+        test_properties = [
+            {"name": "age", "value": 25, "type": "Integer"},
+            {"name": "height", "value": 180, "type": "Integer"},
+            {"name": "is_active", "value": True, "type": "boolean"}
+        ]       
+
+        model.configure_properties(properties=test_properties)
+
+        print(model.is_active)
+        #self.assertEqual(model.age,25)
 
 
 if __name__ == '__main__':
