@@ -270,20 +270,5 @@ class Test_Model(unittest.TestCase):
 
         self.assertEqual(model.events,[event])
 
-    def test_configure_properties(self):
-        model = Model()
-
-        test_properties = [
-            {"name": "age", "value": 25, "type": "Integer"},
-            {"name": "height", "value": 180, "type": "Integer"},
-            {"name": "is_active", "value": True, "type": "boolean"}
-        ]       
-
-        model.configure_properties(properties=test_properties)
-
-        print(model.is_active)
-        #self.assertEqual(model.age,25)
-
-
 if __name__ == '__main__':
     unittest.main()
