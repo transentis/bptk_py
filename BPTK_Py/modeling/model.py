@@ -131,9 +131,6 @@ class Model:
 
         self.agents = []
 
-        self.data_collector.agent_statistics = {}
-        self.data_collector.event_statistics = {}
-
         self.reset_cache()
 
     def agent_ids(self, agent_type):

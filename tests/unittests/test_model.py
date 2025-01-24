@@ -34,6 +34,8 @@ class Test_Model(unittest.TestCase):
     def test_reset(self):
         model = Model()
 
+        model.reset()
+
         func = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties)
         model.register_agent_factory(agent_factory=func,agent_type="testType")
         model.create_agent(agent_type="testType",agent_properties={"name": {"type" : "String", "value": "testAgent"}}) 
@@ -53,6 +55,8 @@ class Test_Model(unittest.TestCase):
 
     def test_reset_cache(self):
         model = Model()
+
+        model.reset_cache()
 
         class TestableAgent(Agent):
             def __init__(self, agent_id, model, properties, agent_type="agent"):
