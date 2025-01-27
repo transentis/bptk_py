@@ -83,7 +83,6 @@ class Test_Model(unittest.TestCase):
         for agent in model.agents:
             self.assertEqual(agent.reset_cache_called,1)             
 
-
     def test_agent_ids(self):
         model = Model()
 
@@ -304,6 +303,28 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(len(agent_list4),0)
         self.assertEqual(agent_list4,[])
 
+    def test_random_events(self):
+        model = Model()
+
+        func_agents = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties,agent_type="testAgentType")
+        func_events = lambda agent_id: Event(name="testEvent" + str(agent_id), sender_id=agent_id, receiver_id=-agent_id-1, data=None)
+
+        model.register_agent_factory(agent_factory=func_agents,agent_type="testAgentType")
+
+        model.create_agent(agent_type="testAgentType",agent_properties={"name": {"type" : "Integer", "value": "testAgent1"}})  #id=0
+        model.create_agent(agent_type="testAgentType",agent_properties={"name": {"type" : "Integer", "value": "testAgent2"}})  #id=1
+        model.create_agent(agent_type="testAgentType",agent_properties={"name": {"type" : "Integer", "value": "testAgent2"}})  #id=2
+
+        model.random_events(agent_type="testAgentType",num_agents=2, event_factory=func_events)
+
+        self.assertEqual(len(model.events),2)
+
+        for event in model.events:
+            self.assertIn(event.name,["testEvent0","testEvent1","testEvent2"])
+            self.assertIn(event.sender_id,[0,1,2])
+            self.assertIn(event.receiver_id,[-1,-2,-3])
+            self.assertIsNone(event.data)
+
     def test_broadcast_event(self):
         model = Model()
         from BPTK_Py import Agent, Event
@@ -322,6 +343,16 @@ class Test_Model(unittest.TestCase):
         model.broadcast_event(agent_type="testAgent",event_factory=factory)
 
         self.assertEqual(model.events,[event])
+
+    def test_configure_properties_dict(self):
+        model = Model()
+
+        properties = { "address": {"type" : "String", "value": "address_of_model"} , "model_rate": {"type" : "Lookup", "value": {0 : 0.1 , 1 : 0.9}} }
+
+        model.configure_properties(properties=properties)
+
+        self.assertEqual(model.properties,properties)
+        self.assertEqual(model.points["model_rate"],{0 : 0.1 , 1 : 0.9})
 
     def test_agent_count(self):
         model = Model()
