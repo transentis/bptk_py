@@ -2,7 +2,6 @@ import unittest
 
 import BPTK_Py.logger.logger as logmod
 
-
 import sys
 import io
 
