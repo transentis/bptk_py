@@ -1,5 +1,8 @@
 import unittest
 
+import BPTK_Py.logger.logger as logmod
+
+
 import sys
 import io
 
@@ -9,13 +12,11 @@ class TestLogger(unittest.TestCase):
 
     def testLogger_loglevel_error(self):
 
-        from BPTK_Py.logger.logger import log, logfile
-        import BPTK_Py.logger.logger 
-        BPTK_Py.logger.logger.loglevel = "ERROR"
+        logmod.loglevel = "ERROR"
                
         #cleanup logfile
         try:
-            with open(logfile, "w", encoding="UTF-8") as file:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
                 pass
         except FileNotFoundError:
             self.fail()
@@ -27,14 +28,14 @@ class TestLogger(unittest.TestCase):
         new_stdout = io.StringIO()
         sys.stdout = new_stdout 
 
-        log("[ERROR]: This is an error message")
+        logmod.log("[ERROR]: This is an error message")
 
         #Remove the redirection of the console output
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
         try:
-            with open(logfile, "r", encoding="UTF-8") as file:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
                 content = file.read()
         except FileNotFoundError:
             self.fail()
@@ -44,51 +45,73 @@ class TestLogger(unittest.TestCase):
 
         #Message on Warn-level will not be logged
 
-        log("[WARN]: This is a warn message")
+        logmod.log("[WARN]: This is a warn message")
 
         try:
-            with open(logfile, "r", encoding="UTF-8") as file:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
                 content = file.read()
         except FileNotFoundError:
             self.fail()
 
         self.assertNotIn("[WARN]: This is a warn message", content)  
 
-    def testLogger_loglevel_warn(self):
+    def testLogger_loglevel_info(self):
 
-        from BPTK_Py.logger.logger import log, logfile
-        import BPTK_Py.logger.logger 
-        BPTK_Py.logger.logger.loglevel = "WARN"               
+        logmod.loglevel = "INFO"
+              
         #cleanup logfile
         try:
-            with open(logfile, "w", encoding="UTF-8") as file:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        #Message on Info-level will be logged
+
+        logmod.log("[INFO]: This is an info message")
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[INFO]: This is an info message", content)  
+
+    def testLogger_loglevel_warn(self):
+
+        logmod.loglevel = "WARN"
+            
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
                 pass
         except FileNotFoundError:
             self.fail()
 
         #Message on Warn-level will be logged
 
-        log("[WARN]: This is a warn message")
+        logmod.log("[WARN]: This is a warn message")
 
         try:
-            with open(logfile, "r", encoding="UTF-8") as file:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
                 content = file.read()
         except FileNotFoundError:
             self.fail()
 
         self.assertIn("[WARN]: This is a warn message", content)  
 
-        #Message on Debug-level will not be logged
+        #Message on INFO-level will not be logged
 
-        log("[DEBUG]: This is a debug message")
+        logmod.log("[INFO]: This is an info message")
 
         try:
-            with open(logfile, "r", encoding="UTF-8") as file:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
                 content = file.read()
         except FileNotFoundError:
             self.fail()
 
-        self.assertNotIn("[DEBUG]: This is a debug message", content)      
+        self.assertNotIn("[INFO]: This is an info message", content)      
 
 if __name__ == '__main__':
     unittest.main()   
