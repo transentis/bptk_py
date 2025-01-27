@@ -71,7 +71,7 @@ class TestCSVDataCollector(unittest.TestCase):
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)  
 
-    def testCSVCollector_reset(self):
+    def testCSVDataCollector_reset(self):
         csvDataCollector = CSVDataCollector(prefix="testDir")  
 
         model = Model()
@@ -89,6 +89,14 @@ class TestCSVDataCollector(unittest.TestCase):
         self.assertEqual(csvDataCollector.event_statistics,{})
         self.assertEqual(csvDataCollector.cache,{})
         self.assertEqual(csvDataCollector.observed_ids,[])
+
+        #Cleanup the folder
+        shutil.rmtree(csvDataCollector.prefix)  
+
+    def testCSVDataCollector_statistics(self):
+        csvDataCollector = CSVDataCollector(prefix="testDir")  
+
+        self.assertEqual(csvDataCollector.statistics(),{})
 
         #Cleanup the folder
         shutil.rmtree(csvDataCollector.prefix)  
