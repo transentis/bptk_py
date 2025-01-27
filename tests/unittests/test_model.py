@@ -389,7 +389,22 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.agent_count_per_state(agent_type="testType1",state="active"),0)        
         self.assertEqual(model.agent_count_per_state(agent_type="testType1",state="inactive"),1)        
         self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="inactive"),1)        
-        self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="active"),2)        
+        self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="active"),2)  
+
+    def test_statistics_errorlog(self):
+        from BPTK_Py.logger.logger import logfile
+
+        model = Model()
+
+        model.statistics()
+
+        try:
+            with open(logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                   
 
 if __name__ == '__main__':
     unittest.main()
