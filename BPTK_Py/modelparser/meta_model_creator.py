@@ -77,13 +77,6 @@ class ModelCreator():
         if self.type == "sd" or self.type=="undefined":
             return None, self.json_dict
 
-        def import_class(name):
-            components = name.split('.')
-            mod = __import__(components[0])
-            for comp in components[1:]:
-                mod = getattr(mod, comp)
-            return mod
-
         from copy import deepcopy
         model_to_dump = deepcopy(self)
 
