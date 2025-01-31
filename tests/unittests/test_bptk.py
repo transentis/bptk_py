@@ -48,5 +48,59 @@ class TestBptk(unittest.TestCase):
 
         self.assertIn("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: ['INFO', 'WARN', 'ERROR']", content) 
 
+    def testBptk_set_state(self):
+        testbptk1 = bptk()
+        testbptk2 = bptk()
+
+        testbptk1._set_state(state={"testproperty" : "testValue"})
+        testbptk2._set_state(state={"lock" : True})
+
+        self.assertEqual(testbptk1.session_state["testproperty"],"testValue")
+        self.assertFalse(testbptk1.session_state["lock"])
+        self.assertTrue(testbptk2.session_state["lock"])
+
+    def testBptk_is_locked(self):
+        testbptk1 = bptk()
+        testbptk2 = bptk()
+        testbptk2.session_state = {"testproperty" : "testValue"}
+        testbptk3 = bptk()
+        testbptk3._set_state(state={"lock" : True})
+
+        self.assertFalse(testbptk1.is_locked())
+        self.assertFalse(testbptk2.is_locked())
+        self.assertTrue(testbptk3.is_locked())
+
+    def testBptk_begin_session_errors(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        testBptk = bptk()
+
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_states=["active"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],individual_agent_properties=["property"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_properties=["property"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_properties=["property"],agents=["agent1"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_property_types=["type"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=[],equations=["stock"],agents=["agent1"]))
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!", content)  
+        self.assertIn("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!", content)     
+        self.assertIn("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!", content)  
+        self.assertIn("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!", content)  
+        self.assertIn("[ERROR] You must set the relevant property types if you specify an agent_property!", content)  
+        self.assertIn("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!", content)  
+        self.assertIn("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder:", content)  
+
 if __name__ == '__main__':
     unittest.main()    
