@@ -1,6 +1,6 @@
 import BPTK_Py.sddsl.functions as sd_functions
 from importlib.metadata import version
-from .modeling import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler
+from .modeling import Event, DelayedEvent, Agent, DataCollector, Model, Scheduler, SimultaneousScheduler, CSVDataCollector, AgentDataCollector
 from .sddsl import Module
 from .bptk import bptk, conf
 from .config import config
