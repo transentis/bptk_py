@@ -94,7 +94,7 @@ if ! python ./run_pytests.py; then
 fi
 deactivate
 rm -rf venv/
-rm models/*.py
+rm test_models/*.py
 cd ..
 echo "-------------------------"
 echo "All tests successful!"
