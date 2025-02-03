@@ -1,6 +1,7 @@
 import unittest
+from unittest.mock import patch
 
-from BPTK_Py import Agent
+from BPTK_Py import Agent, Event
 
 from BPTK_Py import Model
 
@@ -26,15 +27,15 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").properties,properties)
         self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").agent_type, "testAgent")
 
-        self.assertRaises(ValueError,Agent,agent_id=1, model="model", properties={}, agent_type="testAgent")
+        self.assertRaises(ValueError, Agent, agent_id=1, model="model", properties={}, agent_type="testAgent")
         self.assertRaises(ValueError, Agent, agent_id="1", model=model, properties={}, agent_type="testAgent")
         self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties={}, agent_type=1)
-        self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type=1)
+        self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type="testAgent")
 
 
     def testAgentSerialize(self):
         model = Model()
-        self.assertEqual(Agent(agent_id=1, model=model, properties={}, agent_type="testAgent").serialize(), {'id': 1, 'state': 'active', 'type': 'testAgent'})
+        self.assertEqual(Agent(agent_id=1, model=model, properties={"name": {"type" : "String", "value": "testName"}}, agent_type="testAgent").serialize(), {'name': 'testName', 'id': 1, 'state': 'active', 'type': 'testAgent'})
 
     def testAgentRegister_event_handler(self):
         from BPTK_Py import Event
@@ -60,6 +61,8 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(len(agent.eventHandlers.keys()), 1)
         self.assertEqual(agent.eventHandlers["active"]["event"], agent.handler)
 
+        self.assertRaises(ValueError, agent.register_event_handler,"states","event",handler)       
+        self.assertRaises(ValueError, agent.register_event_handler,["active"],1,handler)        
 
     def test_ReceiveEvent(self):
         from BPTK_Py import Event
@@ -96,7 +99,6 @@ class TestAgent(unittest.TestCase):
         agent.set_property("name", valid_property_String["name"])
         self.assertEqual(agent.properties["name"], valid_property_String["name"])
 
-
         self.assertRaises(ValueError,agent.set_property,name=1,data=valid_property_Double["name"])
 
         from BPTK_Py.exceptions import  WrongTypeException
@@ -104,6 +106,16 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_Integer["name"])
         self.assertRaises(WrongTypeException, agent.set_property, name="name", data=invalid_property_String["name"])
 
+        invalid_property_type_value = {"name": {"type" : "Invalid", "value": 0.01}}
+        invalid_property_type = {"name": {"invalid_type" : "Double", "value": 0.01}}
+
+        self.assertRaises(ValueError, agent.set_property, name="Name", data=invalid_property_type_value["name"])
+        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_type["name"])
+
+        invalid_property_value = {"name": {"type" : "Integer", "invalid_value": 0.01}}
+
+        self.assertRaises(KeyError, agent.set_property, name="Name", data=invalid_property_value["name"])        
+        
     def test_set_property_value(self):
         model = Model()
         agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")
@@ -131,6 +143,11 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(WrongTypeException,agent.set_property_value,name="str",value=1.0)
         self.assertRaises(WrongTypeException, agent.set_property_value, name="doub", value="hallo")
         self.assertRaises(WrongTypeException, agent.set_property_value, name="int", value="hallo")
+
+        valid_property_dictionary = {"name": {"type" : "Dictionary", "value": "testName"}}
+
+        agent.set_property("name",valid_property_dictionary["name"])
+        self.assertRaises(WrongTypeException,agent.set_property_value,name="name",value="string")
 
 
     def test_get_property(self):
@@ -198,8 +215,69 @@ class TestAgent(unittest.TestCase):
 
         self.assertRaises(KeyError,agent.receive_instantaneous_event, event=invalid_event)
 
-        self.assertEqual(agent.receive_instantaneous_event(valid_event),1)
+        self.assertEqual(agent.receive_instantaneous_event(valid_event),1)       
 
+    def test_handle_events(self):
+        model = Model()
+        agent1 = Agent(agent_id=1, model=model, properties={},agent_type="testAgent1")
+        agent2 = Agent(agent_id=2, model=model, properties={},agent_type="testAgent1")
+        event = Event(name="testEvent",receiver_id=1,sender_id=2)
+
+        handler = lambda event : None
+
+        agent1.register_event_handler(states=["active"],event="testEvent",handler=handler)
+        agent1.receive_event(event=event)
+        agent1.handle_events(time=1,sim_round=1,step=1)
+        self.assertEqual(agent1.events,[])
+
+        agent2.register_event_handler(states=["active"],event="testEventDifferent",handler=handler)
+        agent2.receive_event(event=event)
+        agent2.handle_events(time=1,sim_round=1,step=1)
+        self.assertEqual(agent2.events,[])
+
+    def test_reset_cache(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.reset_cache()
+
+        self.assertIsNone(result)
+
+    def test_begin_episode(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.begin_episode(1)
+
+        self.assertIsNone(result)  
+
+    def test_end_episode(self):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")   
+
+        result = agent.end_episode(1)
+
+        self.assertIsNone(result)   
+
+    @patch('random.random')
+    def test_is_event_relevant_true(self,mock_random):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")  
+
+        mock_random.return_value = 0.3
+        treshold_value = 0.5
+
+        self.assertTrue(agent.is_event_relevant(treshold_value))            
+
+    @patch('random.random')
+    def test_is_event_relevant_false(self,mock_random):
+        model = Model()
+        agent = Agent(agent_id=1, model=model, properties={}, agent_type="testAgent")  
+
+        mock_random.return_value = 0.7
+        treshold_value = 0.5
+
+        self.assertFalse(agent.is_event_relevant(treshold_value))  
 
 if __name__ == '__main__':
     unittest.main()

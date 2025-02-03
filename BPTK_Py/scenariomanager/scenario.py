@@ -120,21 +120,16 @@ class SimulationScenario():
         if self.model is not None:
 
             for constant, value in self.constants.items():
-                try:
-                    if type(value) == str:
-                        self.model.equations[constant] = eval("lambda t : " + value)
-                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
+                if type(value) == str:
+                    self.model.equations[constant] = eval("lambda t : " + value)
+                    log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
                                                                               str(value)))
-                    elif type(value) == int or type(value) == float:
-                        self.model.equations[constant] = eval("lambda t: " + str(value))
-                        log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
+                elif type(value) == int or type(value) == float:
+                    self.model.equations[constant] = eval("lambda t: " + str(value))
+                    log("[INFO] {}, {}: Changed constant {} to {}".format(self.scenario_manager, self.name, constant,
                                                                               str(value)))
-                    else:
-                        log("[ERROR] Invalid type for constant {}: {}".format(constant, str(value)))
-
-                except ValueError as e:
-                    log("[ERROR] Attempted to evaluate an expression that I cannot evaluate. Error message: {}".format(
-                        str(e)))
+                else:
+                    log("[ERROR] Invalid type for constant {}: {}".format(constant, str(value)))
 
         else:
             log(
@@ -148,21 +143,16 @@ class SimulationScenario():
         """
 
         if self.model is not None:
-
             for name, value in self.points.items():
-                try:
-                    if type(value) == str:
-                        self.model.points[name] = eval(value)
-                        log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
-                    elif type(value) == list:
-                        self.model.points[name] = value
-                        log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
-                    else:
-                        log("[ERROR] Invalid type for points {}: {}".format(name, str(value)))
+                if type(value) == str:
+                    self.model.points[name] = eval(value)
+                    log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
+                elif type(value) == list:
+                    self.model.points[name] = value
+                    log("[INFO] {}, {}: Changed points {} to {}".format(self.scenario_manager, self.name, name, str(value)))
+                else:
+                    log("[ERROR] Invalid type for points {}: {}".format(name, str(value)))
 
-                except ValueError as e:
-                    log("[ERROR] Attempted to evaluate an expression that I cannot evaluate. Error message: {}".format(
-                        str(e)))
 
         else:
             log(

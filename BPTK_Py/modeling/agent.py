@@ -68,7 +68,7 @@ class Agent:
 
         output = {}
         for key, value in self.properties.items():
-            output[key] = self.properties[value]['value']
+            output[key] = value['value']
 
         output['id'] = self.id
         output['state'] = self.state
@@ -350,11 +350,6 @@ class Agent:
                 The number of the episode
         """
         pass
-
-
-    def to_string(self):
-        #TODO might want to rename this or just remove it ...
-        return self.state
 
     @staticmethod
     def is_event_relevant(threshold):

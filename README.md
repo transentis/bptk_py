@@ -41,6 +41,16 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.9.3
+
+* Fix agent.py serialize method
+* Removed to_string method of agent.py
+* Fix csv_datacollector.py 
+* Removed kinesis_datacollector.py, yaml_model_parser.py and serializer.py
+* Fix model.py reset method
+* Adjusted model.py configure_properties method (only dict-values allowed)
+* added unittests
+
 ### 1.9.2
 
 * Fix to build script

@@ -37,12 +37,15 @@ class CSVDataCollector:
         if not os.path.isdir(prefix):
              os.mkdir(prefix)
 
-        self.column_names = None
+        self.cache = {}        
 
         self.observed_ids = []
 
+        #Probably not necessary
+
         self.headlines = None
 
+        self.column_names = None
 
 
     def record_event(self, time, event):
@@ -60,11 +63,11 @@ class CSVDataCollector:
 
         self.event_statistics[time][event.name] += 1
 
-        self.cache = {}
-
     def reset(self):
         self.agent_statistics = {}
-
+        self.event_statistics = {}
+        self.cache = {}
+        self.observed_ids = []
 
     def collect_agent_statistics(self, sim_time, agents):
         """
@@ -96,12 +99,14 @@ class CSVDataCollector:
             with open(filename, "a") as outfile:
 
                 if not id in self.observed_ids:
-                    self.observed_ids[id] = ""
-                    outfile.write(";".join(stats.keys()))
-
+                    self.observed_ids.append(id)
+                
+                if filename not in self.cache:
+                    self.cache[filename] = []
                 self.cache[filename] += [stats.values()]
-                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
+                outfile.write(";".join(stats.keys()))
+                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
 
     def statistics(self):
         """
