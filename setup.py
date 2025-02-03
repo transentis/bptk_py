@@ -12,7 +12,7 @@ with open("README.md", "r") as fh:
 #################
 
 def get_version():
-    return '1.9.2'
+    return '1.9.3'
 
 setup(version=get_version(),
      packages=['BPTK_Py',
