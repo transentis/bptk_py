@@ -41,6 +41,14 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.9.5
+
+* Fix publication issues
+
+### 1.9.4
+
+* Fix publication issues
+
 ### 1.9.3
 
 * Fix agent.py serialize method
