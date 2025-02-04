@@ -53,5 +53,7 @@ class TestFileMonitor(unittest.TestCase):
         self.assertIn("[INFO] JSON Monitor: Observed a change to test.json", content)  
         self.assertIn("[INFO] JSON Monitor for test.json: model updated and relaoded scenarios!", content)  
 
+        self.assertEqual(fileMonitor._cached_stamp,100)
+
 if __name__ == "__main__":
     unittest.main()

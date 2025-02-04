@@ -55,5 +55,7 @@ class TestModelMonitor(unittest.TestCase):
         self.assertIn("[INFO] ABMModel Monitor for test.itmx: Observed a change to the model. Calling the parser", content)  
         self.assertIn("[INFO] ABMModel Monitor for test.itmx: model updated and relaoded scenarios!", content)  
 
+        self.assertEqual(modelMonitor._cached_stamp,100)
+
 if __name__ == "__main__":
     unittest.main()
