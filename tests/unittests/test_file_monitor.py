@@ -6,7 +6,7 @@ import threading
 import BPTK_Py.logger.logger as logmod
 
 
-from BPTK_Py.modelmonitor.file_monitor import FileMonitor  # Deine Datei mit der Klasse
+from BPTK_Py.modelmonitor.file_monitor import FileMonitor 
 
 class TestFileMonitor(unittest.TestCase):
 
@@ -27,22 +27,21 @@ class TestFileMonitor(unittest.TestCase):
 
         #setup FileMonitor with mocked update function
         mock_update_func = MagicMock()
-        updater = FileMonitor(json_file="test.json", update_func= mock_update_func)
-        updater._cached_stamp = 50  # older timestamp
+        fileMonitor = FileMonitor(json_file="test.json", update_func= mock_update_func)
+        fileMonitor._cached_stamp = 50  # older timestamp
 
         # start `__monitor` as separate thread
-        monitor_thread = threading.Thread(target=updater._FileMonitor__monitor)
-        updater.running = True
+        monitor_thread = threading.Thread(target=fileMonitor._FileMonitor__monitor)
+        fileMonitor.running = True
         monitor_thread.start()
 
         # Wait and let the Thread run
         time.sleep(2)
 
         # stop 
-        updater.running = False
+        fileMonitor.running = False
         monitor_thread.join()
 
-        # Check if the
         mock_update_func.assert_called_once_with("test.json")
 
         try:
