@@ -7,6 +7,12 @@
             "interestRate": 0.05,
             "depositRate": 1000.0
         },
+        "base_points": {
+            "testBasePoint": [
+                [0.0,0.1],
+                [1.0,0.9]
+            ]
+        },
         "scenarios":{
             "base": {                
             },

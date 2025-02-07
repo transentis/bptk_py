@@ -18,7 +18,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
         self.assertIsNone(sm._ScenarioManagerFactory__readScenario(filename=testDir))
 
-        testFile1 = os.path.join(testDir,"invalidFileName")
+        testFile = os.path.join(testDir,"invalidFileName")
 
         #cleanup logfile
         try:
@@ -27,7 +27,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         except FileNotFoundError:
             self.fail()        
 
-        self.assertIsNone(sm._ScenarioManagerFactory__readScenario(filename=testFile1))
+        self.assertIsNone(sm._ScenarioManagerFactory__readScenario(filename=testFile))
 
         try:
             with open(logmod.logfile, "r", encoding="UTF-8") as file:
@@ -35,7 +35,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         except FileNotFoundError:
             self.fail()
 
-        self.assertIn(f"[ERROR] No parser available for file {testFile1}. Skipping!", content)  
+        self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
 
     def test_reset_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
@@ -181,6 +181,53 @@ class TestScenarioManagerFactory(unittest.TestCase):
 
             self.assertEqual(json.loads(content),test_data)
 
+    def test_get_all_base_constants_invalid(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()     
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testFile = os.path.join(testDir,"invalidFileName")
+
+        self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_constants(scenario_manager="smPortfolio1", filenames=[testFile]))
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
+
+    def test_get_all_base_constants_points(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()     
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testFile = os.path.join(testDir,"invalidFileName")
+
+        self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_points(scenario_manager="smPortfolio1", filenames=[testFile]))
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
 
 if __name__ == '__main__':
     unittest.main()   
