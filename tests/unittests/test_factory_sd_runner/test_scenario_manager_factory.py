@@ -15,7 +15,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
         self.assertIsNone(sm._ScenarioManagerFactory__readScenario(filename=testDir))
 
         testFile = os.path.join(testDir,"invalidFileName")
@@ -39,7 +39,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
 
     def test_reset_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -60,7 +60,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
 
     def test_reset_all_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -75,7 +75,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
 
     def test_get_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -98,7 +98,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
             self.fail()
 
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -132,7 +132,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
             self.fail()
 
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -145,7 +145,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         }
 
         currentDir = os.path.abspath(os.getcwd())
-        modelFile = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","simulation_models","simulation_model")        
+        modelFile = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","simulation_models","simulation_model")        
 
         addScenario = SimulationScenario(dictionary=dictionary,name="addScenario", model=Model(), scenario_manager_name="addManager")    
 
@@ -192,7 +192,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
         testFile = os.path.join(testDir,"invalidFileName")
 
         self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_constants(scenario_manager="smPortfolio1", filenames=[testFile]))
@@ -216,7 +216,7 @@ class TestScenarioManagerFactory(unittest.TestCase):
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
         currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_scenario_manager_factory","scenarios")
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
         testFile = os.path.join(testDir,"invalidFileName")
 
         self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_points(scenario_manager="smPortfolio1", filenames=[testFile]))

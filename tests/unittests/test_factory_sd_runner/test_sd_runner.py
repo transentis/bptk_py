@@ -3,10 +3,37 @@ import unittest
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
 import BPTK_Py.logger.logger as logmod
+import os
 
 class TestSdRunner(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_run_scenario_step(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        sm.get_scenario_managers(path=testDir)
+        sdRunner = SdRunner(scenario_manager_factory=sm)
+
+        settings = {
+            "smPortfolio1": {
+                "scenarioLowInterest": {
+                    "points": {
+                        "testBasePoints": [
+                            [0.0,0.2],
+                            [1.0,0.8]                        
+                        ]
+                    }    
+                }
+            }
+        }
+
+        self.assertEqual(sdRunner.run_scenario_step(step=0, settings=settings, scenario_manager="smPortfolio1", scenarios=["scenarioLowInterest"], equations=["totalValue"]),{'scenarioLowInterest': {'totalValue': {0.0: 1000.0}}})
+        self.assertEqual(sdRunner.run_scenario_step(step=1, settings=settings, scenario_manager="smPortfolio1", scenarios=["scenarioLowInterest"], equations=["totalValue"]),{'scenarioLowInterest': {'totalValue': {1.0: 2010.0}}})
+        self.assertEqual(sdRunner.run_scenario_step(step=2, settings=settings, scenario_manager="smPortfolio1", scenarios=["scenarioLowInterest"], equations=["totalValue"]),{'scenarioLowInterest': {'totalValue': {2.0: 3030.1}}})
 
     def test_run_scenario_step_invalid(self):
         #cleanup logfile

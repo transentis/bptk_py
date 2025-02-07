@@ -1,6 +1,7 @@
 {
     "type": "sd",
     "smPortfolio1":{
+        "type": "sd",
         "model": "simulation_models/simulation_model",
         "base_constants": {
             "initialValue": 1000.0,
@@ -39,6 +40,7 @@
         }
     },
     "smPortfolio2":{
+        "type": "sd",
         "model": "simulation_models/simulation_model",
         "base_constants": {
             "initialValue": 1000.0,
