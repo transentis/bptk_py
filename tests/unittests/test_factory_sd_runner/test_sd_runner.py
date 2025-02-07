@@ -56,6 +56,32 @@ class TestSdRunner(unittest.TestCase):
 
         self.assertIn("[ERROR] No scenarios found for scenario manager \"testManager\" and scenarios \"testScenario\"", content)  
 
+    def test_run_scenario_did_you_mean(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        sm.get_scenario_managers(path=testDir)
+        sdRunner = SdRunner(scenario_manager_factory=sm)
+
+        self.assertEqual(sdRunner.run_scenario(sd_results_dict={},return_format="json", scenario_managers=["smPortfolio1"], scenarios=["scenarioLowInterest"], equations=["totalValu"]),{})        
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[ERROR] No simulation model containing equation \"totalValu\". Did you maybe mean one of \"totalValue", content)  
+
     def test_run_scenario_invalid(self):
         #cleanup logfile
         try:
