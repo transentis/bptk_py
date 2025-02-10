@@ -524,6 +524,37 @@ def test_sddsl_functions():
     for i in timerange(start, stop, dt):
         assert data['round'][i] == round(i)
 
+    #and/or
+    start = 0.0
+    dt = 1.0
+    stop = 10.0
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='and')
+    stock1 = model.stock("stock1")
+    stock2 = model.stock("stock2")
+    inflow1 = model.flow("inflow1")
+    inflow2 = model.flow("inflow2")
+    stock1.initial_value = 1.0
+    stock2.initial_value = 1.0
+    inflow1.equation = 1.0 * stock1
+    inflow2.equation = 2.0 * stock2
+    stock1.equation = inflow1
+    stock2.equation = inflow2
+
+    x = model.converter("x")
+    x.equation = sd.If(sd.And(stock1 > 4, stock2 > 4), 1, 0)
+    y = model.converter("y")
+    y.equation = sd.If(sd.Or(stock1 > 4, stock2 > 4), 1, 0)
+
+    assert x(0) == 0
+    assert x(1) == 0
+    assert x(2) == 0
+    assert x(3) == 1
+
+    assert y(0) == 0
+    assert y(1) == 0
+    assert y(2) == 1
+    assert y(3) == 1
+
     # sqrt
     start = 0
     dt = 1
