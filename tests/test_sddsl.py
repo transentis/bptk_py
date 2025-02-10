@@ -239,6 +239,20 @@ def test_small_dt():
 
     assert df.index.to_list() == timerange(0.0,10.0,0.001,exclusive=False)
 
+def test_NaryOperator():
+    from BPTK_Py import Model
+    
+    start = 0.0
+    dt = 1.0
+    stop = 10.0
+    m = Model(starttime=start, stoptime=stop, dt=dt, name='Nary')
+
+    x = m.flow("x")
+    testFunction = m.function("2times", lambda model, t: 2*t)
+    x.equation = testFunction() 
+
+    for i in timerange(start, stop, dt):
+        assert x(i) == 2*i
 
 def test_sddsl_functions():
     from BPTK_Py import Model
