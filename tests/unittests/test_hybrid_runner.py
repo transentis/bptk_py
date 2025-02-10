@@ -2,13 +2,11 @@ import unittest
 import pandas as pd
 
 from BPTK_Py.scenariorunners.hybrid_runner import HybridRunner
+import BPTK_Py.logger.logger as logmod
 
 class TestHybridRunner(unittest.TestCase):
     def setUp(self):
         pass    
-
-    def testHybridRunner_get_agents_for_model(self):
-        pass
 
     def testHybridRunner_get_df_for_agent(self):
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
@@ -135,6 +133,26 @@ class TestHybridRunner(unittest.TestCase):
         #agent_states =[] is not covered yet
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=[],agent_property_types=["type1"]).equals(pd.DataFrame(data=pd3_data, index=pd_index,columns=pd3_columns)))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=["property1"],agent_property_types=[]).equals(pd.DataFrame()))
+
+    def testHybridRunner_run_scenario_empty(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
+
+        self.assertTrue(hybridRunner.run_scenario(abm_results_dict={}, return_format=None, scenarios=[]).equals(pd.DataFrame()))
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[ERROR] No scenario to simulate found", content)  
 
 if __name__ == '__main__':
     unittest.main()    
