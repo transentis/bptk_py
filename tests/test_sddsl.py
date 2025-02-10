@@ -544,6 +544,8 @@ def test_sddsl_functions():
     x.equation = sd.If(sd.And(stock1 > 4, stock2 > 4), 1, 0)
     y = model.converter("y")
     y.equation = sd.If(sd.Or(stock1 > 4, stock2 > 4), 1, 0)
+    z = model.converter("z")
+    z.equation = sd.If(sd.Not(sd.And(stock1 > 4, stock2 > 4)), 1, 0) 
 
     assert x(0) == 0
     assert x(1) == 0
@@ -554,6 +556,11 @@ def test_sddsl_functions():
     assert y(1) == 0
     assert y(2) == 1
     assert y(3) == 1
+
+    assert z(0) == 1
+    assert z(1) == 1
+    assert z(2) == 1
+    assert z(3) == 0
 
     # sqrt
     start = 0
