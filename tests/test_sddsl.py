@@ -569,27 +569,51 @@ def test_sddsl_functions():
     for i in timerange(start, stop, dt):
         assert data.sqrt[i] == math.sqrt(i)
 
-    # sin cos tan
-    start = 0
+    # sin cos tan arccos arcsin arctan sinwave coswave
+    start = 0.0
     dt = 0.1
     stop = 10
     m = Model(starttime=start, stoptime=stop, dt=dt)
     sin = m.flow(name="sin")
     tan = m.flow(name="tan")
     cos = m.flow(name="cos")
+    arcsin = m.flow(name="arcsin")
+    arctan = m.flow(name="arctan")
+    arccos = m.flow(name="arccos")
+    sinwave = m.flow(name="sinwave")
+    coswave = m.flow(name="coswave")
     x = sd.time()
 
     sin.equation = sd.sin(x)
     tan.equation = sd.tan(x)
     cos.equation = sd.cos(x)
+    arcsin.equation = sd.arcsin(x)
+    arctan.equation = sd.arctan(x)
+    arccos.equation = sd.arccos(x)
+    sinwave.equation = sd.sinwave(amplitude=2, period=4)
+    coswave.equation = sd.coswave(amplitude=8, period=16)
 
     data_sin = sin.plot(return_df=True)
     data_tan = tan.plot(return_df=True)
     data_cos = cos.plot(return_df=True)
+    data_arcsin = arcsin.plot(return_df=True)
+    data_arctan = arctan.plot(return_df=True)
+    data_arccos = arccos.plot(return_df=True)    
+    data_sinwave = sinwave.plot(return_df=True)
+    data_coswave = coswave.plot(return_df=True)
     for i in timerange(start, stop, dt):
         assert data_sin.sin[i] == max(math.sin(i), 0.0)
         assert data_cos.cos[i] == max(math.cos(i), 0.0)
         assert data_tan.tan[i] == max(math.tan(i), 0.0)
+        assert data_arctan.arctan[i] == max(math.atan(i), 0.0)
+        assert data_sinwave.sinwave[i] == max(2*math.sin(2*math.pi*i/4),0.0)
+        assert data_coswave.coswave[i] == max(8*math.cos(2*math.pi*i/16),0.0)
+        if i <=1:
+            assert data_arcsin.arcsin[i] == max(math.asin(i), 0.0)
+            assert data_arccos.arccos[i] == max(math.acos(i), 0.0)
+        else:
+            assert data_arcsin.arcsin[i] == 0
+            assert data_arccos.arccos[i] == 0
 
     # beta
     # only tests if it runs
