@@ -1,6 +1,7 @@
 import random
 import os
 import numpy as np
+from scipy.stats import norm
 from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
 from BPTK_Py.util import timerange
@@ -727,15 +728,21 @@ def test_sddsl_functions():
     assert len(data) == 101
 
     # invnorm
-    # only tests if it runs
     m = Model(starttime=-0.5, stoptime=1, dt=0.1)
-    f = m.flow(name="invnorm")
+    f1 = m.flow(name="invnorm1")
+    f2 = m.flow(name="invnorm2")
+    f3 = m.flow(name="invnorm3")
 
     p = sd.time()
 
-    f.equation = sd.invnorm(p)
-    data = f.plot(return_df=True)
-    assert len(data) == 16
+    f1.equation = sd.invnorm(p)
+    f2.equation = sd.invnorm(p, mean=2)
+    f3.equation = sd.invnorm(p, mean=3, stddev=4)
+    
+    for i in timerange(0.1, 1, 0.1):
+        assert f1(i) == max(norm.ppf(i),0.0)
+        assert f2(i) == max(norm.ppf(i, loc=2),0.0)
+        assert f3(i) == max(norm.ppf(i, loc=3, scale=4),0.0)
 
     # logistic
     # only tests if it runs
