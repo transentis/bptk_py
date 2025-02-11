@@ -48,4 +48,3 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.xml
-        parallel: true
