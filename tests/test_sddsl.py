@@ -239,10 +239,15 @@ def test_small_dt():
     equations=["position","analytical_solution"])
 
     assert df.index.to_list() == timerange(0.0,10.0,0.001,exclusive=False)
-
-def test_NaryOperator():
-    from BPTK_Py import Model
     
+def test_sddsl_functions():
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+    from BPTK_Py.bptk import bptk
+    import math
+    bptk = bptk()
+
+    # nary Operator
     start = 0.0
     dt = 1.0
     stop = 10.0
@@ -254,13 +259,6 @@ def test_NaryOperator():
 
     for i in timerange(start, stop, dt):
         assert x(i) == 2*i
-
-def test_sddsl_functions():
-    from BPTK_Py import Model
-    from BPTK_Py import sd_functions as sd
-    from BPTK_Py.bptk import bptk
-    import math
-    bptk = bptk()
 
     # abs
     start = 0.0
