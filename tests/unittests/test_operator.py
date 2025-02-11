@@ -4,6 +4,7 @@ from BPTK_Py import Model
 from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator 
 from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator
+from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
 
 class TestArrayedEquation(unittest.TestCase):
     def setUp(self):
@@ -193,5 +194,61 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,"!=")
 
+class TestArrayOperators(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def testArrayProductOperator_clone_with_index(self):
+        arrayPO = ArrayProductOperator(element=[1,2,3],dimensions=3)
+        copy = arrayPO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.dimensions,3)
+        self.assertEqual(copy.index,2)
+
+    def testArraySumOperator_clone_with_index(self):
+        arraySO = ArraySumOperator(element=[1,2,3],dimensions=3)
+        copy = arraySO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.dimensions,3)
+        self.assertEqual(copy.index,2)
+
+    def testArraySizeOperator_clone_with_index(self):
+        arraySO = ArraySizeOperator(element=[1,2,3])
+        copy = arraySO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayRankOperator_clone_with_index(self):
+        arrayRO = ArrayRankOperator(element=[1,2,3], rank=14)
+        copy = arrayRO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.rank,14)
+        self.assertEqual(copy.index,2)
+
+    def testArrayMeanOperator_clone_with_index(self):
+        arrayMO = ArrayMeanOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayMedianOperator_clone_with_index(self):
+        arrayMO = ArrayMedianOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayStandardDeviationOperator_clone_with_index(self):
+        arraySDO = ArrayStandardDeviationOperator(element=[1,2,3])
+        copy = arraySDO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+        
 if __name__ == '__main__':
     unittest.main()
