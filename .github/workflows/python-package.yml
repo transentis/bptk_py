@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ "main", "improve-test-coverage" ]
+    branches: [ "main", "improve-test-coverage", "increase-test-coverage" ]
   pull_request:
-    branches: [ "main", "improve-test-coverage" ]
+    branches: [ "main", "improve-test-coverage", "increase-test-coverage" ]
 
 jobs:
   build:
