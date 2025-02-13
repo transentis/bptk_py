@@ -284,5 +284,18 @@ class TestDotOperator(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid vector vector multiplication (sizes 3 and 4)")
 
+        matrix = model.converter("matrix")
+        matrix.setup_matrix([2, 3], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(matrix)
+
+        self.assertEqual(str(context.exception), "Attempted invalid vector matrix multiplication (sizes 3 and [2, 3]). Required: m and mxn.")        
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = matrix.dot(vector3)
+
+        self.assertEqual(str(context.exception), "Attempted invalid matrix vector multiplication (sizes [2, 3] and 4). Required: mxn and n.")  
+
 if __name__ == '__main__':
     unittest.main()
