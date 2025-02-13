@@ -249,6 +249,40 @@ class TestArrayOperators(unittest.TestCase):
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
-        
+
+class TestDotOperator(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def test_init_invalid(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector1 = model.converter("vector1")
+        vector1.setup_named_vector({"value1": 1.0, "value2": 2.0, "value3": 3.0})
+
+        vector2 = model.converter("vector2")       
+        vector2.setup_vector(3, [4.0, 5.0, 6.0])
+
+        vector3 = model.converter("vector3")       
+        vector3.setup_vector(4, [4.0, 5.0, 6.0, 7.0])
+
+        converter = model.converter("converter")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector1.dot(vector2)
+
+        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(vector1)
+
+        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(vector3)
+
+        self.assertEqual(str(context.exception), "Attempted invalid vector vector multiplication (sizes 3 and 4)")
+
 if __name__ == '__main__':
     unittest.main()
