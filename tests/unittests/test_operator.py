@@ -3,7 +3,7 @@ import unittest
 from BPTK_Py import Model
 from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator 
-from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator
+from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator, BinaryOperator, AdditionOperator
 from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
 
 class TestArrayedEquation(unittest.TestCase):
@@ -249,6 +249,93 @@ class TestArrayOperators(unittest.TestCase):
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
+
+    def testArrayOperators_term_for_not_array(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        converter1 = model.converter("converter1")
+        converter1.equation = 1.0
+        
+        converter2 = model.converter("converter2")
+        converter2.equation = converter1.arr_rank(3)
+        self.assertEqual(converter2(1),0.0)
+
+        converter3 = model.converter("converter3")
+        converter3.equation = converter1.arr_mean()
+        self.assertEqual(converter3(1),0.0)       
+
+        converter4 = model.converter("converter4")
+        converter4.equation = converter1.arr_median()
+        self.assertEqual(converter4(1),0.0)  
+
+        converter5 = model.converter("converter5")
+        converter5.equation = converter1.arr_stddev()
+        self.assertEqual(converter5(1),0.0) 
+
+class TestOtherOperators(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def testBinaryOperator_init_invalid(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector1 = model.converter("vector1")       
+        vector1.setup_vector(3, [1.0, 2.0, 3.0])
+
+        vector2 = model.converter("vector2")       
+        vector2.setup_vector(4, [1.0, 2.0, 3.0, 4.0])
+                         
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector1, element_2=vector2)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different sizes.")
+
+        vector3 = model.converter("vector3")
+        vector3.setup_named_vector({"value1": 1.0, "value2": 2.0, "value3": 3.0})        
+
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector1, element_2=vector3)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different indices.")
+
+        vector4 = model.converter("vector4")
+        vector4.setup_named_vector({"value4": 1.0, "value5": 2.0, "value6": 3.0})   
+
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector3, element_2=vector4)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different indices.")              
+
+    def testBinaryOperator_term(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector = model.converter("vector1")       
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        operator = BinaryOperator(element_1=vector, element_2=vector)
+
+        self.assertIsNone(operator.term())
+
+    def testUnaryOperator_term(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        element = model.converter("element")       
+        element.equation = 1.0
+        operator = UnaryOperator(element=element)
+
+        self.assertEqual(operator.term(1),element.term(1))
+
+    def testComparisonOperator_resolve_dimension(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        element = model.converter("element")       
+        operator = ComparisonOperator(element_1=element, element_2=element, sign="<")
+
+        self.assertEqual(operator.resolve_dimensions(),-1)
 
 class TestDotOperator(unittest.TestCase):
     def setUp(self):
