@@ -486,14 +486,19 @@ class TestBptk(unittest.TestCase):
                         "initialValue_stock2": 20.0
                     }
                 },
-                                
+                "VeryHighStock1": {
+                    "constants": {
+                        "initialValue_stock1": 100.0
+                    }
+                },                                
             },
             scenario_manager="testmanager")        
 
-        print(testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"]))
-
-        result = testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"])
-
+        result1 = testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"])
+        result2 = testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"],
+                                        interactive_scenario= "VeryHighStock1",
+                                        interactive_equations=["stock1"],
+                                        interactive_settings={})
         data_scenario = {
             "stock1": [10.0, 12.0, 16.0, 22.0, 1.0, 3.0, 7.0, 13.0],
             "stock2": [2.0, 5.0, 11.0, 20.0, 20.0, 23.0, 29.0, 38.0],
@@ -508,10 +513,16 @@ class TestBptk(unittest.TestCase):
             "time": [0.0, 1.0, 2.0, 3.0, 0.0, 1.0, 2.0, 3.0]            
         }
 
+        data_interactive = {
+            "stock1" : [100.0, 102.0, 106.0, 112.0],
+            "time" : [0.0, 1.0, 2.0, 3.0]
+        }
+
         import pandas as pd
-        self.assertTrue(result["scenario"].equals(pd.DataFrame(data=data_scenario)))
-        self.assertTrue(result["indicator"].equals(pd.DataFrame(data=data_indicator)))
-        self.assertTrue(result["interactive"].equals(pd.DataFrame()))
+        self.assertTrue(result1["scenario"].equals(pd.DataFrame(data=data_scenario)))
+        self.assertTrue(result1["indicator"].equals(pd.DataFrame(data=data_indicator)))
+        self.assertTrue(result1["interactive"].equals(pd.DataFrame()))
+        self.assertTrue(result2["interactive"].equals(pd.DataFrame(data=data_interactive)))
 
 if __name__ == '__main__':
     unittest.main()    
