@@ -70,6 +70,33 @@ class TestBptk(unittest.TestCase):
         self.assertFalse(testbptk2.is_locked())
         self.assertTrue(testbptk3.is_locked())
 
+    def testBptk_train_scenario_invalid(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        testBptk = bptk()
+
+        self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_states=["active"]))
+        self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=["property"]))  
+        self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=["property"],agent_property_types=[],agents=["agent"]))
+        self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=[],agent_property_types=["property_type"],agents=["agent"]))
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!", content)     
+        self.assertIn("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!", content)  
+        self.assertIn("[ERROR] No agents given, aborting!", content)  
+        self.assertIn("[ERROR] You must set the relevant property types if you specify an agent_property!", content)  
+        self.assertIn("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!", content)  
+
     def testBptk_begin_session_errors(self):
         #cleanup logfile
         try:
