@@ -1,6 +1,7 @@
 import random
 import os
 import numpy as np
+from scipy.stats import norm
 from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
 from BPTK_Py.util import timerange
@@ -238,14 +239,26 @@ def test_small_dt():
     equations=["position","analytical_solution"])
 
     assert df.index.to_list() == timerange(0.0,10.0,0.001,exclusive=False)
-
-
+    
 def test_sddsl_functions():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
     import math
     bptk = bptk()
+
+    # nary Operator
+    start = 0.0
+    dt = 1.0
+    stop = 10.0
+    m = Model(starttime=start, stoptime=stop, dt=dt, name='Nary')
+
+    x = m.flow("x")
+    testFunction = m.function("2times", lambda model, t: 2*t)
+    x.equation = testFunction() 
+
+    for i in timerange(start, stop, dt):
+        assert x(i) == 2*i
 
     # abs
     start = 0.0
@@ -524,6 +537,44 @@ def test_sddsl_functions():
     for i in timerange(start, stop, dt):
         assert data['round'][i] == round(i)
 
+    #and/or
+    start = 0.0
+    dt = 1.0
+    stop = 10.0
+    model = Model(starttime=start, stoptime=stop, dt=dt, name='and')
+    stock1 = model.stock("stock1")
+    stock2 = model.stock("stock2")
+    inflow1 = model.flow("inflow1")
+    inflow2 = model.flow("inflow2")
+    stock1.initial_value = 1.0
+    stock2.initial_value = 1.0
+    inflow1.equation = 1.0 * stock1
+    inflow2.equation = 2.0 * stock2
+    stock1.equation = inflow1
+    stock2.equation = inflow2
+
+    x = model.converter("x")
+    x.equation = sd.If(sd.And(stock1 > 4, stock2 > 4), 1, 0)
+    y = model.converter("y")
+    y.equation = sd.If(sd.Or(stock1 > 4, stock2 > 4), 1, 0)
+    z = model.converter("z")
+    z.equation = sd.If(sd.Not(sd.And(stock1 > 4, stock2 > 4)), 1, 0) 
+
+    assert x(0) == 0
+    assert x(1) == 0
+    assert x(2) == 0
+    assert x(3) == 1
+
+    assert y(0) == 0
+    assert y(1) == 0
+    assert y(2) == 1
+    assert y(3) == 1
+
+    assert z(0) == 1
+    assert z(1) == 1
+    assert z(2) == 1
+    assert z(3) == 0
+
     # sqrt
     start = 0
     dt = 1
@@ -538,27 +589,51 @@ def test_sddsl_functions():
     for i in timerange(start, stop, dt):
         assert data.sqrt[i] == math.sqrt(i)
 
-    # sin cos tan
-    start = 0
+    # sin cos tan arccos arcsin arctan sinwave coswave
+    start = 0.0
     dt = 0.1
     stop = 10
     m = Model(starttime=start, stoptime=stop, dt=dt)
     sin = m.flow(name="sin")
     tan = m.flow(name="tan")
     cos = m.flow(name="cos")
+    arcsin = m.flow(name="arcsin")
+    arctan = m.flow(name="arctan")
+    arccos = m.flow(name="arccos")
+    sinwave = m.flow(name="sinwave")
+    coswave = m.flow(name="coswave")
     x = sd.time()
 
     sin.equation = sd.sin(x)
     tan.equation = sd.tan(x)
     cos.equation = sd.cos(x)
+    arcsin.equation = sd.arcsin(x)
+    arctan.equation = sd.arctan(x)
+    arccos.equation = sd.arccos(x)
+    sinwave.equation = sd.sinwave(amplitude=2, period=4)
+    coswave.equation = sd.coswave(amplitude=8, period=16)
 
     data_sin = sin.plot(return_df=True)
     data_tan = tan.plot(return_df=True)
     data_cos = cos.plot(return_df=True)
+    data_arcsin = arcsin.plot(return_df=True)
+    data_arctan = arctan.plot(return_df=True)
+    data_arccos = arccos.plot(return_df=True)    
+    data_sinwave = sinwave.plot(return_df=True)
+    data_coswave = coswave.plot(return_df=True)
     for i in timerange(start, stop, dt):
         assert data_sin.sin[i] == max(math.sin(i), 0.0)
         assert data_cos.cos[i] == max(math.cos(i), 0.0)
         assert data_tan.tan[i] == max(math.tan(i), 0.0)
+        assert data_arctan.arctan[i] == max(math.atan(i), 0.0)
+        assert data_sinwave.sinwave[i] == max(2*math.sin(2*math.pi*i/4),0.0)
+        assert data_coswave.coswave[i] == max(8*math.cos(2*math.pi*i/16),0.0)
+        if i <=1:
+            assert data_arcsin.arcsin[i] == max(math.asin(i), 0.0)
+            assert data_arccos.arccos[i] == max(math.acos(i), 0.0)
+        else:
+            assert data_arcsin.arcsin[i] == 0
+            assert data_arccos.arccos[i] == 0
 
     # beta
     # only tests if it runs
@@ -651,15 +726,21 @@ def test_sddsl_functions():
     assert len(data) == 101
 
     # invnorm
-    # only tests if it runs
     m = Model(starttime=-0.5, stoptime=1, dt=0.1)
-    f = m.flow(name="invnorm")
+    f1 = m.flow(name="invnorm1")
+    f2 = m.flow(name="invnorm2")
+    f3 = m.flow(name="invnorm3")
 
     p = sd.time()
 
-    f.equation = sd.invnorm(p)
-    data = f.plot(return_df=True)
-    assert len(data) == 16
+    f1.equation = sd.invnorm(p)
+    f2.equation = sd.invnorm(p, mean=2)
+    f3.equation = sd.invnorm(p, mean=3, stddev=4)
+    
+    for i in timerange(0.1, 1, 0.1):
+        assert f1(i) == max(norm.ppf(i),0.0)
+        assert f2(i) == max(norm.ppf(i, loc=2),0.0)
+        assert f3(i) == max(norm.ppf(i, loc=3, scale=4),0.0)
 
     # logistic
     # only tests if it runs

@@ -1,0 +1,58 @@
+{
+    "type": "sd",
+    "smPortfolio1":{
+        "type": "sd",
+        "model": "simulation_models/simulation_model",
+        "base_constants": {
+            "initialValue": 1000.0,
+            "interestRate": 0.05,
+            "depositRate": 1000.0
+        },
+        "base_points": {
+            "testBasePoint": [
+                [0.0,0.1],
+                [1.0,0.9]
+            ]
+        },
+        "scenarios":{
+            "base": {                
+            },
+            "scenarioLowInterest": {
+                "constants": {
+                    "interestRate": 0.01
+            }
+            },
+            "scenarioHighInterest": {
+                "constants": {
+                    "interestRate": 0.1
+                }
+            },
+            "scenarioLowDeposit": {
+                "constants": {
+                    "depositRate": 2500.0
+                }
+            },
+            "scenarioHighDeposit": {
+                "constants": {
+                    "depositRate": 100.0
+                }
+            }     
+        }
+    },
+    "smPortfolio2":{
+        "type": "sd",
+        "model": "simulation_models/simulation_model",
+        "base_constants": {
+            "initialValue": 1000.0,
+            "interestRate": 0.05,
+            "depositRate": 1000.0
+        },
+        "scenarios":{
+            "scenarioHighInitialValue": {
+                "constants": {
+                    "initialValue": 5000.0                
+                }
+            }         
+        }
+    }    
+}

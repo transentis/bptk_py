@@ -3,7 +3,8 @@ import unittest
 from BPTK_Py import Model
 from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator 
-from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator
+from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator, BinaryOperator, AdditionOperator
+from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
 
 class TestArrayedEquation(unittest.TestCase):
     def setUp(self):
@@ -192,6 +193,196 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator1)
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,"!=")
+
+class TestArrayOperators(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def testArrayProductOperator_clone_with_index(self):
+        arrayPO = ArrayProductOperator(element=[1,2,3],dimensions=3)
+        copy = arrayPO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.dimensions,3)
+        self.assertEqual(copy.index,2)
+
+    def testArraySumOperator_clone_with_index(self):
+        arraySO = ArraySumOperator(element=[1,2,3],dimensions=3)
+        copy = arraySO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.dimensions,3)
+        self.assertEqual(copy.index,2)
+
+    def testArraySizeOperator_clone_with_index(self):
+        arraySO = ArraySizeOperator(element=[1,2,3])
+        copy = arraySO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayRankOperator_clone_with_index(self):
+        arrayRO = ArrayRankOperator(element=[1,2,3], rank=14)
+        copy = arrayRO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.rank,14)
+        self.assertEqual(copy.index,2)
+
+    def testArrayMeanOperator_clone_with_index(self):
+        arrayMO = ArrayMeanOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayMedianOperator_clone_with_index(self):
+        arrayMO = ArrayMedianOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayStandardDeviationOperator_clone_with_index(self):
+        arraySDO = ArrayStandardDeviationOperator(element=[1,2,3])
+        copy = arraySDO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayOperators_term_for_not_array(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        converter1 = model.converter("converter1")
+        converter1.equation = 1.0
+        
+        converter2 = model.converter("converter2")
+        converter2.equation = converter1.arr_rank(3)
+        self.assertEqual(converter2(1),0.0)
+
+        converter3 = model.converter("converter3")
+        converter3.equation = converter1.arr_mean()
+        self.assertEqual(converter3(1),0.0)       
+
+        converter4 = model.converter("converter4")
+        converter4.equation = converter1.arr_median()
+        self.assertEqual(converter4(1),0.0)  
+
+        converter5 = model.converter("converter5")
+        converter5.equation = converter1.arr_stddev()
+        self.assertEqual(converter5(1),0.0) 
+
+class TestOtherOperators(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def testBinaryOperator_init_invalid(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector1 = model.converter("vector1")       
+        vector1.setup_vector(3, [1.0, 2.0, 3.0])
+
+        vector2 = model.converter("vector2")       
+        vector2.setup_vector(4, [1.0, 2.0, 3.0, 4.0])
+                         
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector1, element_2=vector2)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different sizes.")
+
+        vector3 = model.converter("vector3")
+        vector3.setup_named_vector({"value1": 1.0, "value2": 2.0, "value3": 3.0})        
+
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector1, element_2=vector3)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different indices.")
+
+        vector4 = model.converter("vector4")
+        vector4.setup_named_vector({"value4": 1.0, "value5": 2.0, "value6": 3.0})   
+
+        with self.assertRaises(Exception) as context:
+            operator = BinaryOperator(element_1=vector3, element_2=vector4)
+
+        self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different indices.")              
+
+    def testBinaryOperator_term(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector = model.converter("vector1")       
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        operator = BinaryOperator(element_1=vector, element_2=vector)
+
+        self.assertIsNone(operator.term())
+
+    def testUnaryOperator_term(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        element = model.converter("element")       
+        element.equation = 1.0
+        operator = UnaryOperator(element=element)
+
+        self.assertEqual(operator.term(1),element.term(1))
+
+    def testComparisonOperator_resolve_dimension(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        element = model.converter("element")       
+        operator = ComparisonOperator(element_1=element, element_2=element, sign="<")
+
+        self.assertEqual(operator.resolve_dimensions(),-1)
+
+class TestDotOperator(unittest.TestCase):
+    def setUp(self):
+        pass    
+
+    def test_init_invalid(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        vector1 = model.converter("vector1")
+        vector1.setup_named_vector({"value1": 1.0, "value2": 2.0, "value3": 3.0})
+
+        vector2 = model.converter("vector2")       
+        vector2.setup_vector(3, [4.0, 5.0, 6.0])
+
+        vector3 = model.converter("vector3")       
+        vector3.setup_vector(4, [4.0, 5.0, 6.0, 7.0])
+
+        converter = model.converter("converter")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector1.dot(vector2)
+
+        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(vector1)
+
+        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(vector3)
+
+        self.assertEqual(str(context.exception), "Attempted invalid vector vector multiplication (sizes 3 and 4)")
+
+        matrix = model.converter("matrix")
+        matrix.setup_matrix([2, 3], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = vector2.dot(matrix)
+
+        self.assertEqual(str(context.exception), "Attempted invalid vector matrix multiplication (sizes 3 and [2, 3]). Required: m and mxn.")        
+
+        with self.assertRaises(Exception) as context:
+            converter.equation = matrix.dot(vector3)
+
+        self.assertEqual(str(context.exception), "Attempted invalid matrix vector multiplication (sizes [2, 3] and 4). Required: mxn and n.")  
 
 if __name__ == '__main__':
     unittest.main()
