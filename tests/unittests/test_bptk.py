@@ -102,6 +102,37 @@ class TestBptk(unittest.TestCase):
         self.assertIn("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!", content)  
         self.assertIn("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder:", content)  
 
+    def testBptk_run_step(self):
+        testBptk = bptk()
+
+        self.assertIsNone(testBptk.run_step())     
+
+        from BPTK_Py import Model
+        model = Model(starttime=0.0,stoptime=1.0,dt=1.0,name='test')
+        stock = model.stock("stock")     
+        stock.equation = 1.0
+        flow = model.flow("flow")
+        flow.equation= 2.0
+        scenario_manager = {"testManager": {"model": model}}
+
+        testBptk.register_model(model)
+        testBptk.register_scenario_manager(scenario_manager)
+        testBptk.register_scenarios(scenarios ={"testScenario": {}},scenario_manager="testManager")
+
+        testBptk.begin_session(scenarios=["testScenario"],scenario_managers=["testManager"],equations=["stock"])
+        self.assertNotEqual(testBptk.run_step(),{"msg":"Stoptime reached"}) #step 0
+        self.assertNotEqual(testBptk.run_step(),{"msg":"Stoptime reached"}) #step 1
+        self.assertEqual(testBptk.run_step(),{"msg":"Stoptime reached"}) #step 2
+
+        testBptk2 = bptk()
+        testBptk2.register_model(model)
+        testBptk2.register_scenario_manager(scenario_manager)
+        testBptk2.register_scenarios(scenarios ={"testScenario": {}},scenario_manager="testManager")
+
+        testBptk2.begin_session(scenarios=["testScenario"],scenario_managers=["testManager"],equations=["stock","flow"])
+        self.assertEqual(testBptk2.run_step(flat=False),{'testManager': {'testScenario': {'stock': {0.0: 0.0}, 'flow': {0.0: 2.0}}}})
+        self.assertEqual(testBptk2.run_step(flat=True),{'testManager': {'testScenario': {'stock': 1.0, 'flow': 2.0}}})
+
     def testBptk_session_results(self):
         testBptk = bptk()
 
@@ -298,7 +329,7 @@ class TestBptk(unittest.TestCase):
     def testBptk_get_scenario_names_empty(self):
         testBptk = bptk()  
 
-        self.assertEqual(testBptk.get_scenario_names(),[])
+        self.assertEqual(testBptk.get_scenario_names(format="invalid"),[])
 
     def testBptk_get_scenarios(self):
         from BPTK_Py import Model
