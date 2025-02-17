@@ -437,5 +437,81 @@ class TestBptk(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
+    def testBptk_export_scenarios(self):
+        from BPTK_Py import Model
+        from BPTK_Py import sd_functions as sd
+        model = Model(starttime=0.0,stoptime=3.0,dt=1.0,name='test')
+        x = model.flow("x")
+        testFunction1 = model.function("2times", lambda model, t: 2*(t+1))
+        x.equation = testFunction1()
+        y = model.flow("y")
+        testFunction2 = model.function("3times", lambda model, t: 3*(t+1))
+        y.equation = testFunction2()
+        
+        stock1 = model.stock("stock1")
+        initialValue_stock1 = model.constant("initialValue_stock1")
+        initialValue_stock1.equation = 1.0
+        stock1.initial_value = initialValue_stock1
+        stock1.equation = x
+
+        stock2 = model.stock("stock2")
+        initialValue_stock2 = model.constant("initialValue_stock2")
+        initialValue_stock2.equation = 2.0
+        stock2.initial_value = initialValue_stock2
+        stock2.equation = y     
+
+        testBptk = bptk()   
+
+        scenario_manager = {
+            "testmanager":{
+            "model": model,
+            "base_constants": {
+                "initialValue_stock1": 1.0,
+                "initialValue_stock2": 2.0
+                }
+            }
+        }          
+
+        testBptk.register_model(model)
+        testBptk.register_scenario_manager(scenario_manager)
+        testBptk.register_scenarios(
+            scenarios ={
+                "highStock1": {
+                    "constants": {
+                        "initialValue_stock1": 10.0
+                    }
+                },
+                "highStock2": {
+                    "constants": {
+                        "initialValue_stock2": 20.0
+                    }
+                },
+                                
+            },
+            scenario_manager="testmanager")        
+
+        print(testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"]))
+
+        result = testBptk.export_scenarios(scenario_manager="testmanager", scenarios=["highStock1","highStock2"], equations=["stock1","stock2"])
+
+        data_scenario = {
+            "stock1": [10.0, 12.0, 16.0, 22.0, 1.0, 3.0, 7.0, 13.0],
+            "stock2": [2.0, 5.0, 11.0, 20.0, 20.0, 23.0, 29.0, 38.0],
+            "scenario": ["highStock1", "highStock1", "highStock1", "highStock1","highStock2", "highStock2", "highStock2", "highStock2"],
+            "time": [0.0, 1.0, 2.0, 3.0, 0.0, 1.0, 2.0, 3.0]
+        }
+
+        data_indicator = {
+            "highStock1": [10.0, 12.0, 16.0, 22.0, 2.0, 5.0, 11.0, 20.0],
+            "highStock2": [1.0, 3.0, 7.0, 13.0, 20.0, 23.0, 29.0, 38.0],
+            "indicator": ["stock1", "stock1", "stock1", "stock1","stock2", "stock2", "stock2", "stock2"],
+            "time": [0.0, 1.0, 2.0, 3.0, 0.0, 1.0, 2.0, 3.0]            
+        }
+
+        import pandas as pd
+        self.assertTrue(result["scenario"].equals(pd.DataFrame(data=data_scenario)))
+        self.assertTrue(result["indicator"].equals(pd.DataFrame(data=data_indicator)))
+        self.assertTrue(result["interactive"].equals(pd.DataFrame()))
+
 if __name__ == '__main__':
     unittest.main()    
