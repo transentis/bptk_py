@@ -283,6 +283,37 @@ class TestBptk(unittest.TestCase):
         self.assertIn("[ERROR] Scenario manager \"testManage\" not found! Did you maybe mean one of \"testManager, smTest\"?", content) 
         self.assertIn("[ERROR] Scenario \"bas\" not found in any scenario manager! Did you maybe mean one of \"base\"?", content) 
 
+    def testBptk_plot_lookup(self):
+        from BPTK_Py import Model
+        from BPTK_Py import sd_functions as sd
+        model = Model(starttime=0.0,stoptime=5.0,dt=1.0,name='test')     
+        model.points["testpoints"] = [
+            [0, 0.1],
+            [0.2, 0.2],
+            [0.4, 0.3],
+            [0.6, 0.4],
+            [0.8, 0.5],
+            [1, 0.6]
+        ]
+        
+        scenario_manager = {"testManager": {"model": model}}
+
+        testBptk = bptk()
+
+        testBptk.register_model(model)
+        testBptk.register_scenario_manager(scenario_manager)
+        testBptk.register_scenarios(scenarios ={"testScenario": {"points": {"testpoints" : [[0,0.2],[0.2,0.4],[0.4,0.6],[0.6,0.8],[0.8,1.0],[1,1.2]]}}},scenario_manager="testManager")
+
+        data = {
+            "smTest_base_testpoints": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+            "testManager_testScenario_testpoints": [0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+        } 
+
+        result = testBptk.plot_lookup(scenarios=["base","testScenario"],scenario_managers=["smTest","testManager"], lookup_names="testpoints",return_df=True)
+
+        import pandas as pd
+        self.assertTrue(result.equals(pd.DataFrame(data=data, index=[0.0,0.2,0.4,0.6,0.8,1.0])))
+
     def testBptk_register_scenarios_error(self):
         #cleanup logfile
         try:
