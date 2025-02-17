@@ -41,6 +41,12 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 1.9.6
+
+* Enabled modulo operation for sddsl-elements
+* removed unnecessary code
+* added unittests/pytests 
+
 ### 1.9.5
 
 * Fix publication issues
