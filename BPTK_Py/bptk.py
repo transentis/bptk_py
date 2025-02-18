@@ -754,11 +754,6 @@ class bptk():
                 else:
                     log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
 
-        if len(agents) == len(equations) == 0:
-            log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
-            return None
-
-
         if len(simulation_results) == 0:
             log("[WARN] No output data produced. Hopefully this was your intention.")
             return None
@@ -779,10 +774,6 @@ class bptk():
             df = simulation_results[0]
             if return_format=="json":
                 df = json.dumps(df,indent=2)
-
-        else:
-            log("[ERROR] No results produced. Check your parameters!")
-            return None
 
         if len(df) == 0:
             log("[ERROR] No output data produced.")
@@ -1155,7 +1146,7 @@ class bptk():
                         for equation in sorted(scenario.model.converters):
                             print("\tconverter: \t\t{}".format(equation))
                         for equation in sorted(scenario.model.constants):
-                            print("\tconverter: \t\t{}".format(equation))
+                            print("\tconstant: \t\t{}".format(equation))
                     print(" ")
 
     def register_model(self, model, scenario_manager=None, scenario=None):

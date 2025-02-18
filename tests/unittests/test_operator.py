@@ -337,6 +337,20 @@ class TestOtherOperators(unittest.TestCase):
 
         self.assertEqual(operator.resolve_dimensions(),-1)
 
+    def testArrayNumericalMultiplicationOperator_clone_with_index(self):
+        model = Model()
+        vector1 = model.converter("vector1")       
+        vector1.setup_vector(3, [1.0, 2.0, 3.0])
+
+        vector2 = model.converter("vector2")       
+        vector2.setup_vector(3, [4.0, 5.0, 6.0])        
+        operator = NumericalMultiplicationOperator(element_1=vector1, element_2=vector2)
+        copy = operator.clone_with_index(index=2)
+
+        self.assertEqual(copy.element_1,vector1)
+        self.assertEqual(copy.element_1,vector2)
+        self.assertEqual(copy.index,2)
+
 class TestDotOperator(unittest.TestCase):
     def setUp(self):
         pass    
@@ -382,7 +396,58 @@ class TestDotOperator(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             converter.equation = matrix.dot(vector3)
 
-        self.assertEqual(str(context.exception), "Attempted invalid matrix vector multiplication (sizes [2, 3] and 4). Required: mxn and n.")  
+    def test_init_valid(self):
+        from BPTK_Py import Model
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+
+        constant = model.converter("constant")
+        constant.equation = 2.0
+
+        vector = model.converter("vector")
+        vector.setup_vector(2, [3.0, 4.0])
+
+        matrix = model.converter("matrix")
+        matrix.setup_matrix([2, 2], [[5.0, 6.0], [7.0, 8.0]])     
+
+        converter = model.converter("converter")
+        
+        converter.equation = vector.dot(constant)        
+        self.assertEqual(converter[0](1),6.0)
+        self.assertEqual(converter[1](1),8.0)
+
+        converter.equation = constant.dot(vector)        
+        self.assertEqual(converter[0](1),6.0)
+        self.assertEqual(converter[1](1),8.0)
+
+        converter.equation = matrix.dot(constant)        
+        self.assertEqual(converter[0][0](1),10.0)
+        self.assertEqual(converter[0][1](1),12.0)
+        self.assertEqual(converter[1][0](1),14.0)
+        self.assertEqual(converter[1][1](1),16.0)
+
+        converter.equation = constant.dot(matrix)        
+        self.assertEqual(converter[0][0](1),10.0)
+        self.assertEqual(converter[0][1](1),12.0)
+        self.assertEqual(converter[1][0](1),14.0)
+        self.assertEqual(converter[1][1](1),16.0)
+
+        converter.equation = vector.dot(matrix)
+        self.assertEqual(converter[0](1),43.0)
+        self.assertEqual(converter[1](1),50.0)        
+
+        converter.equation = matrix.dot(vector)
+        self.assertEqual(converter[0](1),39.0)
+        self.assertEqual(converter[1](1),53.0)          
+
+        converter.equation = vector.dot(vector)
+        self.assertEqual(converter(1),25)
+
+        converter.equation = matrix.dot(matrix)
+        self.assertEqual(converter[0][0](1),67.0)
+        self.assertEqual(converter[0][1](1),78.0)
+        self.assertEqual(converter[1][0](1),91.0)
+        self.assertEqual(converter[1][1](1),106.0)        
+    
 
 if __name__ == '__main__':
     unittest.main()

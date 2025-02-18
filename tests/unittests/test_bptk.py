@@ -295,7 +295,7 @@ class TestBptk(unittest.TestCase):
             [0.8, 0.5],
             [1, 0.6]
         ]
-        
+
         scenario_manager = {"testManager": {"model": model}}
 
         testBptk = bptk()
@@ -448,7 +448,7 @@ class TestBptk(unittest.TestCase):
         self.assertIn("\tstock: \t\t\ttestStock", output)
         self.assertIn("\tflow: \t\t\ttestFlow", output)
         self.assertIn("\tconverter: \t\ttestConverter", output)
-        #self.assertIn("\tconstant \t\ttestConstant", output)
+        self.assertIn("\tconstant: \t\ttestConstant", output)
         self.assertNotIn("Scenario Manager: testManager", output)        
         self.assertNotIn("Scenario: testScenario", output)
 
@@ -462,7 +462,7 @@ class TestBptk(unittest.TestCase):
         self.assertIn("\tstock: \t\t\ttestStock", output)
         self.assertIn("\tflow: \t\t\ttestFlow", output)
         self.assertIn("\tconverter: \t\ttestConverter", output)
-        #self.assertIn("\tconstant \t\ttestConstant", output)
+        self.assertIn("\tconstant: \t\ttestConstant", output)
 
         #Remove the redirection of the console output
         sys.stdout = old_stdout

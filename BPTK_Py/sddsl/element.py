@@ -306,6 +306,10 @@ class Element:
         """Left Multiply with other operators"""
         return MultiplicationOperator(self, other)
 
+    def __mod__(self, other):
+        """Left Modulo with other operators"""
+        return ModOperator(self, other)
+
     def __rmul__(self, other):
         """Right multiply with other operators."""
         return NumericalMultiplicationOperator(other, self)

@@ -195,6 +195,11 @@ def test_equations():
     c.equation = a**b
     assert c(1) == 9.0
 
+    a.equation = 5.0
+    b.equation = 3.0
+    c.equation = a%b
+    assert c(1) == 2.0
+
 def test_small_dt():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
