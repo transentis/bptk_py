@@ -1146,7 +1146,7 @@ def test_matrix_constant():
                         except:
                             assert(not (j == i and x == k))
 
-""" def test_vector():
+def test_vector():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
@@ -1260,7 +1260,7 @@ def test_matrix_constant():
                     test_element3.equation = test_element1.dot(test_element2)
 
                     assert(get_element_data(test_element3)
-                        == np.dot(elements1, elements2))
+                        == pytest.approx(np.dot(elements1, elements2)))
                     assert(get_element_data(test_element3) !=
                         np.dot(elements1, elements2) + 1)
                         
@@ -1450,7 +1450,7 @@ def test_vector_constants():
                 test_constant3.equation = test_constant1.dot(test_constant2)
 
                 assert(get_element_data(test_constant3)
-                    == np.dot(elements1, elements2))
+                    == pytest.approx(np.dot(elements1, elements2)))
                 assert(get_element_data(test_constant3) !=
                     np.dot(elements1, elements2) + 1)
 
@@ -1543,9 +1543,8 @@ def test_vector_constants():
 
             elements1.append(get_random(0))
             elements2.append(get_random(0))
- """
 
-""" def test_matrix():
+def test_matrix():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
@@ -1785,11 +1784,7 @@ def test_vector_constants():
                             except:
                                 assert(not (j == i and x == k))
 
- """
-
-
-
-
+"""
 # def test_vector_stock_flow():
 #     from BPTK_Py import Model
 #     from BPTK_Py import sd_functions as sd
@@ -1799,4 +1794,4 @@ def test_vector_constants():
 
 #     bptk = bptk()
 
-
+"""
