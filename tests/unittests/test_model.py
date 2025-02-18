@@ -1,6 +1,7 @@
 import unittest
 
 from BPTK_Py import Model, Agent, Event, DataCollector
+import BPTK_Py.logger.logger as logmod
 
 class Test_Model(unittest.TestCase):
     def test_set_scenario_manager(self):
@@ -405,6 +406,37 @@ class Test_Model(unittest.TestCase):
             self.fail()
 
         self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                   
+
+    def test_add_equation(self):
+        #cleanup logfile
+        try:
+            with open(logmod.logfile, "w", encoding="UTF-8") as file:
+                pass
+        except FileNotFoundError:
+            self.fail()
+
+        model = Model()
+        flow = model.flow("flow")
+        flow.equation = 1.0
+
+        model.add_equation(equation="flow", lambda_method= lambda t: 2.0)
+        model.add_equation(equation="converter", lambda_method= lambda t: 3.0)
+
+        self.assertEqual(model.equations["flow"](1), 2.0)
+        self.assertEqual(model.memo["flow"],{})
+
+        self.assertEqual(model.equations["converter"](1), 3.0)
+        self.assertEqual(model.memo["converter"],{})
+
+        try:
+            with open(logmod.logfile, "r", encoding="UTF-8") as file:
+                content = file.read()
+        except FileNotFoundError:
+            self.fail()
+
+        self.assertIn("[WARN] Hybrid Model : Overwriting equation flow", content)  
+        self.assertNotIn("[WARN] Hybrid Model : Overwriting equation converter", content)  
+
 
 if __name__ == '__main__':
     unittest.main()
