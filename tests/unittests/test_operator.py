@@ -194,6 +194,106 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,"!=")
 
+class BinaryOperators(unittest.TestCase):
+    def setUp(self):
+        pass 
+
+    def testAdditionOperator(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 1.0
+        b.setup_vector(2, [2.0, 3.0])
+        c.setup_matrix([2,2], [[4.0, 5.0],[6.0, 7.0]])    
+
+        d = m.converter("d")
+        
+        d.equation = a+b
+        self.assertEqual(d[0](1),3.0)
+        self.assertEqual(d[1](1),4.0)   
+
+        d.equation = b+a
+        self.assertEqual(d[0](1),3.0)
+        self.assertEqual(d[1](1),4.0)   
+
+        d.equation = a+c
+        self.assertEqual(d[0][0](1),5.0)
+        self.assertEqual(d[0][1](1),6.0)                       
+        self.assertEqual(d[1][0](1),7.0)
+        self.assertEqual(d[1][1](1),8.0)   
+        
+        d.equation = c+a
+        self.assertEqual(d[0][0](1),5.0)
+        self.assertEqual(d[0][1](1),6.0)                       
+        self.assertEqual(d[1][0](1),7.0)
+        self.assertEqual(d[1][1](1),8.0) 
+
+    def testSubtractionOperator(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 1.0
+        b.setup_vector(2, [2.0, 3.0])
+        c.setup_matrix([2,2], [[4.0, 5.0],[6.0, 7.0]])    
+
+        d = m.converter("d")
+        
+        d.equation = a-b
+        self.assertEqual(d[0](1),-1.0)
+        self.assertEqual(d[1](1),-2.0)   
+
+        d.equation = b-a
+        self.assertEqual(d[0](1),1.0)
+        self.assertEqual(d[1](1),2.0)   
+
+        d.equation = a-c
+        self.assertEqual(d[0][0](1),-3.0)
+        self.assertEqual(d[0][1](1),-4.0)                       
+        self.assertEqual(d[1][0](1),-5.0)
+        self.assertEqual(d[1][1](1),-6.0)   
+        
+        d.equation = c-a
+        self.assertEqual(d[0][0](1),3.0)
+        self.assertEqual(d[0][1](1),4.0)                       
+        self.assertEqual(d[1][0](1),5.0)
+        self.assertEqual(d[1][1](1),6.0) 
+
+    def testDivisionoperator(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 2.0
+        b.setup_vector(2, [2.0, 4.0])
+        c.setup_matrix([2,2], [[5.0, 8.0],[10.0, 20.0]])    
+
+        d = m.converter("d")
+        
+        d.equation = a/b
+        self.assertEqual(d[0](1),1.0)
+        self.assertEqual(d[1](1),0.5)   
+
+        d.equation = b/a
+        self.assertEqual(d[0](1),1.0)
+        self.assertEqual(d[1](1),2.0)   
+
+        d.equation = a/c
+        self.assertEqual(d[0][0](1),0.4)
+        self.assertEqual(d[0][1](1),0.25)                       
+        self.assertEqual(d[1][0](1),0.2)
+        self.assertEqual(d[1][1](1),0.1)   
+        
+        d.equation = c/a
+        self.assertEqual(d[0][0](1),2.5)
+        self.assertEqual(d[0][1](1),4.0)                       
+        self.assertEqual(d[1][0](1),5.0)
+        self.assertEqual(d[1][1](1),10.0) 
+
 class TestArrayOperators(unittest.TestCase):
     def setUp(self):
         pass    
