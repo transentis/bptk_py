@@ -198,7 +198,7 @@ class BinaryOperators(unittest.TestCase):
     def setUp(self):
         pass 
 
-    def testAdditionOperator(self):
+    def testAdditionOperator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -240,7 +240,40 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
 
-    def testSubtractionOperator(self):
+    def testAdditionOperator_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 1.0
+        b.setup_named_vector({"value1" : 2.0, "value2" : 3.0 })
+        c.setup_named_matrix({"value1" : {"value11" : 4.0, "value12" : 5.0}, "value2" : {"value21" : 6.0, "value22": 7.0}})
+
+        d = m.converter("d")
+        
+        #does not work
+        #d.equation = a+b
+
+        d.equation = b+a
+        self.assertEqual(d["value1"](1),3.0)
+        self.assertEqual(d["value2"](1),4.0)    
+
+        #there seems to be an issue with named matrices
+        #d.equation = a+c
+        #d.equation = c+a
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b+c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c+b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
+
+    def testSubtractionOperator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -282,7 +315,40 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 2] and [2, 0])")
 
-    def testDivisionoperator(self):
+    def testSubtractionOperator_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 1.0
+        b.setup_named_vector({"value1" : 2.0, "value2" : 3.0 })
+        c.setup_named_matrix({"value1" : {"value11" : 4.0, "value12" : 5.0}, "value2" : {"value21" : 6.0, "value22": 7.0}})
+
+        d = m.converter("d")
+        
+        #does not work
+        #d.equation = a-b
+
+        d.equation = b-a
+        self.assertEqual(d["value1"](1),1.0)
+        self.assertEqual(d["value2"](1),2.0)    
+
+        #there seems to be an issue with named matrices
+        #d.equation = a-c
+        #d.equation = c-a
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b-c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c-b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 2] and [2, 0])")
+
+    def testDivisionoperator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -323,6 +389,155 @@ class BinaryOperators(unittest.TestCase):
             d.equation = c/b
 
         self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 2] and [2, 0])")
+
+    def testDivisionOperator_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 2.0
+        b.setup_named_vector({"value1" : 2.0, "value2" : 4.0 })
+        c.setup_named_matrix({"value1" : {"value11" : 5.0, "value12" : 8.0}, "value2" : {"value21" : 10.0, "value22": 20.0}})
+
+        d = m.converter("d")
+        
+        #does not work
+        #d.equation = a/b
+
+        d.equation = b/a
+        self.assertEqual(d["value1"](1),1.0)
+        self.assertEqual(d["value2"](1),2.0)    
+
+        #there seems to be an issue with named matrices
+        #d.equation = a/c
+        #d.equation = c/a
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b/c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c/b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 2] and [2, 0])")
+
+    def testNumericalMultiplicationOperator_not_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+
+        a.setup_vector(2, [2.0, 4.0])
+        b.setup_matrix([2,2], [[5.0, 8.0],[10.0, 20.0]])    
+
+        c = m.converter("c")
+        
+        c.equation = -a
+        self.assertEqual(c[0](1),-2.0)
+        self.assertEqual(c[1](1),-4.0)   
+
+        c.equation = -b 
+        self.assertEqual(c[0][0](1),-5.0)
+        self.assertEqual(c[0][1](1),-8.0)                       
+        self.assertEqual(c[1][0](1),-10.0)
+        self.assertEqual(c[1][1](1),-20.0) 
+
+    def testNumericalMultiplicationOperator_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+
+        a.setup_named_vector({"value1": 2.0, "value2": 4.0})
+        b.setup_named_matrix({"value1" : {"value11" : 5.0, "value12": 8.0}, "value2" : {"value21" : 10.0, "value22" : 20.0}})    
+
+        c = m.converter("c")
+        
+        c.equation = -a
+        self.assertEqual(c["value1"](1),-2.0)
+        self.assertEqual(c["value2"](1),-4.0)   
+
+        #issue with named matrices
+        #c.equation = -b 
+        #self.assertEqual(c["value1"]["value12"](1),-5.0)
+        #self.assertEqual(c["value1"]["value12"](1),-8.0)                       
+        #self.assertEqual(c["value2"]["value21"](1),-10.0)
+        #self.assertEqual(c["value2"]["value22"](1),-20.0)         
+
+    def testMultiplicationOperator_not_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 2.0
+        b.setup_vector(2, [2.0, 4.0])
+        c.setup_matrix([2,2], [[5.0, 8.0],[10.0, 20.0]])    
+
+        d = m.converter("d")
+        
+        d.equation = a*b
+        self.assertEqual(d[0](1),4.0)
+        self.assertEqual(d[1](1),8.0)   
+
+        d.equation = b*a
+        self.assertEqual(d[0](1),4.0)
+        self.assertEqual(d[1](1),8.0)   
+
+        d.equation = a*c
+        self.assertEqual(d[0][0](1),10.0)
+        self.assertEqual(d[0][1](1),16.0)                       
+        self.assertEqual(d[1][0](1),20.0)
+        self.assertEqual(d[1][1](1),40.0)   
+        
+        d.equation = c*a
+        self.assertEqual(d[0][0](1),10.0)
+        self.assertEqual(d[0][1](1),16.0)                       
+        self.assertEqual(d[1][0](1),20.0)
+        self.assertEqual(d[1][1](1),40.0) 
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b*c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c*b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 2] and [2, 0])")
+
+    def testMultiplicationOperator_named(self):
+        m = Model()
+        a = m.constant("a")
+        b = m.constant("b")
+        c = m.constant("c")
+
+        a.equation = 2.0
+        b.setup_named_vector({"value1": 2.0, "value2": 4.0})
+        c.setup_named_matrix({"value1" : {"value11" : 5.0, "value12": 8.0}, "value2" : {"value21" : 10.0, "value22" : 20.0}})    
+
+        d = m.converter("d")
+        
+        #does not work
+        #d.equation = a*b  
+
+        d.equation = b*a
+        self.assertEqual(d["value1"](1),4.0)
+        self.assertEqual(d["value2"](1),8.0)   
+
+        #there seems to be an issue with named matrices
+        #d.equation = a*c  
+        #d.equation = c*a
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b*c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c*b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 2] and [2, 0])")
 
 class TestArrayOperators(unittest.TestCase):
     def setUp(self):

@@ -748,16 +748,18 @@ class NumericalMultiplicationOperator(BinaryOperator):
         return NumericalMultiplicationOperator(element_1, element_2, index)
 
     def index_to_string(self, index):
-        if self.el1_arrayed:
+        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
             return self.element_1._elements.equations[index]
         else:
             return self.element_2._elements.equations[index]
 
     def is_named(self):
-        if self.el1_arrayed:
+        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
             return self.element_1.named_arrayed
-        else:
+        elif isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size():
             return self.element_2.named_arrayed
+        else:
+            return False
 
 class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
