@@ -230,6 +230,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),7.0)
         self.assertEqual(d[1][1](1),8.0) 
 
+        with self.assertRaises(Exception) as context:
+            d.equation = b+c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c+b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
+
     def testSubtractionOperator(self):
         m = Model()
         a = m.constant("a")
@@ -262,6 +272,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),5.0)
         self.assertEqual(d[1][1](1),6.0) 
 
+        with self.assertRaises(Exception) as context:
+            d.equation = b-c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c-b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 2] and [2, 0])")
+
     def testDivisionoperator(self):
         m = Model()
         a = m.constant("a")
@@ -293,6 +313,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[0][1](1),4.0)                       
         self.assertEqual(d[1][0](1),5.0)
         self.assertEqual(d[1][1](1),10.0) 
+
+        with self.assertRaises(Exception) as context:
+            d.equation = b/c
+
+        self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 0] and [2, 2])")
+
+        with self.assertRaises(Exception) as context:
+            d.equation = c/b
+
+        self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 2] and [2, 0])")
 
 class TestArrayOperators(unittest.TestCase):
     def setUp(self):
