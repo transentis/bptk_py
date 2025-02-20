@@ -171,7 +171,7 @@ class Element:
                                     name2 = equation.index_to_string([i,j])
                                     names[name1][name2] = equation.clone_with_index([name1,name2])
 
-                            self.setup_named_matrix(names)                          
+                            self.setup_named_matrix(names, True)                          
                         else:    
                             self.setup_matrix(dims)
                             for i in range(dims[0]):
@@ -459,7 +459,7 @@ class Element:
                 self[i] = None
                 self[i].setup_vector(size[1], default_value[i])
 
-    def setup_named_matrix(self, names):
+    def setup_named_matrix(self, names, set_stack_equation = False):
         """
         Creates sub-elements for this element.
 
@@ -477,7 +477,7 @@ class Element:
         self._equation = None
         for i, name in enumerate(names):
             self[name] = None
-            self[name].setup_named_vector(names[name])
+            self[name].setup_named_vector(names[name], set_stack_equation)
 
 
 class ElementError(Exception):
