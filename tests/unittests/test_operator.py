@@ -230,6 +230,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),7.0)
         self.assertEqual(d[1][1](1),8.0) 
 
+        d.equation = b+b
+        self.assertEqual(d[0](1),4.0)
+        self.assertEqual(d[1](1),6.0)  
+
+        d.equation = c+c
+        self.assertEqual(d[0][0](1),8.0)
+        self.assertEqual(d[0][1](1),10.0)                       
+        self.assertEqual(d[1][0](1),12.0)
+        self.assertEqual(d[1][1](1),14.0)         
+
         with self.assertRaises(Exception) as context:
             d.equation = b+c
 
@@ -260,9 +270,27 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d["value1"](1),3.0)
         self.assertEqual(d["value2"](1),4.0)    
 
-        #there seems to be an issue with named matrices
-        #d.equation = a+c
-        #d.equation = c+a
+        d.equation = a+c
+        self.assertEqual(d["value1"]["value11"],5.0)
+        self.assertEqual(d["value1"]["value12"],6.0)
+        self.assertEqual(d["value2"]["value21"],7.0)
+        self.assertEqual(d["value2"]["value22"],8.0)
+
+        d.equation = c+a
+        self.assertEqual(d["value1"]["value11"],5.0)
+        self.assertEqual(d["value1"]["value12"],6.0)
+        self.assertEqual(d["value2"]["value21"],7.0)
+        self.assertEqual(d["value2"]["value22"],8.0)
+
+        d.equation = b+b
+        self.assertEqual(d["value1"](1),4.0)
+        self.assertEqual(d["value2"](1),6.0) 
+
+        d.equation = c+c
+        self.assertEqual(d["value1"]["value11"],8.0)
+        self.assertEqual(d["value1"]["value12"],10.0)
+        self.assertEqual(d["value2"]["value21"],12.0)
+        self.assertEqual(d["value2"]["value22"],14.0)        
 
         with self.assertRaises(Exception) as context:
             d.equation = b+c
@@ -306,6 +334,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),5.0)
         self.assertEqual(d[1][1](1),6.0) 
 
+        d.equation = b-b
+        self.assertEqual(d[0](1),0.0)
+        self.assertEqual(d[1](1),0.0) 
+
+        d.equation = c-c
+        self.assertEqual(d[0][0](1),0.0)
+        self.assertEqual(d[0][1](1),0.0)                       
+        self.assertEqual(d[1][0](1),0.0)
+        self.assertEqual(d[1][1](1),0.0) 
+
         with self.assertRaises(Exception) as context:
             d.equation = b-c
 
@@ -336,9 +374,27 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d["value1"](1),1.0)
         self.assertEqual(d["value2"](1),2.0)    
 
-        #there seems to be an issue with named matrices
-        #d.equation = a-c
-        #d.equation = c-a
+        d.equation = a-c
+        self.assertEqual(d["value1"]["value11"],-3.0)
+        self.assertEqual(d["value1"]["value12"],-4.0)
+        self.assertEqual(d["value2"]["value21"],-5.0)
+        self.assertEqual(d["value2"]["value22"],-6.0)
+
+        d.equation = c-a
+        self.assertEqual(d["value1"]["value11"],3.0)
+        self.assertEqual(d["value1"]["value12"],4.0)
+        self.assertEqual(d["value2"]["value21"],5.0)
+        self.assertEqual(d["value2"]["value22"],6.0)
+
+        d.equation = b-b
+        self.assertEqual(d["value1"](1),0.0)
+        self.assertEqual(d["value2"](1),0.0) 
+
+        d.equation = c-c
+        self.assertEqual(d["value1"]["value11"],0.0)
+        self.assertEqual(d["value1"]["value12"],0.0)
+        self.assertEqual(d["value2"]["value21"],0.0)
+        self.assertEqual(d["value2"]["value22"],0.0)
 
         with self.assertRaises(Exception) as context:
             d.equation = b-c
@@ -382,6 +438,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),5.0)
         self.assertEqual(d[1][1](1),10.0) 
 
+        d.equation = b/b
+        self.assertEqual(d[0](1),1.0)
+        self.assertEqual(d[1](1),1.0)          
+
+        d.equation = c/c
+        self.assertEqual(d[0][0](1),1.0)
+        self.assertEqual(d[0][1](1),1.0)                       
+        self.assertEqual(d[1][0](1),1.0)
+        self.assertEqual(d[1][1](1),1.0) 
+
         with self.assertRaises(Exception) as context:
             d.equation = b/c
 
@@ -412,9 +478,27 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d["value1"](1),1.0)
         self.assertEqual(d["value2"](1),2.0)    
 
-        #there seems to be an issue with named matrices
-        #d.equation = a/c
-        #d.equation = c/a
+        d.equation = a/c
+        self.assertEqual(d["value1"]["value11"],0.4)
+        self.assertEqual(d["value1"]["value12"],0.25)
+        self.assertEqual(d["value2"]["value21"],0.2)
+        self.assertEqual(d["value2"]["value22"],0.1)
+
+        d.equation = c/a
+        self.assertEqual(d["value1"]["value11"],2.5)
+        self.assertEqual(d["value1"]["value12"],4.0)
+        self.assertEqual(d["value2"]["value21"],5.0)
+        self.assertEqual(d["value2"]["value22"],10.0)
+
+        d.equation = b/b
+        self.assertEqual(d["value1"](1),1.0)
+        self.assertEqual(d["value2"](1),1.0)          
+
+        d.equation = c/c
+        self.assertEqual(d["value1"]["value11"],1.0)
+        self.assertEqual(d["value1"]["value12"],1.0)
+        self.assertEqual(d["value2"]["value21"],1.0)
+        self.assertEqual(d["value2"]["value22"],1.0)
 
         with self.assertRaises(Exception) as context:
             d.equation = b/c
@@ -460,12 +544,11 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(c["value1"](1),-2.0)
         self.assertEqual(c["value2"](1),-4.0)   
 
-        #issue with named matrices
-        #c.equation = -b 
-        #self.assertEqual(c["value1"]["value12"](1),-5.0)
-        #self.assertEqual(c["value1"]["value12"](1),-8.0)                       
-        #self.assertEqual(c["value2"]["value21"](1),-10.0)
-        #self.assertEqual(c["value2"]["value22"](1),-20.0)         
+        c.equation = -b 
+        self.assertEqual(c["value1"]["value11"](1),-5.0)
+        self.assertEqual(c["value1"]["value12"](1),-8.0)                       
+        self.assertEqual(c["value2"]["value21"](1),-10.0)
+        self.assertEqual(c["value2"]["value22"](1),-20.0)         
 
     def testMultiplicationOperator_not_named(self):
         m = Model()
@@ -499,6 +582,16 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(d[1][0](1),20.0)
         self.assertEqual(d[1][1](1),40.0) 
 
+        d.equation = b*b
+        self.assertEqual(d[0](1),4.0)
+        self.assertEqual(d[1](1),16.0)          
+
+        d.equation = c*c
+        self.assertEqual(d[0][0](1),25.0)
+        self.assertEqual(d[0][1](1),64.0)                       
+        self.assertEqual(d[1][0](1),100.0)
+        self.assertEqual(d[1][1](1),400.0) 
+
         with self.assertRaises(Exception) as context:
             d.equation = b*c
 
@@ -524,14 +617,32 @@ class BinaryOperators(unittest.TestCase):
         d.equation = a*b  
         self.assertEqual(d["value1"](1),4.0)
         self.assertEqual(d["value2"](1),8.0)   
-        
+
         d.equation = b*a
         self.assertEqual(d["value1"](1),4.0)
         self.assertEqual(d["value2"](1),8.0)   
 
-        #there seems to be an issue with named matrices
-        #d.equation = a*c  
-        #d.equation = c*a
+        d.equation = a*c  
+        self.assertEqual(d["value1"]["value11"](1),10.0)
+        self.assertEqual(d["value1"]["value12"](1),16.0)                       
+        self.assertEqual(d["value2"]["value21"](1),20.0)
+        self.assertEqual(d["value2"]["value22"](1),40.0)              
+        
+        d.equation = c*a
+        self.assertEqual(d["value1"]["value11"](1),10.0)
+        self.assertEqual(d["value1"]["value12"](1),16.0)                       
+        self.assertEqual(d["value2"]["value21"](1),20.0)
+        self.assertEqual(d["value2"]["value22"](1),40.0) 
+
+        d.equation = b*b
+        self.assertEqual(d["value1"](1),4.0)
+        self.assertEqual(d["value2"](1),16.0)  
+
+        d.equation = c*c  
+        self.assertEqual(d["value1"]["value11"](1),25.0)
+        self.assertEqual(d["value1"]["value12"](1),64.0)                       
+        self.assertEqual(d["value2"]["value21"](1),100.0)
+        self.assertEqual(d["value2"]["value22"](1),400.0)  
 
         with self.assertRaises(Exception) as context:
             d.equation = b*c

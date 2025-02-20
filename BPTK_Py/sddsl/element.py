@@ -162,10 +162,21 @@ class Element:
                                 self[i] = equation.clone_with_index([i])
 
                     else:
-                        self.setup_matrix(dims)
-                        for i in range(dims[0]):
-                            for j in range(dims[1]):
-                                self[i][j] = equation.clone_with_index([i, j])
+                        if(equation.is_named()):
+                            names = {}
+                            for i in range(dims[0]):
+                                name1 = equation.index_to_string(i)
+                                names[name1] = {}                                
+                                for j in range(dims[1]):  
+                                    name2 = equation.index_to_string([i,j])
+                                    names[name1][name2] = equation.clone_with_index([name1,name2])
+
+                            self.setup_named_matrix(names)                          
+                        else:    
+                            self.setup_matrix(dims)
+                            for i in range(dims[0]):
+                                for j in range(dims[1]):
+                                    self[i][j] = equation.clone_with_index([i, j])
 
         return arrayed_equation
 
