@@ -252,8 +252,9 @@ class BinaryOperators(unittest.TestCase):
 
         d = m.converter("d")
         
-        #does not work
-        #d.equation = a+b
+        d.equation = a+b
+        self.assertEqual(d["value1"](1),3.0)
+        self.assertEqual(d["value2"](1),4.0)
 
         d.equation = b+a
         self.assertEqual(d["value1"](1),3.0)
@@ -327,8 +328,9 @@ class BinaryOperators(unittest.TestCase):
 
         d = m.converter("d")
         
-        #does not work
-        #d.equation = a-b
+        d.equation = a-b
+        self.assertEqual(d["value1"](1),-1.0)
+        self.assertEqual(d["value2"](1),-2.0)   
 
         d.equation = b-a
         self.assertEqual(d["value1"](1),1.0)
@@ -402,8 +404,9 @@ class BinaryOperators(unittest.TestCase):
 
         d = m.converter("d")
         
-        #does not work
-        #d.equation = a/b
+        d.equation = a/b
+        self.assertEqual(d["value1"](1),1.0)
+        self.assertEqual(d["value2"](1),0.5)   
 
         d.equation = b/a
         self.assertEqual(d["value1"](1),1.0)
@@ -518,9 +521,10 @@ class BinaryOperators(unittest.TestCase):
 
         d = m.converter("d")
         
-        #does not work
-        #d.equation = a*b  
-
+        d.equation = a*b  
+        self.assertEqual(d["value1"](1),4.0)
+        self.assertEqual(d["value2"](1),8.0)   
+        
         d.equation = b*a
         self.assertEqual(d["value1"](1),4.0)
         self.assertEqual(d["value2"](1),8.0)   
