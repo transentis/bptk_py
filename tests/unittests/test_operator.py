@@ -302,6 +302,79 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
 
+    def testAdditionOperator_overwrite_stock_vector_not_named(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+        stock = model.stock("stock")
+        flow1 = model.flow("flow1")
+        flow2 = model.flow("flow2")
+
+        flow1.setup_vector(2, [1.0, 2.0])
+        flow2.setup_vector(2, [3.0, 4.0])
+        stock.setup_vector(2, [8.0, 9.0])
+
+        stock.equation = flow1 + flow2
+        self.assertEqual(stock[0](1),8.0)
+        self.assertEqual(stock[1](1),9.0)
+        self.assertEqual(stock[0](2),12.0)
+        self.assertEqual(stock[1](2),15.0)   
+
+    def testAdditionOperator_overwrite_stock_vector_named(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+        stock = model.stock("stock")
+        flow1 = model.flow("flow1")
+        flow2 = model.flow("flow2")        
+
+        flow1.setup_named_vector({"value1": 1.0, "value2": 2.0})
+        flow2.setup_named_vector({"value1": 3.0, "value2": 4.0})
+        stock.setup_named_vector({"value1": 8.0, "value2": 9.0})
+
+        stock.equation = flow1 + flow2
+        self.assertEqual(stock["value1"](1),8.0)
+        self.assertEqual(stock["value2"](1),9.0)
+        self.assertEqual(stock["value1"](2),12.0)
+        self.assertEqual(stock["value2"](2),15.0)   
+
+    def testAdditionOperator_overwrite_stock_matrix_not_named(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+        stock = model.stock("stock")
+        flow1 = model.flow("flow1")
+        flow2 = model.flow("flow2")         
+
+        flow1.setup_matrix([2,2], [[1.0, 2.0], [3.0, 4.0]]) 
+        flow2.setup_matrix([2,2], [[5.0, 6.0], [7.0, 8.0]]) 
+        stock.setup_matrix([2,2], [[9.0, 10.0], [11.0, 12.0]])
+    
+        stock.equation = flow1 + flow2
+        self.assertEqual(stock[0][0](1),9.0)
+        self.assertEqual(stock[0][1](1),10.0)
+        self.assertEqual(stock[1][0](1),11.0)
+        self.assertEqual(stock[1][1](1),12.0)
+        self.assertEqual(stock[0][0](2),15)
+        self.assertEqual(stock[0][1](2),18.0)
+        self.assertEqual(stock[1][0](2),21.0)
+        self.assertEqual(stock[1][1](2),24.0)
+
+    def testAdditionOperator_overwrite_stock_matrix_named(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+        stock = model.stock("stock")
+        flow1 = model.flow("flow1")
+        flow2 = model.flow("flow2")  
+
+        flow1.setup_named_matrix({"value1" : {"value11": 1, "value12": 2}, "value2": {"value21": 3, "value22": 4}})
+        flow2.setup_named_matrix({"value1" : {"value11": 5, "value12": 6}, "value2": {"value21": 7, "value22": 8}})
+        stock.setup_named_matrix({"value1" : {"value11": 9, "value12": 10}, "value2": {"value21": 11, "value22": 12}})
+
+        stock.equation = flow1 + flow2
+
+        self.assertEqual(stock["value1"]["value11"](1),9.0)
+        self.assertEqual(stock["value1"]["value12"](1),10.0)
+        self.assertEqual(stock["value2"]["value21"](1),11.0)
+        self.assertEqual(stock["value2"]["value22"](1),12.0)        
+        self.assertEqual(stock["value1"]["value11"](2),15.0)
+        self.assertEqual(stock["value1"]["value12"](2),18.0)
+        self.assertEqual(stock["value2"]["value21"](2),21.0)
+        self.assertEqual(stock["value2"]["value22"](2),24.0)
+
     def testSubtractionOperator_not_named(self):
         m = Model()
         a = m.constant("a")
