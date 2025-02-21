@@ -987,7 +987,7 @@ class DotOperator(BinaryOperator):
 
             if(index >= dim2[1]):
                 raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    self.index[0], dim2[1]))
+                    index, dim2[1]))
             res = ""
             for k in range(dim2[0]):
                 res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1,
@@ -1004,7 +1004,7 @@ class DotOperator(BinaryOperator):
 
             if(index >= dim1[0]):
                 raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    self.index[0], dim2[1]))
+                    index, dim2[1]))
 
             res = ""
             for k in range(dim1[1]):
