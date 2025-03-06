@@ -1,7 +1,9 @@
 import unittest
 import pandas as pd
+import os
 
 from BPTK_Py.scenariorunners.hybrid_runner import HybridRunner
+from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 import BPTK_Py.logger.logger as logmod
 
 class TestHybridRunner(unittest.TestCase):
@@ -134,7 +136,7 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=[],agent_property_types=["type1"]).equals(pd.DataFrame(data=pd3_data, index=pd_index,columns=pd3_columns)))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=["property1"],agent_property_types=[]).equals(pd.DataFrame()))
 
-    def testHybridRunner_run_scenario_empty(self):
+    def testHybridRunner_run_scenario_invalid(self):
         #cleanup logfile
         try:
             with open(logmod.logfile, "w", encoding="UTF-8") as file:
@@ -145,6 +147,7 @@ class TestHybridRunner(unittest.TestCase):
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
 
         self.assertTrue(hybridRunner.run_scenario(abm_results_dict={}, return_format=None, scenarios=[]).equals(pd.DataFrame()))
+        hybridRunner.run_scenario(abm_results_dict={},return_format=None,scenarios={"scenario1","scenario2"},widget=True)
 
         try:
             with open(logmod.logfile, "r", encoding="UTF-8") as file:
@@ -153,6 +156,27 @@ class TestHybridRunner(unittest.TestCase):
             self.fail()
 
         self.assertIn("[ERROR] No scenario to simulate found", content)  
+        self.assertIn("[ERROR] Currently, we can only spawn a widget for exactly one ABM/hybrid simulation! Try to run for only one scenario", content)  
+        self.assertIn("Make sure you implement the build_widget() method in your ABM model!",content)
+
+    def testHybriderRunner_run_scenario(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        sm.get_scenario_managers(path=testDir)        
+        hybridRunner = HybridRunner(scenario_manager_factory=sm)
+
+        result = hybridRunner.run_scenario(abm_results_dict={},
+                                        return_format="json",
+                                        scenarios=["test"],
+                                        scenario_managers=["ABMsmSimpleProjectManagement"],
+                                        agents=["task"],
+                                        agent_states=["open"],
+                                        agent_property_types=["total"])
+        
+        self.assertEqual(result,{'ABMsmSimpleProjectManagement': {'test': {'agents': {'task': {'open': {0: 18, 1: 17, 2: 16, 3: 15, 4: 13, 5: 12}}}}}})
 
 if __name__ == '__main__':
     unittest.main()    
