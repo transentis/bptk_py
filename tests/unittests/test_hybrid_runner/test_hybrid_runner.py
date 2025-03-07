@@ -168,6 +168,7 @@ class TestHybridRunner(unittest.TestCase):
         sm.get_scenario_managers(path=testDir)        
         hybridRunner = HybridRunner(scenario_manager_factory=sm)
 
+        #return format="json" without agent_properties
         result = hybridRunner.run_scenario(abm_results_dict={},
                                         return_format="json",
                                         scenarios=["test"],
@@ -177,6 +178,36 @@ class TestHybridRunner(unittest.TestCase):
                                         agent_property_types=["total"])
         
         self.assertEqual(result,{'ABMsmSimpleProjectManagement': {'test': {'agents': {'task': {'open': {0: 18, 1: 17, 2: 16, 3: 15, 4: 13, 5: 12}}}}}})
+
+        #return format="dict" without agent_properties
+        result = hybridRunner.run_scenario(abm_results_dict={},
+                                        return_format="dict",
+                                        scenarios=["test"],
+                                        scenario_managers=["ABMsmSimpleProjectManagement"],
+                                        agents=["task"],
+                                        agent_states=["open"],
+                                        agent_property_types=["total"])        
+        
+        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"].equals(pd.DataFrame({"open": [18, 17, 16, 15, 13, 12]})["open"]))
+
+        #return format="dict" with agent_properties
+        result = hybridRunner.run_scenario(abm_results_dict={},
+                                        return_format="dict",
+                                        scenarios=["test"],
+                                        scenario_managers=["ABMsmSimpleProjectManagement"],
+                                        agents=["task"],
+                                        agent_states=["open"],
+                                        agent_property_types=["mean","max","min","total"],
+                                        agent_properties=["effort"])
+
+        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["mean"].
+                        equals(pd.DataFrame({"mean": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]})["mean"]))
+        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["max"].
+                        equals(pd.DataFrame({"max": [1, 1, 1, 1, 1, 1]})["max"]))
+        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["min"].
+                        equals(pd.DataFrame({"min": [1, 1, 1, 1, 1, 1]})["min"]))
+        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["total"].
+                        equals(pd.DataFrame({"total": [18, 17, 16, 15, 13, 12]})["total"]))
 
 if __name__ == '__main__':
     unittest.main()    
