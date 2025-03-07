@@ -315,5 +315,29 @@ class TestHybridRunner(unittest.TestCase):
                                         agent_property_types=["total"])
         self.assertTrue(result.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_open_effort_total": [18, 17, 16, 15, 13]}, index=[1, 2, 3, 4, 5])))
 
+    def testHybriderRunner_run_scenario_step_individual_agent_properties(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        sm.get_scenario_managers(path=testDir)        
+        hybridRunner = HybridRunner(scenario_manager_factory=sm)
+
+        result = hybridRunner.run_scenario_step(abm_results_dict={},
+                                        step=1,
+                                        return_format="json",
+                                        scenarios=["test"],
+                                        scenario_managers=["ABMsmSimpleProjectManagement"],
+                                        agents=["task"],
+                                        agent_states=["open"],
+                                        agent_properties=["effort"],
+                                        agent_property_types=["total"],
+                                        individual_agent_properties={"task": {"effort"}})
+        for i in range(2,21+1):
+            self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["instances"][i],{"effort": {'type': 'Double', 'value': 1}})
+        
+        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"],{'effort': {'total': {1: 18}}})
+
 if __name__ == '__main__':
     unittest.main()    
