@@ -209,7 +209,7 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["total"].
                         equals(pd.DataFrame({"total": [18, 17, 16, 15, 13, 12]})["total"]))
 
-    def testHybriderRunner_run_scenario_invalid(self):
+    def testHybriderRunner_run_scenario_step_invalid(self):
         #cleanup logfile
         try:
             with open(logmod.logfile, "w", encoding="UTF-8") as file:
@@ -236,7 +236,7 @@ class TestHybridRunner(unittest.TestCase):
         self.assertIn("[ERROR] No scenario to simulate found", content) 
         self.assertIn("[ERROR] No data to plot found. It seems there is no scenario available. Resetting the scenario cache or model might help if you are trying to rerun a scenario.", content) 
 
-    def testHybriderRunner_run_scenario(self):
+    def testHybriderRunner_run_scenario_step(self):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
 
