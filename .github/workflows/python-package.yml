@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ "main", "improve-test-coverage", "increase-test-coverage" ]
+    branches: [ "main", "increase-test-coverage", "enable-multidim-sddsl" ]
   pull_request:
-    branches: [ "main", "improve-test-coverage", "increase-test-coverage" ]
+    branches: [ "main", "increase-test-coverage", "enable-multidim-sddsl" ]
 
 jobs:
   build:

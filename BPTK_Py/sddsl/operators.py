@@ -573,11 +573,21 @@ class AdditionOperator(BinaryOperator):
         return dim2
 
     def index_to_string(self, index):
-        if self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
+        if isinstance(index, int):
+            if self.element_1.named_arrayed:
+                return self.element_1._elements.equations[index]
+            elif self.element_2.named_arrayed:
+                return self.element_2._elements.equations[index]
+        if isinstance(index,list):
+            if self.element_1.named_arrayed:   
+                name = self.element_1._elements.equations[index[0]]
+                return self.element_1._elements._element[name]._elements.equations[index[1]]
+            if self.element_2.named_arrayed:   
+                name = self.element_2._elements.equations[index[0]]
+                return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return self.element_1.named_arrayed
+        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
 
     def clone_with_index(self, index):
         element_1 = self.element_1 if isinstance(
@@ -641,11 +651,21 @@ class SubtractionOperator(BinaryOperator):
         return SubtractionOperator(element_1, element_2, index)
 
     def index_to_string(self, index):
-        if self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
+        if isinstance(index, int):
+            if self.element_1.named_arrayed:
+                return self.element_1._elements.equations[index]
+            elif self.element_2.named_arrayed:
+                return self.element_2._elements.equations[index]
+        if isinstance(index,list):
+            if self.element_1.named_arrayed:   
+                name = self.element_1._elements.equations[index[0]]
+                return self.element_1._elements._element[name]._elements.equations[index[1]]
+            if self.element_2.named_arrayed:   
+                name = self.element_2._elements.equations[index[0]]
+                return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return self.element_1.named_arrayed
+        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
 
 
 class DivisionOperator(BinaryOperator):
@@ -701,11 +721,21 @@ class DivisionOperator(BinaryOperator):
         return DivisionOperator(element_1, element_2, index)
 
     def index_to_string(self, index):
-        if self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
+        if isinstance(index, int):
+            if self.element_1.named_arrayed:
+                return self.element_1._elements.equations[index]
+            elif self.element_2.named_arrayed:
+                return self.element_2._elements.equations[index]
+        if isinstance(index,list):
+            if self.element_1.named_arrayed:   
+                name = self.element_1._elements.equations[index[0]]
+                return self.element_1._elements._element[name]._elements.equations[index[1]]
+            if self.element_2.named_arrayed:   
+                name = self.element_2._elements.equations[index[0]]
+                return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return self.element_1.named_arrayed
+        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
 
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
@@ -748,16 +778,26 @@ class NumericalMultiplicationOperator(BinaryOperator):
         return NumericalMultiplicationOperator(element_1, element_2, index)
 
     def index_to_string(self, index):
-        if self.el1_arrayed:
-            return self.element_1._elements.equations[index]
-        else:
-            return self.element_2._elements.equations[index]
+        if isinstance(index, int):
+            if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
+                return self.element_1._elements.equations[index]
+            elif isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size():
+                return self.element_2._elements.equations[index]
+        if isinstance(index,list):
+            if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
+                name = self.element_1._elements.equations[index[0]]
+                return self.element_1._elements._element[name]._elements.equations[index[1]]
+            if self.element_2.named_arrayed:   
+                name = self.element_2._elements.equations[index[0]]
+                return self.element_2._elements._element[name]._elements.equations[index[1]]                                
 
     def is_named(self):
-        if self.el1_arrayed:
+        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
             return self.element_1.named_arrayed
-        else:
+        elif isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size():
             return self.element_2.named_arrayed
+        else:
+            return False
 
 class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
@@ -793,13 +833,21 @@ class MultiplicationOperator(BinaryOperator):
 
 
     def index_to_string(self, index):
-        if self.element_1.named_arrayed:
-            return self.element_1._elements.equations[index]
-        elif self.element_2.named_arrayed:
-            return self.element_2._elements.equations[index]
+        if isinstance(index, int):
+            if self.element_1.named_arrayed:
+                return self.element_1._elements.equations[index]
+            elif self.element_2.named_arrayed:
+                return self.element_2._elements.equations[index]
+        if isinstance(index,list):
+            if self.element_1.named_arrayed:   
+                name = self.element_1._elements.equations[index[0]]
+                return self.element_1._elements._element[name]._elements.equations[index[1]]
+            if self.element_2.named_arrayed:   
+                name = self.element_2._elements.equations[index[0]]
+                return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return self.element_1.named_arrayed
+        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -939,7 +987,7 @@ class DotOperator(BinaryOperator):
 
             if(index >= dim2[1]):
                 raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    self.index[0], dim2[1]))
+                    index, dim2[1]))
             res = ""
             for k in range(dim2[0]):
                 res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1,
@@ -956,7 +1004,7 @@ class DotOperator(BinaryOperator):
 
             if(index >= dim1[0]):
                 raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    self.index[0], dim2[1]))
+                    index, dim2[1]))
 
             res = ""
             for k in range(dim1[1]):

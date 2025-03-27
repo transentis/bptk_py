@@ -138,9 +138,18 @@ class Element:
                             for i in range(dims[0]):
                                 self[i].equation = equation.clone_with_index([i])
                     else:
-                        for i in range(dims[0]):
-                            for j in range(dims[1]):
-                                self[i][j].equation = equation.clone_with_index([i, j])
+                        if(equation.is_named()):
+                            names = {}
+                            for i in range(dims[0]):
+                                name1 = equation.index_to_string(i)          
+                                names[name1] = {}                    
+                                for j in range(dims[1]):  
+                                    name2 = equation.index_to_string([i,j])
+                                    self[name1][name2].equation = equation.clone_with_index([name1,name2])    
+                        else:    
+                            for i in range(dims[0]):
+                                for j in range(dims[1]):
+                                    self[i][j].equation = equation.clone_with_index([i, j])
         if isinstance(equation, Operator) and not handled_by_stock:
             if equation.is_any_subelement_arrayed() and equation.index == None:
                 # Resolve equations
@@ -162,10 +171,21 @@ class Element:
                                 self[i] = equation.clone_with_index([i])
 
                     else:
-                        self.setup_matrix(dims)
-                        for i in range(dims[0]):
-                            for j in range(dims[1]):
-                                self[i][j] = equation.clone_with_index([i, j])
+                        if(equation.is_named()):
+                            names = {}
+                            for i in range(dims[0]):
+                                name1 = equation.index_to_string(i)
+                                names[name1] = {}                                
+                                for j in range(dims[1]):  
+                                    name2 = equation.index_to_string([i,j])
+                                    names[name1][name2] = equation.clone_with_index([name1,name2])
+
+                            self.setup_named_matrix(names, True)                          
+                        else:    
+                            self.setup_matrix(dims)
+                            for i in range(dims[0]):
+                                for j in range(dims[1]):
+                                    self[i][j] = equation.clone_with_index([i, j])
 
         return arrayed_equation
 
@@ -418,11 +438,11 @@ class Element:
         for name in values:
             if(self.type == "Stock" and not set_stack_equation):
                 self[name] = None
-                self[name].initial_value = values[name]
+                self[name].initial_value = float(values[name])
             else:
                 self[name] = values[name]
 
-    def setup_matrix(self, size, default_value=0.0):
+    def setup_matrix(self, size, default_value=0.0, set_stack_equation = False):
         """
         Creates sub-elements for this element.
 
@@ -438,7 +458,7 @@ class Element:
         if isinstance(default_value, (float, int)):
             for i in range(size[0]):
                 self[i] = None
-                self[i].setup_vector(size[1], default_value)
+                self[i].setup_vector(size[1], default_value, set_stack_equation)
         else:
             if len(default_value) != size[0] or len(default_value[0]) != size[1]:
                 raise Exception("Expected passed default_value to have the same size as passed matrix size. Received default_value of size {} and matrix of size {}!".format(
@@ -446,9 +466,9 @@ class Element:
             self._equation = None
             for i in range(size[0]):
                 self[i] = None
-                self[i].setup_vector(size[1], default_value[i])
+                self[i].setup_vector(size[1], default_value[i], set_stack_equation)
 
-    def setup_named_matrix(self, names):
+    def setup_named_matrix(self, names, set_stack_equation = False):
         """
         Creates sub-elements for this element.
 
@@ -466,7 +486,7 @@ class Element:
         self._equation = None
         for i, name in enumerate(names):
             self[name] = None
-            self[name].setup_named_vector(names[name])
+            self[name].setup_named_vector(names[name], set_stack_equation)
 
 
 class ElementError(Exception):

@@ -18,7 +18,7 @@ dependencies = [
 "sympy==1.13.3",
 "distlib==0.3.8",
 "cachetools==5.5.0",
-"requests==2.31.0",
+"requests==2.32.0",
 "flask==3.0.3",
 "jsonpickle==3.0.2"
 

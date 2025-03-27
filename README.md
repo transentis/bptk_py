@@ -41,6 +41,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.0.0
+
+* Support for multidimensional sddsl
+
 ### 1.9.6
 
 * Enabled modulo operation for sddsl-elements
