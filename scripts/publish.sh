@@ -26,20 +26,20 @@ echo "-------------------------------------"
 echo "Running tests on local version"
 echo "-------------------------------------"
 
-cd ../tests
-python3 -m venv venv
-source ./venv/bin/activate
+cd ..
+python3 -m venv venv_temp
+source ./venv_temp/bin/activate
 pip install pytest
-pip install -e ../
+pip install -e .
 
-if ! python ./run_pytests.py ; then
+if ! pytest ./ ; then
     echo "Tests failed! Not continuing. Please fix your code"
     deactivate
-    rm -rf venv/
+    rm -rf venv_temp/
     exit 1
 fi
 deactivate
-rm -rf venv/
+rm -rf venv_temp/
 
 
 ###################
@@ -49,7 +49,7 @@ rm -rf venv/
 echo "-------------------------------------"
 echo "Generating Distribution"
 echo "-------------------------------------"
-cd ..
+
 
 pip install twine
 pip install build
@@ -77,25 +77,24 @@ fi
 echo "-------------------------------------"
 echo "Running tests against PyPi Version"
 echo "-------------------------------------"
-cd ./tests
+
 echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
-python3 -m venv ./venv
-source ./venv/bin/activate
+python3 -m venv venv_temp
+source ./venv_temp/bin/activate
 pip install pytest
 pip install --index-url https://test.pypi.org/simple/ bptk_py --extra-index-url https://pypi.org/simple
 
-if ! python ./run_pytests.py; then
+if ! pytest ./; then
     echo "Tests failed! Not continuing. Please fix your code"
     deactivate
-
-    rm -rf venv/
+    rm -rf venv_temp/
     exit 1
 fi
 deactivate
-rm -rf venv/
-rm test_models/*.py
-cd ..
+rm -rf venv_temp/
+rm ./tests/test_models/*.py
+
 echo "-------------------------"
 echo "All tests successful!"
 echo "Proceeding with upload to actual Pypi"
@@ -117,11 +116,4 @@ rm -rf dist/
 rm -rf build/
 rm -rf BPTK_Py.egg-info
 
-#echo "-------------------------------------"
-#echo "Docker publish"
-#echo "-------------------------------------"
-#python3 build_docker.py
 
-#echo "-------------------------------------"
-#echo "Publication done!"
-#echo "-------------------------------------"

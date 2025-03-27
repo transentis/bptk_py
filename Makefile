@@ -15,7 +15,7 @@ help:
 
 .PHONY: tests
 tests:
-	pip install . && cd tests && python3 ./run_pytests.py
+	pip install . && pytest ./
 
 publish_bptk:
 	cd scripts && ./publish.sh
