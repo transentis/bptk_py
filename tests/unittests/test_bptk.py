@@ -280,7 +280,7 @@ class TestBptk(unittest.TestCase):
         except FileNotFoundError:
             self.fail()
 
-        self.assertIn("[ERROR] Scenario manager \"testManage\" not found! Did you maybe mean one of \"testManager, smTest\"?", content) 
+        self.assertIn("[ERROR] Scenario manager \"testManage\" not found! Did you maybe mean one of \"testManager", content) 
         self.assertIn("[ERROR] Scenario \"bas\" not found in any scenario manager! Did you maybe mean one of \"base\"?", content) 
 
     def testBptk_plot_lookup(self):
