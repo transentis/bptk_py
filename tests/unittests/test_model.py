@@ -405,7 +405,15 @@ class Test_Model(unittest.TestCase):
         except FileNotFoundError:
             self.fail()
 
-        self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                   
+        self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                        
+
+    def test_plot_lookup(self):
+        model = Model()
+        import BPTK_Py.sddsl.functions as sd
+        model.converter(name="test")
+        model.converters["test"].equation = sd.lookup(1,[ (0,0.3) , (4,0.7)])
+
+        self.assertIsNone(model.plot_lookup("test"))
 
     def test_add_equation(self):
         #cleanup logfile
@@ -436,7 +444,6 @@ class Test_Model(unittest.TestCase):
 
         self.assertIn("[WARN] Hybrid Model : Overwriting equation flow", content)  
         self.assertNotIn("[WARN] Hybrid Model : Overwriting equation converter", content)  
-
 
 if __name__ == '__main__':
     unittest.main()
