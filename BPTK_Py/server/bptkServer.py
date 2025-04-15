@@ -384,7 +384,7 @@ class BptkServer(Flask):
         try:
             scenarios = content["scenarios"]
         except KeyError:
-            resp = make_response('{"error": "expecting scenario_managers to be set"}', 500)
+            resp = make_response('{"error": "expecting scenarios to be set"}', 500)
             resp.headers['Content-Type']='application/json'
             resp.headers['Access-Control-Allow-Origin']='*'
             return resp

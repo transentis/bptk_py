@@ -109,26 +109,92 @@ def test_run_resource(app, client):
         "scenario_managers":["firstManager"],
         "scenarios":["1"],
         "equations":["stock","flow","constant"],
+        "agents" : ["agent"],
+        "agent_properties" : ["agent_property"],
+        "agent_property_types" : ["agent_property_type"],
         "settings":{
-
-                         "firstManager":
-                             {
-                                 "1":
-                                     {
-                                         "constants":
-                                         {
-                                            "constant":7.0
-                                         }
-                                     }
-                             }
-                     }
-
-
+            "firstManager":{
+                "1":{
+                    "constants": {
+                        "constant":7.0
+                    },
+                    "points": {
+                        "point" : [
+                           [0, 0.1],
+                           [1, 0.9]
+                       ]           
+                     },
+                    "runspecs": {
+                        "starttime": 1.0,
+                        "stoptime": 15.0,
+                        "dt": 1.0
+                    }
+                    #properties and agents not defined for SimulationScenario -> Bug?
+                }
+            }
+        }
     }
 
     response = client.post('/run', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200 # checking the status code
+
+    query_with_missing_manager={
+        "scenarios":["1"],
+        "equations":["stock","flow","constant"],
+        "settings":{
+            "firstManager":{
+                "1":{
+                    "constants": {
+                        "constant":7.0
+                    }
+                }
+            }
+        }        
+    }
+
+    response_with_missing_manager = client.post('/run', data=json.dumps(query_with_missing_manager), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+
+    assert response_with_missing_manager.status_code == 500 # checking the status code    
+    assert b'expecting scenario_managers to be set' in response_with_missing_manager.data
+
+    query_with_missing_scenarios={
+        "scenario_managers":["firstManager"],
+        "equations":["stock","flow","constant"],
+        "settings":{
+            "firstManager":{
+                "1":{
+                    "constants": {
+                        "constant":7.0
+                    }
+                }
+            }
+        }        
+    }
+
+    response_with_missing_scenarios = client.post('/run', data=json.dumps(query_with_missing_scenarios), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+
+    assert response_with_missing_scenarios.status_code == 500 # checking the status code    
+    assert b'expecting scenarios to be set' in response_with_missing_scenarios.data 
+
+    query_with_missing_equations_and_agents={
+        "scenario_managers":["firstManager"],
+        "scenarios":["1"],
+        "settings":{
+            "firstManager":{
+                "1":{
+                    "constants": {
+                        "constant":7.0
+                    }
+                }
+            }
+        }        
+    }
+
+    response_with_missing_equations_and_agents = client.post('/run', data=json.dumps(query_with_missing_equations_and_agents), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+
+    assert response_with_missing_equations_and_agents.status_code == 500 # checking the status code    
+    assert b'expecting either equations or agents to be set' in response_with_missing_equations_and_agents.data     
 
 def test_run_steps_resource(app, client):
 
