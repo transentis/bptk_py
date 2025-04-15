@@ -110,6 +110,7 @@ def test_run_resource(app, client):
         "scenarios":["1"],
         "equations":["stock","flow","constant"],
         "agents" : ["agent"],
+        "agent_states": ["agent_state"],
         "agent_properties" : ["agent_property"],
         "agent_property_types" : ["agent_property_type"],
         "settings":{
@@ -138,6 +139,25 @@ def test_run_resource(app, client):
     response = client.post('/run', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200 # checking the status code
+
+    #error if data is not json 
+    response_with_not_json = client.post('/run', data=query, headers={"Authorization": f"Bearer {token}"})
+
+    assert response_with_not_json.status_code == 500 # checking the status code    
+    assert b'please pass the request with content-type application/json' in response_with_not_json.data
+
+    #errors for no result (missing content included)
+
+    query_with_missing_settings={
+        "scenario_managers":["firstManager"],
+        "scenarios":["1"],
+        "agents":["agent"],
+    }
+
+    response_with_missing_settings = client.post('/run', data=json.dumps(query_with_missing_settings), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+
+    assert response_with_missing_settings.status_code == 500 # checking the status code    
+    assert b'no data was returned from simulation' in response_with_missing_settings.data
 
     query_with_missing_manager={
         "scenarios":["1"],
