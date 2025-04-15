@@ -339,5 +339,34 @@ class TestHybridRunner(unittest.TestCase):
         
         self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"],{'effort': {'total': {1: 18}}})
 
+    def test_train_scenario(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+
+        sm.get_scenario_managers(path=testDir)        
+        hybridRunner = HybridRunner(scenario_manager_factory=sm)     
+
+        result1=hybridRunner.train_scenario(scenarios=["test"],
+                    scenario_managers=["ABMsmSimpleProjectManagement"],
+                    agents=["task"],
+                    agent_states=["closed"],
+                    episodes=5
+        )
+
+        self.assertTrue(result1.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_closed": [7, 14, 17, 20, 20]}, index=[0, 1, 2, 3, 4])))
+
+        result2=hybridRunner.train_scenario(scenarios=["test"],
+                    scenario_managers=["ABMsmSimpleProjectManagement"],
+                    agents=["task"],
+                    agent_states=["closed"],
+                    agent_properties=["effort"],
+                    agent_property_types=["total"],
+                    episodes=5
+        )
+
+        self.assertTrue(result2.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_closed_effort_total": [7, 14, 17, 20, 20]}, index=[0, 1, 2, 3, 4])))
+
 if __name__ == '__main__':
     unittest.main()    
