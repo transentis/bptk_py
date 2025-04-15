@@ -191,43 +191,25 @@ class TestElement(unittest.TestCase):
         self.assertRaises(Exception,stock1._handle_arrayed,equation=stock2)  
 
     def testElement_plot(self):
-        model1 = Model(starttime = 0.0, stoptime= 5.0, dt= 1.0, name="TestModel")
-        model2 = Model()
+        model = Model(starttime = 0.0, stoptime= 5.0, dt= 1.0, name="TestModel")
+        
+        vector = model.constant("vector")
+        vector.setup_named_vector({"value1": 2.0, "value2": 3.0})
 
-        vector1 = model1.constant("vector1")
-        vector1.setup_named_vector({"value1": 2.0, "value2": 3.0})
+        value = model.converter("value")
+        value.equation = 2.0
 
-        value1 = model1.converter("value1")
-        value1.equation = 2.0
+        flow = model.flow("flow")
+        flow.equation = vector * value
 
-        flow1 = model1.flow("flow1")
-        flow1.equation = vector1 * value1
+        result = model.stock("result1")
+        result.setup_named_vector({"value1": 1.0, "value2": 1.0})
+        result.equation = flow
 
-        result1 = model1.stock("result1")
-        result1.setup_named_vector({"value1": 1.0, "value2": 1.0})
-        result1.equation = flow1
+        dataframe = result.plot(starttime=0,stoptime=2,dt=1,return_df=True)
 
-        dataframe1 = result1.plot(starttime=0,stoptime=2,dt=1,return_df=True)
-
-        self.assertTrue(dataframe1.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))
-        self.assertIsNone(result1.plot(starttime=0,stoptime=2,dt=1,return_df=False))
-
-        vector2 = model2.constant("vector2")
-        vector2.setup_named_vector({"value1": 2.0, "value2": 3.0})
-
-        value2 = model2.converter("value2")
-        value2.equation = 2.0
-
-        flow2 = model2.flow("flow2")
-        flow2.equation = vector2 * value2
-
-        result2 = model2.stock("result2")
-        result2.setup_named_vector({"value1": 1.0, "value2": 1.0})
-        result2.equation = flow2
-
-        dataframe2 = result2.plot(starttime=0,stoptime=2,dt=1,return_df=True)
-
-        self.assertTrue(dataframe2.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))   
+        self.assertTrue(dataframe.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))
+        self.assertIsNone(result.plot(starttime=0,stoptime=2,dt=1,return_df=False))
 
 class TestElementError(unittest.TestCase):
     def setUp(self):
