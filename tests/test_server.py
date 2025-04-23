@@ -384,8 +384,37 @@ def test_equations_resource(app, client):
     assert b'expecting scenario to be set' in response_with_missing_scenario.data
 
 def test_agents_resource(app, client):
-    response = client.post('/agents', content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 400 # System dynamics systems shouldn't have agents
+    #error if data is not json
+    empty_query = {}
+    response_with_not_json = client.post('/agents', data=empty_query, headers={"Authorization": f"Bearer {token}"})
+    assert response_with_not_json.status_code == 500 # checking the status code    
+    assert b'please pass the request with content-type application/json' in response_with_not_json.data
+
+    #error if scenarioManager is Missing
+    query_with_missing_manager = {
+        "scenario":"1"
+    }    
+    response_with_missing_manager = client.post('/agents', data=json.dumps(query_with_missing_manager), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_missing_manager.status_code == 500 # checking the status code    
+    assert b'expecting scenarioManager to be set' in response_with_missing_manager.data
+
+    #error if scenario is Missing
+    query_with_missing_scenario = {
+        "scenarioManager": "firstManager"
+    }    
+    response_with_missing_scenario = client.post('/agents', data=json.dumps(query_with_missing_scenario), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_missing_scenario.status_code == 500 # checking the status code    
+    assert b'expecting scenario to be set' in response_with_missing_scenario.data    
+
+    #error if scenario has no agents
+    query = {
+        "scenarioManager": "firstManager",
+        "scenario":"1"    }    
+    response = client.post('/agents', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 500 # checking the status code    
+    assert b'expecting the model to have agents' in response.data        
+
+    #To do: Add tests for an actual Agent based or hybrid model
 
 def test_metrics(app, client):
     response = client.get('/metrics')
