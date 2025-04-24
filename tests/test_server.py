@@ -594,6 +594,7 @@ def test_run_steps(app, client):
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "start-instance response should be 200"
     id = json.loads(response.data)['instance_uuid']
+    invalid_id= id + '1'
 
     #error if scenario manager is missing
     session_with_missing_sm = {
@@ -658,7 +659,6 @@ def test_run_steps(app, client):
     assert b'please pass the request with content-type application/json' in response_with_not_json.data
 
     #error if instance id does not exist
-    invalid_id= id + '1'
     response_with_invalid_id = client.post('/' + invalid_id + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response_with_invalid_id.status_code == 500 # checking the status code    
     assert b'expecting a valid instance id to be given' in response_with_invalid_id.data
@@ -680,16 +680,41 @@ def test_run_steps(app, client):
         "numberSteps": 20
     }
 
+    #run steps
     response = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "run-steps response should be 200"
 
     result = json.loads(response.data)
     assert len(result) == 20
 
+    #flat session results: error if instance id does not exist
+    response_with_invalid_id_flat = client.get(f"/{invalid_id}/flat-session-results", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id_flat.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id_flat.data
+
+    #flat session results: valid request
+    response = client.get(f"/{id}/flat-session-results", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200, "flat-session-results response should be 200"
+
+    #session results: error if instance id does not exist
+    response_with_invalid_id_session = client.get(f"/{invalid_id}/session-results", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id_session.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id_session.data
+
+    #session results: valid request
+    response = client.get(f"/{id}/session-results", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200, "session-results response should be 200"
+
+    #end session: error if instance id does not exist
+    response_with_invalid_id_end = client.post(f"/{invalid_id}/end-session", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id_end.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id_end.data
+
+    #end session: valid request
     response = client.post(f"/{id}/end-session", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "end-session response should be 200"
 
-
+    #stop instance
     response = client.post(f"/{id}/stop-instance", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "stop-instance response should be 200"
 
