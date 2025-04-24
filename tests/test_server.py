@@ -595,6 +595,49 @@ def test_run_steps(app, client):
     assert response.status_code == 200, "start-instance response should be 200"
     id = json.loads(response.data)['instance_uuid']
 
+    #error if scenario manager is missing
+    session_with_missing_sm = {
+        "scenarios": [
+            "1"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]        
+    }
+    response_with_no_sm = client.post('/' + id + '/begin-session', data=json.dumps(session_with_missing_sm), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_no_sm.status_code == 500 # checking the status code    
+    assert b'expecting scenario_managers to be set' in response_with_no_sm.data
+
+    #error if scenario is missing
+    session_with_missing_scenario = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "equations": [
+            "stock",
+            "flow",
+            "constant",
+        ]        
+    }
+    response_with_no_scenario = client.post('/' + id + '/begin-session', data=json.dumps(session_with_missing_scenario), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_no_scenario.status_code == 500 # checking the status code    
+    assert b'expecting scenarios to be set' in response_with_no_scenario.data
+
+    #error if equations and agents are missing
+    session_with_missing_equations_and_agents = {
+        "scenario_managers": [
+            "firstManager"
+        ],
+        "scenarios": [
+            "1"
+        ],
+    }
+    response_with_no_equations_and_agents = client.post('/' + id + '/begin-session', data=json.dumps(session_with_missing_equations_and_agents), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_no_equations_and_agents.status_code == 500 # checking the status code    
+    assert b'expecting either equations or agents to be set' in response_with_no_equations_and_agents.data
+
     session = {
         "scenario_managers": [
             "firstManager"
@@ -609,9 +652,20 @@ def test_run_steps(app, client):
         ]
     }
 
+    #error if data is not json
+    response_with_not_json = client.post('/' + id + '/begin-session', data=session, headers={"Authorization": f"Bearer {token}"})
+    assert response_with_not_json.status_code == 500 # checking the status code    
+    assert b'please pass the request with content-type application/json' in response_with_not_json.data
+
+    #error if instance id does not exist
+    invalid_id= id + '1'
+    response_with_invalid_id = client.post('/' + invalid_id + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id.data
+
+    #valid request
     response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "begin-session response should be 200"
-
 
     query={
         "settings": {
