@@ -667,6 +667,29 @@ def test_run_steps(app, client):
     response = client.post('/' + id + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "begin-session response should be 200"
 
+    #run step: error if instance id does not exist
+    query_single_step={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0
+                    }
+                }
+            }
+        }
+    }    
+    response_with_invalid_id_step = client.post(f"/{invalid_id}/run-step", data=json.dumps(query_single_step), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id_step.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id_step.data
+
+    #run step: error if settings are missing
+    empty_query={}
+    response_without_settings = client.post(f"/{id}/run-step", data=json.dumps(empty_query), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_without_settings.status_code == 500 # checking the status code    
+    assert b'expecting settings to be set' in response_without_settings.data    
+
+    #run steps: error if instance id does not exist
     query={
         "settings": {
             "firstManager": {
@@ -679,8 +702,35 @@ def test_run_steps(app, client):
         },
         "numberSteps": 20
     }
+    response_with_invalid_id_steps = client.post(f"/{invalid_id}/run-steps", data=json.dumps(query), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_invalid_id_steps.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_with_invalid_id_steps.data
 
-    #run steps
+    #run steps: error if settings are missing
+    query_with_missing_settings={
+        "numberSteps": 20
+    }
+    response_with_missing_settings = client.post(f"/{id}/run-steps", data=json.dumps(query_with_missing_settings), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_missing_settings.status_code == 500 # checking the status code    
+    assert b'expecting settings to be set' in response_with_missing_settings.data
+
+    #run steps: error if number of steps are missing
+    query_with_missing_number_of_steps={
+        "settings": {
+            "firstManager": {
+                "1": {
+                    "constants": {
+                        "constant":7.0
+                    }
+                }
+            }
+        },
+    }
+    response_with_missing_number_of_steps = client.post(f"/{id}/run-steps", data=json.dumps(query_with_missing_number_of_steps), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_with_missing_number_of_steps.status_code == 500 # checking the status code    
+    assert b'expecting a number of steps to be provided in the body as a json' in response_with_missing_number_of_steps.data
+
+    #run steps: valid request
     response = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "run-steps response should be 200"
 
@@ -793,7 +843,6 @@ def test_run_steps_lock(app, client):
     assert request.status_code == 200
     result = json.loads(request.data)
     assert len(result) == 20
-
 
 def test_stream_steps_lock(app, client):
 
