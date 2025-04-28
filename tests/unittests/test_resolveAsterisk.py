@@ -19,6 +19,7 @@ class TestRemoveAserisk(unittest.TestCase):
                 }
             }
         }
+        
     def test_remove_nesting(self):
         self.assertEqual(remove_nesting([[["A"]]]), "A")
         self.assertEqual(remove_nesting((((("B",)),))), "B")
