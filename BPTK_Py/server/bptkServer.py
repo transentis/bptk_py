@@ -784,7 +784,7 @@ class BptkServer(Flask):
         instance = self._instance_manager.get_instance(instance_uuid)
 
         if(instance.is_locked()):
-            resp = make_response('{"error": "instace is locked"}', 500)
+            resp = make_response('{"error": "instance is locked"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
@@ -833,13 +833,13 @@ class BptkServer(Flask):
         try:
             instance = self._instance_manager.get_instance(instance_uuid)
             if not request.is_json:
-                resp = make_response('{"error": "expecting a number of steps to be provided in the body as a json {numberSteps: int}"}', 500)
+                resp = make_response('{"error": "please pass the request with content-type application/json"}',500)
                 resp.headers['Content-Type'] = 'application/json'
-                resp.headers['Access-Control-Allow-Origin'] = '*'
+                resp.headers['Access-Control-Allow-Origin']='*'
                 return resp
 
             if(instance.is_locked()):
-                resp = make_response('{"error": "instace is locked"}', 500)
+                resp = make_response('{"error": "instance is locked"}', 500)
                 resp.headers['Content-Type'] = 'application/json'
                 resp.headers['Access-Control-Allow-Origin'] = '*'
                 return resp
@@ -904,7 +904,7 @@ class BptkServer(Flask):
                 return resp
 
         if(instance.is_locked()):
-            resp = make_response('{"error": "instace is locked"}', 500)
+            resp = make_response('{"error": "instance is locked"}', 500)
             resp.headers['Content-Type'] = 'application/json'
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp

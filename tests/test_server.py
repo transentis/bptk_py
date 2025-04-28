@@ -730,6 +730,11 @@ def test_run_steps(app, client):
     assert response_with_missing_number_of_steps.status_code == 500 # checking the status code    
     assert b'expecting a number of steps to be provided in the body as a json' in response_with_missing_number_of_steps.data
 
+    #run steps: error if request is not json
+    response_with_not_json = client.post('/' + id + '/run-steps', data=query, headers={"Authorization": f"Bearer {token}"})
+    assert response_with_not_json.status_code == 500 # checking the status code    
+    assert b'please pass the request with content-type application/json' in response_with_not_json.data
+
     #run steps: valid request
     response = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "run-steps response should be 200"
@@ -754,6 +759,16 @@ def test_run_steps(app, client):
     #session results: valid request
     response = client.get(f"/{id}/session-results", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200, "session-results response should be 200"
+
+    #stream steps: error if instance id does not exists
+    response_stream_with_invalid_id = client.post(f"/{invalid_id}/stream-steps", data=json.dumps(query), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_stream_with_invalid_id.status_code == 500 # checking the status code    
+    assert b'expecting a valid instance id to be given' in response_stream_with_invalid_id.data
+
+    #stream steps: error if steps are missing
+    response_stream_without_settings= client.post(f"/{id}/stream-steps", data=json.dumps(empty_query), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
+    assert response_stream_without_settings.status_code == 500 # checking the status code    
+    assert b'expecting settings to be set' in response_stream_without_settings.data
 
     #end session: error if instance id does not exist
     response_with_invalid_id_end = client.post(f"/{invalid_id}/end-session", content_type='application/json',headers={"Authorization": f"Bearer {token}"})
