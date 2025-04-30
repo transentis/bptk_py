@@ -1,0 +1,86 @@
+import unittest
+from unittest.mock import MagicMock
+
+from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget
+
+class DummyWidget:
+    def __init__(self):
+        self.value = 0
+        self.observe_called = False
+
+    def observe(self, handler, names):
+        self.observe_called = True
+        self.handler = handler
+        self.names = names
+
+class DummyScenario:
+    def __init__(self):
+        self.constants = {}
+        self.points = {}
+
+class TestScenarioWidget(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_init(self):
+        widget = DummyWidget()
+        widget.value = 100
+        trigger = lambda: None
+        scenario_widget = ScenarioWidget(widget=widget, element="test_element", trigger=trigger)
+
+        self.assertEqual(scenario_widget.multiply,1.0)
+        self.assertEqual(scenario_widget.widget.value, 100)
+        self.assertIsNone(scenario_widget.points)
+        self.assertEqual(scenario_widget.element,"test_element")
+        self.assertEqual(scenario_widget.trigger,trigger)
+        self.assertIsNone(scenario_widget.pre_trigger)
+        self.assertEqual(scenario_widget.new_value,"None")
+        self.assertTrue(widget.observe_called)
+
+    def test_event_handler(self):
+        widget = DummyWidget()
+
+        pre_trigger = MagicMock()
+        trigger = MagicMock()
+
+        scenario_widget = ScenarioWidget(widget=widget, element="test_element", trigger=trigger, pre_trigger=pre_trigger)
+
+        change = MagicMock()
+        change.new = 55
+
+        scenario_widget._event_handler(change)
+
+        pre_trigger.assert_called_once_with(55)
+        trigger.assert_called_once()
+        self.assertEqual(scenario_widget.new_value, 55)
+
+    def test_set_scenario_value(self):
+        widget = DummyWidget()
+        widget.value = 10
+        
+        scenario1 = DummyScenario()
+        scenario_widget1 = ScenarioWidget(widget=widget, element=None, trigger=lambda: None)
+        scenario_widget1.set_scenario_value(scenario1)
+        self.assertEqual(scenario_widget1.new_value,10)
+        self.assertEqual(scenario1.constants,{})
+        self.assertEqual(scenario1.points,{})
+
+        scenario2 = DummyScenario()
+        scenario_widget2 = ScenarioWidget(widget=widget, element="test_element",trigger=lambda: None, multiply=2)
+        scenario_widget2.set_scenario_value(scenario2)
+        self.assertEqual(scenario_widget2.new_value,10)
+        self.assertEqual(scenario2.constants["test_element"],20)
+        self.assertEqual(scenario2.points,{})
+
+        scenario3 = DummyScenario()
+        scenario3.points = {'test_element': [[0, 0], [1, 0], [2, 0]]}
+        scenario_widget3 = ScenarioWidget(widget=widget, element="test_element",trigger=lambda: None, multiply=3, points=[0, 1])
+        scenario_widget3.set_scenario_value(scenario3)
+        self.assertEqual(scenario_widget3.new_value,10)
+        self.assertEqual(scenario3.constants,{})
+        self.assertEqual(scenario3.points['test_element'][0][1], 30.0)
+        self.assertEqual(scenario3.points['test_element'][1][1], 30.0)
+        self.assertEqual(scenario3.points['test_element'][2][1], 0)
+
+if __name__ == '__main__':
+    unittest.main()
