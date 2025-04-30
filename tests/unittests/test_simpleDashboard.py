@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
 
+from BPTK_Py import Model
+from BPTK_Py.scenariomanager.scenario import SimulationScenario
+
 from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget
 
 class DummyWidget:
@@ -12,11 +15,6 @@ class DummyWidget:
         self.observe_called = True
         self.handler = handler
         self.names = names
-
-class DummyScenario:
-    def __init__(self):
-        self.constants = {}
-        self.points = {}
 
 class TestScenarioWidget(unittest.TestCase):
     def setUp(self):
@@ -58,22 +56,22 @@ class TestScenarioWidget(unittest.TestCase):
         widget = DummyWidget()
         widget.value = 10
         
-        scenario1 = DummyScenario()
+        scenario1 = SimulationScenario(dictionary={}, name="scenario1", model=Model(), scenario_manager_name="testManager")
         scenario_widget1 = ScenarioWidget(widget=widget, element=None, trigger=lambda: None)
         scenario_widget1.set_scenario_value(scenario1)
         self.assertEqual(scenario_widget1.new_value,10)
         self.assertEqual(scenario1.constants,{})
         self.assertEqual(scenario1.points,{})
 
-        scenario2 = DummyScenario()
+        scenario2 = SimulationScenario(dictionary={}, name="scenario2", model=Model(), scenario_manager_name="testManager")
         scenario_widget2 = ScenarioWidget(widget=widget, element="test_element",trigger=lambda: None, multiply=2)
         scenario_widget2.set_scenario_value(scenario2)
         self.assertEqual(scenario_widget2.new_value,10)
         self.assertEqual(scenario2.constants["test_element"],20)
         self.assertEqual(scenario2.points,{})
 
-        scenario3 = DummyScenario()
-        scenario3.points = {'test_element': [[0, 0], [1, 0], [2, 0]]}
+        dict = {"points": {"test_element": [[0, 0], [1, 0], [2, 0]]}}
+        scenario3 = SimulationScenario(dictionary=dict, name="scenario1", model=Model(), scenario_manager_name="testManager")
         scenario_widget3 = ScenarioWidget(widget=widget, element="test_element",trigger=lambda: None, multiply=3, points=[0, 1])
         scenario_widget3.set_scenario_value(scenario3)
         self.assertEqual(scenario_widget3.new_value,10)
