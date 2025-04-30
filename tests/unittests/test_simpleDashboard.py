@@ -1,10 +1,13 @@
 import unittest
 from unittest.mock import MagicMock
 
-from BPTK_Py import Model
+from BPTK_Py import Model, bptk
 from BPTK_Py.scenariomanager.scenario import SimulationScenario
 
-from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget
+from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget, SimpleDashboard
+
+import ipywidgets as widgets
+
 
 class DummyWidget:
     def __init__(self):
@@ -79,6 +82,99 @@ class TestScenarioWidget(unittest.TestCase):
         self.assertEqual(scenario3.points['test_element'][0][1], 30.0)
         self.assertEqual(scenario3.points['test_element'][1][1], 30.0)
         self.assertEqual(scenario3.points['test_element'][2][1], 0)
+
+class TestSimpleDashboard(unittest.TestCase):
+    def setUp(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+
+        stock = model.stock("stock")
+        flow = model.flow("flow")
+        constant = model.constant("constant")
+
+        stock.initial_value=0.0
+
+        stock.equation = flow
+        flow.equation = constant
+        constant.equation = 1.0
+
+        self.testBptk = bptk()
+        self.testBptk.register_scenario_manager({"testManager": {"model": model}})
+
+        self.testBptk.register_scenarios(
+            scenarios=
+                {
+                    "1":
+                    {
+                        "constants":
+                        {
+                            "constant":1.0
+                        }
+                    },
+                    "2":
+                    {
+                        "constants":
+                        {
+                            "constant":2.0
+                        }
+                    }                    
+                }, 
+            scenario_manager = "testManager")
+
+    def test_init(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+
+        self.assertEqual(dashboard.style,{})
+        self.assertEqual(dashboard.layout,{})
+        self.assertEqual(dashboard.bptk,self.testBptk)
+        self.assertEqual(dashboard.scenario_manager,"testManager")
+        self.assertEqual(dashboard.scenario,"1")
+        self.assertEqual(dashboard.widget_array,[])
+        self.assertEqual(dashboard.outputs,[])
+
+    def test_add_plot(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+
+        output = dashboard.add_plot(
+            equations=["stock"], 
+            title="test", 
+            names=["testStock"], 
+            x_label="Time", 
+            y_label="Units", 
+            kind="line",
+            visualize_from_period=0,
+            visualize_to_period=5)
+
+        self.assertIsInstance(output, widgets.Output)
+       
+        self.assertEqual(len(dashboard.outputs), 1)
+        plot_data = dashboard.outputs[0]['data']
+        self.assertEqual(plot_data["equations"], ["stock"])
+        self.assertEqual(plot_data["title"], "test")
+        self.assertEqual(plot_data["kind"], "line")
+        self.assertEqual(plot_data["x_label"], "Time")
+        self.assertEqual(plot_data["y_label"], "Units")
+        self.assertEqual(plot_data["start_date"],"")
+        self.assertEqual(plot_data["visualize_from_period"], 0)
+        self.assertEqual(plot_data["visualize_to_period"], 5)
+        self.assertEqual(plot_data["freq"], "D")
+        self.assertEqual(plot_data["agents"],[])
+        self.assertEqual(plot_data["agent_states"],[])
+        self.assertEqual(plot_data["agent_properties"],[])
+        self.assertEqual(plot_data["agent_property_types"],[])
+        self.assertEqual(plot_data["series_names"]["testManager_1_stock"], "testStock")
+
+    def test_add_custom_plot(self):
+        def dummy_plot():
+            pass
+
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+
+        output = dashboard.add_custom_plot(dummy_plot)
+
+        self.assertIsInstance(output, widgets.Output)
+
+        self.assertEqual(len(dashboard.outputs), 1)
+        self.assertIs(dashboard.outputs[0]['plot_function'], dummy_plot)        
 
 if __name__ == '__main__':
     unittest.main()
