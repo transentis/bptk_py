@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from BPTK_Py import Model, bptk
 from BPTK_Py.scenariomanager.scenario import SimulationScenario
@@ -215,6 +215,22 @@ class TestSimpleDashboard(unittest.TestCase):
         output = new_stdout.getvalue()
 
         self.assertIn("Can't update plot data of a custom plot!", output) 
+
+    def test_update(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        dashboard.add_plot(
+            equations=["stock"], 
+            title="test", 
+            names=["testStock"], 
+            x_label="Time", 
+            y_label="Units", 
+            kind="line",
+            visualize_from_period=0,
+            visualize_to_period=5)
+
+        with patch('matplotlib.pyplot.show') as mock_show:
+            dashboard._update()
+            assert mock_show.called
 
 if __name__ == '__main__':
     unittest.main()
