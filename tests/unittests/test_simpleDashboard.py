@@ -174,7 +174,47 @@ class TestSimpleDashboard(unittest.TestCase):
         self.assertIsInstance(output, widgets.Output)
 
         self.assertEqual(len(dashboard.outputs), 1)
-        self.assertIs(dashboard.outputs[0]['plot_function'], dummy_plot)        
+        self.assertIs(dashboard.outputs[0]['plot_function'], dummy_plot)      
+
+    def test_update_plot_data(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        dashboard.add_plot(
+            equations=["stock"], 
+            title="test", 
+            names=["testStock"], 
+            x_label="Time", 
+            y_label="Units", 
+            kind="line",
+            visualize_from_period=0,
+            visualize_to_period=5)
+
+        dashboard.update_plot_data(attribute="visualize_from_period", value=1, plot=-1)
+        dashboard.update_plot_data(attribute="visualize_to_period",value=6, plot=0)
+
+        plot_data = dashboard.outputs[0]['data']
+        self.assertEqual(plot_data["visualize_from_period"], 1)
+        self.assertEqual(plot_data["visualize_to_period"], 6)
+
+    def test_update_plot_data_invalid(self):
+        def dummy_plot():
+            pass
+
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        dashboard.add_custom_plot(dummy_plot)
+
+        #Redirect the console output
+        import sys, io
+        old_stdout = sys.stdout
+        new_stdout = io.StringIO()
+        sys.stdout = new_stdout 
+
+        dashboard.update_plot_data(attribute="invalid", value="test", plot=0)
+
+        #Remove the redirection of the console output
+        sys.stdout = old_stdout
+        output = new_stdout.getvalue()
+
+        self.assertIn("Can't update plot data of a custom plot!", output) 
 
 if __name__ == '__main__':
     unittest.main()
