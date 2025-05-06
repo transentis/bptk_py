@@ -587,8 +587,10 @@ class AdditionOperator(BinaryOperator):
                 return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
-
+        e1_named = getattr(self.element_1, 'named_arrayed', False)
+        e2_named = getattr(self.element_2, 'named_arrayed', False)
+        return (e1_named or e2_named)
+    
     def clone_with_index(self, index):
         element_1 = self.element_1 if isinstance(
             self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
@@ -665,8 +667,9 @@ class SubtractionOperator(BinaryOperator):
                 return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
-
+        e1_named = getattr(self.element_1, 'named_arrayed', False)
+        e2_named = getattr(self.element_2, 'named_arrayed', False)
+        return (e1_named or e2_named)
 
 class DivisionOperator(BinaryOperator):
     def term(self, time="t"):
@@ -735,8 +738,10 @@ class DivisionOperator(BinaryOperator):
                 return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
-
+        e1_named = getattr(self.element_1, 'named_arrayed', False)
+        e2_named = getattr(self.element_2, 'named_arrayed', False)
+        return (e1_named or e2_named)
+    
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
         if self.arrayed:
@@ -847,7 +852,9 @@ class MultiplicationOperator(BinaryOperator):
                 return self.element_2._elements._element[name]._elements.equations[index[1]]
 
     def is_named(self):
-        return (self.element_1.named_arrayed or self.element_2.named_arrayed)
+        e1_named = getattr(self.element_1, 'named_arrayed', False)
+        e2_named = getattr(self.element_2, 'named_arrayed', False)
+        return (e1_named or e2_named)
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)

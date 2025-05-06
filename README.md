@@ -41,6 +41,12 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.0.1
+
+* added unittests
+* fixed typos for server output
+* enabled operations: not named vector and int/float
+
 ### 2.0.0
 
 * Support for multidimensional sddsl
