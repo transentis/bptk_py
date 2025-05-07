@@ -1,7 +1,10 @@
 import unittest
+from unittest.mock import patch, MagicMock
 
 from BPTK_Py import Model, bptk
 from BPTK_Py.visualizations.visualize import visualizer
+
+import pandas as pd
 
 class TestVisualizer(unittest.TestCase):
     def setUp(self):
@@ -41,8 +44,23 @@ class TestVisualizer(unittest.TestCase):
             scenario_manager = "testManager") 
 
     def test_plot(self):
-        ##return_df=false, not plot_data
+        ##start_date maintained
+        result = self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=2,
+            visualize_to_period=10,
+            start_date="01/01/2018",
+            return_df=True
+        )        
 
+        self.assertIsInstance(result.index, pd.DatetimeIndex)
+        self.assertEqual(result.index[0],pd.to_datetime("01/03/2018"))
+        self.assertEqual(result.index[1],pd.to_datetime("01/04/2018"))
+        self.assertEqual(result.index[7],pd.to_datetime("01/10/2018"))
+
+        ##return_df=false, not plot_data
         #Redirect the console output
         import sys, io
         old_stdout = sys.stdout
@@ -64,8 +82,18 @@ class TestVisualizer(unittest.TestCase):
         self.assertIn("[INFO] No data to plot for period t=2 to t=2", output)         
         self.assertIsNone(result)
 
-        ##return_df=true, not plot_data
+        ##return_df=false, visualize_to > len(df)
+        result = self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=2,
+            visualize_to_period=15
+        )
 
+        self.assertIsNone(result)
+
+        ##return_df=true, not plot_data
         #Redirect the console output
         old_stdout = sys.stdout
         new_stdout = io.StringIO()
@@ -86,6 +114,18 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertIn("[INFO] No data for period t=3 to t=3", output)         
         self.assertIsNone(result)
+
+        ##return_df=true, visualize_to > len(df)
+        result = self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=2,
+            visualize_to_period=15,
+            return_df=True
+        )
+
+        self.assertEqual(len(result),8)
 
 if __name__ == '__main__':
     unittest.main()
