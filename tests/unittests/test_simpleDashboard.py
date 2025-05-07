@@ -1,10 +1,10 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 from BPTK_Py import Model, bptk
 from BPTK_Py.scenariomanager.scenario import SimulationScenario
 
-from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget, SimpleDashboard
+from BPTK_Py.visualizations.simple_dashboard import ScenarioWidget, SimpleDashboard, ModelConnection
 
 import ipywidgets as widgets
 
@@ -118,7 +118,7 @@ class TestSimpleDashboard(unittest.TestCase):
                         }
                     }                    
                 }, 
-            scenario_manager = "testManager")
+            scenario_manager = "testManager") 
 
     def test_init(self):
         dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
@@ -217,8 +217,10 @@ class TestSimpleDashboard(unittest.TestCase):
         self.assertIn("Can't update plot data of a custom plot!", output) 
 
     def test_update(self):
-        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
-        dashboard.add_plot(
+        dashboard1 = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        widget = widgets.IntSlider(value=5)
+        dashboard1.add_widget(widget=widget, model_connection="constant")
+        dashboard1.add_plot(
             equations=["stock"], 
             title="test", 
             names=["testStock"], 
@@ -229,8 +231,79 @@ class TestSimpleDashboard(unittest.TestCase):
             visualize_to_period=5)
 
         with patch('matplotlib.pyplot.show') as mock_show:
-            dashboard._update()
+            dashboard1._update()
             assert mock_show.called
+
+        updated_scenario = self.testBptk.get_scenario("testManager", "1")
+        self.assertEqual(updated_scenario.constants["constant"],5)            
+
+        #plot function
+        dummy_plot = Mock()
+        dashboard2 = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        dashboard2.add_custom_plot(dummy_plot)
+
+        dashboard2._update()
+        dummy_plot.assert_called_once()
+
+    def test_start(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        dashboard.add_plot(
+            equations=["stock"], 
+            title="test", 
+            names=["testStock"], 
+            x_label="Time",
+            y_label="Units", 
+            kind="line",
+            visualize_from_period=0,
+            visualize_to_period=5)
+
+        with patch('matplotlib.pyplot.show') as mock_show:
+            dashboard.start()
+            assert mock_show.called
+
+    def test_add_widget(self):
+        dashboard = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+
+        widget = widgets.IntSlider()
+        dashboard.add_widget(widget=widget, model_connection="test")
+
+        self.assertEqual(len(dashboard.widget_array), 1)
+        scenario_widget = dashboard.widget_array[0]
+        self.assertIsInstance(scenario_widget, ScenarioWidget)
+        self.assertEqual(scenario_widget.element, "test")
+        self.assertEqual(scenario_widget.widget, widget)
+        self.assertEqual(scenario_widget.trigger, dashboard._update)
+
+    def test_add_model_widget(self):
+        #Callable
+        dashboard1 = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+        
+        widget = widgets.IntSlider()
+        dummy_callable = Mock()
+        dashboard1.add_widget(widget=widget,model_connection=dummy_callable)
+
+        self.assertEqual(len(dashboard1.widget_array), 1)
+        scenario_widget1 = dashboard1.widget_array[0]
+        self.assertIsInstance(scenario_widget1, ScenarioWidget)
+        self.assertIsNone(scenario_widget1.element)
+        self.assertEqual(scenario_widget1.widget, widget)
+        self.assertEqual(scenario_widget1.trigger, dashboard1._update)
+        self.assertEqual(scenario_widget1.pre_trigger, dummy_callable)
+
+        #ModelConnection
+        dashboard2 = SimpleDashboard(bptk=self.testBptk, scenario_manager="testManager", scenario="1")
+
+        model_conn = ModelConnection(element="test", points=[0, 1], multiply=2.0, call=dummy_callable)
+        dashboard2.add_widget(widget, model_conn)
+
+        self.assertEqual(len(dashboard2.widget_array), 1)
+        scenario_widget2 = dashboard2.widget_array[0]
+        self.assertIsInstance(scenario_widget2, ScenarioWidget)
+        self.assertEqual(scenario_widget2.element, model_conn.element)
+        self.assertEqual(scenario_widget2.points, model_conn.points)
+        self.assertEqual(scenario_widget2.multiply, model_conn.multiply)
+        self.assertEqual(scenario_widget2.pre_trigger, model_conn.call)
+        self.assertEqual(scenario_widget2.trigger, dashboard2._update)
 
 if __name__ == '__main__':
     unittest.main()
