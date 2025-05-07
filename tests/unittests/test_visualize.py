@@ -1,0 +1,91 @@
+import unittest
+
+from BPTK_Py import Model, bptk
+from BPTK_Py.visualizations.visualize import visualizer
+
+class TestVisualizer(unittest.TestCase):
+    def setUp(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='test')
+
+        stock = model.stock("stock")
+        flow = model.flow("flow")
+        constant = model.constant("constant")
+
+        stock.initial_value=0.0
+
+        stock.equation = flow
+        flow.equation = constant
+        constant.equation = 1.0
+
+        self.testBptk = bptk()
+        self.testBptk.register_scenario_manager({"testManager": {"model": model}})
+
+        self.testBptk.register_scenarios(
+            scenarios=
+                {
+                    "1":
+                    {
+                        "constants":
+                        {
+                            "constant":1.0
+                        }
+                    },
+                    "2":
+                    {
+                        "constants":
+                        {
+                            "constant":2.0
+                        }
+                    }                    
+                }, 
+            scenario_manager = "testManager") 
+
+    def test_plot(self):
+        ##return_df=false, not plot_data
+
+        #Redirect the console output
+        import sys, io
+        old_stdout = sys.stdout
+        new_stdout = io.StringIO()
+        sys.stdout = new_stdout 
+
+        result = self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=2,
+            visualize_to_period=2      
+        )
+
+        #Remove the redirection of the console output
+        sys.stdout = old_stdout
+        output = new_stdout.getvalue()
+
+        self.assertIn("[INFO] No data to plot for period t=2 to t=2", output)         
+        self.assertIsNone(result)
+
+        ##return_df=true, not plot_data
+
+        #Redirect the console output
+        old_stdout = sys.stdout
+        new_stdout = io.StringIO()
+        sys.stdout = new_stdout 
+
+        result = self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=2,
+            visualize_to_period=2,
+            return_df=True     
+        )
+
+        #Remove the redirection of the console output
+        sys.stdout = old_stdout
+        output = new_stdout.getvalue()
+
+        self.assertIn("[INFO] No data for period t=3 to t=3", output)         
+        self.assertIsNone(result)
+
+if __name__ == '__main__':
+    unittest.main()
