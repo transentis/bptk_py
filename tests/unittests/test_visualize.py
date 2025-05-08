@@ -5,6 +5,8 @@ from BPTK_Py import Model, bptk
 from BPTK_Py.visualizations.visualize import visualizer
 
 import pandas as pd
+import matplotlib.pyplot as plt
+import statistics
 
 class TestVisualizer(unittest.TestCase):
     def setUp(self):
@@ -37,7 +39,7 @@ class TestVisualizer(unittest.TestCase):
                     {
                         "constants":
                         {
-                            "constant":2.0
+                            "constant":100.0
                         }
                     }                    
                 }, 
@@ -126,6 +128,49 @@ class TestVisualizer(unittest.TestCase):
         )
 
         self.assertEqual(len(result),8)
+
+    def test_label_format(self):
+        # y_tick: mean <=2 
+        self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=0,
+            visualize_to_period=2
+        )
+
+        ax = plt.gca()
+        formatter = ax.yaxis.get_major_formatter()
+
+        self.assertEqual(formatter(1.2345,None),str(1.23))
+
+        # y_tick: 2<= mean <=10
+        self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["1"],
+            equations=["stock"],
+            visualize_from_period=0,
+            visualize_to_period=5
+        )
+
+        ax = plt.gca()
+        formatter = ax.yaxis.get_major_formatter()
+
+        self.assertEqual(formatter(1.2345,None),str(1.2))        
+
+        # y_tick: mean > 10
+        self.testBptk.plot_scenarios(
+            scenario_managers=["testManager"],
+            scenarios=["2"],
+            equations=["stock"],
+            visualize_from_period=0,
+            visualize_to_period=2
+        )
+
+        ax = plt.gca()
+        formatter = ax.yaxis.get_major_formatter()
+
+        self.assertEqual(formatter(1.2345,None),str(1))
 
 if __name__ == '__main__':
     unittest.main()
