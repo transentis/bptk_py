@@ -45,6 +45,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 * added unittests
 * fixed typos for server output
+* fixed issue with configurable file-path for bptk-object
 * enabled operations: not named vector and int/float
 
 ### 2.0.0
