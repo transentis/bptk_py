@@ -25,7 +25,7 @@ class visualizer():
         self.config = config
 
     def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
-             y_label, start_date="1/1/2018", freq="D", series_names={}):
+             y_label, start_date="1/1/2018", freq="D", series_names={},format="plot"):
         """
         Plot method. Creates plots from dataframes
         :param df: DataFrame input
@@ -41,7 +41,7 @@ class visualizer():
         :param start_date: Start date for time series
         :param freq: Frequency setting for time series
         :param series_names: series renaming patterns
-        :return: DataFrame or Matplotlib Subplot, depends on return_df flag
+        :return: depends on format flag: either just a plot, which formally returns nothing, or Matplotlib axes, or a dataframe
         """
 
         if not kind:
@@ -71,7 +71,7 @@ class visualizer():
             df.rename(columns=new_columns, inplace=True)
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
-        if not return_df:
+        if not (return_df or format=="df"):
 
             ### Get the plot object
             if visualize_to_period == 0:
@@ -109,10 +109,14 @@ class visualizer():
                 ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
 
             self.update_plot_formats(ax)
-            return
+
+            if format=="axes":
+                return ax
+            else:
+                return
 
         ### If user wanted a dataframe instead, here it is!
-        elif return_df:
+        elif return_df or format=="df":
             if visualize_to_period == 0:
                 return df.iloc[visualize_from_period:]
             elif visualize_from_period == visualize_to_period:

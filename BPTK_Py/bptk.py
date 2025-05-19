@@ -804,7 +804,8 @@ class bptk():
                        y_label="",
                        series_names={},
                        progress_bar=False,
-                       return_df=False
+                       return_df=False,
+                       format="plot"
                       ):
 
         """Plot scenarios for SD, ABM and hybrid models.
@@ -850,6 +851,8 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations).
             return_df: Boolean.
                 Set True if you want to receive a dataFrame instead of the plot
+            format: string
+                Can be either plot (default), axes (matplotlib axes object) or df (pandas dataframe)
 
         Returns:
             Dataframe with simulation results if return_df=True.
@@ -868,6 +871,7 @@ class bptk():
 
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
+                                    format=format,
                                     visualize_from_period=visualize_from_period,
                                     visualize_to_period=visualize_to_period,
                                     stacked=stacked,
