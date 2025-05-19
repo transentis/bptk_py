@@ -24,8 +24,6 @@ class TestLookupData(unittest.TestCase):
             "test3" : [ (0,0.2) , (3,0.8)]
         }
 
-        print(lookup_data(names="test1,test3,test4,test5", model=model))
-
         self.assertTrue(lookup_data(names="test1", model=model).equals(pd.DataFrame(data=[[0.0],[1.0]], columns=["test1"])))
         self.assertTrue(lookup_data(names="test1,test3,test4,test5", model=model).equals(pd.DataFrame(data=[[0.0, 0.2, 0.3],[1.0, np.nan, np.nan],[np.nan, 0.8, np.nan],[np.nan, np.nan, 0.7]], columns=["test1", "test3", "test4"], index=[0,1,3,4])))
 

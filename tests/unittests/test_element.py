@@ -6,6 +6,8 @@ from BPTK_Py.sddsl.element import Element, ElementError
 from BPTK_Py.sddsl.stock import Stock
 from BPTK_Py.sddsl.operators import ArrayedEquation
 
+import pandas as pd
+
 class TestElement(unittest.TestCase):
     def setUp(self):
         pass
@@ -187,6 +189,27 @@ class TestElement(unittest.TestCase):
         stock2.setup_vector(size=3,default_value=2.0,set_stack_equation=False)  
 
         self.assertRaises(Exception,stock1._handle_arrayed,equation=stock2)  
+
+    def testElement_plot(self):
+        model = Model(starttime = 0.0, stoptime= 5.0, dt= 1.0, name="TestModel")
+        
+        vector = model.constant("vector")
+        vector.setup_named_vector({"value1": 2.0, "value2": 3.0})
+
+        value = model.converter("value")
+        value.equation = 2.0
+
+        flow = model.flow("flow")
+        flow.equation = vector * value
+
+        result = model.stock("result1")
+        result.setup_named_vector({"value1": 1.0, "value2": 1.0})
+        result.equation = flow
+
+        dataframe = result.plot(starttime=0,stoptime=2,dt=1,return_df=True)
+
+        self.assertTrue(dataframe.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))
+        self.assertIsNone(result.plot(starttime=0,stoptime=2,dt=1,return_df=False))
 
 class TestElementError(unittest.TestCase):
     def setUp(self):

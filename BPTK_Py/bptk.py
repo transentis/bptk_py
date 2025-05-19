@@ -154,7 +154,15 @@ class bptk():
                 plt.rcParams[key] = value
 
         self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
-        self.scenario_manager_factory.get_scenario_managers()
+
+        import sys
+        from pathlib import Path
+        scenario_storage_path = Path(self.config.configuration["scenario_storage"]).resolve()
+        base_path = scenario_storage_path.parent
+        if str(base_path) not in sys.path:
+            sys.path.append(str(base_path))
+        self.scenario_manager_factory.get_scenario_managers(path=self.config.configuration["scenario_storage"]) 
+
         self.visualizer = visualizer(config=self.config)
         self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed
         self.session_state = None
