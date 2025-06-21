@@ -6,21 +6,21 @@ build-backend = "setuptools.build_meta"
 name = "bptk-py"
 dynamic = ["version"]
 dependencies = [
-"pandas==2.2.3",
-"matplotlib==3.9.2",
-"scipy==1.14.1",
-"numpy==2.1.2",
-"ipywidgets==8.1.5",
-"xlsxwriter==3.1.9",
+"pandas==2.3.0",
+"matplotlib==3.10.3",
+"scipy==1.15.3",
+"numpy==2.3.1",
+"ipywidgets==8.1.7",
+"xlsxwriter==3.2.5",
 "parsimonious==0.10.0",
 "xmltodict==0.12.0",
-"jinja2==3.1.4",
-"sympy==1.13.3",
-"distlib==0.3.8",
-"cachetools==5.5.0",
-"requests==2.32.0",
-"flask==3.0.3",
-"jsonpickle==3.0.2"
+"jinja2==3.1.6",
+"sympy==1.14.0",
+"distlib==0.3.9",
+"cachetools==6.1.0",
+"requests==2.32.4",
+"flask==3.1.1",
+"jsonpickle==4.1.1"
 
 ]
 requires-python = ">=3.11"

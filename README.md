@@ -41,12 +41,17 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
-### 2.0.1
+### 2.1.1
 
-* added unittests
-* fixed typos for server output
-* enabled operations: not named vector and int/float
-* fixed issue with configurable file-path for bptk-object
+* Update dependencies
+
+### 2.1.0
+
+* extend plot_scenario to accept a format parameter
+* add unittests
+* fix typos for server output
+* enabl operations: not named vector and int/float
+* fix issue with configurable file-path for bptk-object
 
 ### 2.0.0
 
@@ -54,9 +59,9 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 1.9.6
 
-* Enabled modulo operation for sddsl-elements
-* removed unnecessary code
-* added unittests/pytests 
+* Enable modulo operation for sddsl-elements
+* remove unnecessary code
+* add unittests/pytests 
 
 ### 1.9.5
 
