@@ -1,7 +1,7 @@
 import unittest
 import sys
 import importlib
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import BPTK_Py.logger.logfire_adapter as lf_adapter
 
@@ -27,7 +27,7 @@ class TestLogfireAdapter(unittest.TestCase):
             adapter = lf_adapter.LogfireAdapter(**config)
             mock_configure.assert_called_once_with(**config)
 
-    def test_logfire_not_available_sets_flag_and_raises(self):
+    def test_logfire_not_available(self):
         # Patch sys.modules, such that import logfire failes
         with patch.dict('sys.modules', {'logfire': None}):
             # Remove the module from Cache, such that reload works
@@ -38,8 +38,47 @@ class TestLogfireAdapter(unittest.TestCase):
             # Check that it worked
             self.assertFalse(lf_adapter.LOGFIRE_AVAILABLE)
             # Check the ImportError
-            with self.assertRaises(ImportError):
+            with self.assertRaises(ImportError) as cm:
                 lf_adapter.LogfireAdapter()
+            self.assertIn("Logfire is not installed", str(cm.exception))
+            self.assertIn("Please install it with: pip install logfire", str(cm.exception))
+
+    @patch("BPTK_Py.logger.logfire_adapter.logfire")
+    def test_logging(self, mock_logfire):
+        config = {
+            "environment": "test",
+            "send_to_logfire": False
+        }
+        
+        adapter = lf_adapter.LogfireAdapter(**config)
+
+        adapter.configured = False  # Force re-configuration for testing
+
+        #Testing INFO-level
+        adapter.log("[INFO] Info Message")
+        mock_logfire.info.assert_called_once_with("Info Message")   
+        self.assertTrue(adapter.configured)
+
+        # Reset the mock for the next call
+        mock_logfire.info.reset_mock()
+
+        #Testing WARN-level
+        adapter.log("[WARN] Warning Message")
+        mock_logfire.warn.assert_called_once_with("Warning Message")   
+
+        # Reset the mock for the next call
+        mock_logfire.info.reset_mock()
+
+        #Testing ERROR-level
+        adapter.log("[ERROR] Error Message")
+        mock_logfire.error.assert_called_once_with("Error Message")   
+
+        # Reset the mock for the next call
+        mock_logfire.info.reset_mock()
+
+        #Testing logging of json
+        adapter.log("{\"key\": \"value\"}")
+        mock_logfire.info.assert_called_once_with('{{"key": "value"}}')
 
 if __name__ == '__main__':
     unittest.main()
