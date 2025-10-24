@@ -3,3 +3,4 @@ pytest-cov
 python-dotenv
 psycopg[binary]
 redis
+logfire
