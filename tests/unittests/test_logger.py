@@ -303,7 +303,8 @@ class Test_FallbackSpan(unittest.TestCase):
 
         logmod.loglevel = "INFO" 
 
-        span = logmod.FallbackSpan("my_span")
+        span_name = "myspan"
+        span = logmod.FallbackSpan(span_name)
 
         # __enter__ is not called!
         span.__exit__(None, None, None)
@@ -314,7 +315,7 @@ class Test_FallbackSpan(unittest.TestCase):
         except FileNotFoundError:
             self.fail()
 
-        self.assertIn(f"[INFO] SPAN_END: {"my_span"}", content)
+        self.assertIn(f"[INFO] SPAN_END: {span_name}", content)
         for line in content.splitlines():
             if f"[INFO] SPAN_END: my_span" in line:
                 self.assertNotIn("duration", line)
