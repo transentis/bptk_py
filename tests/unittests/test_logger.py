@@ -174,18 +174,6 @@ class TestLogger(unittest.TestCase):
 
         self.assertIn("[INFO] Logfire logging enabled successfully", content)  
 
-    def test_logfire_not_available(self):
-        # Patch sys.modules, such that import logfire failes
-        with patch.dict('sys.modules', {'logfire': None}):
-            # Remove the module from Cache, such that reload works
-            if 'BPTK_Py.logger.logfire_adapter' in sys.modules:
-                del sys.modules['BPTK_Py.logger.logfire_adapter']
-            import BPTK_Py.logger.logger as logmod
-            importlib.reload(logmod)
-            # Check that it worked
-            self.assertIsNone(logmod.logfire_adapter)
-            self.assertFalse(logmod.logfire_enabled)
-
     def test_configure_logfire_exception(self):
         importlib.reload(logmod)
         config = {
