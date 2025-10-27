@@ -1,6 +1,6 @@
 import unittest
 
-from BPTK_Py.util.statecompression import compress_settings, decompress_settings
+from BPTK_Py.util.statecompression import compress_settings, decompress_settings, _compress_time_series_data, _decompress_time_series_data, _is_compressed_time_series_data
 
 class TestStateCompression(unittest.TestCase):
     def setUp(self):
@@ -83,6 +83,75 @@ class TestStateCompression(unittest.TestCase):
  
         self.assertEqual(decompress_settings(return_value)["1.0"],settings["1"])
         self.assertEqual(decompress_settings(return_value)["2.0"],settings["2"])
+
+    def testStateCompression_compress_decompress_time_series_data(self):
+        self.assertEqual(_compress_time_series_data(data={}), {})
+
+        data1 = {
+            "1.0": {
+                "var1": 100
+            },
+            "2.0": {
+                "var1": 110
+            },
+            "3.0": {
+                "var1": 120
+            }
+        }
+        data2 = {
+            "1.0": {
+                "var1": 10,
+                "var2": 20
+            },
+            "2.0": {
+                "var1": 11,
+                "var2": 21,
+                "var3": 33
+            },
+            "3.0": {
+                "var1": 12,
+                "var2": 22
+            },
+            "4.0": [13,23]
+        }
+
+        result1 = _compress_time_series_data(data1)
+        result2 = _compress_time_series_data(data2)
+
+        self.assertEqual(result1, {"var1": [100, 110, 120]})
+        self.assertEqual(result2, {"var1": [10, 11, 12], "var2": [20, 21, 22], "var3": [33], })
+
+        self.assertEqual(_decompress_time_series_data(compressed_data={}), {})
+        self.assertEqual(_decompress_time_series_data(compressed_data=result1), data1)
+        self.assertEqual(_decompress_time_series_data(
+            compressed_data={"var1": [10, 11, 12], "var2": [20, 21, 22]}), 
+            {
+                "1.0": {
+                    "var1": 10,
+                    "var2": 20
+                },
+                "2.0": {
+                    "var1": 11,
+                    "var2": 21
+                },
+                "3.0": {
+                    "var1": 12,
+                    "var2": 22
+                }
+            })
+        self.assertEqual(_decompress_time_series_data({"var1":41}),{"1.0": {"var1":41}})
+
+    def testStateCompression_is_compressed_time_series_data(self):
+        #wrong types
+        self.assertFalse(_is_compressed_time_series_data (data=None))
+        self.assertFalse(_is_compressed_time_series_data(data=1))
+        self.assertFalse(_is_compressed_time_series_data(data="list"))
+        self.assertFalse(_is_compressed_time_series_data(data=[]))
+        #empty dict
+        self.assertFalse(_is_compressed_time_series_data(data={}))
+        #correct compressed data
+        self.assertTrue(_is_compressed_time_series_data(data={"var1":[1,2,3]}))
+
 
 if __name__ == '__main__':
     unittest.main()      
