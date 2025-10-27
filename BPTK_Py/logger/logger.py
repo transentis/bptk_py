@@ -52,8 +52,8 @@ def configure_logfire(**logfire_config):
     if not LOGFIRE_AVAILABLE:
         if "logfile" in logmodes:
             with open(logfile, "a", encoding="UTF-8") as myfile:
-                myfile.write(f"{datetime.datetime.now()}, [WARN] Pydantic Logfire is not installed. "
-                           "Install with: pip install pydantic-logfire\n")
+                myfile.write(f"{datetime.datetime.now()}, [WARN] Logfire is not installed. "
+                           "Install with: pip install logfire\n")
         return False
 
     try:
