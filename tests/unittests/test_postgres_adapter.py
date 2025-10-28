@@ -1,5 +1,5 @@
-import unittest, importlib, datetime, jsonpickle
-import BPTK_Py.logger.logger as logmod
+import unittest, importlib, datetime, jsonpickle, psycopg
+from unittest.mock import MagicMock
 
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
@@ -88,10 +88,8 @@ class FakePG:
 
 class TestPostgresAdapter(unittest.TestCase):
     def setUp(self):
-        # Logger frisch setzen
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
-        # Logfile bereitstellen/leeren
         with open(logmod.logfile, "w", encoding="UTF-8"):
             pass
 
@@ -109,10 +107,95 @@ class TestPostgresAdapter(unittest.TestCase):
     def test_load_instance_not_found(self):
         inst = self.adapter._load_instance("does-not-exist")
         self.assertIsNone(inst)
-        # optional: Log prüfen
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
         self.assertIn("No data found in PostgreSQL for instance does-not-exist", content)        
+
+    def test_load_instance_found(self):
+        instance_id = "abc-123"
+        fake_state = {"test": "value"}
+        fake_time = datetime.datetime(2024, 5, 6, 7, 8, 9, 123456)
+        fake_timeout = {
+            "weeks": 1, "days": 2, "hours": 3, "minutes": 4,
+            "seconds": 5, "milliseconds": 6, "microseconds": 7
+        }
+        fake_step = 42
+
+        inst_expected = InstanceState(
+            state=fake_state,
+            instance_id=instance_id,
+            time=fake_time,
+            timeout=fake_timeout,
+            step=fake_step,
+        )
+
+        self.client._store[instance_id] = _instance_to_row(inst_expected)
+
+        # Load instance
+        inst = self.adapter._load_instance(instance_id)
+
+        self.assertIsInstance(inst, InstanceState)
+
+        self.assertEqual(inst.instance_id, instance_id)
+        self.assertEqual(inst.state, fake_state)               
+        self.assertEqual(inst.step, fake_step)
+        self.assertEqual(inst.timeout, fake_timeout)           
+        self.assertEqual(inst.time, fake_time)                 
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Data retrieved from PostgreSQL for instance {instance_id}", content)
+        self.assertIn(f"Instance {instance_id} loaded successfully from PostgreSQL", content)
+
+    def test_load_instance_exception(self):
+        # Mock-Client such that it Cursor.execute raises an exception
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__.return_value = mock_cursor
+        mock_cursor.execute.side_effect = psycopg.Error("Simulated DB failure")
+
+        mock_client = MagicMock()
+        mock_client.cursor.return_value = mock_cursor
+
+        adapter = PostgresAdapter(mock_client, compress=False)
+
+        with self.assertRaises(psycopg.Error):
+            adapter._load_instance("broken-id")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+
+        self.assertIn("Failed to load instance broken-id", content)
+        self.assertIn("Simulated DB failure", content)
+
+    def test_delete_instance(self):
+        instance_id = "delete_this"
+        fake_state = {"delete_test": "delete_value"}
+        fake_time = datetime.datetime(2024, 1, 1, 12, 0, 0, 0)
+        fake_timeout = {
+            "weeks": 0, "days": 0, "hours": 0, "minutes": 0,
+            "seconds": 0, "milliseconds": 0, "microseconds": 0
+        }
+        fake_step = 1
+
+        inst = InstanceState(
+            state=fake_state,
+            instance_id=instance_id,
+            time=fake_time,
+            timeout=fake_timeout,
+            step=fake_step,
+        )
+
+        self.client._store[instance_id] = _instance_to_row(inst)
+
+        # Delete instance
+        inst = self.adapter.delete_instance(instance_id)        
+
+        self.assertNotIn(instance_id, self.client._store)
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Deleting instance {instance_id} from PostgreSQL", content)
+        self.assertIn(f"Instance {instance_id} deleted successfully from PostgreSQL", content)
+
 
 if __name__ == '__main__':
     unittest.main()         
