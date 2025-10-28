@@ -196,6 +196,54 @@ class TestPostgresAdapter(unittest.TestCase):
         self.assertIn(f"Deleting instance {instance_id} from PostgreSQL", content)
         self.assertIn(f"Instance {instance_id} deleted successfully from PostgreSQL", content)
 
+    def test_delete_instance_exception(self):
+        # Mock-Client such that it Cursor.execute raises an exception
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__.return_value = mock_cursor
+        mock_cursor.execute.side_effect = psycopg.Error("Simulated DB failure")
+
+        mock_client = MagicMock()
+        mock_client.cursor.return_value = mock_cursor
+
+        adapter = PostgresAdapter(mock_client, compress=False)
+
+        with self.assertRaises(psycopg.Error):
+            adapter.delete_instance("broken-id")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+
+        self.assertIn("Deleting instance broken-id from PostgreSQL", content)
+        self.assertIn("Failed to delete instance broken-id from PostgreSQL: Simulated DB failure", content)
+
+    def test_save_instance(self):
+        instance_id = "insert-this"
+        fake_state = {"x": 1, "y": 2}
+        fake_time = datetime.datetime(1999, 1, 1, 12, 1, 2, 3)
+        fake_timeout = {
+            "weeks": 0, "days": 0, "hours": 1, "minutes": 2,
+            "seconds": 3, "milliseconds": 4, "microseconds": 5
+        }
+
+        inst = InstanceState(
+            state=fake_state,
+            instance_id=instance_id,
+            time=fake_time,
+            timeout=fake_timeout,
+            step=0
+        )
+
+        self.adapter._save_instance(inst)
+
+        self.assertIn(instance_id, self.client._store)
+        stored_row = self.client._store[instance_id]
+        expected_row = _instance_to_row(inst)
+        self.assertEqual(stored_row, expected_row)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Inserting new instance {instance_id} into PostgreSQL", content)
+        self.assertIn(f"Instance {instance_id} inserted successfully into PostgreSQL", content)
 
 if __name__ == '__main__':
     unittest.main()         
