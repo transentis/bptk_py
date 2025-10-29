@@ -34,7 +34,9 @@ class TestRedisAdapter(unittest.TestCase):
         self.mock_redis = MagicMock(spec=redis.Redis)
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
-
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        
     def test_init(self):
         adapter1 = RedisAdapter(redis_client=self.mock_redis)
         adapter2 = RedisAdapter(redis_client=self.mock_redis, key_prefix="custom:prefix", compress=False)
