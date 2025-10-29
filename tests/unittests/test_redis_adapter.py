@@ -56,7 +56,7 @@ class TestRedisAdapter(unittest.TestCase):
         key = adapter._get_instance_key("instance123")
         self.assertEqual(key, "testprefix:instance123")
 
-    def test_load_instance(self):
+    def test__load_instance(self):
         #load existing instance
         instance_id = "abc123"
         fake_state = {"a": 1, "b": 2}
@@ -77,7 +77,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.mock_redis.get.return_value = redis_value        
 
         self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testprefix")
-        result = self.adapter.load_instance(instance_id)
+        result = self.adapter._load_instance(instance_id)
 
         self.assertIsInstance(result, InstanceState)
         self.assertEqual(result.instance_id, instance_id)
@@ -131,6 +131,164 @@ class TestRedisAdapter(unittest.TestCase):
             content = f.read()
         self.assertIn("Loading instance test_exception from Redis key: testprefix:test_exception", content)     
         self.assertIn("Unexpected error loading instance test_exception from Redis", content)
+
+    def test_load_instance(self):
+        instance_id = "test123abc"
+        fake_state = {
+            "scenario_cache": {
+                "1.0": {"result": 10},
+                "2": {"result": 20},
+                "nested": {"2.5": {"ok": True}} 
+            },
+            "unchanged": "keep"
+        }
+        fake_time = datetime.datetime(2023, 3, 4, 5, 6, 7)
+        fake_timeout = {"weeks": 1, "days": 1, "hours": 1, "minutes": 1, "seconds": 1,
+                        "milliseconds": 1, "microseconds": 1}
+        fake_step = 1
+
+        redis_value = jsonpickle.encode({
+            "state": jsonpickle.encode(fake_state),
+            "instance_id": instance_id,
+            "time": fake_time.isoformat(),
+            "timeout": fake_timeout,
+            "step": fake_step
+        }, make_refs=False)
+
+        self.mock_redis.get.return_value = redis_value        
+
+        self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="tprefix")
+        result = self.adapter.load_instance(instance_id)
+
+        self.assertEqual(result.state,{
+            "scenario_cache": {
+                1.0: {"result": 10},
+                2: {"result": 20},
+                "nested": {2.5: {"ok": True}} 
+            },
+            "unchanged": "keep"
+        })
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Restoring numeric keys in scenario_cache for instance test123abc", content)     
+        self.assertIn("Numeric keys restored for instance test123abc", content)
+
+    def test__save_instance(self):
+        #regular
+        inst = InstanceState(
+            state={"x": 1, "y": [2, 3]},
+            instance_id="test_save",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={"weeks": 1, "days": 1, "hours": 1, "minutes": 1,
+                     "seconds": 1, "milliseconds": 1, "microseconds": 1},
+            step=4
+        )
+
+        self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testtest")
+        self.adapter._save_instance(inst)        
+
+        key, redis_data = self.mock_redis.set.call_args[0]
+
+        self.assertEqual(key, "testtest:test_save")
+        self.assertEqual(redis_data, jsonpickle.encode({
+            "state": jsonpickle.encode(inst.state, make_refs=False),
+            "instance_id": inst.instance_id,
+            "time": inst.time.isoformat(),
+            "timeout": inst.timeout,
+            "step": inst.step
+        }, make_refs=False))
+
+        key, timoutSeconds = self.mock_redis.expire.call_args[0]
+
+        self.assertEqual(key, "testtest:test_save")
+        self.assertEqual(timoutSeconds,(1*7*24*3600)+(1*24*3600)+(1*3600)+(1*60)+1)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("_save_instance called for instance test_save", content)     
+        self.assertIn("Preparing data for Redis storage for instance test_save", content)
+        self.assertIn("Storing instance test_save to Redis key: testtest:test_save", content)
+        self.assertIn("Instance test_save stored successfully in Redis", content)
+        self.assertIn("Setting TTL for instance test_save based on timeout", content)
+        self.assertIn(f"TTL set to {timoutSeconds} seconds for instance test_save", content)
+
+        #Instance_state: Id is None
+        inst_wo_id = InstanceState(
+            state={"x": 1, "y": [2, 3]},
+            instance_id=None,
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={"weeks": 1, "days": 1, "hours": 1, "minutes": 1,
+                     "seconds": 1, "milliseconds": 1, "microseconds": 1},
+            step=4
+        )
+
+        self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testtest")
+        self.adapter._save_instance(inst_wo_id)     
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Cannot save instance: instance_state or instance_id is None", content)  
+
+        #Exception (simulated client failure)
+        self.mock_redis.set.side_effect = RuntimeError("simulated client failure")
+
+        with self.assertRaises(RuntimeError):
+            self.adapter._save_instance(inst)  
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Error saving instance test_save to Redis", content)  
+
+    def test_save_instance(self):
+        inst = InstanceState(
+            state={"x": 1, "y": [2, 3]},
+            instance_id="test_save123",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={"weeks": 1, "days": 1, "hours": 1, "minutes": 1,
+                     "seconds": 1, "milliseconds": 1, "microseconds": 1},
+            step=4
+        )
+
+        self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testtest")
+        self.adapter.save_instance(inst)        
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("RedisAdapter saving instance test_save123", content) 
+
+    def test_delete_instance(self):
+        #successful delete
+        self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="test_delete")
+        self.mock_redis.delete.return_value = 1  
+
+        self.adapter.delete_instance("abc123")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Deleting instance abc123 from Redis key: test_delete:abc123", content)
+        self.assertIn("Instance abc123 deleted successfully from Redis", content)
+
+        #entry does not exist
+        self.mock_redis.delete.return_value = 0
+
+        self.adapter.delete_instance("def456")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Deleting instance def456 from Redis key: test_delete:def456", content)
+        self.assertIn("Instance def456 not found in Redis", content)
+
+        #Exception (simulated client failure)
+        self.mock_redis.delete.side_effect = RuntimeError("simulated client failure")
+
+        with self.assertRaises(RuntimeError):
+            self.adapter.delete_instance("ghi789") 
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Deleting instance ghi789 from Redis key: test_delete:ghi789", content)
+        self.assertIn("Failed to delete instance ghi789 from Redis", content)
 
 if __name__ == '__main__':
     unittest.main()         
