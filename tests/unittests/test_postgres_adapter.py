@@ -217,6 +217,7 @@ class TestPostgresAdapter(unittest.TestCase):
         self.assertIn("Failed to delete instance broken-id from PostgreSQL: Simulated DB failure", content)
 
     def test_save_instance(self):
+        #Insert new instance
         instance_id = "insert-this"
         fake_state = {"x": 1, "y": 2}
         fake_time = datetime.datetime(1999, 1, 1, 12, 1, 2, 3)
@@ -244,6 +245,98 @@ class TestPostgresAdapter(unittest.TestCase):
             content = f.read()
         self.assertIn(f"Inserting new instance {instance_id} into PostgreSQL", content)
         self.assertIn(f"Instance {instance_id} inserted successfully into PostgreSQL", content)
+
+        #update existing instance
+        fake_state2 = {"x": 11, "y": 21}
+        fake_time2 = datetime.datetime(2015, 2, 3, 4, 5, 6, 7)
+        fake_timeout2 = {
+            "weeks": 1, "days": 2, "hours": 3, "minutes": 4,
+            "seconds": 5, "milliseconds": 6, "microseconds": 7
+        }
+
+        inst2 = InstanceState(
+            state=fake_state2,
+            instance_id=instance_id,
+            time=fake_time2,
+            timeout=fake_timeout2,
+            step=1
+        )
+
+        self.adapter._save_instance(inst2)
+
+        self.assertIn(instance_id, self.client._store)
+        stored_row = self.client._store[instance_id]
+        expected_row = _instance_to_row(inst2)
+        self.assertEqual(stored_row, expected_row)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Updating existing instance {instance_id} in PostgreSQL", content)
+        self.assertIn(f"Instance {instance_id} updated successfully in PostgreSQL", content)
+
+        #no update needed
+        fake_state3 = {"x": 12, "y": 22}
+        fake_time3 = datetime.datetime(2016, 3, 4, 5, 6, 7, 8)
+        fake_timeout3 = {
+            "weeks": 2, "days": 3, "hours": 4, "minutes": 5,
+            "seconds": 6, "milliseconds": 7, "microseconds": 8
+        }
+
+        inst3 = InstanceState(
+            state=fake_state3,
+            instance_id=instance_id,
+            time=fake_time3,
+            timeout=fake_timeout3,
+            step=1
+        )
+
+        self.adapter._save_instance(inst3)
+
+        self.assertIn(instance_id, self.client._store)
+        stored_row = self.client._store[instance_id]
+        expected_row = _instance_to_row(inst2)
+        self.assertEqual(stored_row, expected_row)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Instance {instance_id} already up to date in PostgreSQL", content)        
+
+    def test_save_instance_exception(self):
+        # Mock-Client such that it Cursor.execute raises an exception
+        mock_cursor = MagicMock()
+        mock_cursor.__enter__.return_value = mock_cursor
+        mock_cursor.execute.side_effect = psycopg.Error("Simulated DB failure")
+
+        mock_client = MagicMock()
+        mock_client.cursor.return_value = mock_cursor
+
+        #Insert new instance
+        instance_id = "test-exception"
+        fake_state = {"x": 1, "y": 2}
+        fake_time = datetime.datetime(1999, 1, 1, 12, 1, 2, 3)
+        fake_timeout = {
+            "weeks": 0, "days": 0, "hours": 1, "minutes": 2,
+            "seconds": 3, "milliseconds": 4, "microseconds": 5
+        }
+
+        inst = InstanceState(
+            state=fake_state,
+            instance_id=instance_id,
+            time=fake_time,
+            timeout=fake_timeout,
+            step=0
+        )
+
+        self.adapter._postgres_client = mock_client
+
+        with self.assertRaises(psycopg.Error):
+            self.adapter._save_instance(inst)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+
+        self.assertIn("Saving instance test-exception to PostgreSQL", content)
+        self.assertIn("Failed to save instance test-exception to PostgreSQL: Simulated DB failure", content)
 
 if __name__ == '__main__':
     unittest.main()         
