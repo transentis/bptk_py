@@ -3,6 +3,34 @@ from unittest.mock import patch
 
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import ExternalStateAdapter, InstanceState
+from contextlib import contextmanager
+from importlib.abc import MetaPathFinder
+
+
+@contextmanager
+def fail_import(module_name: str):
+    """Make importing `module_name` raise ImportError inside the with-block."""
+    class _FailingFinder(MetaPathFinder):
+        def find_spec(self, fullname, path=None, target=None):
+            # match exakt oder via endswith je nach Aufruf
+            if fullname == module_name or fullname.endswith(module_name):
+                raise ImportError(f"Simulated ImportError for {fullname}")
+            return None
+
+    finder = _FailingFinder()
+    sys.meta_path.insert(0, finder)
+    # sicherstellen, dass ein vorher geladenes Submodul nicht verwendet wird
+    sys.modules.pop(module_name, None)
+    try:
+        yield
+    finally:
+        # Finder wieder entfernen
+        try:
+            sys.meta_path.remove(finder)
+        except ValueError:
+            pass
+        # evtl. Reste entfernen
+        sys.modules.pop(module_name, None)
 
 class TestableExternalStateAdapter(ExternalStateAdapter):
     def __init__(self, compress):
@@ -111,6 +139,36 @@ class TestExternalStateAdapter(unittest.TestCase):
             content = f.read()
         self.assertIn("Loading instance test_exception", content)       
         self.assertIn("Failed to load instance test_exception", content)
+
+    def test_postgres_adapter_importerror(self):
+        target_pkg = "BPTK_Py.externalstateadapter"
+        submodule = f"{target_pkg}.postgres_adapter"
+
+        with fail_import(submodule):
+            pkg = importlib.import_module(f"{target_pkg}.__init__")
+            importlib.reload(pkg)
+
+            with self.assertRaises(ImportError) as cm:
+                pkg.PostgresAdapter()  # oder mit args, spielt keine Rolle
+
+            msg = str(cm.exception)
+            self.assertIn("PostgresAdapter requires 'psycopg' to be installed", msg)
+            self.assertIn("Install it with: pip install psycopg[binary]", msg)
+
+    def test_redis_adapter_importerror(self):
+        target_pkg = "BPTK_Py.externalstateadapter"
+        submodule = f"{target_pkg}.redis_adapter"
+
+        with fail_import(submodule):
+            pkg = importlib.import_module(f"{target_pkg}.__init__")
+            importlib.reload(pkg)
+
+            with self.assertRaises(ImportError) as cm:
+                pkg.RedisAdapter()
+
+            msg = str(cm.exception)
+            self.assertIn("RedisAdapter requires 'redis' to be installed", msg)
+            self.assertIn("Install it with: pip install redis", msg)
 
 if __name__ == '__main__':
     unittest.main()            
