@@ -130,7 +130,6 @@ class TestFileAdapter(unittest.TestCase):
         self.assertIsInstance(loaded_inst, list)
         for instance in loaded_inst:
             self.assertIsInstance(instance,InstanceState)
-            print(instance.state)
         
         tmpdir.cleanup()
 
