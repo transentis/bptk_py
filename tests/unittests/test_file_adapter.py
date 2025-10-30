@@ -125,9 +125,12 @@ class TestFileAdapter(unittest.TestCase):
         fileAdapter._save_instance(state=inst)
 
         #load instance
-        loaded_inst = fileAdapter._load_instance(instance_uuid=instance_id)
+        loaded_inst = fileAdapter._load_state()
 
-        self.assertIsInstance(loaded_inst,InstanceState)
+        self.assertIsInstance(loaded_inst, list)
+        for instance in loaded_inst:
+            self.assertIsInstance(instance,InstanceState)
+            print(instance.state)
         
         tmpdir.cleanup()
 
