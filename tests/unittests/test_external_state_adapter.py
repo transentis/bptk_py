@@ -1,4 +1,5 @@
 import unittest, sys, io, datetime, importlib
+from unittest.mock import patch
 
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import ExternalStateAdapter, InstanceState
@@ -70,6 +71,46 @@ class TestExternalStateAdapter(unittest.TestCase):
         self.assertIn("State compression completed for instance test_save", content)  
         self.assertIn("Instance test_save saved successfully", content) 
 
+    def test_save_instance_exception(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
+        instanceState = InstanceState(
+            state={"settings_log": {}, "results_log": {}},
+            instance_id="test_exception",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={},
+            step=1
+        )
+
+        with patch.object(externalStateAdapter, "_save_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.save_instance(instanceState)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("[ERROR] Failed to save instance test_exception", content)
+
+    def test_load_instance_empty(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)  
+
+        state =externalStateAdapter.load_instance("test_empty")
+        
+        self.assertIsNone(state)
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Loading instance test_empty", content)     
+        self.assertIn("No state found for instance test_empty", content)
+
+    def test_load_instance_exception(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
+
+        with patch.object(externalStateAdapter, "_load_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.load_instance("test_exception")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Loading instance test_exception", content)       
+        self.assertIn("Failed to load instance test_exception", content)
 
 if __name__ == '__main__':
     unittest.main()            

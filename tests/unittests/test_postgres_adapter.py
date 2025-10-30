@@ -1,6 +1,7 @@
 import unittest, importlib, datetime, jsonpickle, psycopg
 from unittest.mock import MagicMock
 
+from BPTK_Py.util.statecompression import compress_settings, compress_results, decompress_results, decompress_settings
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
 from BPTK_Py.externalstateadapter.postgres_adapter import PostgresAdapter
@@ -104,14 +105,14 @@ class TestPostgresAdapter(unittest.TestCase):
             content = f.read()
         self.assertIn("[INFO] PostgresAdapter initialized with compression: True", content)
 
-    def test_load_instance_not_found(self):
+    def test__load_instance_not_found(self):
         inst = self.adapter._load_instance("does-not-exist")
         self.assertIsNone(inst)
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
         self.assertIn("No data found in PostgreSQL for instance does-not-exist", content)        
 
-    def test_load_instance_found(self):
+    def test__load_instance_found(self):
         instance_id = "abc-123"
         fake_state = {"test": "value"}
         fake_time = datetime.datetime(2024, 5, 6, 7, 8, 9, 123456)
@@ -126,7 +127,7 @@ class TestPostgresAdapter(unittest.TestCase):
             instance_id=instance_id,
             time=fake_time,
             timeout=fake_timeout,
-            step=fake_step,
+            step=fake_step
         )
 
         self.client._store[instance_id] = _instance_to_row(inst_expected)
@@ -147,7 +148,59 @@ class TestPostgresAdapter(unittest.TestCase):
         self.assertIn(f"Data retrieved from PostgreSQL for instance {instance_id}", content)
         self.assertIn(f"Instance {instance_id} loaded successfully from PostgreSQL", content)
 
-    def test_load_instance_exception(self):
+    def test_load_instance(self):
+        instance_id = "testtesttest"
+        original_settings_log = {
+            0: {"scenarioManager": {"scenario": {"constants": {"value1": 1, "value2": 2}}}},
+            1: {"scenarioManager": {"scenario": {"constants": {"value1": 3, "value2": 4}}}},
+        }
+        original_results_log = {
+            1: {"scenarioManager": {"scenario": {"value3": {1: 11}, "value4": {1: 12}}}},
+            2: {"scenarioManager": {"scenario": {"value3": {2: 21}, "value4": {2: 22}}}},
+        }
+        original_scenario_cache = {
+            "1": {"scenarioManager": {"scenario": {"flow1": {"1": 31}, "flow2": {"1": 32}}}},
+            "2": {"scenarioManager": {"scenario": {"flow1": {"2": 41}, "flow2": {"2": 42}}}},
+        }        
+        fake_state = {
+            "settings_log": compress_settings(original_settings_log),
+            "results_log": compress_results(original_results_log), 
+            "scenario_cache": original_scenario_cache
+        }
+        fake_time = datetime.datetime(2024, 5, 6, 7, 8, 9, 123456)
+        fake_timeout = {
+            "weeks": 1, "days": 2, "hours": 3, "minutes": 4,
+            "seconds": 5, "milliseconds": 6, "microseconds": 7
+        }
+        fake_step = 1
+
+        inst_expected = InstanceState(
+            state=fake_state,
+            instance_id=instance_id,
+            time=fake_time,
+            timeout=fake_timeout,
+            step=fake_step
+        )
+
+        self.client._store[instance_id] = _instance_to_row(inst_expected)
+
+        # Load instance
+        state = self.adapter.load_instance(instance_id)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Loading instance testtesttest", content)       
+        self.assertIn("State loaded for instance testtesttest", content)
+        self.assertIn("Decompressing state for instance testtesttest", content)     
+        self.assertIn("State decompression completed for instance testtesttest", content)  
+        self.assertIn("Numeric keys restored for instance testtesttest", content)  
+        self.assertIn("Instance testtesttest loaded successfully", content)  
+
+        self.assertEqual(state.state["settings_log"], decompress_settings(compress_settings(original_settings_log)))
+        self.assertEqual(state.state["results_log"], decompress_results(compress_results(original_results_log)))
+        self.assertEqual(state.state["scenario_cache"], self.adapter._restore_numeric_keys(original_scenario_cache))
+
+    def test__load_instance_exception(self):
         # Mock-Client such that it Cursor.execute raises an exception
         mock_cursor = MagicMock()
         mock_cursor.__enter__.return_value = mock_cursor
@@ -182,7 +235,7 @@ class TestPostgresAdapter(unittest.TestCase):
             instance_id=instance_id,
             time=fake_time,
             timeout=fake_timeout,
-            step=fake_step,
+            step=fake_step
         )
 
         self.client._store[instance_id] = _instance_to_row(inst)
