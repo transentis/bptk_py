@@ -57,9 +57,11 @@ class TestFileAdapter(unittest.TestCase):
 
     def test_save_instance(self):
         tmpdir = tempfile.TemporaryDirectory()
-        instance_id = "already-compressed1"
+
+        #results_log already compressed
+        instance_id = "already-compressed"
         results_log = {"scenarioManager": {"scenarioA": {"value3": [11, 21], "value4": [12, 22]}}}   
-        inst1 = InstanceState(
+        inst = InstanceState(
             state={
                 "results_log": results_log
             },
@@ -70,14 +72,64 @@ class TestFileAdapter(unittest.TestCase):
         )
 
         fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
-        fileAdapter._save_instance(state=inst1)
+        fileAdapter._save_instance(state=inst)
 
+        #results_log cannot be compressed
+        results_log2 = {"scenarioManager": {"scenarioA": True}}
+        instance_id2 = "already-compressed2"
+        inst2 = InstanceState(
+            state={
+                "results_log": results_log2
+            },
+            instance_id=instance_id2,
+            time=datetime.datetime(2025, 1, 1, 12, 0, 0),
+            timeout={},
+            step=1
+        )
+        fileAdapter._save_instance(state=inst2)   
+
+        #file not available
+        fileAdapter2 = FileAdapter(compress=True, path="path")
+        with self.assertRaises(FileNotFoundError):
+            fileAdapter2._save_instance(state=inst)
+        
         tmpdir.cleanup()
 
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
-        self.assertIn("FileAdapter _save_instance called for instance already-compressed1", content)     
-        self.assertIn("results_log already compressed for instance already-compressed1", content)     
+        self.assertIn("FileAdapter _save_instance called for instance already-compressed", content)     
+        self.assertIn("results_log already compressed for instance already-compressed", content)     
+        self.assertIn("FileAdapter _save_instance called for instance already-compressed2", content)
+        self.assertIn("Failed to compress results_log for instance already-compressed2", content)
+        self.assertIn("Failed to write instance already-compressed to file path", content)
+
+    def test_load_state(self):
+        tmpdir = tempfile.TemporaryDirectory()
+
+        #prepare file
+        instance_id = "test-load-state"
+        results_log = {"scenarioManager": {"scenarioA": {"value3": [11, 21], "value4": [12, 22]}}}   
+        scenario_cache = {"1": {"scenarioManager": {"scenario": {"flow1": {"1": 31}, "flow2": {"1": 32}}}}},
+        inst = InstanceState(
+            state={
+                "results_log": results_log,
+                "scenario_cache": scenario_cache
+            },
+            instance_id=instance_id,
+            time=datetime.datetime(2025, 1, 1, 12, 0, 0),
+            timeout={},
+            step=1
+        )
+
+        fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
+        fileAdapter._save_instance(state=inst)
+
+        #load instance
+        loaded_inst = fileAdapter._load_instance(instance_uuid=instance_id)
+
+        self.assertIsInstance(loaded_inst,InstanceState)
+        
+        tmpdir.cleanup()
 
 if __name__ == '__main__':
     unittest.main()            
