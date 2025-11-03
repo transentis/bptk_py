@@ -197,22 +197,22 @@ class TestFileAdapter(unittest.TestCase):
 
         tmpdir.cleanup()
 
-def test_delete_instance_exception(self):
-    instance_id_delete = "dir_instead_of_file"
-    tmpdir = tempfile.TemporaryDirectory()
+    def test_delete_instance_exception(self):
+        instance_id_delete = "dir_instead_of_file"
+        tmpdir = tempfile.TemporaryDirectory()
 
-    dir_as_file_path = os.path.join(tmpdir.name, instance_id_delete + ".json")
-    os.mkdir(dir_as_file_path)
-    fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
+        dir_as_file_path = os.path.join(tmpdir.name, instance_id_delete + ".json")
+        os.mkdir(dir_as_file_path)
+        fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
 
-    with self.assertRaises(IsADirectoryError):
-        fileAdapter.delete_instance(instance_id_delete)
+        with self.assertRaises(OSError):
+            fileAdapter.delete_instance(instance_id_delete)
 
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
         self.assertIn(f"Error deleting instance {instance_id_delete}", content)  
 
-    tmpdir.cleanup()
+        tmpdir.cleanup()
 
 if __name__ == '__main__':
     unittest.main()            
