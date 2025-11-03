@@ -1,4 +1,4 @@
-import unittest, sys, io, datetime, tempfile, importlib
+import unittest, sys, io, datetime, tempfile, importlib, os
 
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
@@ -14,19 +14,12 @@ class TestFileAdapter(unittest.TestCase):
     def test_FileAdapter_load_instance_exception(self):
         fileAdapter = FileAdapter(compress=True, path="invalid_path")
 
-        #Redirect the console output
-        old_stdout = sys.stdout
-        new_stdout = io.StringIO()
-        sys.stdout = new_stdout 
-
         return_value = fileAdapter._load_instance(instance_uuid="123")
 
-        #Remove the redirection of the console output
-        sys.stdout = old_stdout
-        output = new_stdout.getvalue()
-
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
         self.assertIsNone(return_value)
-        self.assertIn("Error loading instance 123: [Errno 2] No such file or directory: 'invalid_path/123.json'",output)
+        self.assertIn("Error loading instance 123: [Errno 2] No such file or directory: 'invalid_path/123.json'",content)
 
     def test_FileAdapter_delete_instance_execption(self):
         fileAdapter = FileAdapter(compress=True, path="invalid_path")
@@ -173,7 +166,53 @@ class TestFileAdapter(unittest.TestCase):
         self.assertLessEqual(instance.time, after)
 
         #results_log cannot be decompressed
+        instance_id2 = "load_not_decompress"
+        results_log = {
+            "ScenarioManagerA": {
+                "ScenarioFoo": {
+                    "CONST_OK": [1.0, 2.0],  # valid -
+                    "CONST_BAD": 42          # invalid -> TypeError in len(constant)
+                }
+            }           
+        }
+        inst2 = InstanceState(
+            state={
+                "results_log": results_log 
+            },
+            instance_id=instance_id2,
+            time=datetime.datetime(2025, 1, 1, 14, 0, 0),
+            timeout={},
+            step=1
+        )        
 
+        fileAdapter._save_instance(state=inst2)
+        instance2 = fileAdapter.load_instance(instance_uuid=instance_id2)        
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Failed to decompress results_log for instance {instance_id2}", content)     
+
+        self.assertIsInstance(instance2, InstanceState)
+        self.assertEqual(instance2.state["results_log"],results_log)
+
+        tmpdir.cleanup()
+
+def test_delete_instance_exception(self):
+    instance_id_delete = "dir_instead_of_file"
+    tmpdir = tempfile.TemporaryDirectory()
+
+    dir_as_file_path = os.path.join(tmpdir.name, instance_id_delete + ".json")
+    os.mkdir(dir_as_file_path)
+    fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
+
+    with self.assertRaises(IsADirectoryError):
+        fileAdapter.delete_instance(instance_id_delete)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn(f"Error deleting instance {instance_id_delete}", content)  
+
+    tmpdir.cleanup()
 
 if __name__ == '__main__':
     unittest.main()            
