@@ -107,31 +107,73 @@ class TestFileAdapter(unittest.TestCase):
         tmpdir = tempfile.TemporaryDirectory()
 
         #prepare file
-        instance_id = "test-load-state"
+        instance_id1 = "test-load-state1"
+        instance_id2 = "test-load-state2"
         results_log = {"scenarioManager": {"scenarioA": {"value3": [11, 21], "value4": [12, 22]}}}   
         scenario_cache = {"1": {"scenarioManager": {"scenario": {"flow1": {"1": 31}, "flow2": {"1": 32}}}}},
-        inst = InstanceState(
+        inst1 = InstanceState(
             state={
                 "results_log": results_log,
                 "scenario_cache": scenario_cache
             },
-            instance_id=instance_id,
+            instance_id=instance_id1,
             time=datetime.datetime(2025, 1, 1, 12, 0, 0),
             timeout={},
             step=1
         )
+        inst2 = InstanceState(
+            state={
+                "results_log": results_log,
+                "scenario_cache": scenario_cache
+            },
+            instance_id=instance_id2,
+            time=datetime.datetime(2025, 1, 1, 13, 0, 0),
+            timeout={},
+            step=2
+        )        
 
         fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
-        fileAdapter._save_instance(state=inst)
+        fileAdapter._save_instance(state=inst1)
+        fileAdapter._save_instance(state=inst2)
 
         #load instance
         loaded_inst = fileAdapter._load_state()
 
+        self.assertEqual(len(loaded_inst), 2)
         self.assertIsInstance(loaded_inst, list)
         for instance in loaded_inst:
             self.assertIsInstance(instance,InstanceState)
+            self.assertEqual(instance.state.get("scenario_cache"), fileAdapter._restore_numeric_keys(scenario_cache))
         
         tmpdir.cleanup()
+
+    def test_load_instance_exception(self):
+        tmpdir = tempfile.TemporaryDirectory()
+
+        #invalid timestamp
+        instance_id = "invalid_date_format"
+        before = datetime.datetime.now()
+        inst = InstanceState(
+            state={},
+            instance_id=instance_id,
+            time="not-a-datetime",
+            timeout={},
+            step=1
+        )        
+
+        fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
+        fileAdapter._save_instance(state=inst)
+
+        instance = fileAdapter._load_instance(instance_uuid=instance_id)      
+        after = datetime.datetime.now()
+
+        self.assertIsInstance(instance, InstanceState)
+        self.assertIsInstance(instance.time, datetime.datetime)
+        self.assertGreaterEqual(instance.time, before)
+        self.assertLessEqual(instance.time, after)
+
+        #results_log cannot be decompressed
+
 
 if __name__ == '__main__':
     unittest.main()            
