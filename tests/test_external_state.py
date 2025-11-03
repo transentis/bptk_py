@@ -10,6 +10,7 @@ import BPTK_Py
 import redis
 from dotenv import load_dotenv
 from BPTK_Py import sd_functions as sd
+from tests.test_config import TestConfig, requires_redis
 
 @pytest.fixture(params=[True, False], ids=["externalize_completely", "no_externalize"])
 def externalize_state_completely(request):
@@ -246,41 +247,25 @@ def test_external_state_file(file_client_fixture):
 @pytest.fixture
 def redis_app(externalize_state_completely):
     """Create Flask app with Redis adapter"""
-    # Try multiple paths for .env file
-    env_paths = [
-       os.path.join(os.getcwd(), ".env")
-    ]
+    try:
+        import redis
+        from BPTK_Py.externalstateadapter import RedisAdapter
+    except ImportError:
+        return None
 
-    redis_url = None
-    enable_redis_tests = False
-
-    for env_path in env_paths:
-        try:
-            if os.path.exists(env_path):
-                print(f"Loading environment from: {env_path}")
-                load_dotenv(env_path)
-                redis_url = os.getenv("REDIS_URL")
-                enable_redis_tests = os.getenv("ENABLE_REDIS_TESTS", "false").lower() == "true"
-                if redis_url:
-                    break
-        except Exception as e:
-            print(f"Error loading {env_path}: {e}")
-
+    redis_url = TestConfig.get_redis_config()
 
     print(f"Redis URL configured: {bool(redis_url)}")
-    print(f"Redis tests enabled: {enable_redis_tests}")
-
-    if not redis_url or not enable_redis_tests:
-        pytest.skip("Redis tests disabled or REDIS_URL not configured")
 
     try:
-        # Create Redis client
-        redis_client = redis.from_url(redis_url)
+        # Connect to Redis
+        redis_client = redis.from_url(redis_url, decode_responses=False)
+
         # Test connection
         redis_client.ping()
-        print(f"Connected to Redis at: {redis_url}")
     except Exception as e:
         pytest.skip(f"Could not connect to Redis: {e}")
+        return None
 
     # Create Redis adapter
     adapter = RedisAdapter(redis_client, compress=True, key_prefix="bptk:test")
@@ -328,6 +313,7 @@ def redis_client_fixture(redis_app):
     return redis_app.test_client()
 
 
+@requires_redis
 def test_external_state_redis(redis_client_fixture):
     """Test external state with Redis adapter - equivalent to file adapter test"""
     external_state_base(redis_client_fixture)
