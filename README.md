@@ -44,9 +44,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 ### 2.2.2
 
 * add unittests
-* fixed: bptk logfire config overwrites default logfire config
 * fixed typos
-
 
 ### 2.2.1
 
