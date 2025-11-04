@@ -41,6 +41,13 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.2.2
+
+* add unittests
+* fixed: bptk logfire config overwrites default logfire config
+* fixed typos
+
+
 ### 2.2.1
 
 * Improve logfire logging.
@@ -61,7 +68,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 * extend plot_scenario to accept a format parameter
 * add unittests
 * fix typos for server output
-* enabl operations: not named vector and int/float
+* enable operations: not named vector and int/float
 * fix issue with configurable file-path for bptk-object
 
 ### 2.0.0
