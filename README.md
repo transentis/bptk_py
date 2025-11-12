@@ -41,7 +41,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
-### 2.2.2
+### 2.2.3
 
 * add unittests
 * fixed typos
