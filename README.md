@@ -46,6 +46,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 * add unittests
 * fixed typos
 
+### 2.2.2
+
+* Fix issue in external state adapter
+
 ### 2.2.1
 
 * Improve logfire logging.

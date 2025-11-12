@@ -179,7 +179,23 @@ def external_state_base(client):
             "outflow",
             "input",
             "round"
+        ],
+        "settings":{
+            "firstManager":{
+                "scenario1":
+                {
+                    "points":{
+                        "round":[
+            (1.0, 2.0), 
+            (2.0, 4.0), 
+            (3.0, 6.0), 
+            (4.0, 8.0), 
+            (5.0, 10.0)
         ]
+                    }
+                }
+            }
+        }
     }
 
     response = client.post(f'{instance_uuid}/begin-session', data=json.dumps(content), content_type='application/json')
@@ -210,6 +226,7 @@ def external_state_base(client):
     assert data["firstManager"]["scenario1"]["delay"]["1.0"]==2.0 , "delay should have value 2.0"
     assert data["firstManager"]["scenario1"]["inflow"]["1.0"]==100.0 , "inflow should have value 100.0"
     assert data["firstManager"]["scenario1"]["outflow"]["1.0"]==100.0 , "outflow should have value 100.0"
+    assert data["firstManager"]["scenario1"]["round"]["1.0"]==2.0 , "round should have value 2.0"
     response = client.post(f'{instance_uuid}/run-step', data=json.dumps(make_run_content(400.0)), content_type='application/json')
     assert response.status_code == 200, "run-step should return 200"
 
@@ -219,6 +236,7 @@ def external_state_base(client):
     assert data["firstManager"]["scenario1"]["delay"]["2.0"]==2.0 , "delay should have value 2.0"
     assert data["firstManager"]["scenario1"]["inflow"]["2.0"]==400.0 , "inflow should have value 100.0"
     assert data["firstManager"]["scenario1"]["outflow"]["2.0"]==100.0 , "outflow should have value 100.0"
+    assert data["firstManager"]["scenario1"]["round"]["2.0"]==4.0 , "round should have value 4.0"
     response = client.post(f'{instance_uuid}/run-step', data=json.dumps(make_run_content(400.0)), content_type='application/json')
     assert response.status_code == 200, "run-step should return 200"
 
@@ -227,6 +245,7 @@ def external_state_base(client):
     assert data["firstManager"]["scenario1"]["delay"]["3.0"]==2.0 , "delay should have value 2.0"
     assert data["firstManager"]["scenario1"]["inflow"]["3.0"]==400.0 , "inflow should have value 100.0"
     assert data["firstManager"]["scenario1"]["outflow"]["3.0"]==100.0 , "outflow should have value 100.0"
+    assert data["firstManager"]["scenario1"]["round"]["3.0"]==6.0 , "round should have value 6.0"
 
     response = client.post(f'{instance_uuid}/run-step', data=json.dumps(make_run_content(400.0)), content_type='application/json')
     assert response.status_code == 200, "run-step should return 200"

@@ -515,6 +515,7 @@ class bptk():
         scenario_managers = self.session_state["scenario_managers"]
         agents = self.session_state["agents"]
         scenarios = self.session_state["scenarios"]
+        session_settings = self.session_state["settings"]
         agent_states=self.session_state["agent_states"]
         agent_properties=self.session_state["agent_properties"]
         agent_property_types=self.session_state["agent_property_types"]
@@ -531,12 +532,15 @@ class bptk():
         simulation_results = {manager:{} for manager in scenario_managers}
         flat_results = {manager:{} for manager in scenario_managers}
 
-        # set the scenario caches
+        # set the scenario caches and session settings
         for _, manager in self.scenario_manager_factory.scenario_managers.items():
             if manager.name in scenario_managers:
                 for scenario  in manager.scenarios.keys():
                     if scenario in scenarios:
                         self._set_scenario_cache(scenario_manager=manager.name, scenario=scenario, cache=scenario_cache[manager.name][scenario])
+                        if manager.name in session_settings:
+                            if scenario in session_settings[manager.name]:
+                                self._set_scenario_settings(scenario_manager=manager.name, scenario=scenario, settings=session_settings[manager.name][scenario])
 
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
@@ -1037,6 +1041,10 @@ class bptk():
     def _set_scenario_cache(self, scenario_manager="", scenario="", cache=None):
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
         scenario._set_cache(cache)
+
+    def _set_scenario_settings(self, scenario_manager="", scenario="", settings=None):
+        scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
+        scenario.configure_settings(settings)    
 
     def _get_scenario_cache(self, scenario_manager="", scenario="", cache=None):
         scenario = self.scenario_manager_factory.get_scenario(scenario_manager=scenario_manager, scenario=scenario)
