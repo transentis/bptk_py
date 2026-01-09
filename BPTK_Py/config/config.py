@@ -65,8 +65,6 @@ configuration = {
 
     # Relative path to scenario storage
     "scenario_storage": "scenarios/",
-    "slider_style": {'description_width': '50%'},
-    "slider_layout": Layout(width='100%', position="left"),
 
     # Log mode. List of strings. Possible values: "print" / "logfile"
     "log_modes": ["logfile"],
