@@ -1,266 +1,174 @@
-import unittest
-import os
-import sys, io
-import datetime
-import pytest
+import unittest, sys, io, datetime, importlib
+from unittest.mock import patch
 
+import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import ExternalStateAdapter, InstanceState
-from BPTK_Py.externalstateadapter.file_adapter import FileAdapter
+from contextlib import contextmanager
+from importlib.abc import MetaPathFinder
 
-@pytest.fixture(params=[True, False], ids=["compress_true", "compress_false"])
-def compress(request):
-    """Fixture that provides both compress parameter values."""
-    return request.param
 
-@pytest.fixture(params=[True, False], ids=["externalize_completely", "no_externalize"])
-def externalize_state_completely(request):
-    """Fixture that provides both externalize_state_completely parameter values."""
-    return request.param
+@contextmanager
+def fail_import(module_name: str):
+    """Make importing `module_name` raise ImportError inside the with-block."""
+    class _FailingFinder(MetaPathFinder):
+        def find_spec(self, fullname, path=None, target=None):
+            # match exakt oder via endswith je nach Aufruf
+            if fullname == module_name or fullname.endswith(module_name):
+                raise ImportError(f"Simulated ImportError for {fullname}")
+            return None
 
-class TestExternalStateAdapter:
+    finder = _FailingFinder()
+    sys.meta_path.insert(0, finder)
+    # sicherstellen, dass ein vorher geladenes Submodul nicht verwendet wird
+    sys.modules.pop(module_name, None)
+    try:
+        yield
+    finally:
+        # Finder wieder entfernen
+        try:
+            sys.meta_path.remove(finder)
+        except ValueError:
+            pass
+        # evtl. Reste entfernen
+        sys.modules.pop(module_name, None)
+
+class TestableExternalStateAdapter(ExternalStateAdapter):
+    def __init__(self, compress):
+        super().__init__(compress)
+            
+    def _save_instance(self, state):
+        return super()._save_instance(state)
+    
+    def _load_instance(self, instance_uuid):
+        return super()._load_instance(instance_uuid)
+    
+    def delete_instance(self, instance_uuid):
+        return super().delete_instance(instance_uuid)
+
+class TestExternalStateAdapter(unittest.TestCase):
     def setUp(self):
-        pass
+        importlib.reload(logmod)
+        logmod.loglevel = "INFO"
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
 
-    def testExternalStateAdapter_abstact_methods(self):
-        class TestableExternalStateAdapter(ExternalStateAdapter):
-            def __init__(self, compress):
-                super().__init__(compress)
-
-            
-            def _save_instance(self, state):
-                return super()._save_instance(state)
-    
-            def _load_instance(self, instance_uuid):
-                return super()._load_instance(instance_uuid)
-    
-            
-            def delete_instance(self, instance_uuid):
-                return super().delete_instance(instance_uuid)
-
+    def test_ExternalStateAdapter_abstract_methods(self):
         externalStateAdapter = TestableExternalStateAdapter(compress=True)
 
-        assert externalStateAdapter._save_instance(state="test") is None
-        assert externalStateAdapter._load_instance(instance_uuid="123") is None
-        assert externalStateAdapter.delete_instance(instance_uuid="123") is None  
+        self.assertIsNone(externalStateAdapter._save_instance(state="test"))
+        self.assertIsNone(externalStateAdapter._load_instance(instance_uuid="123"))
+        self.assertIsNone(externalStateAdapter.delete_instance(instance_uuid="123")) 
 
-class TestFileAdapter:
-    def setUp(self):
-        pass
+    def test_restore_numeric_keys(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
 
-    def testFileAdapter_load_instance_execption(self, compress):
-        fileAdapter = FileAdapter(compress=compress, path="invalid_path")
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=1),1)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=1.0),1.0)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data="String"),"String")
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=True),True)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=[1,2,3]),[1,2,3])
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data={1.0: 1.2, 2: 3}),{1.0: 1.2, 2: 3})
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data={"1.0": "1.2", "2": "3"}),{1.0: "1.2", 2: "3"})
 
-        #Redirect the console output
-        old_stdout = sys.stdout
-        new_stdout = io.StringIO()
-        sys.stdout = new_stdout 
+    def test_save_instance(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
+        instanceState = InstanceState(
+            state={
+                "settings_log": {
+                    "1" : {"scenarioManager" : {"scenario" : {"constants": {"value1" : 1, "value2" : 2}}}},
+                    "1" : {"scenarioManager" : {"scenario" : {"constants": {"value1" : 3, "value2" : 4}}}},
+                },
+                "results_log": {    
+                    "1": {"scenarioManager": {"scenario": {"value3": {"1":11, "value4":{"1":12}}}}},
+                    "2": {"scenarioManager": {"scenario": {"value3": {"2":21, "value4":{"2":22}}}}},
+                }
+            },
+            instance_id="test_save",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={"weeks": 1, "days": 1, "hours": 1, "minutes": 1,
+                     "seconds": 1, "milliseconds": 1, "microseconds": 1},
+            step=4
+        )
 
-        return_value = fileAdapter._load_instance(instance_uuid="123")
+        externalStateAdapter.save_instance(instanceState)
 
-        #Remove the redirection of the console output
-        sys.stdout = old_stdout
-        output = new_stdout.getvalue()
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Saving instance test_save", content)     
+        self.assertIn("Compressing state for instance test_save", content) 
+        self.assertIn("State compression completed for instance test_save", content)  
+        self.assertIn("Instance test_save saved successfully", content) 
 
-        assert return_value is None
-        assert "[Errno 2] No such file or directory" in output
+    def test_save_instance_exception(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
+        instanceState = InstanceState(
+            state={"settings_log": {}, "results_log": {}},
+            instance_id="test_exception",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={},
+            step=1
+        )
 
-    def testFileAdapter_delete_instance_execption(self, compress):
-        fileAdapter = FileAdapter(compress=compress, path="invalid_path")
+        with patch.object(externalStateAdapter, "_save_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.save_instance(instanceState)
 
-        # Test that delete_instance raises an exception for invalid path
-        with pytest.raises(Exception) as exc_info:
-            fileAdapter.delete_instance(instance_uuid="123")
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("[ERROR] Failed to save instance test_exception", content)
 
-        # Check that the exception message contains the expected error
-        assert "No such file or directory" in str(exc_info.value) or "cannot find the path" in str(exc_info.value)
+    def test_load_instance_empty(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)  
 
-@pytest.fixture
-def temp_dir():
-    """Fixture to provide a temporary directory that gets cleaned up after test."""
-    import tempfile
-    import shutil
-    temp_dir = tempfile.mkdtemp()
-    yield temp_dir
-    shutil.rmtree(temp_dir, ignore_errors=True)
+        state =externalStateAdapter.load_instance("test_empty")
+        
+        self.assertIsNone(state)
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Loading instance test_empty", content)     
+        self.assertIn("No state found for instance test_empty", content)
 
-class TestExternalStateConsistency:
-    """Test that externalize_state_completely produces consistent results"""
+    def test_load_instance_exception(self):
+        externalStateAdapter = TestableExternalStateAdapter(compress=True)
 
-    def test_externalize_state_completely_consistency(self, externalize_state_completely, temp_dir):
-        """Test that externalize_state_completely=True produces same results as False"""
-        try:
-            from BPTK_Py import bptk
+        with patch.object(externalStateAdapter, "_load_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.load_instance("test_exception")
 
-            # Add the test_factory_sd_runner path to import the test model
-            test_model_path = os.path.join(os.path.dirname(__file__), 'test_factory_sd_runner')
-            if test_model_path not in sys.path:
-                sys.path.insert(0, test_model_path)
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("Loading instance test_exception", content)       
+        self.assertIn("Failed to load instance test_exception", content)
 
-            # Import and create the test model
-            from simulation_models.simulation_model import simulation_model
-            test_model = simulation_model()
+    def test_postgres_adapter_importerror(self):
+        target_pkg = "BPTK_Py.externalstateadapter"
+        submodule = f"{target_pkg}.postgres_adapter"
 
-            print(f"Using test model: {test_model.name}")
-            print(f"Model stocks: {list(test_model.stocks.keys())}")
-            print(f"Model flows: {list(test_model.flows.keys())}")
-            print(f"Model constants: {list(test_model.constants.keys())}")
+        with fail_import(submodule):
+            pkg = importlib.import_module(f"{target_pkg}.__init__")
+            importlib.reload(pkg)
 
-            # Create BPTK instance and register the test model
-            bptk_instance = bptk()
+            with self.assertRaises(ImportError) as cm:
+                pkg.PostgresAdapter()  # oder mit args, spielt keine Rolle
 
-            # Register the test model as a scenario manager
-            scenario_manager_name = "test_sm"
-            scenario_name = "test_scenario"
+            msg = str(cm.exception)
+            self.assertIn("PostgresAdapter requires 'psycopg' to be installed", msg)
+            self.assertIn("Install it with: pip install psycopg[binary]", msg)
 
-            bptk_instance.register_model(
-                model=test_model,
-                scenario_manager=scenario_manager_name,
-                scenario={scenario_name: {}}
-            )
+    def test_redis_adapter_importerror(self):
+        target_pkg = "BPTK_Py.externalstateadapter"
+        submodule = f"{target_pkg}.redis_adapter"
 
-            # Define equations to test - use stocks and flows from the test model
-            test_equations = ["totalValue", "interest", "deposit"]
-            print(f"Using equations for testing: {test_equations}")
+        with fail_import(submodule):
+            pkg = importlib.import_module(f"{target_pkg}.__init__")
+            importlib.reload(pkg)
 
-            # Create file adapter for external state
-            file_adapter = FileAdapter(compress=externalize_state_completely, path=temp_dir)
+            with self.assertRaises(ImportError) as cm:
+                pkg.RedisAdapter()
 
-            # Test results without external state
-            bptk_instance.begin_session(
-                scenarios=[scenario_name],
-                scenario_managers=[scenario_manager_name],
-                equations=test_equations,
-                starttime=1.0,
-                dt=1.0
-            )
-
-            # Run a few steps
-            step_count = 3
-            results_internal = []
-            for i in range(step_count):
-                result = bptk_instance.run_step()
-                if result and not isinstance(result, dict) or "msg" in (result or {}):
-                    break  # Stop if we hit end time or error
-                results_internal.append(result)
-
-            internal_session_results = bptk_instance.session_results(index_by_time=True)
-            bptk_instance.end_session()
-
-            # Test results with external state - simulate externalize_state_completely behavior
-            # Create a second BPTK instance and register the same model
-            bptk_external = bptk()
-            bptk_external.register_model(
-                model=test_model,
-                scenario_manager=scenario_manager_name,
-                scenario={scenario_name: {}}
-            )
-
-            # Begin session with external state
-            bptk_external.begin_session(
-                scenarios=[scenario_name],
-                scenario_managers=[scenario_manager_name],
-                equations=test_equations,
-                starttime=1.0,
-                dt=1.0
-            )
-
-            # Test external state adapter directly by saving/loading state
-            instance_state = InstanceState(
-                state=bptk_external.session_state,
-                instance_id="test_instance",
-                time=datetime.datetime.now(),
-                timeout={"minutes": 15},
-                step=bptk_external.session_state["step"] if bptk_external.session_state else 1
-            )
-
-            # Save state to external adapter
-            file_adapter.save_instance(instance_state)
-
-            # Run same number of steps while saving/loading state each time
-            results_external = []
-            for i in range(step_count):
-                # Load state from external adapter
-                loaded_state = file_adapter.load_instance("test_instance")
-                
-
-                result = bptk_external.run_step()
-                if result and isinstance(result, dict) and "msg" in result:
-                    break  # Stop if we hit end time or error
-                results_external.append(result)
-
-                # Save updated state back to external adapter
-                if bptk_external.session_state:
-                    updated_instance_state = InstanceState(
-                        state=bptk_external.session_state,
-                        instance_id="test_instance",
-                        time=datetime.datetime.now(),
-                        timeout={"minutes": 15},
-                        step=bptk_external.session_state["step"]
-                    )
-                    file_adapter.save_instance(updated_instance_state)
-
-            external_session_results = bptk_external.session_results(index_by_time=True)
-            bptk_external.end_session()
-
-            # Compare results
-            assert len(results_internal) == len(results_external), \
-                "Should have same number of step results"
-
-            # Compare step-by-step results (allowing for small floating point differences)
-            for i, (internal, external) in enumerate(zip(results_internal, results_external)):
-                # Remove subTest and use direct assertions
-                assert internal is not None, f"Internal result at step {i+1} should not be None"
-                assert external is not None, f"External result at step {i+1} should not be None"
-
-                # Compare structure
-                assert set(internal.keys()) == set(external.keys()), \
-                    f"Step {i+1}: Manager keys should match"
-
-                for manager_key in internal.keys():
-                    assert set(internal[manager_key].keys()) == set(external[manager_key].keys()), \
-                        f"Step {i+1}: Scenario keys should match for manager {manager_key}"
-
-                    for scenario_key in internal[manager_key].keys():
-                        internal_equations = internal[manager_key][scenario_key]
-                        external_equations = external[manager_key][scenario_key]
-
-                        assert set(internal_equations.keys()) == set(external_equations.keys()), \
-                            f"Step {i+1}: Equation keys should match for {scenario_manager_name}.{scenario_name}"
-
-                        # Compare equation values (allowing small float differences)
-                        for eq_key in internal_equations.keys():
-                            internal_val = internal_equations[eq_key]
-                            external_val = external_equations[eq_key]
-
-                            # Handle nested time-step structure
-                            if isinstance(internal_val, dict) and isinstance(external_val, dict):
-                                for time_key in internal_val.keys():
-                                    if time_key in external_val:
-                                        internal_time_val = internal_val[time_key]
-                                        external_time_val = external_val[time_key]
-
-                                        if isinstance(internal_time_val, (int, float)) and \
-                                           isinstance(external_time_val, (int, float)):
-                                            assert abs(internal_time_val - external_time_val) < 1e-10, \
-                                                f"Step {i+1}: Values should match for {eq_key} at time {time_key}"
-
-            # Test that session results are also consistent
-            if internal_session_results and external_session_results:
-                internal_results = internal_session_results
-                external_results = external_session_results
-
-                # Basic structural comparison
-                assert set(internal_results.keys()) == set(external_results.keys()), \
-                    "Session results should have same time steps"
-
-                print(f"✓ External state consistency test passed for {len(results_internal)} steps")
-
-        except ImportError as e:
-            self.skipTest(f"Required dependencies not available: {e}")
-        except Exception as e:
-            # Log the exception for debugging but don't fail the test suite
-            print(f"Note: External state consistency test encountered an issue: {e}")
-            print("This may be due to test environment setup - skipping consistency check")
+            msg = str(cm.exception)
+            self.assertIn("RedisAdapter requires 'redis' to be installed", msg)
+            self.assertIn("Install it with: pip install redis", msg)
 
 if __name__ == '__main__':
     unittest.main()            

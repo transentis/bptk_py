@@ -41,6 +41,11 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.2.3
+
+* add unittests
+* fixed typos
+
 ### 2.2.2
 
 * Fix issue in external state adapter
@@ -65,7 +70,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 * extend plot_scenario to accept a format parameter
 * add unittests
 * fix typos for server output
-* enabl operations: not named vector and int/float
+* enable operations: not named vector and int/float
 * fix issue with configurable file-path for bptk-object
 
 ### 2.0.0

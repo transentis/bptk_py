@@ -32,15 +32,17 @@ from copy import deepcopy
 
 #plt.interactive(True)
 
-
 class conf:
     def __init__(self):
-        """Initialze config zu defaults."""
         self.loglevel = default_config.loglevel
-        self.matplotlib_rc_settings = default_config.matplotlib_rc_settings
-        self.colors = default_config.transentis_colors
-        self.configuration = default_config.configuration
-
+        self.matplotlib_rc_settings = deepcopy(default_config.matplotlib_rc_settings)
+        self.colors = deepcopy(default_config.transentis_colors)
+        
+        cfg = default_config.configuration
+        layout = cfg.pop("slider_layout", None) # Remove Widget since it can not be deepcopied
+        self.configuration = deepcopy(cfg)  
+        if layout is not None:
+            self.configuration["slider_layout"] = layout
 
 class bptk():
     """

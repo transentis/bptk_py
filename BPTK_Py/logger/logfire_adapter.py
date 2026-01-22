@@ -36,8 +36,8 @@ class LogfireAdapter:
         """
         if not LOGFIRE_AVAILABLE:
             raise ImportError(
-                "Pydantic Logfire is not installed. "
-                "Please install it with: pip install pydantic-logfire"
+                "Logfire is not installed. "
+                "Please install it with: pip install logfire"
             )
 
         self.configured = False

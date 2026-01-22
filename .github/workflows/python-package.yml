@@ -11,8 +11,30 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: bptk
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: bptk_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bptk -d bptk_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10    
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +53,7 @@ jobs:
         python -m pip install flake8
         python -m pip install pytest-cov coveralls
         python -m pip install --prefer-binary -r tests/requirements.txt
+        python -m pip install --prefer-binary "psycopg[binary]" redis python-dotenv "ipywidgets>=8.1,<9"
         python -m pip install --prefer-binary -e .
     - name: Lint with flake8
       run: |
@@ -39,6 +62,15 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest-cov
+      env:
+        ENABLE_POSTGRES_TESTS: "true"
+        ENABLE_REDIS_TESTS: "true"
+        POSTGRES_HOST: "localhost"
+        POSTGRES_PORT: "5432"
+        POSTGRES_DB: "bptk_test"
+        POSTGRES_USER: "bptk"
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        REDIS_URL: "redis://localhost:6379/0"    
       run: |
         pytest --cov-config=.coveragerc --cov=./
         coverage xml
