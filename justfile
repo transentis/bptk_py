@@ -1,9 +1,11 @@
 # Justfile for project automation
 
+# Venv path
+venv := "venv"
 
 # Run tests
 test:
-    pip install . && pytest ./
+    {{venv}}/bin/pip install ".[test]" && {{venv}}/bin/pytest ./
 
 # Publish BPTK
 publish:
