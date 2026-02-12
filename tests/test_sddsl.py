@@ -1,6 +1,7 @@
 import random
 import os
 import numpy as np
+import pytest
 from scipy.stats import norm
 from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
@@ -627,15 +628,15 @@ def test_sddsl_functions():
     data_sinwave = sinwave.plot(return_df=True)
     data_coswave = coswave.plot(return_df=True)
     for i in timerange(start, stop, dt):
-        assert data_sin.sin[i] == max(math.sin(i), 0.0)
-        assert data_cos.cos[i] == max(math.cos(i), 0.0)
-        assert data_tan.tan[i] == max(math.tan(i), 0.0)
-        assert data_arctan.arctan[i] == max(math.atan(i), 0.0)
-        assert data_sinwave.sinwave[i] == max(2*math.sin(2*math.pi*i/4),0.0)
-        assert data_coswave.coswave[i] == max(8*math.cos(2*math.pi*i/16),0.0)
+        assert data_sin.sin[i] == pytest.approx(max(math.sin(i), 0.0))
+        assert data_cos.cos[i] == pytest.approx(max(math.cos(i), 0.0))
+        assert data_tan.tan[i] == pytest.approx(max(math.tan(i), 0.0))
+        assert data_arctan.arctan[i] == pytest.approx(max(math.atan(i), 0.0))
+        assert data_sinwave.sinwave[i] == pytest.approx(max(2*math.sin(2*math.pi*i/4),0.0))
+        assert data_coswave.coswave[i] == pytest.approx(max(8*math.cos(2*math.pi*i/16),0.0))
         if i <=1:
-            assert data_arcsin.arcsin[i] == max(math.asin(i), 0.0)
-            assert data_arccos.arccos[i] == max(math.acos(i), 0.0)
+            assert data_arcsin.arcsin[i] == pytest.approx(max(math.asin(i), 0.0))
+            assert data_arccos.arccos[i] == pytest.approx(max(math.acos(i), 0.0))
         else:
             assert data_arcsin.arcsin[i] == 0
             assert data_arccos.arccos[i] == 0

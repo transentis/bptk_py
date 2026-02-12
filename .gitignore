@@ -21,3 +21,5 @@ test*.ipynb
 .claude
 tests/state
 /state
+.mypy_cache/
+.pytest_cache/
