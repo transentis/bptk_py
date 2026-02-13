@@ -22,11 +22,29 @@ class TestArrayedEquation(unittest.TestCase):
 
     def testOperator_getitem_exception(self):
         model = Model()
-        element = Element(model=model,name="testElement",function_string=None)   
+        element = Element(model=model,name="testElement",function_string=None)
 
         arrayedEquation = ArrayedEquation(element=element)
 
-        self.assertRaises(Exception,arrayedEquation.__getitem__,"testKey")   
+        self.assertRaises(Exception,arrayedEquation.__getitem__,"testKey")
+
+    def testArrayedEquation_matrix_size_non_uniform(self):
+        """Test that matrix_size raises exception for non-uniform dimensions via setup_named_matrix"""
+        model = Model()
+
+        # Create a matrix with non-uniform row lengths using setup_named_matrix
+        # This is a real scenario where a user provides malformed input
+        matrix = model.converter("matrix")
+        matrix.setup_named_matrix({
+            "row1": {"a": 1.0, "b": 2.0},           # 2 columns
+            "row2": {"x": 3.0, "y": 4.0, "z": 5.0}  # 3 columns - non-uniform!
+        })
+
+        # Calling matrix_size() should raise an exception for non-uniform dimensions
+        with self.assertRaises(Exception) as context:
+            matrix._elements.matrix_size()
+
+        self.assertEqual(str(context.exception), "Matrix does not have uniform dimensions!")   
 
 class TestOperatorError(unittest.TestCase):
     def setUp(self):
