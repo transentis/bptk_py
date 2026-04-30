@@ -22,11 +22,29 @@ class TestArrayedEquation(unittest.TestCase):
 
     def testOperator_getitem_exception(self):
         model = Model()
-        element = Element(model=model,name="testElement",function_string=None)   
+        element = Element(model=model,name="testElement",function_string=None)
 
         arrayedEquation = ArrayedEquation(element=element)
 
-        self.assertRaises(Exception,arrayedEquation.__getitem__,"testKey")   
+        self.assertRaises(Exception,arrayedEquation.__getitem__,"testKey")
+
+    def testArrayedEquation_matrix_size_non_uniform(self):
+        """Test that matrix_size raises exception for non-uniform dimensions via setup_named_matrix"""
+        model = Model()
+
+        # Create a matrix with non-uniform row lengths using setup_named_matrix
+        # This is a real scenario where a user provides malformed input
+        matrix = model.converter("matrix")
+        matrix.setup_named_matrix({
+            "row1": {"a": 1.0, "b": 2.0},           # 2 columns
+            "row2": {"x": 3.0, "y": 4.0, "z": 5.0}  # 3 columns - non-uniform!
+        })
+
+        # Calling matrix_size() should raise an exception for non-uniform dimensions
+        with self.assertRaises(Exception) as context:
+            matrix._elements.matrix_size()
+
+        self.assertEqual(str(context.exception), "Matrix does not have uniform dimensions!")   
 
 class TestOperatorError(unittest.TestCase):
     def setUp(self):
@@ -1020,6 +1038,75 @@ class TestDotOperator(unittest.TestCase):
         self.assertEqual(converter[0][1](1),78.0)
         self.assertEqual(converter[1][0](1),91.0)
         self.assertEqual(converter[1][1](1),106.0)                 
+
+class TestLnLog10FloorCeilOperators(unittest.TestCase):
+    """Unit tests for Ln, Log10, Floor, Ceil operator classes."""
+
+    def test_ln_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Ln
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Ln(element)
+        self.assertIn("np.log(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_ln_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Ln
+        op = Ln(2.718)
+        self.assertIn("np.log(", op.term("t"))
+        self.assertIn("2.718", op.term("t"))
+
+    def test_log10_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Log10
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Log10(element)
+        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_log10_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Log10
+        op = Log10(100.0)
+        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn("100.0", op.term("t"))
+
+    def test_floor_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Floor
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Floor(element)
+        self.assertIn("np.floor(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_floor_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Floor
+        op = Floor(3.7)
+        self.assertIn("np.floor(", op.term("t"))
+        self.assertIn("3.7", op.term("t"))
+
+    def test_ceil_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Ceil
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Ceil(element)
+        self.assertIn("np.ceil(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_ceil_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Ceil
+        op = Ceil(3.2)
+        self.assertIn("np.ceil(", op.term("t"))
+        self.assertIn("3.2", op.term("t"))
+
+    def test_operators_store_operand(self):
+        from BPTK_Py.sddsl.operators import Ln, Log10, Floor, Ceil
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        self.assertIs(Ln(element).x, element)
+        self.assertIs(Log10(element).x, element)
+        self.assertIs(Floor(element).x, element)
+        self.assertIs(Ceil(element).x, element)
+
 
 if __name__ == '__main__':
     unittest.main()

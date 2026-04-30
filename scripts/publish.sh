@@ -11,12 +11,25 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
-## MAGIC Build Script that also tests your code!
+## Local pre-flight publish script.
+##
+## Architecture note (see docs/internal/architecture/rust-engine-packaging.md):
+##   bptk-py is now a maturin-built package containing both the Python sources
+##   and the Rust engine (BPTK_Py._rust_engine). Production releases are cut by
+##   tagging vX.Y.Z and letting .github/workflows/publish.yml build the full
+##   platform-wheel matrix (Linux x86_64+aarch64, macOS x86_64+aarch64,
+##   Windows x86_64) plus the sdist, and upload to PyPI via trusted publishing.
+##
+##   This script CANNOT produce that matrix — manylinux, aarch64 and Windows
+##   wheels require their own runners. What it can do, and what it does:
+##     1. Run the test suite locally against an editable install.
+##     2. Build the sdist + a current-platform wheel via maturin.
+##     3. Upload them to Test PyPI.
+##     4. Re-run the tests against the Test PyPI install to catch packaging
+##        regressions (missing files, broken extension load, etc.).
+##     5. Stop. Final PyPI publish is the CI workflow's job; tag the release.
 
-
-#pip3 install -r ../requirements-dev.txt
-
-#git submodule update --remote --recursive
+set -e
 
 #######################
 ## Run tests locally ##
@@ -31,6 +44,8 @@ python3 -m venv venv_temp
 source ./venv_temp/bin/activate
 pip install pytest
 pip install python-dotenv
+# pip install -e . triggers a maturin PEP 517 build, compiling the Rust
+# extension into the venv. Requires a working Rust toolchain locally.
 pip install -e .
 
 if ! pytest ./ ; then
@@ -48,14 +63,18 @@ rm -rf venv_temp/
 ###################
 
 echo "-------------------------------------"
-echo "Generating Distribution"
+echo "Generating Distribution (sdist + current-platform wheel)"
 echo "-------------------------------------"
-
+echo "NOTE: cross-platform wheels are produced by .github/workflows/publish.yml,"
+echo "      not here. This local build is for Test PyPI smoke-testing only."
 
 pip install twine
-pip install build
-python3 -m build --sdist
-python3 -m build --wheel
+pip install maturin
+rm -rf dist/
+# Current-platform wheel for local validation against Test PyPI.
+maturin build --release --out dist
+# Universal sdist (fallback for users on platforms with no published wheel).
+maturin sdist --out dist
 
 
 ## Upload to Test PyPi
@@ -76,7 +95,7 @@ fi
 ####################################
 
 echo "-------------------------------------"
-echo "Running tests against PyPi Version"
+echo "Running tests against Test-PyPi Version"
 echo "-------------------------------------"
 
 echo "Waiting a few seconds so PyPi can index the new version"
@@ -85,7 +104,11 @@ python3 -m venv venv_temp
 source ./venv_temp/bin/activate
 pip install pytest
 pip install python-dotenv
+# Pull bptk-py from Test PyPI; deps come from real PyPI.
 pip install --index-url https://test.pypi.org/simple/ bptk_py --extra-index-url https://pypi.org/simple
+
+# Sanity check: the Rust extension must load on this platform.
+python3 -c "from BPTK_Py import _rust_engine; print('Rust engine loaded:', _rust_engine)"
 
 if ! pytest ./; then
     echo "Tests failed! Not continuing. Please fix your code"
@@ -95,27 +118,18 @@ if ! pytest ./; then
 fi
 deactivate
 rm -rf venv_temp/
-rm ./tests/test_models/*.py
+rm -f ./tests/test_models/*.py
 
 echo "-------------------------"
-echo "All tests successful!"
-echo "Proceeding with upload to actual Pypi"
+echo "All Test PyPI checks passed."
+echo ""
+echo "Final PyPI publish is handled by GitHub Actions (publish.yml)."
+echo "To cut the release, push a tag:"
+echo "    git tag vX.Y.Z && git push origin vX.Y.Z"
+echo "CI will then build wheels for Linux x86_64+aarch64, macOS x86_64+aarch64,"
+echo "Windows x86_64, plus the sdist, and upload them via trusted publishing."
 echo "-------------------------"
-##################################
-## Push to official PyPi Mirror ##
-##################################
-
-
-if ! twine upload --verbose --repository bptk-py dist/* ; then
-  echo "Upload to PyPi failed! Aborting. Please retry!"
-  rm -rf dist/
-  rm -rf build/
-  rm -rf BPTK_Py.egg-info
-  exit 1
-fi
 
 rm -rf dist/
 rm -rf build/
 rm -rf BPTK_Py.egg-info
-
-

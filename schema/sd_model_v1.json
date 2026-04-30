@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bptk.transentis.com/schemas/sd_model_v1.json",
+  "title": "BPTK Rust SD Engine Model",
+  "description": "JSON schema for System Dynamics models consumed by the bptk_rust_engine. Models are parsed into an expression AST, topologically sorted, and simulated via Euler integration.",
+  "type": "object",
+  "required": ["specs", "entities"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional human-readable model name."
+    },
+    "specs": {
+      "$ref": "#/$defs/specs"
+    },
+    "entities": {
+      "$ref": "#/$defs/entities"
+    },
+    "graphical_functions": {
+      "type": "object",
+      "description": "Named lookup tables (graphical functions) used by the 'lookup' built-in. Keys are table names referenced in lookup() calls.",
+      "additionalProperties": {
+        "$ref": "#/$defs/graphical_function"
+      }
+    }
+  },
+
+  "$defs": {
+
+    "specs": {
+      "type": "object",
+      "description": "Simulation run specifications.",
+      "required": ["starttime", "stoptime", "dt"],
+      "additionalProperties": false,
+      "properties": {
+        "starttime": {
+          "type": "number",
+          "description": "Simulation start time."
+        },
+        "stoptime": {
+          "type": "number",
+          "description": "Simulation stop time (inclusive). Must be >= starttime."
+        },
+        "dt": {
+          "type": "number",
+          "description": "Time step size. Must be > 0.",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+
+    "entities": {
+      "type": "object",
+      "description": "All model entities grouped by type. At least one entity category should be present.",
+      "additionalProperties": false,
+      "properties": {
+        "stocks": {
+          "type": "array",
+          "description": "Stock (level/accumulator) entities. Stocks are integrated via Euler method and are not part of the topological evaluation order.",
+          "items": { "$ref": "#/$defs/stock" }
+        },
+        "flows": {
+          "type": "array",
+          "description": "Flow (rate) entities. Flows enforce non-negativity: max(0, value).",
+          "items": { "$ref": "#/$defs/flow_or_converter" }
+        },
+        "converters": {
+          "type": "array",
+          "description": "Converter (auxiliary) entities. Pure algebraic computations with no special constraints.",
+          "items": { "$ref": "#/$defs/flow_or_converter" }
+        },
+        "constants": {
+          "type": "array",
+          "description": "Constant entities. Typically use literal equations but can reference other entities. Can be overridden at runtime via set_constant().",
+          "items": { "$ref": "#/$defs/flow_or_converter" }
+        }
+      }
+    },
+
+    "stock": {
+      "type": "object",
+      "description": "A stock (level/accumulator). Integrated each step: stock(t+dt) = stock(t) + dt * net_flow(t).",
+      "required": ["name", "initial_value"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique entity name used in references."
+        },
+        "initial_value": {
+          "$ref": "#/$defs/expression",
+          "description": "Expression evaluated once at t=starttime to set the stock's initial value."
+        },
+        "equation": {
+          "$ref": "#/$defs/expression",
+          "description": "Net flow equation. Typically references one or more flows (e.g., inflow - outflow). Defaults to 0 if omitted."
+        }
+      }
+    },
+
+    "flow_or_converter": {
+      "type": "object",
+      "description": "A flow, converter, or constant entity.",
+      "required": ["name", "equation"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique entity name used in references."
+        },
+        "equation": {
+          "$ref": "#/$defs/expression",
+          "description": "The equation that computes this entity's value each timestep."
+        }
+      }
+    },
+
+    "graphical_function": {
+      "type": "object",
+      "description": "A lookup table (graphical function) for linear interpolation. Points must be sorted by x-coordinate. Values outside the range are clamped to the nearest boundary.",
+      "required": ["points"],
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "type": "array",
+          "description": "Array of [x, y] coordinate pairs defining the interpolation curve.",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 1
+        }
+      }
+    },
+
+    "expression": {
+      "description": "An expression AST node. Discriminated by the 'type' field.",
+      "oneOf": [
+        { "$ref": "#/$defs/expr_literal" },
+        { "$ref": "#/$defs/expr_ref" },
+        { "$ref": "#/$defs/expr_binary_op" },
+        { "$ref": "#/$defs/expr_unary_op" },
+        { "$ref": "#/$defs/expr_call" },
+        { "$ref": "#/$defs/expr_if" }
+      ]
+    },
+
+    "expr_literal": {
+      "type": "object",
+      "description": "A literal numeric value, or a string value (used only as a lookup table name argument).",
+      "required": ["type", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "literal" },
+        "value": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string", "description": "A lookup table name (only valid as the second argument to the 'lookup' function)." }
+          ]
+        }
+      }
+    },
+
+    "expr_ref": {
+      "type": "object",
+      "description": "A reference to another entity by name. Resolved to an index at parse time.",
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "ref" },
+        "name": {
+          "type": "string",
+          "description": "The name of the referenced entity. Must match an entity defined in the model."
+        }
+      }
+    },
+
+    "expr_binary_op": {
+      "type": "object",
+      "description": "A binary operation on two sub-expressions.",
+      "required": ["type", "op", "left", "right"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "binary_op" },
+        "op": {
+          "$ref": "#/$defs/binary_operator"
+        },
+        "left": {
+          "$ref": "#/$defs/expression",
+          "description": "Left operand."
+        },
+        "right": {
+          "$ref": "#/$defs/expression",
+          "description": "Right operand."
+        }
+      }
+    },
+
+    "expr_unary_op": {
+      "type": "object",
+      "description": "A unary operation on a sub-expression.",
+      "required": ["type", "op", "operand"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "unary_op" },
+        "op": {
+          "$ref": "#/$defs/unary_operator"
+        },
+        "operand": {
+          "$ref": "#/$defs/expression",
+          "description": "The operand expression."
+        }
+      }
+    },
+
+    "expr_call": {
+      "type": "object",
+      "description": "A call to a built-in function.",
+      "required": ["type", "function", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "call" },
+        "function": {
+          "$ref": "#/$defs/builtin_function"
+        },
+        "args": {
+          "type": "array",
+          "description": "Function arguments. Argument count depends on the function.",
+          "items": { "$ref": "#/$defs/expression" }
+        }
+      }
+    },
+
+    "expr_if": {
+      "type": "object",
+      "description": "A conditional expression. Evaluates 'then' if condition is nonzero (truthy), 'else' otherwise.",
+      "required": ["type", "condition", "then", "else"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "if" },
+        "condition": {
+          "$ref": "#/$defs/expression",
+          "description": "Condition expression. Nonzero = true, zero = false."
+        },
+        "then": {
+          "$ref": "#/$defs/expression",
+          "description": "Expression evaluated when condition is truthy."
+        },
+        "else": {
+          "$ref": "#/$defs/expression",
+          "description": "Expression evaluated when condition is falsy."
+        }
+      }
+    },
+
+    "binary_operator": {
+      "type": "string",
+      "description": "Binary operator name.",
+      "enum": [
+        "add", "sub", "mul", "div", "pow", "mod",
+        "gt", "lt", "gte", "lte", "eq", "neq",
+        "and", "or"
+      ]
+    },
+
+    "unary_operator": {
+      "type": "string",
+      "description": "Unary operator name.",
+      "enum": ["neg", "not"]
+    },
+
+    "builtin_function": {
+      "type": "string",
+      "description": "Built-in function name. Each function has a specific argument signature.",
+      "enum": [
+        "time", "dt", "starttime", "stoptime",
+        "abs", "sqrt", "exp", "ln", "log10",
+        "sin", "cos", "tan", "arcsin", "arccos", "arctan",
+        "sinwave", "coswave",
+        "max", "min", "round", "floor", "ceil",
+        "pi",
+        "step", "pulse",
+        "lookup"
+      ]
+    }
+  }
+}

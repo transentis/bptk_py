@@ -1796,3 +1796,93 @@ def test_matrix():
 #     bptk = bptk()
 
 """
+
+
+def test_stochastic_guards_python_backend():
+    """Invalid parameters should return NaN via Python backend."""
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+    from BPTK_Py.bptk import bptk
+    import math
+    import numpy as np
+
+    cases = [
+        ("normal_neg_std", sd.normal(0, -1)),
+        ("beta_neg_a", sd.beta(-1, 2)),
+        ("beta_zero_b", sd.beta(2, 0)),
+        ("binom_neg_n", sd.binomial(-5, 0.5)),
+        ("negbinom_neg_n", sd.negbinomial(-5, 0.5)),
+        ("poisson_neg_mu", sd.poisson(-5)),
+        ("gamma_neg_shape", sd.gamma(-1, 2)),
+        ("gamma_zero_scale", sd.gamma(2, 0)),
+        ("exprnd_neg", sd.exprnd(-1)),
+        ("exprnd_zero", sd.exprnd(0)),
+        ("lognorm_neg_std", sd.lognormal(0, -1)),
+        ("logistic_neg_scale", sd.logistic(0, -1)),
+        ("tri_lower_gt_upper", sd.triangular(10, 5, 1)),
+        ("tri_mode_gt_upper", sd.triangular(0, 15, 10)),
+        ("tri_mode_lt_lower", sd.triangular(5, 2, 10)),
+        ("weibull_neg_shape", sd.weibull(-1, 2)),
+        ("weibull_zero_scale", sd.weibull(2, 0)),
+        ("pareto_neg_shape", sd.pareto(-1, 1)),
+        ("pareto_zero_shape", sd.pareto(0, 1)),
+        ("pareto_neg_scale", sd.pareto(1, -1)),
+        ("pareto_zero_scale", sd.pareto(1, 0)),
+        ("invnorm_p_neg", sd.invnorm(-0.5, 0, 1)),
+        ("invnorm_p_gt1", sd.invnorm(1.5, 0, 1)),
+        ("invnorm_neg_std", sd.invnorm(0.5, 0, -1)),
+        ("ncdf_neg_std", sd.normalcdf(-1, 1, 0, -1)),
+        ("ncdf_zero_std", sd.normalcdf(-1, 1, 0, 0)),
+        ("invnorm_zero_std", sd.invnorm(0.5, 7, 0)),
+    ]
+
+    for name, equation in cases:
+        model = Model(starttime=0, stoptime=1, dt=1, name=name)
+        x = model.converter("x")
+        x.equation = equation
+
+        b = bptk()
+        b.register_scenario_manager({"mgr": {"model": model}})
+        b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+
+        result = b.run_scenarios(
+            scenario_managers=["mgr"], scenarios=["base"],
+            equations=["x"],
+        )
+        assert result.map(lambda v: np.isnan(v)).all().all(), \
+            f"{name}: expected all NaN, got {result.values}"
+
+
+def test_stochastic_guards_boundary_python_backend():
+    """Boundary parameter values should return correct constant results via Python backend."""
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+    from BPTK_Py.bptk import bptk
+
+    cases = [
+        ("normal_zero_std", sd.normal(5, 0), 5.0),
+        ("lognorm_zero_std", sd.lognormal(0, 0), 1.0),
+        ("logistic_zero_scale", sd.logistic(5, 0), 5.0),
+        ("binom_zero_n", sd.binomial(0, 0.5), 0.0),
+        ("binom_p_zero", sd.binomial(10, 0), 0.0),
+        ("binom_p_one", sd.binomial(10, 1), 10.0),
+        ("poisson_zero_mu", sd.poisson(0), 0.0),
+        ("tri_all_equal", sd.triangular(5, 5, 5), 5.0),
+        ("invnorm_valid", sd.invnorm(0.5, 0, 1), 0.0),
+    ]
+
+    for name, equation, expected in cases:
+        model = Model(starttime=0, stoptime=1, dt=1, name=name)
+        x = model.converter("x")
+        x.equation = equation
+
+        b = bptk()
+        b.register_scenario_manager({"mgr": {"model": model}})
+        b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+
+        result = b.run_scenarios(
+            scenario_managers=["mgr"], scenarios=["base"],
+            equations=["x"],
+        )
+        assert (abs(result - expected) < 1e-10).all().all(), \
+            f"{name}: expected {expected}, got {result.values}"

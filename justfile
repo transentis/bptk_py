@@ -3,9 +3,21 @@
 # Venv path
 venv := "venv"
 
+# Build the Rust extension into the active venv (maturin builds and installs BPTK_Py._rust_engine)
+dev:
+    . {{venv}}/bin/activate && maturin develop
+
+# Run Rust engine tests
+test-engine:
+    PYO3_PYTHON={{justfile_directory()}}/{{venv}}/bin/python cargo test --no-default-features
+
 # Run tests
-test:
+test: dev
     {{venv}}/bin/pip install ".[test]" && {{venv}}/bin/pytest ./
+
+# Build a wheel for the current platform
+build:
+    . {{venv}}/bin/activate && maturin build --release
 
 # Publish BPTK
 publish:

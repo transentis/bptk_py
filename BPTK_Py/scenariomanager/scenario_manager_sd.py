@@ -150,7 +150,7 @@ class ScenarioManagerSd(ScenarioManager):
             new_const = new_mod.constant(constant.name)
             new_const._elements = constant._elements
             new_const.function_string = constant.function_string
-            new_const.equation = constant.equation
+            new_const._equation = constant._equation
             new_const.generate_function()
             new_mod.memo[constant.name] = {}
 
@@ -158,6 +158,7 @@ class ScenarioManagerSd(ScenarioManager):
             new_converter = new_mod.converter(converter.name)
             new_converter._elements = converter._elements
             new_converter.function_string = converter.function_string
+            new_converter._equation = converter._equation
             new_converter.generate_function()
             new_mod.memo[converter.name] = {}
 
@@ -165,6 +166,7 @@ class ScenarioManagerSd(ScenarioManager):
             new_flow = new_mod.flow(flow.name)
             new_flow._elements = flow._elements
             new_flow.function_string = flow.function_string
+            new_flow._equation = flow._equation
             new_flow.generate_function()
             new_mod.memo[flow.name] = {}
 
@@ -172,6 +174,7 @@ class ScenarioManagerSd(ScenarioManager):
             new_biflow = new_mod.biflow(biflow.name)
             new_biflow._elements = biflow._elements
             new_biflow.function_string = biflow.function_string
+            new_biflow._equation = biflow._equation
             new_biflow.generate_function()
             new_mod.memo[biflow.name] = {}
 
@@ -179,6 +182,7 @@ class ScenarioManagerSd(ScenarioManager):
             new_stock = new_mod.stock(stock.name)
             new_stock._elements = stock._elements
             new_stock.function_string = stock.function_string
+            new_stock._equation = stock._equation
             new_stock._Stock__initial_value = new_mod.constants[stock._Stock__initial_value.name] if type(stock._Stock__initial_value) is str else stock._Stock__initial_value
             new_stock.generate_function()
             new_mod.memo[stock.name] = {}

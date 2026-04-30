@@ -41,6 +41,16 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.3.0
+
+* Add Rust-based SD execution backend (`backend="rust"`) for significantly faster simulation performance
+* Rust engine supports stocks, flows, biflows, converters, constants, all arithmetic/logical operators, stochastic/statistical distributions, and graphical functions
+* Automatic silent fallback to Python backend for unsupported features (arrays, modules, custom functions)
+* Add `Model.to_json()` for serializing SD DSL models to JSON
+* Add `ln`, `log10`, `floor`, `ceil`, `negbinomial` functions to SD DSL
+* Fix `geometric` and `pareto` distributions in Rust engine to match Python/numpy semantics
+* Fix `ScenarioManagerSd.get_cloned_model()` to properly copy `_equation` attribute
+
 ### 2.2.3
 
 * add unittests

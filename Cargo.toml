@@ -1,0 +1,40 @@
+[package]
+name = "bptk_rust_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bptk_rust_engine"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = "0.24"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.8"
+rand_distr = "0.4"
+statrs = "0.17"
+
+[features]
+default = ["extension-module"]
+extension-module = ["pyo3/extension-module"]
+
+[[test]]
+name = "test_builtins"
+path = "rust_tests/test_builtins.rs"
+
+[[test]]
+name = "test_eval"
+path = "rust_tests/test_eval.rs"
+
+[[test]]
+name = "test_json_parser"
+path = "rust_tests/test_json_parser.rs"
+
+[[test]]
+name = "test_lookup"
+path = "rust_tests/test_lookup.rs"
+
+[[test]]
+name = "test_sim"
+path = "rust_tests/test_sim.rs"

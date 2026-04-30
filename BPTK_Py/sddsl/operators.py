@@ -1437,6 +1437,38 @@ class Arcsin(Function):
         extractTerm(self.x, time))
 
 
+class Ln(Function):
+    def __init__(self, x):
+        self.x = x
+
+    def term(self, time="t"): return "( np.log({}) )".format(
+        extractTerm(self.x, time))
+
+
+class Log10(Function):
+    def __init__(self, x):
+        self.x = x
+
+    def term(self, time="t"): return "( np.log10({}) )".format(
+        extractTerm(self.x, time))
+
+
+class Floor(Function):
+    def __init__(self, x):
+        self.x = x
+
+    def term(self, time="t"): return "( np.floor({}) )".format(
+        extractTerm(self.x, time))
+
+
+class Ceil(Function):
+    def __init__(self, x):
+        self.x = x
+
+    def term(self, time="t"): return "( np.ceil({}) )".format(
+        extractTerm(self.x, time))
+
+
 class Sinwave(Function):
     def __init__(self, amplitude, period):
         self.amplitude = amplitude
@@ -1468,8 +1500,8 @@ class Beta(Function):
         self.a = a
         self.b = b
 
-    def term(self, time="t"): return 'np.random.beta({},{})'.format(
-        extractTerm(self.a, time), extractTerm(self.b, time))
+    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.beta({},{}))'.format(
+        extractTerm(self.a, time), extractTerm(self.b, time), extractTerm(self.a, time), extractTerm(self.b, time))
 
 
 class Binomial(Function):
@@ -1477,8 +1509,17 @@ class Binomial(Function):
         self.n = n
         self.p = p
 
-    def term(self, time="t"): return 'np.random.binomial({},min(1, {}))'.format(
-        extractTerm(self.n, time), extractTerm(self.p, time))
+    def term(self, time="t"): return '(np.nan if ({n} < 0 or {p} < 0 or {p} > 1) else np.random.binomial({n},{p}))'.format(
+        n=extractTerm(self.n, time), p=extractTerm(self.p, time))
+
+
+class NegBinomial(Function):
+    def __init__(self, n, p):
+        self.n = n
+        self.p = p
+
+    def term(self, time="t"): return '(np.nan if ({n} <= 0 or {p} <= 0 or {p} > 1) else np.random.negative_binomial({n},{p}))'.format(
+        n=extractTerm(self.n, time), p=extractTerm(self.p, time))
 
 
 class Combinations(Function):
@@ -1490,23 +1531,23 @@ class Combinations(Function):
         n = extractTerm(self.n, time)
         r = extractTerm(self.r, time)
 
-        return '(math.factorial({}) / (math.factorial({}) * math.factorial( {}-{})))'.format(n, r, n, r)
+        return '(0.0 if int({n}) < int({r}) else (math.factorial(int({n})) / (math.factorial(int({r})) * math.factorial(int({n})-int({r})))))'.format(n=n, r=r)
 
 
 class Exprnd(Function):
     def __init__(self, l):
         self.l = l
 
-    def term(self, time="t"): return 'np.random.exponential({})'.format(
-        extractTerm(self.l, time))
+    def term(self, time="t"): return '(np.nan if ({} <= 0) else np.random.exponential({}))'.format(
+        extractTerm(self.l, time), extractTerm(self.l, time))
 
 
 class Factorial(Function):
     def __init__(self, n):
         self.n = n
 
-    def term(self, time="t"): return "1.0*math.factorial(int({}))".format(
-        extractTerm(self.n, time))
+    def term(self, time="t"): return "(0.0 if int({n}) < 0 else 1.0*math.factorial(int({n})))".format(
+        n=extractTerm(self.n, time))
 
 
 class Gamma(Function):
@@ -1514,8 +1555,8 @@ class Gamma(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return 'np.random.gamma({},{})'.format(
-        extractTerm(self.shape, time), extractTerm(self.scale, time))
+    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.gamma({},{}))'.format(
+        extractTerm(self.shape, time), extractTerm(self.scale, time), extractTerm(self.shape, time), extractTerm(self.scale, time))
 
 
 class GammaLN(Function):
@@ -1541,9 +1582,9 @@ class Invnorm(Function):
         self.stddev = stddev
 
     def term(self, time="t"):
-        if self.mean and self.stddev:
+        if self.mean is not None and self.stddev is not None:
             return "(norm.ppf({},{},{} ))".format(extractTerm(self.p, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
-        if self.mean:
+        if self.mean is not None:
             return "(norm.ppf({},{}) )".format(extractTerm(self.p, time), extractTerm(self.mean, time))
         return "(norm.ppf({}) )".format(extractTerm(self.p, time))
 
@@ -1553,8 +1594,8 @@ class Logistic(Function):
         self.mean = mean
         self.scale = scale
 
-    def term(self, time="t"): return '(np.random.logistic({}, {}) )'.format(
-        extractTerm(self.mean, time), extractTerm(self.scale, time))
+    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.logistic({}, {}))'.format(
+        extractTerm(self.scale, time), extractTerm(self.mean, time), extractTerm(self.scale, time))
 
 
 class Lognormal(Function):
@@ -1562,8 +1603,8 @@ class Lognormal(Function):
         self.stddev = stddev
         self.mean = mean
 
-    def term(self, time="t"): return '(np.random.lognormal({}, {}) )'.format(
-        extractTerm(self.mean, time), extractTerm(self.stddev, time))
+    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.lognormal({}, {}))'.format(
+        extractTerm(self.stddev, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class Montecarlo(Function):
@@ -1578,8 +1619,8 @@ class Normal(Function):
         self.mean = mean
         self.stddev = stddev
 
-    def term(self, time="t"): return "(np.random.normal({},{}) )".format(
-        extractTerm(self.mean, time), extractTerm(self.stddev, time))
+    def term(self, time="t"): return "(np.nan if ({} < 0) else np.random.normal({},{}))".format(
+        extractTerm(self.stddev, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class NormalCDF(Function):
@@ -1602,8 +1643,8 @@ class Pareto(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return '(np.nan if ({} == 0) else (np.random.pareto({}) * {} ) )'.format(
-        extractTerm(self.scale, time), extractTerm(self.shape, time), extractTerm(self.scale, time))
+    def term(self, time="t"): return '(np.nan if ({shape} <= 0 or {scale} <= 0) else (np.random.pareto({shape}) * {scale}))'.format(
+        shape=extractTerm(self.shape, time), scale=extractTerm(self.scale, time))
 
 
 class Permutations(Function):
@@ -1611,16 +1652,18 @@ class Permutations(Function):
         self.n = n
         self.r = r
 
-    def term(self, time="t"): return "( math.factorial( int({}) ) / math.factorial( int({}) - int({}) ) )".format(
-        extractTerm(self.n, time), extractTerm(self.n, time), extractTerm(self.r, time))
+    def term(self, time="t"):
+        n = extractTerm(self.n, time)
+        r = extractTerm(self.r, time)
+        return '(0.0 if int({n}) < int({r}) else (math.factorial(int({n})) / math.factorial(int({n})-int({r}))))'.format(n=n, r=r)
 
 
 class Poisson(Function):
     def __init__(self, mu):
         self.mu = mu
 
-    def term(self, time="t"): return '(np.random.poisson({}) )'.format(
-        extractTerm(self.mu, time))
+    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.poisson({}))'.format(
+        extractTerm(self.mu, time), extractTerm(self.mu, time))
 
 
 class Triangular(Function):
@@ -1629,8 +1672,8 @@ class Triangular(Function):
         self.mode = mode
         self.upper_bound = upper_bound
 
-    def term(self, time="t"): return "(np.random.triangular({}, {}, {}) ) ".format(extractTerm(
-        self.lower_bound, time), extractTerm(self.mode, time), extractTerm(self.upper_bound, time))
+    def term(self, time="t"): return "({l} if ({l} == {m} == {u}) else (np.nan if ({l} > {u} or {m} < {l} or {m} > {u}) else np.random.triangular({l}, {m}, {u})))".format(
+        l=extractTerm(self.lower_bound, time), m=extractTerm(self.mode, time), u=extractTerm(self.upper_bound, time))
 
 
 class Weibull(Function):
@@ -1638,5 +1681,5 @@ class Weibull(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return '(np.random.weibull({}) * {} )'.format(
-        extractTerm(self.shape, time), extractTerm(self.scale, time))
+    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.weibull({}) * {})'.format(
+        extractTerm(self.shape, time), extractTerm(self.scale, time), extractTerm(self.shape, time), extractTerm(self.scale, time))
