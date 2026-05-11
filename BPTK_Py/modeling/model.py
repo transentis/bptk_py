@@ -122,6 +122,69 @@ class Model:
         self.agent_type_map[agent_type] = []
 
 
+    def to_json(self) -> str:
+        """Serialize this SD model to the JSON format used by the Rust engine.
+
+        Returns a JSON string that can be loaded by ``RustSdEngine.load_model()``.
+        Raises ``ValueError`` if the model uses features not yet supported by the
+        Rust engine (biflows, arrays, custom functions).
+        """
+        from ..sddsl.json_serializer import model_to_json
+        return model_to_json(self)
+
+    def simulate(self, equations: list, backend: str = "python"):
+        """Run simulation and return results as a Pandas DataFrame.
+
+        Args:
+            equations: List of equation names to include in results.
+            backend: ``"python"`` (default) or ``"rust"``.
+
+        Returns:
+            Pandas DataFrame with time as index (named ``"t"``) and equations as columns.
+        """
+        if backend == "rust":
+            try:
+                return self._simulate_rust(equations)
+            except (ValueError, AttributeError, ImportError) as e:
+                log("[WARN] Cannot run with Rust backend: {} — falling back to Python.".format(e))
+                return self._simulate_python(equations)
+        else:
+            return self._simulate_python(equations)
+
+    def _simulate_rust(self, equations: list):
+        import pandas as pd
+        from BPTK_Py._rust_engine import RustSdEngine
+
+        json_str = self.to_json()
+        engine = RustSdEngine()
+        rust_model = engine.load_model(json_str)
+
+        raw = rust_model.simulate(equations)
+        # Convert string time keys to float
+        converted = {}
+        for eq_name, time_series in raw.items():
+            converted[eq_name] = {float(t): v for t, v in time_series.items()}
+
+        df = pd.DataFrame(converted)
+        df.index.name = "t"
+        df = df.sort_index()
+        return df
+
+    def _simulate_python(self, equations: list):
+        import pandas as pd
+        from ..util import timerange
+
+        self.reset_cache()
+        results = {}
+        for eq in equations:
+            results[eq] = {}
+            for t in timerange(self.starttime, self.stoptime + self.dt, self.dt):
+                results[eq][t] = self.equation(eq, t)
+
+        df = pd.DataFrame(results)
+        df.index.name = "t"
+        return df
+
     def reset(self):
         """Reset the model.
         Cleara out all agents, agent and event statistics and resets the cache of SD equations. Keeps the agent factories though, so you could directly reconfigure the model using the configure method.

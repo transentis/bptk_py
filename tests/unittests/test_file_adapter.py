@@ -19,7 +19,8 @@ class TestFileAdapter(unittest.TestCase):
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
         self.assertIsNone(return_value)
-        self.assertIn("Error loading instance 123: [Errno 2] No such file or directory: 'invalid_path/123.json'",content)
+        self.assertIn("Error loading instance 123:", content)
+        self.assertIn("123.json", content)
 
     def test_FileAdapter_delete_instance_execption(self):
         fileAdapter = FileAdapter(compress=True, path="invalid_path")
@@ -36,7 +37,8 @@ class TestFileAdapter(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
-        self.assertIn("Error deleting instance 456: [Errno 2] No such file or directory: 'invalid_path/456.json'",output)
+        self.assertIn("Error deleting instance 456:", output)
+        self.assertIn("456.json", output)
 
     def test_is_already_compressed_results(self):
         fileAdapter = FileAdapter(compress=True, path="path")

@@ -24,6 +24,12 @@ tests/state
 .mypy_cache/
 .pytest_cache/
 
+# Rust engine build artifacts
+target/
+Cargo.lock
+BPTK_Py/_rust_engine*.so
+BPTK_Py/_rust_engine*.pyd
+
 # Generated Python files from XMILE compiler
 # XMILE models (*.stmx) are compiled to Python during tests
 tests/test_models/*.py

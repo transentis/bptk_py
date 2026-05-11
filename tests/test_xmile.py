@@ -1393,7 +1393,4 @@ def test_doublequote(test_models_path):
         assert sim.equation("otherconverter(fooBar)",t) == 2*t
 
 
-def test_teardown(test_models_path):
 
-    for file_path in test_models_path.glob("*.py"):
-        file_path.unlink()

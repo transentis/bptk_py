@@ -127,7 +127,7 @@ class SdRunner(ScenarioRunner):
         return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
 
     #TODO this really should just take on scenario manager - it doesn't make sense to call it on multiple scenario managers. It should be called run_scenarios
-    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[]):
+    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], backend="python"):
         """
         Runs all relevant scenarios for a given scenario manager.
 
@@ -136,10 +136,11 @@ class SdRunner(ScenarioRunner):
         :param scenarios: names of scenarios to plot
         :param equations:  names of equations to plot
         :param scenario_managers: names of scenario managers to plot
+        :param backend: "python" (default) or "rust" — execution backend
        """
 
         # Obtain simulation results
-        scenario_objects = self._run_scenarios(scenarios=scenarios, equations=equations, output=["frame"], scenario_managers=scenario_managers)
+        scenario_objects = self._run_scenarios(scenarios=scenarios, equations=equations, output=["frame"], scenario_managers=scenario_managers, backend=backend)
 
         if len(scenario_objects.keys()) == 0:
             log("[ERROR] No scenario found for scenario_managers={} and scenario_names={}. Cancelling".format(
@@ -188,13 +189,14 @@ class SdRunner(ScenarioRunner):
         return self.__generate_df(sd_results_dict, return_format, scenario_objects, dict_equations,
                                 )
 
-    def _run_scenarios(self, scenarios, equations=[], output=["frame"], scenario_managers=[]):
+    def _run_scenarios(self, scenarios, equations=[], output=["frame"], scenario_managers=[], backend="python"):
         """
         Method to run the simulations
         :param scenarios: names of scenarios to simulate
         :param equations: equations to simulate
         :param output: output type, default as a dataFrame
         :param scenario_managers: scenario managers as a list of names of scenario managers
+        :param backend: "python" (default) or "rust" — execution backend
         :return: dict of SimulationScenario
         """
         ## Load scenarios
@@ -211,14 +213,73 @@ class SdRunner(ScenarioRunner):
         for key in scenario_objects.keys():
             if key in scenarios:
                 sc = scenario_objects[key]
-                simu = SdSimulation(model=sc.model, name=sc.name)
-                for const in sc.constants.keys():
-                    simu.change_equation(name=const, value=sc.constants[const])
-                for name, points in sc.points.items():
-                    simu.change_points(name=name, value=points)
-                simu.change_runspecs(starttime=sc.starttime,stoptime=sc.stoptime,dt=sc.dt)
 
-                sc.result = simu.start(output=output, equations=equations)
+                if backend == "rust":
+                    try:
+                        rust_json_str = sc.model.to_json()
+                    except (ValueError, AttributeError) as e:
+                        log("[WARN] Cannot serialize model to JSON: {} — falling back to Python".format(str(e)))
+                        rust_json_str = None
+
+                    if rust_json_str is not None:
+                        sc.result = self._run_scenario_rust(sc, equations, rust_json_str)
+                        if sc.result is None:
+                            log("[WARN] Falling back to Python engine for scenario '{}'".format(sc.name))
+                            sc.result = self._run_scenario_python(sc, equations, output)
+                    else:
+                        sc.result = self._run_scenario_python(sc, equations, output)
+                else:
+                    sc.result = self._run_scenario_python(sc, equations, output)
 
         return scenario_objects
+
+    def _run_scenario_python(self, sc, equations, output):
+        """Execute a scenario using the Python engine (SdSimulation)."""
+        simu = SdSimulation(model=sc.model, name=sc.name)
+        for const in sc.constants.keys():
+            simu.change_equation(name=const, value=sc.constants[const])
+        for name, points in sc.points.items():
+            simu.change_points(name=name, value=points)
+        simu.change_runspecs(starttime=sc.starttime, stoptime=sc.stoptime, dt=sc.dt)
+        return simu.start(output=output, equations=equations)
+
+    def _run_scenario_rust(self, sc, equations, json_str):
+        """Execute a scenario using the Rust engine. Returns None on failure (triggers fallback)."""
+        try:
+            from BPTK_Py._rust_engine import RustSdEngine
+
+            engine = RustSdEngine()
+            rust_model = engine.load_model(json_str)
+
+            # Apply scenario constant overrides
+            for name, value in sc.constants.items():
+                if isinstance(value, (int, float)):
+                    rust_model.set_constant(name, float(value))
+                else:
+                    log("[WARN] Non-numeric constant '{}' — cannot use Rust engine".format(name))
+                    return None
+
+            # Note: scenario lookup points overrides are already applied to
+            # model.points by setup_points() at registration time, so to_json()
+            # already includes them. No need to call set_points() here.
+
+            # Apply scenario runspec overrides
+            rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
+
+            # Run simulation
+            raw = rust_model.simulate(equations)
+
+            # Convert to DataFrame matching SdSimulation output format
+            converted = {}
+            for eq_name, time_series in raw.items():
+                converted[eq_name] = {float(t): v for t, v in time_series.items()}
+
+            df = pd.DataFrame(converted)
+            df.index.name = "t"
+            df = df.sort_index()
+            return df
+
+        except (ValueError, ImportError) as e:
+            log("[WARN] Rust engine failed: {} — falling back to Python".format(str(e)))
+            return None
 

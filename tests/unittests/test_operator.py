@@ -1039,5 +1039,74 @@ class TestDotOperator(unittest.TestCase):
         self.assertEqual(converter[1][0](1),91.0)
         self.assertEqual(converter[1][1](1),106.0)                 
 
+class TestLnLog10FloorCeilOperators(unittest.TestCase):
+    """Unit tests for Ln, Log10, Floor, Ceil operator classes."""
+
+    def test_ln_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Ln
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Ln(element)
+        self.assertIn("np.log(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_ln_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Ln
+        op = Ln(2.718)
+        self.assertIn("np.log(", op.term("t"))
+        self.assertIn("2.718", op.term("t"))
+
+    def test_log10_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Log10
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Log10(element)
+        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_log10_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Log10
+        op = Log10(100.0)
+        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn("100.0", op.term("t"))
+
+    def test_floor_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Floor
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Floor(element)
+        self.assertIn("np.floor(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_floor_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Floor
+        op = Floor(3.7)
+        self.assertIn("np.floor(", op.term("t"))
+        self.assertIn("3.7", op.term("t"))
+
+    def test_ceil_term_with_element(self):
+        from BPTK_Py.sddsl.operators import Ceil
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        op = Ceil(element)
+        self.assertIn("np.ceil(", op.term("t"))
+        self.assertIn(element.term("t"), op.term("t"))
+
+    def test_ceil_term_with_scalar(self):
+        from BPTK_Py.sddsl.operators import Ceil
+        op = Ceil(3.2)
+        self.assertIn("np.ceil(", op.term("t"))
+        self.assertIn("3.2", op.term("t"))
+
+    def test_operators_store_operand(self):
+        from BPTK_Py.sddsl.operators import Ln, Log10, Floor, Ceil
+        model = Model()
+        element = Element(model=model, name="x", function_string=None)
+        self.assertIs(Ln(element).x, element)
+        self.assertIs(Log10(element).x, element)
+        self.assertIs(Floor(element).x, element)
+        self.assertIs(Ceil(element).x, element)
+
+
 if __name__ == '__main__':
     unittest.main()

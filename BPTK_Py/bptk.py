@@ -651,7 +651,8 @@ class bptk():
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
                        agent_property_types=[], equations=[], series_names={},
                        progress_bar=False,
-                       return_format = "df"
+                       return_format = "df",
+                       backend = "python"
                        ):
 
         """Run a set of scenarios.
@@ -677,6 +678,8 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
                 The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
+            backend: String.
+                Execution backend: 'python' (default) or 'rust'. Only applies to SD scenarios.
 
         Returns:
             Based on the return_format value, results are returned as df, dict, or a json string
@@ -768,7 +771,8 @@ class bptk():
                     equations=equations,#should check for valid equations here
                     scenario_managers=[manager.name],
                     sd_results_dict=sd_results_dict,
-                    return_format=return_format
+                    return_format=return_format,
+                    backend=backend
                 )]
 
         ## Check whether one or many scenarios / scenario managers were not simulated. This means, they were not defined!
@@ -841,7 +845,8 @@ class bptk():
                        series_names={},
                        progress_bar=False,
                        return_df=False,
-                       format="plot"
+                       format="plot",
+                       backend="python"
                       ):
 
         """Plot scenarios for SD, ABM and hybrid models.
@@ -902,7 +907,8 @@ class bptk():
                                   agent_property_types=agent_property_types,
                                   equations=equations,
                                   series_names=series_names,
-                                  progress_bar=progress_bar
+                                  progress_bar=progress_bar,
+                                  backend=backend
                                  )
 
         return self.visualizer.plot(df=df,

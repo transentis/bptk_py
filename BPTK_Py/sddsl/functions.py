@@ -10,6 +10,7 @@
 # MIT License
 
 from .operators import *
+from .operators import Inf as _InfOp
 from .constant import Constant
 from .element import Element
 
@@ -141,13 +142,25 @@ def arcsin(x): return Arcsin(x)
 def arctan(x): return Arctan(x)
 
 
+def ln(x): return Ln(x)
+
+
+def log10(x): return Log10(x)
+
+
+def floor(x): return Floor(x)
+
+
+def ceil(x): return Ceil(x)
+
+
 def sinwave(amplitude, period): return Sinwave(amplitude, period)
 
 
 def coswave(amplitude, period): return Coswave(amplitude, period)
 
 
-def Inf(): return Inf()
+def Inf(): return _InfOp()
 
 
 def pi(): return Pi()
@@ -162,6 +175,9 @@ def beta(a, b): return Beta(a, b)
 
 
 def binomial(n, p): return Binomial(n, p)
+
+
+def negbinomial(n, p): return NegBinomial(n, p)
 
 
 def combinations(n, r): return Combinations(n, r)
