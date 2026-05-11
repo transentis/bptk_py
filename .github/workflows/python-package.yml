@@ -81,7 +81,14 @@ jobs:
         POSTGRES_PASSWORD: bptk_test_ci
         REDIS_URL: "redis://localhost:6379/0"
       run: |
-        pytest
+        pytest --cov-config=.coveragerc --cov=./
+        coverage xml
+    - name: Upload coverage to Coveralls
+      if: matrix.python-version == '3.11' && github.repository == 'transentis/bptk_py'
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        file: coverage.xml
 
   test-other:
     name: Test (${{ matrix.os }}, Python ${{ matrix.python-version }})
