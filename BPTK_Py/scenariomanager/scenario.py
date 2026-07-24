@@ -45,6 +45,13 @@ class SimulationScenario():
         self.model = model
         self.sd_simulation = None # stores a live simulation when running a session
 
+        # Rust backend stepping state. Populated by SdRunner._run_scenario_step_rust
+        # on the first step of a Rust-backed session; cleared in bptk.end_session.
+        self.rust_model = None
+        self._rust_initial = None
+        self._rust_initial_returned = False
+        self._rust_failed = False
+
         self.stoptime = 0.0
         self.starttime = 0.0
         self.dt = 0.0

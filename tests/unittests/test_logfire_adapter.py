@@ -80,5 +80,22 @@ class TestLogfireAdapter(unittest.TestCase):
         adapter.log("{\"key\": \"value\"}")
         mock_logfire.info.assert_called_once_with('{{"key": "value"}}')
 
+
+class TestLoggerWithoutLogfireAdapter(unittest.TestCase):
+    def test_logger_falls_back_when_adapter_missing(self):
+        """When the logfire_adapter submodule cannot be imported, logger.py falls
+        back to LogfireAdapter=None / LOGFIRE_AVAILABLE=False (covers the
+        ImportError branch at the top of logger.py)."""
+        import BPTK_Py.logger.logger as logger_mod
+        try:
+            with patch.dict('sys.modules', {'BPTK_Py.logger.logfire_adapter': None}):
+                importlib.reload(logger_mod)
+                self.assertIsNone(logger_mod.LogfireAdapter)
+                self.assertFalse(logger_mod.LOGFIRE_AVAILABLE)
+        finally:
+            # Restore the real adapter binding for any later tests.
+            importlib.reload(logger_mod)
+
+
 if __name__ == '__main__':
     unittest.main()

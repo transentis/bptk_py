@@ -81,10 +81,21 @@ class SdRunner(ScenarioRunner):
         return simulation_results
 
 
-    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations):
+    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations, backend="python", seed=None):
         """
-        Run a step of the given scenarios and return data for the given equations and agents
-        """    
+        Run a step of the given scenarios and return data for the given equations and agents.
+
+        :param backend: "python" (default) or "rust" — execution backend. When "rust",
+            each scenario's first step lazily initialises a `RustSdModel` cached on
+            `sc.rust_model`; subsequent steps advance that model by one timestep.
+            If JSON serialization or any Rust call fails, the scenario falls back to
+            the Python backend for the rest of the session (sticky via `sc._rust_failed`).
+        :param seed: Optional[int] — RNG seed passed to the Rust engine's `init()`.
+            Fixing it makes a stochastic model's trajectory reproducible, which is
+            what lets a Rust-backed session be replayed identically after the process
+            restarts (see `bptk._restore_rust_session`). `None` lets the engine seed
+            from entropy (non-reproducible). Ignored by the Python backend.
+        """
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
         scenario_objects = self.scenario_manager_factory.get_scenarios(scenario_managers=[scenario_manager],
@@ -96,35 +107,177 @@ class SdRunner(ScenarioRunner):
             log("[ERROR] No scenarios found for scenario manager \"{}\" and scenarios \"{}\"".format(scenario_manager,",".join(scenarios)))
 
         for scenario, sc in scenario_objects.items():
+            use_rust = (backend == "rust") and not getattr(sc, "_rust_failed", False)
 
-            if sc.sd_simulation is None:
-                # need to set up the sd simulation
-                # TODO: the following should really be part of SdSimulation
-                sc.sd_simulation = SdSimulation(model=sc.model, name=sc.name)
-                # first apply the scenario settings
-                for name, value in sc.constants.items():
-                    sc.sd_simulation.change_equation(name=name, value=value)
-                for name, points in sc.points.items():
-                    sc.sd_simulation.change_points(name=name, value=points)
-                sc.sd_simulation.change_runspecs(starttime=sc.starttime,stoptime=sc.stoptime,dt=sc.dt)
-
-            # now the settings relevant for this step
-            
-            if settings:
-                if scenario_manager in settings:
-                    if scenario in settings[scenario_manager]:
-                        if "constants" in settings[scenario_manager][scenario]:
-                            constants = settings[scenario_manager][scenario]["constants"]
-                            for name, value in constants.items():
-                                sc.sd_simulation.change_equation(name=name, value=value)
-                        if "points" in settings[scenario_manager][scenario]:        
-                            points = settings[scenario_manager][scenario]["points"] 
-                            for name, points in points.items():
-                                sc.sd_simulation.change_points(name=name, value=points)
-
-            sc.result = sc.sd_simulation.start(output=["frame"], start=step, until=step,equations=equations)
+            if use_rust:
+                try:
+                    self._run_scenario_step_rust(sc, step, settings, scenario_manager, scenario, equations, seed=seed)
+                except (ValueError, ImportError, AttributeError) as e:
+                    log("[WARN] Rust step failed for '{}': {} — falling back to Python for the rest of this session".format(scenario, str(e)))
+                    sc._rust_failed = True
+                    sc.rust_model = None
+                    sc._rust_initial = None
+                    sc._rust_initial_returned = False
+                    self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations)
+            else:
+                self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations)
 
         return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
+
+    def _run_scenario_step_python(self, sc, step, settings, scenario_manager, scenario, equations):
+        """Single-step Python execution via SdSimulation. Lazily creates sc.sd_simulation
+        on first call; reuses it for subsequent steps so the model memo persists."""
+        if sc.sd_simulation is None:
+            # need to set up the sd simulation
+            # TODO: the following should really be part of SdSimulation
+            sc.sd_simulation = SdSimulation(model=sc.model, name=sc.name)
+            # first apply the scenario settings
+            for name, value in sc.constants.items():
+                sc.sd_simulation.change_equation(name=name, value=value)
+            for name, points in sc.points.items():
+                sc.sd_simulation.change_points(name=name, value=points)
+            sc.sd_simulation.change_runspecs(starttime=sc.starttime, stoptime=sc.stoptime, dt=sc.dt)
+
+        # now the settings relevant for this step
+        if settings:
+            if scenario_manager in settings:
+                if scenario in settings[scenario_manager]:
+                    if "constants" in settings[scenario_manager][scenario]:
+                        constants = settings[scenario_manager][scenario]["constants"]
+                        for name, value in constants.items():
+                            sc.sd_simulation.change_equation(name=name, value=value)
+                    if "points" in settings[scenario_manager][scenario]:
+                        points = settings[scenario_manager][scenario]["points"]
+                        for name, points in points.items():
+                            sc.sd_simulation.change_points(name=name, value=points)
+
+        sc.result = sc.sd_simulation.start(output=["frame"], start=step, until=step, equations=equations)
+
+    def _run_scenario_step_rust(self, sc, step, settings, scenario_manager, scenario, equations, seed=None):
+        """Single-step Rust execution.
+
+        On first call: serialises the model to JSON, loads it into a RustSdEngine,
+        applies the scenario-level constants / runspecs, and calls `init(equations, seed)`
+        — which evaluates step 0 (t == starttime). The init values are cached on
+        `sc._rust_initial` and returned by the first invocation of this method.
+        Passing a fixed `seed` makes a stochastic model's trajectory reproducible so
+        the session can be replayed identically on resume.
+
+        On subsequent calls: applies any per-step constant / points overrides from
+        `settings`, then advances the Rust cursor until it reaches the caller's
+        `step` time. When the session's dt is a multiple of the model's dt
+        (the sampling case), this issues several `rust_model.step()` calls per
+        invocation; the common case (session dt == model dt) advances by exactly
+        one timestep.
+        """
+        if sc.rust_model is None:
+            from BPTK_Py._rust_engine import RustSdEngine
+
+            rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
+
+            engine = RustSdEngine()
+            sc.rust_model = engine.load_model(rust_json_str)
+
+            # Apply baseline scenario overrides (from scenario config, not per-step settings).
+            # `sc.points` lookup overrides are already baked into model.points by setup_points()
+            # at scenario registration time, so to_json() already includes them.
+            for name, value in sc.constants.items():
+                if isinstance(value, (int, float)):
+                    sc.rust_model.set_constant(name, float(value))
+                else:
+                    raise ValueError(
+                        "Non-numeric constant '{}' — cannot use Rust engine".format(name)
+                    )
+
+            sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
+
+            sc._rust_initial = sc.rust_model.init(equations, seed)
+            sc._rust_initial_returned = False
+
+        # Apply per-step settings overrides
+        if settings and scenario_manager in settings and scenario in settings[scenario_manager]:
+            s = settings[scenario_manager][scenario]
+            for name, value in s.get("constants", {}).items():
+                sc.rust_model.set_constant(name, float(value))
+            for name, pts in s.get("points", {}).items():
+                # Rust set_points expects list[tuple[float, float]]; settings may carry
+                # list[list[float, float]] (JSON-style).
+                sc.rust_model.set_points(name, [(float(x), float(y)) for x, y in pts])
+
+        if not sc._rust_initial_returned:
+            values = sc._rust_initial
+            t = float(sc.starttime)
+            sc._rust_initial_returned = True
+        else:
+            # Advance the Rust cursor until it reaches the caller's step time.
+            # The session's dt (from begin_session) may exceed the model's dt — e.g.
+            # sampling a dt=0.25 model at dt=1.0 — in which case we run multiple
+            # internal model steps per run_step() call. This matches the Python path,
+            # where SdSimulation.start(start=step, until=step) lazily computes
+            # intermediate memo entries through the model's recursive evaluator.
+            target = float(step)
+            model_dt = float(sc.dt)
+            current = sc.rust_model.current_time()
+            n = max(1, round((target - current) / model_dt))
+            values = {}
+            for _ in range(n):
+                values = sc.rust_model.step()
+            t = sc.rust_model.current_time()
+
+        sc.result = pd.DataFrame({eq: {float(t): val} for eq, val in values.items()})
+        sc.result.index.name = "t"
+
+    def restore_scenario_state_rust(self, sc, scenario_manager, scenario, equations, blob, folded, seed=None):
+        """Rebuild a scenario's Rust engine from an exported memo grid — the fast
+        alternative to replaying every step (see `bptk._restore_rust_session`).
+
+        Loads the model, re-applies runspecs, the scenario-level baseline constants
+        and the *folded* per-step overrides (`folded` = {"constants": {..}, "points":
+        {..}} with last-value-wins), then imports the grid instead of stepping. After
+        this the scenario is positioned mid-session: `_rust_initial_returned` is True,
+        so the next `run_scenario_step` advances the cursor with `step()`.
+
+        `blob` is the `(current_step, {entity_name: [values]})` pair produced by
+        `RustSdModel.export_state()`; JSON round-trips it as a 2-element list.
+        Raises (ValueError/ImportError/AttributeError) on failure so the caller can
+        fall back to replay.
+        """
+        from BPTK_Py._rust_engine import RustSdEngine
+
+        current_step, memo = blob[0], blob[1]
+
+        rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
+        engine = RustSdEngine()
+        sc.rust_model = engine.load_model(rust_json_str)
+
+        # Runspecs must be set before the grid is installed.
+        sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
+
+        # Baseline scenario constants (points are already baked into to_json()).
+        for name, value in sc.constants.items():
+            if isinstance(value, (int, float)):
+                sc.rust_model.set_constant(name, float(value))
+            else:
+                raise ValueError("Non-numeric constant '{}' — cannot use Rust engine".format(name))
+
+        # Folded per-step overrides: reconstruct the model's mutable constant/points
+        # state so future steps evaluate with the correct equations (no re-simulation).
+        if folded:
+            for name, value in folded.get("constants", {}).items():
+                sc.rust_model.set_constant(name, float(value))
+            for name, pts in folded.get("points", {}).items():
+                sc.rust_model.set_points(name, [(float(x), float(y)) for x, y in pts])
+
+        sc.rust_model.import_state(
+            int(current_step),
+            {name: [float(v) for v in values] for name, values in memo.items()},
+            equations,
+            seed,
+        )
+
+        sc._rust_initial = None
+        sc._rust_initial_returned = True
+        sc._rust_failed = False
 
     #TODO this really should just take on scenario manager - it doesn't make sense to call it on multiple scenario managers. It should be called run_scenarios
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], backend="python"):

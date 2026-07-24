@@ -25,7 +25,7 @@ class ScenarioManagerHybrid(ScenarioManager):
     This class reads hybrid ABM/SD-DSL models and manages them
     """
 
-    def __init__(self, json_config, name, filenames=[], model=None):
+    def __init__(self, json_config, name, filenames=None, model=None):
         """
 
         :param json_config: Configuration as a JSON dict
@@ -40,7 +40,9 @@ class ScenarioManagerHybrid(ScenarioManager):
         self.scenarios = {}
         self.name = name
         self.model = model
-        self.filenames=filenames
+        # Avoid a shared mutable default: filenames is mutated in place (+=) by the
+        # factory, so a list default would leak filenames across manager instances.
+        self.filenames = filenames if filenames is not None else []
 
 
     def get_config(self):

@@ -6,6 +6,10 @@ use rand::SeedableRng;
 pub struct SimulationState {
     /// memo[entity_index][timestep_index] = value
     pub memo: Vec<Vec<f64>>,
+    /// Cursor into the memo table: the index of the last step whose
+    /// non-stock entities have been evaluated. After `init()` returns this is
+    /// `0`; each successful `step()` increments it by one.
+    pub current_step: usize,
     /// Seeded RNG for stochastic functions (interior mutability).
     rng: RefCell<StdRng>,
 }
@@ -18,6 +22,7 @@ impl SimulationState {
         };
         SimulationState {
             memo: vec![vec![0.0; num_steps]; num_entities],
+            current_step: 0,
             rng: RefCell::new(rng),
         }
     }

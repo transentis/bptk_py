@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open, patch, MagicMock
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
+from BPTK_Py.scenariomanager.scenario_manager_sd import ScenarioManagerSd
 import os, json
 from BPTK_Py import Model
 from  BPTK_Py.scenariomanager.scenario import SimulationScenario
@@ -70,8 +71,100 @@ class TestScenarioManagerFactory(unittest.TestCase):
         self.assertEqual(sm.scenario_managers["smPortfolio2"].scenarios["scenarioHighInitialValue"].dictionary["constants"]["initialValue"],5000.0)
 
         sm.reset_all_scenarios()
-        
-        self.assertEqual(sm.scenario_managers,{})      
+
+        self.assertEqual(sm.scenario_managers,{})
+
+    def test_refresh_scenarios_for_json(self):
+        """FileMonitor callback: re-reads every file of managers referencing the changed JSON."""
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+        scenarioFile = os.path.join(testDir, "scenario.json")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+        sm.get_scenario_managers(path=testDir)
+
+        # Both managers in scenario.json reference the changed file, so each of them
+        # triggers a re-read of that file.
+        with patch.object(sm, "_ScenarioManagerFactory__readScenario") as mock_read:
+            sm._ScenarioManagerFactory__refresh_scenarios_for_json(scenarioFile)
+
+        self.assertTrue(mock_read.called)
+        for call in mock_read.call_args_list:
+            self.assertEqual(call.args[0], scenarioFile)
+
+        # A file that no manager references triggers no re-read.
+        with patch.object(sm, "_ScenarioManagerFactory__readScenario") as mock_read_none:
+            sm._ScenarioManagerFactory__refresh_scenarios_for_json("/does/not/exist.json")
+        mock_read_none.assert_not_called()
+
+    def test_refresh_scenarios_for_source_model(self):
+        """ModelMonitor callback: resets every scenario of managers whose source matches."""
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+        sm.get_scenario_managers(path=testDir)
+
+        source_file = "some/model.itmx"
+        sm.scenario_managers["smPortfolio1"].source = source_file  # smPortfolio2 keeps source=""
+        expected_scenarios = list(sm.scenario_managers["smPortfolio1"].scenarios.keys())
+
+        with patch.object(sm, "reset_scenario") as mock_reset:
+            sm._refresh_scenarios_for_source_model(source_file)
+
+        # Only the manager whose source matches is reset - one call per scenario.
+        self.assertEqual(mock_reset.call_count, len(expected_scenarios))
+        for call in mock_reset.call_args_list:
+            self.assertEqual(call.kwargs["scenario_manager"], "smPortfolio1")
+            self.assertIn(call.kwargs["scenario"], expected_scenarios)
+
+    def test_model_monitor_logs_when_source_file_missing(self):
+        """With start_model_monitor and a source that does not exist, an error is logged."""
+        import tempfile
+
+        tmproot = tempfile.TemporaryDirectory()
+        scenariosDir = os.path.join(tmproot.name, "scenarios")
+        os.mkdir(scenariosDir)
+        scenario_config = {
+            "smSourced": {
+                "type": "sd",
+                "model": "simulation_models/does_not_exist",
+                "source": "source_models/missing.itmx",
+                "scenarios": {"base": {}}
+            }
+        }
+        with open(os.path.join(scenariosDir, "sourced.json"), "w", encoding="utf-8") as f:
+            json.dump(scenario_config, f)
+
+        #cleanup logfile
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        sm = ScenarioManagerFactory(start_model_monitor=True, start_scenario_monitor=False)
+        sm.get_scenario_managers(path=scenariosDir)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+
+        self.assertIn("[ERROR] Scenario monitor: Source model file not found", content)
+        self.assertEqual(sm.model_monitors, {})  # no monitor started for a missing file
+
+        sm.destroy()
+        tmproot.cleanup()
+
+    def test_add_scenario_with_source_starts_monitor(self):
+        """add_scenario with a source registers a ModelMonitor for that source."""
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+        # Pre-populate an existing manager so add_scenario takes the "already existing" branch
+        # and does not try to instantiate a model from disk.
+        sm.scenario_managers["mgr"] = MagicMock()
+
+        with patch("BPTK_Py.scenariomanager.scenario_manager_factory.ModelMonitor") as MockMonitor:
+            sm.add_scenario(scenario=MagicMock(), scenario_manager="mgr",
+                            source="model.itmx", model="out")
+
+        MockMonitor.assert_called_once()
+        self.assertIn("model.itmx", sm.model_monitors)
 
     def test_get_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())

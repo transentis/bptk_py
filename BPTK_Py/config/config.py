@@ -81,6 +81,14 @@ configuration = {
 
     "set_scenario_monitor": True,
     "set_model_monitor": True,
+
+    # Default execution backend for SD step-by-step *sessions*: "python" or "rust".
+    # Only affects begin_session() (and the /begin-session request body), which is
+    # the path a long-lived, configured-from-scratch instance (e.g. a server) uses.
+    # An explicit backend argument always overrides it per session. It deliberately
+    # does NOT affect ad-hoc run_scenarios()/plot_scenarios()/Model.simulate() calls,
+    # which stay "python" unless you pass backend="rust" per call.
+    "default_backend": "python",
 }
 
 

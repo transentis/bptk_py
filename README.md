@@ -41,6 +41,14 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.4.0
+
+* Step-by-step execution on the Rust backend (`RustSdModel.init()` / `step()`), wired through `bptk.run_step()` so server step-by-step sessions can run on Rust
+* New stateless `/execute` server endpoint: POST a complete JSON model plus scenarios and get results back (primary path for the visual modeler)
+* `/begin-session` accepts a `backend` field, and `bptk` accepts a `default_backend` configuration option, so a server can run Rust-backed sessions
+* Rust-backed session resume through the external state adapter (settings-log replay with seed plumbing)
+* Various XMILE compiler fixes (`NORMAL`/`PREVIOUS` code generation, scientific-notation parsing, Windows encoding) and substantially expanded test coverage
+
 ### 2.3.0
 
 * Add Rust-based SD execution backend (`backend="rust"`) for significantly faster simulation performance

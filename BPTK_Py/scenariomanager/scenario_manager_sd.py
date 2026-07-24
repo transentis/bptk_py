@@ -27,7 +27,7 @@ class ScenarioManagerSd(ScenarioManager):
     This class reads and writes pure sd scenarios and starts the file monitors for each scenario's model
     """
 
-    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=[],
+    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=None,
                  model_file=""):
         """
 
@@ -48,7 +48,9 @@ class ScenarioManagerSd(ScenarioManager):
 
         self.base_constants = base_constants
         self.base_points = base_points
-        self.filenames = filenames
+        # Avoid a shared mutable default: filenames is mutated in place (+=) by the
+        # factory, so a list default would leak filenames across manager instances.
+        self.filenames = filenames if filenames is not None else []
 
         self.type = "sd"
 

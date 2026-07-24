@@ -14,7 +14,7 @@ else:
     from .externalstateadapter import ExternalStateAdapter, InstanceState, FileAdapter
 
 try:
-    __version__ = version("wheel")
+    __version__ = version("BPTK-Py")
 
 except:
     # If I am not installed, I will not be able to set the version

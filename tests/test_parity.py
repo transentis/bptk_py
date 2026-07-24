@@ -1118,6 +1118,11 @@ def _run_stochastic_parity(equation, theoretical_mean, theoretical_var,
                           exclusive=False)
 
         if backend_label == "python":
+            # Seed the global RNG so the Python draws are deterministic, mirroring
+            # the fixed seed the Rust backend uses below. Without this the sample
+            # moments vary run-to-run and heavy-tailed distributions (lognormal,
+            # pareto) intermittently exceed the tolerance — a long-standing flake.
+            np.random.seed(42)
             elem = model.converters["x"]
             values = [elem(t) for t in times]
         else:
@@ -1425,3 +1430,159 @@ class TestParityStochasticBoundary:
 
     def test_invnorm_valid(self):
         _run_constant_parity(sd.invnorm(0.5, 0, 1), 0.0, "invnorm_valid")
+
+
+# ---------------------------------------------------------------------------
+# Parity: Stateful functions (smooth / trend / delay) at the engine level.
+# test_rust_engine.py already compares Rust to expected analytical values; here
+# we use the strictest comparison: Python lambda vs Rust engine.
+# ---------------------------------------------------------------------------
+
+class TestParitySmooth:
+    """sd.smooth — exponential smoothing of an input."""
+
+    def test_smooth_step_input(self):
+        model = Model(starttime=0, stoptime=10, dt=0.25, name='smooth_step_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(10.0, 3.0)
+        out = model.converter('out')
+        out.equation = sd.smooth(model, inp, 1.0, 0.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_smooth_ramp_input(self):
+        model = Model(starttime=0, stoptime=10, dt=0.25, name='smooth_ramp_par')
+        inp = model.converter('input')
+        inp.equation = sd.time()
+        out = model.converter('out')
+        out.equation = sd.smooth(model, inp, 2.0, 0.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_smooth_matched_initial(self):
+        """Constant input matched to the initial value — output stays constant."""
+        model = Model(starttime=0, stoptime=5, dt=0.5, name='smooth_matched_par')
+        inp = model.converter('input')
+        inp.equation = 42.0
+        out = model.converter('out')
+        out.equation = sd.smooth(model, inp, 1.0, 42.0)
+        run_parity(model, ['out'], atol=1e-10)
+
+
+class TestParityTrend:
+    """sd.trend — fractional rate of change."""
+
+    def test_trend_step_input(self):
+        model = Model(starttime=1, stoptime=10, dt=0.25, name='trend_step_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(10.0, 3.0)
+        out = model.converter('out')
+        out.equation = sd.trend(model, inp, 2.0, 5.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_trend_linear_input(self):
+        model = Model(starttime=1, stoptime=10, dt=0.25, name='trend_linear_par')
+        inp = model.converter('input')
+        inp.equation = sd.time()
+        out = model.converter('out')
+        out.equation = sd.trend(model, inp, 1.0, 1.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_trend_constant_input(self):
+        """Constant input — trend should converge to zero."""
+        model = Model(starttime=0, stoptime=10, dt=0.5, name='trend_const_par')
+        inp = model.converter('input')
+        inp.equation = 5.0
+        out = model.converter('out')
+        out.equation = sd.trend(model, inp, 1.0, 5.0)
+        run_parity(model, ['out'], atol=1e-10)
+
+
+class TestParityDelay:
+    """sd.delay — memo lookback."""
+
+    def test_delay_time_input(self):
+        model = Model(starttime=0, stoptime=10, dt=1, name='delay_time_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        a.equation = sd.time()
+        b.equation = sd.delay(model, a, 3.0, 0.0)
+        run_parity(model, ['a', 'b'], atol=1e-10)
+
+    def test_delay_fractional_dt(self):
+        model = Model(starttime=0, stoptime=8, dt=0.5, name='delay_frac_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        a.equation = sd.time()
+        b.equation = sd.delay(model, a, 2.0, -1.0)
+        run_parity(model, ['a', 'b'], atol=1e-10)
+
+    def test_delay_with_stock(self):
+        """Delay reading from an integrated stock — interaction with Euler."""
+        model = Model(starttime=0, stoptime=10, dt=1, name='delay_stock_par')
+        level = model.stock('level')
+        inflow = model.flow('inflow')
+        delayed = model.converter('delayed_level')
+        level.initial_value = 0.0
+        level.equation = inflow
+        inflow.equation = 5.0
+        delayed.equation = sd.delay(model, level, 3.0, 0.0)
+        run_parity(model, ['level', 'delayed_level'], atol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# Parity: ln / log10 / floor / ceil
+# ---------------------------------------------------------------------------
+
+class TestParityLnLog10:
+    def test_ln(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='ln_par')
+        inp = model.converter('input')
+        inp.equation = sd.time()
+        out = model.converter('out')
+        out.equation = sd.ln(inp)
+        run_parity(model, ['out'], atol=1e-10)
+
+    def test_log10(self):
+        model = Model(starttime=1, stoptime=10, dt=1, name='log10_par')
+        inp = model.converter('input')
+        inp.equation = sd.time()
+        out = model.converter('out')
+        out.equation = sd.log10(inp)
+        run_parity(model, ['out'], atol=1e-10)
+
+    def test_ln_exp_composition(self):
+        """ln(exp(x)) = x — identity check across both engines."""
+        model = Model(starttime=0, stoptime=5, dt=1, name='ln_exp_par')
+        x = model.converter('x')
+        x.equation = sd.time() * 0.5
+        out = model.converter('out')
+        out.equation = sd.ln(sd.exp(x))
+        run_parity(model, ['out'], atol=1e-10)
+
+
+class TestParityFloorCeil:
+    def test_floor(self):
+        model = Model(starttime=0, stoptime=10, dt=1, name='floor_par')
+        inp = model.converter('input')
+        inp.equation = sd.time() * 1.7 - 3.0
+        out = model.converter('out')
+        out.equation = sd.floor(inp)
+        run_parity(model, ['out'], atol=1e-10)
+
+    def test_ceil(self):
+        model = Model(starttime=0, stoptime=10, dt=1, name='ceil_par')
+        inp = model.converter('input')
+        inp.equation = sd.time() * 1.7 - 3.0
+        out = model.converter('out')
+        out.equation = sd.ceil(inp)
+        run_parity(model, ['out'], atol=1e-10)
+
+    def test_floor_ceil_negative_values(self):
+        """floor/ceil with negative input — Rust and Python must round the same way."""
+        model = Model(starttime=0, stoptime=5, dt=1, name='floor_ceil_neg_par')
+        inp = model.converter('input')
+        inp.equation = -sd.time() * 0.7 - 1.3
+        f = model.converter('f')
+        f.equation = sd.floor(inp)
+        c = model.converter('c')
+        c.equation = sd.ceil(inp)
+        run_parity(model, ['f', 'c'], atol=1e-10)

@@ -16,11 +16,16 @@ from BPTK_Py.sddsl import functions as sd
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Model builders + fixtures
+#
+# The builder functions return fresh bptk instances on every call so the
+# step-by-step interleaved parity tests (TestRunStepInterleavedParity below)
+# can stand up two independent engines for Python and Rust. The fixtures wrap
+# them for the existing run_scenarios / simulate / plot_scenarios tests, which
+# only need one bptk instance per test.
 # ---------------------------------------------------------------------------
 
-@pytest.fixture
-def simple_bptk():
+def _build_simple_bptk():
     """Simple stock + flow + constant model with two scenarios."""
     model = Model(starttime=1, stoptime=10, dt=1, name="simple")
 
@@ -45,8 +50,7 @@ def simple_bptk():
     return bptk
 
 
-@pytest.fixture
-def sir_bptk():
+def _build_sir_bptk():
     """SIR epidemic model."""
     model = Model(starttime=0, stoptime=20, dt=0.25, name="SIR")
 
@@ -86,8 +90,7 @@ def sir_bptk():
     return bptk
 
 
-@pytest.fixture
-def lookup_bptk():
+def _build_lookup_bptk():
     """Model with a graphical function (lookup table)."""
     model = Model(starttime=0, stoptime=10, dt=1, name="lookup_test")
 
@@ -113,6 +116,53 @@ def lookup_bptk():
         scenario_manager="lookup_mgr",
     )
     return bptk
+
+
+def _build_dotted_module_bptk():
+    """Beergame-style Module-namespaced element names (`Retailer.inventory`).
+
+    Two Module instances cross-reference each other (Wholesaler.outgoing reads
+    Retailer.order) so the test exercises the dotted-name resolution path that
+    Phase 4 Substep 4i's beergame integration depends on."""
+    from BPTK_Py import Module
+    model = Model(starttime=0, stoptime=5, dt=1, name="dotted_module")
+
+    retailer = Module(model=model, name="Retailer")
+    wholesaler = Module(model=model, name="Wholesaler")
+
+    inv = retailer.stock("inventory")
+    inc = retailer.flow("incoming")
+    order = retailer.constant("order")
+    inv.initial_value = 100.0
+    inv.equation = inc
+    inc.equation = order
+    order.equation = 5.0
+
+    w_inv = wholesaler.stock("inventory")
+    w_out = wholesaler.flow("outgoing")
+    w_inv.initial_value = 200.0
+    w_inv.equation = -w_out
+    w_out.equation = order
+
+    bptk = BPTK_Py.bptk()
+    bptk.register_scenario_manager({"chain": {"model": model}})
+    bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="chain")
+    return bptk
+
+
+@pytest.fixture
+def simple_bptk():
+    return _build_simple_bptk()
+
+
+@pytest.fixture
+def sir_bptk():
+    return _build_sir_bptk()
+
+
+@pytest.fixture
+def lookup_bptk():
+    return _build_lookup_bptk()
 
 
 # ---------------------------------------------------------------------------
@@ -866,6 +916,41 @@ class TestFallback:
         assert "[WARN]" in content
         assert "falling back" in content.lower()
 
+    def test_fallback_step(self, unsupported_model):
+        """begin_session(backend='rust') + run_step on a model that can't be
+        JSON-serialised must transparently fall back to the Python step path
+        for the rest of the session, with a [WARN] log line."""
+        self._cleanup_logfile()
+
+        bptk = BPTK_Py.bptk()
+        bptk.register_scenario_manager({"mgr": {"model": unsupported_model}})
+        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+
+        rust_history = _run_session_history(bptk, ["mgr"], ["base"],
+                                            ["stock", "flow"], steps=6, backend="rust")
+
+        # Compare against a clean Python-only session on a freshly-built model
+        # (the unsupported_model fixture is shared, so we rebuild equivalent state).
+        py_model = Model(starttime=0, stoptime=10, dt=1, name="nary_py")
+        s = py_model.stock("stock")
+        f = py_model.flow("flow")
+        s.initial_value = 100.0
+        s.equation = f
+        my_fn = py_model.function("my_custom_fn", lambda model, t, *args: 5.0)
+        f.equation = my_fn(py_model.stock("stock"))
+        py_bptk = BPTK_Py.bptk()
+        py_bptk.register_scenario_manager({"mgr": {"model": py_model}})
+        py_bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        py_history = _run_session_history(py_bptk, ["mgr"], ["base"],
+                                          ["stock", "flow"], steps=6, backend="python")
+
+        for i, (p, r) in enumerate(zip(py_history, rust_history)):
+            _assert_step_dicts_equal(p, r, i)
+
+        content = self._read_logfile()
+        assert "[WARN]" in content
+        assert "falling back" in content.lower()
+
     def test_fallback_non_numeric_constant(self):
         """Non-numeric constant override triggers fallback to Python."""
         self._cleanup_logfile()
@@ -897,6 +982,67 @@ class TestFallback:
 
         content = self._read_logfile()
         assert "Non-numeric constant" in content
+
+    def test_fallback_engine_raises_after_load(self, monkeypatch):
+        """ValueError raised by the Rust engine after load_model() is caught and triggers fallback."""
+        self._cleanup_logfile()
+
+        model = Model(starttime=0, stoptime=3, dt=1, name="rust_runtime_error")
+        stock = model.stock("stock")
+        flow = model.flow("flow")
+        constant = model.constant("constant")
+        stock.initial_value = 0.0
+        stock.equation = flow
+        flow.equation = constant
+        constant.equation = 1.0
+
+        bptk = BPTK_Py.bptk()
+        bptk.register_scenario_manager({"mgr": {"model": model}})
+        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+
+        # Make the Rust engine's simulate() blow up so that the inner
+        # try/except in _run_scenario_rust catches it (sd_runner.py:282-284).
+        import BPTK_Py._rust_engine as rust_engine_mod
+
+        original_load = rust_engine_mod.RustSdEngine.load_model
+
+        def patched_load(self, json_str):
+            wrapped = original_load(self, json_str)
+
+            class _RaisingProxy:
+                def __init__(self, inner):
+                    self._inner = inner
+
+                def set_constant(self, *a, **kw):
+                    return self._inner.set_constant(*a, **kw)
+
+                def set_points(self, *a, **kw):
+                    return self._inner.set_points(*a, **kw)
+
+                def set_runspecs(self, *a, **kw):
+                    return self._inner.set_runspecs(*a, **kw)
+
+                def simulate(self, *a, **kw):
+                    raise ValueError("simulated runtime failure")
+
+            return _RaisingProxy(wrapped)
+
+        monkeypatch.setattr(rust_engine_mod.RustSdEngine, "load_model", patched_load)
+
+        result = bptk.run_scenarios(
+            scenario_managers=["mgr"],
+            scenarios=["base"],
+            equations=["stock"],
+            backend="rust",
+        )
+        assert result is not None
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) > 0
+
+        content = self._read_logfile()
+        assert "Rust engine failed" in content
+        assert "simulated runtime failure" in content
+        assert "falling back" in content.lower()
 
 
 
@@ -1560,3 +1706,1004 @@ class TestStochasticGuards:
 
     def test_weibull_zero_scale(self):
         self._run_nan_check(sd.weibull(2, 0), "weibull_zero_scale")
+
+
+# ---------------------------------------------------------------------------
+# Step-by-step parity (Phase 4 Substep 4d): the same fixtures as the
+# run_scenarios parity tests above, exercised through bptk.begin_session +
+# run_step instead. Two flavours:
+#
+#   TestRunStepParity            — whole-session: run Python all the way, run
+#                                  Rust all the way, then compare histories.
+#                                  Mirrors the _run_both pattern.
+#
+#   TestRunStepInterleavedParity — Python step N and Rust step N are computed
+#                                  back-to-back on independent bptk instances
+#                                  (the builders are called twice) and
+#                                  compared *before* either side advances.
+#                                  Catches state-bleed bugs that a converging
+#                                  whole-session run could hide.
+# ---------------------------------------------------------------------------
+
+def _run_session_history(bptk, scenario_managers, scenarios, equations, steps,
+                         settings_per_step=None, backend="python"):
+    """Drive a session for `steps` calls; return the list of run_step results."""
+    bptk.begin_session(scenarios=scenarios, scenario_managers=scenario_managers,
+                       equations=equations, backend=backend)
+    history = []
+    try:
+        for i in range(steps):
+            per_step = settings_per_step[i] if settings_per_step and i < len(settings_per_step) else None
+            history.append(bptk.run_step(settings=per_step))
+    finally:
+        bptk.end_session()
+    return history
+
+
+def _assert_step_dicts_equal(py_step, rust_step, step_idx, rel=1e-9, abs_tol=1e-9):
+    """Compare a single {manager: {scenario: {equation: {t: value}}}} dict."""
+    assert set(py_step.keys()) == set(rust_step.keys()), \
+        "step {}: scenario manager keys differ".format(step_idx)
+    for manager in py_step:
+        assert set(py_step[manager].keys()) == set(rust_step[manager].keys()), \
+            "step {}/{}: scenario keys differ".format(step_idx, manager)
+        for scenario in py_step[manager]:
+            py_sc = py_step[manager][scenario]
+            rust_sc = rust_step[manager][scenario]
+            assert set(py_sc.keys()) == set(rust_sc.keys()), \
+                "step {}/{}/{}: equation keys differ".format(step_idx, manager, scenario)
+            for eq in py_sc:
+                py_eq = py_sc[eq]
+                rust_eq = rust_sc[eq]
+                assert set(py_eq.keys()) == set(rust_eq.keys()), \
+                    "step {}/{}/{}/{}: time keys differ".format(
+                        step_idx, manager, scenario, eq)
+                for t in py_eq:
+                    assert py_eq[t] == pytest.approx(rust_eq[t], rel=rel, abs=abs_tol), \
+                        "step {} @ t={}: {}/{}/{} python={} rust={}".format(
+                            step_idx, t, manager, scenario, eq, py_eq[t], rust_eq[t])
+
+
+def _interleave_step(builder, scenario_managers, scenarios, equations, steps,
+                     settings_per_step=None, rel=1e-9, abs_tol=1e-9):
+    """Stand up two independent bptk instances (Python + Rust) and step them
+    in lockstep, comparing after each step."""
+    py_bptk = builder()
+    rust_bptk = builder()
+
+    py_bptk.begin_session(scenarios=scenarios, scenario_managers=scenario_managers,
+                          equations=equations, backend="python")
+    rust_bptk.begin_session(scenarios=scenarios, scenario_managers=scenario_managers,
+                            equations=equations, backend="rust")
+    try:
+        for i in range(steps):
+            per_step = settings_per_step[i] if settings_per_step and i < len(settings_per_step) else None
+            py_res = py_bptk.run_step(settings=per_step)
+            rust_res = rust_bptk.run_step(settings=per_step)
+            _assert_step_dicts_equal(py_res, rust_res, i, rel=rel, abs_tol=abs_tol)
+    finally:
+        py_bptk.end_session()
+        rust_bptk.end_session()
+
+
+class TestRunStepParity:
+    """Whole-session step parity: run Python session, then Rust session,
+    then compare histories. Uses the same model fixtures as the run_scenarios
+    parity tests above."""
+
+    def test_simple_step_parity(self):
+        # starttime=1, stoptime=10, dt=1 → 10 calls covers t=1..10
+        py = _run_session_history(_build_simple_bptk(), ["mgr"], ["base", "double"],
+                                  ["stock", "flow"], steps=10, backend="python")
+        rust = _run_session_history(_build_simple_bptk(), ["mgr"], ["base", "double"],
+                                    ["stock", "flow"], steps=10, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i)
+
+    def test_sir_step_parity(self):
+        # SIR fixture is dt=0.25; restrict to dt=1 stepping by building 21 steps with
+        # the default starttime/stoptime → covers t=0..20 (with dt=0.25, that's 81
+        # internal steps; run_step still advances by dt per call).
+        # NB: the SIR fixture uses dt=0.25, but run_step's caller-step is the time,
+        # which advances by session_state["dt"]=1.0 by default. Using fewer outer
+        # iterations is fine — both backends advance their cursor by the same model
+        # dt internally.
+        py = _run_session_history(_build_sir_bptk(), ["sir_mgr"], ["base"],
+                                  ["susceptible", "infected", "recovered"],
+                                  steps=21, backend="python")
+        rust = _run_session_history(_build_sir_bptk(), ["sir_mgr"], ["base"],
+                                    ["susceptible", "infected", "recovered"],
+                                    steps=21, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i, abs_tol=1e-6)
+
+    def test_lookup_step_parity(self):
+        py = _run_session_history(_build_lookup_bptk(), ["lookup_mgr"], ["base"],
+                                  ["stock", "rate"], steps=11, backend="python")
+        rust = _run_session_history(_build_lookup_bptk(), ["lookup_mgr"], ["base"],
+                                    ["stock", "rate"], steps=11, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i)
+
+    def test_lookup_points_override_step_parity(self):
+        py = _run_session_history(_build_lookup_bptk(), ["lookup_mgr"], ["new_table"],
+                                  ["stock", "rate"], steps=11, backend="python")
+        rust = _run_session_history(_build_lookup_bptk(), ["lookup_mgr"], ["new_table"],
+                                    ["stock", "rate"], steps=11, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i)
+
+    def test_dotted_module_step_parity(self):
+        """Module-namespaced element names (`Retailer.inventory`) — beergame
+        Substep 4i risk pre-empted at the step-by-step layer."""
+        eqs = ["Retailer.inventory", "Wholesaler.inventory", "Retailer.order"]
+        py = _run_session_history(_build_dotted_module_bptk(), ["chain"], ["base"],
+                                  eqs, steps=6, backend="python")
+        rust = _run_session_history(_build_dotted_module_bptk(), ["chain"], ["base"],
+                                    eqs, steps=6, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i)
+
+
+class TestRunStepInterleavedParity:
+    """Interleaved step parity: Python step N and Rust step N back-to-back on
+    independent bptk instances, compared before either advances."""
+
+    def test_simple_interleaved(self):
+        _interleave_step(_build_simple_bptk, ["mgr"], ["base", "double"],
+                         ["stock", "flow"], steps=10)
+
+    def test_sir_interleaved(self):
+        _interleave_step(_build_sir_bptk, ["sir_mgr"], ["base"],
+                         ["susceptible", "infected", "recovered"],
+                         steps=21, abs_tol=1e-6)
+
+    def test_sir_high_contact_interleaved(self):
+        _interleave_step(_build_sir_bptk, ["sir_mgr"], ["high_contact"],
+                         ["susceptible", "infected", "recovered"],
+                         steps=21, abs_tol=1e-6)
+
+    def test_lookup_interleaved(self):
+        _interleave_step(_build_lookup_bptk, ["lookup_mgr"], ["base"],
+                         ["stock", "rate"], steps=11)
+
+    def test_lookup_points_override_interleaved(self):
+        _interleave_step(_build_lookup_bptk, ["lookup_mgr"], ["new_table"],
+                         ["stock", "rate"], steps=11)
+
+    def test_dotted_module_interleaved(self):
+        _interleave_step(_build_dotted_module_bptk, ["chain"], ["base"],
+                         ["Retailer.inventory", "Wholesaler.inventory", "Retailer.order"],
+                         steps=6)
+
+
+class TestRunStepInterleavedSettingsOverrides:
+    """Interleaved comparison under mid-session settings overrides. This is the
+    case most likely to surface a sticky-override divergence between Python and
+    Rust, because both engines must apply set_constant/set_points to the same
+    timestep with the same semantics ('takes effect from the next step')."""
+
+    def test_constant_override_interleaved(self):
+        # Bump at step 2, restore at step 5, bump again at step 7 — three distinct
+        # overrides should expose any state that fails to clear or fails to apply.
+        s = [None, None,
+             {"mgr": {"base": {"constants": {"constant": 7.0}}}},
+             None, None,
+             {"mgr": {"base": {"constants": {"constant": 1.0}}}},
+             None,
+             {"mgr": {"base": {"constants": {"constant": 12.0}}}},
+             None, None]
+        _interleave_step(_build_simple_bptk, ["mgr"], ["base"],
+                         ["stock", "flow"], steps=10, settings_per_step=s)
+
+    def test_alternating_constant_override_interleaved(self):
+        """Override at every step. Stresses the per-step set_constant path."""
+        s = [None] + [
+            {"mgr": {"base": {"constants": {"constant": float(i % 5 + 1)}}}}
+            for i in range(9)
+        ]
+        _interleave_step(_build_simple_bptk, ["mgr"], ["base"],
+                         ["stock", "flow"], steps=10, settings_per_step=s)
+
+    def test_points_override_interleaved(self):
+        new_table = [[0, 10], [5, 10], [10, 10]]
+        s = [None, None,
+             {"lookup_mgr": {"base": {"points": {"rate_table": new_table}}}},
+             None, None, None, None, None, None, None, None]
+        _interleave_step(_build_lookup_bptk, ["lookup_mgr"], ["base"],
+                         ["stock", "rate"], steps=11, settings_per_step=s)
+
+
+class TestRunStepFeatureParity:
+    """Step-by-step Python-vs-Rust parity for the stateful + functional features
+    that the run_scenarios parity tests above already cover. Each test builds a
+    small model inline, then drives both backends through bptk.begin_session +
+    run_step and asserts per-step parity.
+
+    These tests catch bugs that whole-simulation parity can't surface — anything
+    where the runner's per-step state management (cursor advance, override
+    application, dt-mismatch handling) interacts badly with a stateful element."""
+
+    def _step_parity(self, builder, manager, scenarios, equations, steps,
+                     rel=1e-9, abs_tol=1e-9):
+        """Run the same session on both backends with two fresh bptk instances
+        and assert step-by-step parity. Used by all the feature tests below."""
+        py = _run_session_history(builder(), [manager], scenarios, equations,
+                                  steps=steps, backend="python")
+        rust = _run_session_history(builder(), [manager], scenarios, equations,
+                                    steps=steps, backend="rust")
+        for i, (p, r) in enumerate(zip(py, rust)):
+            _assert_step_dicts_equal(p, r, i, rel=rel, abs_tol=abs_tol)
+
+    # -- Stateful functions --
+
+    def test_smooth_step_parity(self):
+        def build():
+            model = Model(starttime=1, stoptime=10, dt=0.1, name="smooth_step")
+            inp = model.converter("input_function")
+            inp.equation = sd.step(10.0, 3.0)
+            out = model.converter("smooth_out")
+            out.equation = sd.smooth(model, inp, 1.0, 0.0)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"smooth_mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="smooth_mgr")
+            return b
+        # Session runs t=1..10 (10 calls); model.dt=0.1 → 10 internal steps per call.
+        self._step_parity(build, "smooth_mgr", ["base"], ["smooth_out"],
+                          steps=10, abs_tol=1e-6)
+
+    def test_trend_step_parity(self):
+        def build():
+            model = Model(starttime=1, stoptime=10, dt=0.1, name="trend_step")
+            inp = model.converter("input_function")
+            inp.equation = sd.step(10.0, 3.0)
+            out = model.converter("trend_out")
+            out.equation = sd.trend(model, inp, 2.0, 5.0)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"trend_mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="trend_mgr")
+            return b
+        self._step_parity(build, "trend_mgr", ["base"], ["trend_out"],
+                          steps=10, abs_tol=1e-6)
+
+    def test_delay_step_parity(self):
+        """sd.delay needs a memo lookback — exercises Rust's pre-allocated memo
+        from a partial cursor position."""
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=1, name="delay_step")
+            a = model.converter("a")
+            b_eq = model.converter("b")
+            a.equation = sd.time()
+            b_eq.equation = sd.delay(model, a, 3.0, 0.0)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"delay_mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="delay_mgr")
+            return b
+        self._step_parity(build, "delay_mgr", ["base"], ["a", "b"], steps=11)
+
+    def test_biflow_step_parity(self):
+        """Biflow allows negative flow values; per-step backend must agree."""
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=0.1, name="biflow_step")
+            position = model.stock("position")
+            velocity = model.biflow("velocity")
+            position.initial_value = 10.0
+            position.equation = velocity
+            velocity.equation = -position
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["position", "velocity"],
+                          steps=11, abs_tol=1e-6)
+
+    # -- Lookup variants --
+
+    def test_inline_lookup_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=0.5, name="inline_lookup_step")
+            x = model.converter("input_val")
+            x.equation = sd.time() * 0.5
+            out = model.converter("output")
+            out.equation = sd.lookup(x, [(0, 0), (1, 2), (2, 6), (3, 4), (5, 10)])
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["input_val", "output"], steps=11)
+
+    # -- Math functions --
+
+    def test_ln_log10_step_parity(self):
+        def build():
+            model = Model(starttime=1, stoptime=10, dt=1, name="ln_log10_step")
+            inp = model.converter("input")
+            inp.equation = sd.time()
+            fn_ln = model.converter("fn_ln")
+            fn_ln.equation = sd.ln(inp)
+            fn_log10 = model.converter("fn_log10")
+            fn_log10.equation = sd.log10(inp)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["fn_ln", "fn_log10"], steps=10)
+
+    def test_floor_ceil_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=1, name="floor_ceil_step")
+            inp = model.converter("input")
+            inp.equation = sd.time() * 1.7 - 3.0
+            fn_floor = model.converter("fn_floor")
+            fn_floor.equation = sd.floor(inp)
+            fn_ceil = model.converter("fn_ceil")
+            fn_ceil.equation = sd.ceil(inp)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["fn_floor", "fn_ceil"], steps=11)
+
+    def test_round_digits_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="round_step")
+            out = model.converter("x")
+            out.equation = sd.round(sd.time() * 0.314159, 2)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["x"], steps=6)
+
+    def test_min_max_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="minmax_step")
+            a = model.converter("a")
+            a.equation = sd.time()
+            b_eq = model.converter("b")
+            b_eq.equation = 3.0
+            mn = model.converter("mn")
+            mn.equation = sd.min(a, b_eq)
+            mx = model.converter("mx")
+            mx.equation = sd.max(a, b_eq)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["mn", "mx"], steps=6)
+
+    # -- Combinatorial --
+
+    def test_combinatorial_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="combinatorial_step")
+            n = model.converter("n")
+            n.equation = sd.time() + 2.0
+            fact = model.converter("fact")
+            fact.equation = sd.factorial(n)
+            comb = model.converter("comb")
+            comb.equation = sd.combinations(n, 2.0)
+            perm = model.converter("perm")
+            perm.equation = sd.permutations(n, 2.0)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["fact", "comb", "perm"], steps=6)
+
+    # -- Statistical (deterministic) --
+
+    def test_invnorm_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="invnorm_step")
+            p = model.converter("p")
+            p.equation = (sd.time() + 1.0) * 0.1
+            out = model.converter("invn")
+            out.equation = sd.invnorm(p)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["invn"], steps=6, abs_tol=1e-9)
+
+    def test_normalcdf_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="normalcdf_step")
+            t = model.converter("t_val")
+            t.equation = sd.time() - 2.0
+            out = model.converter("cdf")
+            out.equation = sd.normalcdf(-1.0, t)
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        self._step_parity(build, "mgr", ["base"], ["cdf"], steps=6, abs_tol=1e-9)
+
+    # -- Edge values --
+
+    def test_inf_nan_step_parity(self):
+        def build():
+            model = Model(starttime=0, stoptime=3, dt=1, name="infnan_step")
+            inf_c = model.converter("inf_c")
+            inf_c.equation = sd.Inf()
+            nan_c = model.converter("nan_c")
+            nan_c.equation = sd.nan()
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        # NaN ≠ NaN under == comparison, so assert inf parity and that nan stays nan.
+        py = _run_session_history(build(), ["mgr"], ["base"], ["inf_c", "nan_c"],
+                                  steps=4, backend="python")
+        rust = _run_session_history(build(), ["mgr"], ["base"], ["inf_c", "nan_c"],
+                                    steps=4, backend="rust")
+        import math
+        for i in range(4):
+            for t, v in py[i]["mgr"]["base"]["inf_c"].items():
+                assert v == rust[i]["mgr"]["base"]["inf_c"][t]
+            for t, v in py[i]["mgr"]["base"]["nan_c"].items():
+                assert math.isnan(v) and math.isnan(rust[i]["mgr"]["base"]["nan_c"][t])
+
+
+class TestRunStepLifecycle:
+    """Integration-level smoke tests for the begin_session / run_step / end_session
+    lifecycle. The unit-level coverage of these paths lives in
+    tests/unittests/test_bptk.py; this class catches anything that only surfaces
+    with a real model registered through the scenario manager factory."""
+
+    def test_back_to_back_sessions(self):
+        """Two Rust-backed sessions on the same bptk must each start cleanly
+        at starttime — the second must not inherit the first session's cursor."""
+        bptk = _build_simple_bptk()
+
+        first = _run_session_history(bptk, ["mgr"], ["base"], ["stock", "flow"],
+                                     steps=4, backend="rust")
+
+        # Same bptk, fresh session. end_session was called inside the helper.
+        second = _run_session_history(bptk, ["mgr"], ["base"], ["stock", "flow"],
+                                      steps=4, backend="rust")
+
+        # Identical trajectories.
+        for i in range(4):
+            assert first[i]["mgr"]["base"]["stock"] == second[i]["mgr"]["base"]["stock"]
+            assert first[i]["mgr"]["base"]["flow"] == second[i]["mgr"]["base"]["flow"]
+
+
+# ---------------------------------------------------------------------------
+#  Substep 4g — resume after a Rust-backed session is reloaded from external
+#  state. The live RustSdModel handle is not part of session_state, so on
+#  resume the runner must replay settings_log to drive the cursor back to the
+#  current step. These tests simulate the server's reconstruct_instance path
+#  (fresh bptk + _set_state(deepcopy(session_state))) at the bptk level; the
+#  end-to-end file-adapter path is covered in tests/test_rust_server.py.
+# ---------------------------------------------------------------------------
+
+def _resume_history(builder, scenario_managers, scenarios, equations, total_steps,
+                    break_after, settings_per_step=None, backend="rust", seed=None):
+    """Run `break_after` steps on one bptk, snapshot its session_state, then run
+    the remaining steps on a *fresh* bptk seeded with that snapshot — mimicking a
+    process restart where the in-memory engine state is lost. Returns the full
+    list of step results across the two processes."""
+    import copy
+
+    def _settings_at(i):
+        return settings_per_step[i] if settings_per_step and i < len(settings_per_step) else None
+
+    first = builder()
+    first.begin_session(scenarios=scenarios, scenario_managers=scenario_managers,
+                        equations=equations, backend=backend, seed=seed)
+    history = []
+    for i in range(break_after):
+        history.append(first.run_step(settings=_settings_at(i)))
+    snapshot = copy.deepcopy(first.session_state)
+    # The snapshot is what a restart would reload; `first` is the dead process.
+    # We end its session now (after snapshotting) purely to release the abandoned
+    # RustSdModel handles deterministically — leaving them for GC can trip PyO3's
+    # cross-thread "unsendable dropped on another thread" warning in later tests.
+    first.end_session()
+
+    second = builder()
+    second._set_state(snapshot)
+    for i in range(break_after, total_steps):
+        history.append(second.run_step(settings=_settings_at(i)))
+    second.end_session()
+    return history
+
+
+class TestRustResume:
+    """Resume correctness for Rust-backed sessions restored from external state."""
+
+    def test_resume_simple_deterministic(self):
+        """A 10-step simple session, broken after step 5 and resumed on a fresh
+        bptk, must match a single-process 10-step run."""
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+        resumed = _resume_history(_build_simple_bptk, ["mgr"], ["base"],
+                                  ["stock", "flow"], total_steps=10, break_after=5)
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], resumed[i], i)
+
+    def test_resume_sir_deterministic(self):
+        """SIR (dt=0.25) resume parity — exercises stock integration across the
+        replay boundary."""
+        eqs = ["susceptible", "infected", "recovered"]
+        single = _run_session_history(_build_sir_bptk(), ["sir_mgr"], ["base"],
+                                      eqs, steps=21, backend="rust")
+        resumed = _resume_history(_build_sir_bptk, ["sir_mgr"], ["base"],
+                                  eqs, total_steps=21, break_after=8)
+        for i in range(21):
+            _assert_step_dicts_equal(single[i], resumed[i], i, abs_tol=1e-6)
+
+    def test_grid_exported_into_session_state(self):
+        """After stepping, the Rust memo grid is persisted in session_state so a
+        resume can import it (all entities, not just requested equations)."""
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        for _ in range(4):
+            b.run_step()
+        blob = b.session_state["rust_state"]["mgr"]["base"]
+        b.end_session()
+        assert blob is not None, "grid was not exported"
+        current_step, memo = blob[0], blob[1]
+        assert current_step == 3, "4 steps -> cursor at index 3"
+        # Every entity is exported, including the non-requested constant.
+        assert set(memo.keys()) >= {"stock", "flow", "constant"}
+
+    def test_resume_takes_import_path_not_replay(self):
+        """Resume must rebuild the engine by importing the grid, not by replaying
+        the settings_log step-by-step (guards against silent regression to replay)."""
+        from BPTK_Py.scenariorunners.sd_runner import SdRunner
+        calls = {"import": 0}
+        original = SdRunner.restore_scenario_state_rust
+
+        def spy(self, *a, **k):
+            calls["import"] += 1
+            return original(self, *a, **k)
+
+        SdRunner.restore_scenario_state_rust = spy
+        try:
+            resumed = _resume_history(_build_simple_bptk, ["mgr"], ["base"],
+                                      ["stock", "flow"], total_steps=10, break_after=5)
+        finally:
+            SdRunner.restore_scenario_state_rust = original
+
+        assert calls["import"] >= 1, "resume did not use the grid-import path"
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], resumed[i], i)
+
+    def test_stateless_cycle_via_file_adapter_matches_single(self):
+        """Full externalise/reload of the whole session through a FileAdapter after
+        every step (the stateless-server lifecycle) must match a single-process run —
+        exercises the JSON round-trip of the persisted rust_state grid."""
+        import copy, datetime, tempfile
+        from BPTK_Py.externalstateadapter.file_adapter import FileAdapter
+        from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
+
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+
+        adapter = FileAdapter(compress=True, path=tempfile.mkdtemp())
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        cycled = []
+        for _ in range(10):
+            cycled.append(b.run_step())
+            snap = copy.deepcopy(b.session_state)
+            adapter.save_instance(InstanceState(state=snap, instance_id="c",
+                                                 time=str(datetime.datetime.now()),
+                                                 timeout=3600, step=b.session_state["step"]))
+            b.end_session()
+            loaded = adapter.load_instance("c").state
+            b = _build_simple_bptk()
+            b._set_state(loaded)
+        b.end_session()
+
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], cycled[i], i)
+
+    def test_resume_falls_back_to_replay_when_grid_missing(self):
+        """No exported grid (e.g. a Python-fallback scenario) -> resume must replay
+        the settings_log and still match a single-process run."""
+        import copy
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+        first = _build_simple_bptk()
+        first.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                            equations=["stock", "flow"], backend="rust")
+        hist = [first.run_step() for _ in range(5)]
+        snap = copy.deepcopy(first.session_state)
+        for _m, scs in snap["rust_state"].items():   # wipe grids -> force replay
+            for s in scs:
+                scs[s] = None
+        first.end_session()
+        second = _build_simple_bptk()
+        second._set_state(snap)
+        hist += [second.run_step() for _ in range(5, 10)]
+        second.end_session()
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], hist[i], i)
+
+    def test_resume_falls_back_to_replay_when_import_raises(self):
+        """A corrupt exported grid must be caught and the scenario replayed instead."""
+        import copy
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+        first = _build_simple_bptk()
+        first.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                            equations=["stock", "flow"], backend="rust")
+        hist = [first.run_step() for _ in range(5)]
+        snap = copy.deepcopy(first.session_state)
+        for _m, scs in snap["rust_state"].items():   # out-of-range cursor -> import_state raises
+            for s, blob in scs.items():
+                if blob is not None:
+                    scs[s] = [999999, blob[1]]
+        first.end_session()
+        second = _build_simple_bptk()
+        second._set_state(snap)
+        hist += [second.run_step() for _ in range(5, 10)]
+        second.end_session()
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], hist[i], i)
+
+    def test_export_failure_is_swallowed(self):
+        """If export_state() raises during run_step, the grid is stored as None
+        (so resume replays) rather than crashing the step."""
+        class _ExportRaises:
+            def __init__(self, real):
+                self._real = real
+
+            def export_state(self):
+                raise ValueError("boom")
+
+            def __getattr__(self, name):
+                return getattr(self._real, name)
+
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        b.run_step()
+        sc = b.scenario_manager_factory.get_scenario(scenario_manager="mgr", scenario="base")
+        sc.rust_model = _ExportRaises(sc.rust_model)
+        b.run_step()  # export raises inside -> caught, grid set to None
+        assert b.session_state["rust_state"]["mgr"]["base"] is None
+        b.end_session()
+
+    def test_resume_folds_points_overrides(self):
+        """A per-step points (lookup) override recorded before the break must be
+        re-applied on import so post-resume steps evaluate the overridden table."""
+        new_table = [[0, 10], [5, 10], [10, 10]]
+        s = [None, None,
+             {"lookup_mgr": {"base": {"points": {"rate_table": new_table}}}},
+             None, None, None, None, None, None, None, None]
+        single = _run_session_history(_build_lookup_bptk(), ["lookup_mgr"], ["base"],
+                                      ["stock", "rate"], steps=11, backend="rust",
+                                      settings_per_step=s)
+        resumed = _resume_history(_build_lookup_bptk, ["lookup_mgr"], ["base"],
+                                  ["stock", "rate"], total_steps=11, break_after=5,
+                                  settings_per_step=s)
+        for i in range(11):
+            _assert_step_dicts_equal(single[i], resumed[i], i)
+
+    def test_restore_rejects_non_numeric_constant(self):
+        """restore_scenario_state_rust guards against a non-numeric baseline
+        constant (defensive symmetry with the first-step init path)."""
+        from BPTK_Py.scenariorunners.sd_runner import SdRunner
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        b.run_step()
+        blob = b.session_state["rust_state"]["mgr"]["base"]
+        sc = b.scenario_manager_factory.get_scenario(scenario_manager="mgr", scenario="base")
+        sc.rust_model = None
+        sc.constants = {"constant": "not_a_number"}
+        runner = SdRunner(b.scenario_manager_factory)
+        with pytest.raises(ValueError):
+            runner.restore_scenario_state_rust(sc, "mgr", "base", ["stock", "flow"], blob, None)
+        b.end_session()
+
+    def test_resume_with_per_step_overrides(self):
+        """Resume must replay the recorded per-step settings, not just advance the
+        cursor — a constant bumped before the break must still be in effect after."""
+        s = [None, None,
+             {"mgr": {"base": {"constants": {"constant": 9.0}}}},
+             None, None, None, None, None, None, None]
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10,
+                                      settings_per_step=s, backend="rust")
+        resumed = _resume_history(_build_simple_bptk, ["mgr"], ["base"],
+                                  ["stock", "flow"], total_steps=10, break_after=5,
+                                  settings_per_step=s)
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], resumed[i], i)
+
+    def test_resume_ignores_out_of_scope_manager(self):
+        """When the bptk has managers the session didn't select, replay must skip
+        them (only the in-scope manager's Rust cursor is rebuilt). Guards the
+        out-of-scope branch in _restore_rust_session."""
+        import copy
+
+        def build_two_managers():
+            m1 = Model(starttime=1, stoptime=10, dt=1, name="m1")
+            s1 = m1.stock("stock"); f1 = m1.flow("flow"); c1 = m1.constant("constant")
+            s1.initial_value = 0.0; s1.equation = f1; f1.equation = c1; c1.equation = 1.0
+            m2 = Model(starttime=1, stoptime=10, dt=1, name="m2")
+            s2 = m2.stock("stock"); f2 = m2.flow("flow"); c2 = m2.constant("constant")
+            s2.initial_value = 0.0; s2.equation = f2; f2.equation = c2; c2.equation = 5.0
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"in_scope": {"model": m1}})
+            b.register_scenario_manager({"out_of_scope": {"model": m2}})
+            b.register_scenarios(scenario_manager="in_scope",
+                                 scenarios={"base": {"constants": {"constant": 1.0}}})
+            b.register_scenarios(scenario_manager="out_of_scope",
+                                 scenarios={"base": {"constants": {"constant": 5.0}}})
+            return b
+
+        # Reference: in-memory session scoped to in_scope only.
+        ref = _run_session_history(build_two_managers(), ["in_scope"], ["base"],
+                                   ["stock", "flow"], steps=10, backend="rust")
+
+        # Resume across a break — the out_of_scope manager exists on the factory but
+        # is not in session scope, so the replay loop must continue past it.
+        first = build_two_managers()
+        first.begin_session(scenarios=["base"], scenario_managers=["in_scope"],
+                            equations=["stock", "flow"], backend="rust")
+        resumed = [first.run_step() for _ in range(5)]
+        snapshot = copy.deepcopy(first.session_state)
+        first.end_session()
+
+        second = build_two_managers()
+        second._set_state(snapshot)
+        resumed += [second.run_step() for _ in range(5)]
+        second.end_session()
+
+        for i in range(10):
+            _assert_step_dicts_equal(ref[i], resumed[i], i)
+            assert "out_of_scope" not in resumed[i]
+
+    def test_resume_multiple_breaks(self):
+        """Resume repeatedly (every step is its own process) — the stateless
+        server case with externalize_state_completely=True. Each step replays the
+        whole prior history; results must still match a single-process run."""
+        import copy
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=8, backend="rust")
+
+        # Drive the session one step per fresh bptk, threading session_state through.
+        state = None
+        resumed = []
+        for i in range(8):
+            b = _build_simple_bptk()
+            if state is None:
+                b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                                equations=["stock", "flow"], backend="rust")
+            else:
+                b._set_state(state)
+            resumed.append(b.run_step())
+            state = copy.deepcopy(b.session_state)
+
+        for i in range(8):
+            _assert_step_dicts_equal(single[i], resumed[i], i)
+
+
+class TestRustResumeStochastic:
+    """Seed plumbing for stochastic Rust sessions.
+
+    Resume contract (no-replay memo import): the mid-stream RNG position cannot be
+    recovered, so a resumed stochastic session does NOT reproduce the single-process
+    trajectory bit-for-bit. Instead:
+      * already-computed (exported) steps are preserved exactly;
+      * post-resume draws are re-seeded per cursor position, so they are
+        non-degenerate (not a repeated constant) and deterministic given the
+        persisted seed, but follow a different path than an uninterrupted run.
+    The seed is still persisted — for the initial in-process draws and to make the
+    resumed continuation deterministic."""
+
+    @staticmethod
+    def _build_stochastic_bptk():
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=1, name="stochastic_step")
+            # Accumulate stochastic draws into a stock so divergence compounds and
+            # is easy to detect, plus expose the raw draws.
+            draw = model.converter("draw")
+            draw.equation = sd.normal(100, 15) + sd.poisson(4) + sd.random(0, 1)
+            total = model.stock("total")
+            total.initial_value = 0.0
+            inflow = model.flow("inflow")
+            inflow.equation = draw
+            total.equation = inflow
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+        return build
+
+    def test_same_seed_is_reproducible(self):
+        """Two independent Rust sessions with the same seed produce identical
+        stochastic trajectories."""
+        build = self._build_stochastic_bptk()
+        a = _run_session_history(build(), ["mgr"], ["base"], ["draw", "total"],
+                                 steps=11, backend="rust")
+        # Force the same seed on both runs.
+        b_bptk = build()
+        b_bptk.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                             equations=["draw", "total"], backend="rust", seed=12345)
+        # Re-run `a` with the explicit seed too, so both share it.
+        a_bptk = build()
+        a_bptk.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                             equations=["draw", "total"], backend="rust", seed=12345)
+        seeded_a, seeded_b = [], []
+        for _ in range(11):
+            seeded_a.append(a_bptk.run_step())
+            seeded_b.append(b_bptk.run_step())
+        a_bptk.end_session()
+        b_bptk.end_session()
+        for i in range(11):
+            _assert_step_dicts_equal(seeded_a[i], seeded_b[i], i)
+
+    def test_different_seed_diverges(self):
+        """Sanity check the seed actually drives the RNG: different seeds give
+        different stochastic trajectories."""
+        build = self._build_stochastic_bptk()
+        b1 = build(); b2 = build()
+        b1.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                         equations=["total"], backend="rust", seed=1)
+        b2.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                         equations=["total"], backend="rust", seed=2)
+        h1, h2 = [], []
+        for _ in range(11):
+            h1.append(b1.run_step())
+            h2.append(b2.run_step())
+        b1.end_session(); b2.end_session()
+        # The accumulated totals at the final step should differ.
+        last1 = list(h1[-1]["mgr"]["base"]["total"].values())[0]
+        last2 = list(h2[-1]["mgr"]["base"]["total"].values())[0]
+        assert last1 != last2, "different seeds produced identical trajectories"
+
+    def test_resume_stochastic_preserves_past_diverges_future(self):
+        """A seeded stochastic session, broken mid-run and resumed on a fresh bptk
+        via memo import: the exported (past) steps are preserved exactly, while the
+        post-resume steps diverge from the single-process run (the RNG position is
+        not restored). This is the documented trade-off of the no-replay import."""
+        build = self._build_stochastic_bptk()
+        break_after = 5
+        single = build()
+        single.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                             equations=["draw", "total"], backend="rust", seed=777)
+        single_hist = [single.run_step() for _ in range(11)]
+        single.end_session()
+
+        resumed = _resume_history(build, ["mgr"], ["base"], ["draw", "total"],
+                                  total_steps=11, break_after=break_after, seed=777)
+
+        # Past (exported) steps: identical to the single-process run.
+        for i in range(break_after):
+            _assert_step_dicts_equal(single_hist[i], resumed[i], i)
+
+        # Post-resume steps: the accumulated total diverges (RNG re-seeded on import).
+        single_last = list(single_hist[-1]["mgr"]["base"]["total"].values())[0]
+        resumed_last = list(resumed[-1]["mgr"]["base"]["total"].values())[0]
+        assert single_last != resumed_last, "expected post-resume divergence"
+
+    def test_resume_stochastic_is_nondegenerate_and_deterministic(self):
+        """Post-resume draws must NOT collapse to a repeated constant (per-position
+        re-seeding), and two resumes with the same persisted seed must agree."""
+        build = self._build_stochastic_bptk()
+
+        def draws_after_resume():
+            hist = _resume_history(build, ["mgr"], ["base"], ["draw", "total"],
+                                   total_steps=11, break_after=5, seed=777)
+            out = []
+            for step in hist[5:]:
+                ts = step["mgr"]["base"]["draw"]
+                out.append(ts[list(ts.keys())[-1]])
+            return out
+
+        d1 = draws_after_resume()
+        d2 = draws_after_resume()
+        assert len(set(round(x, 9) for x in d1)) > 1, "post-resume draws degenerated to a constant"
+        assert all(abs(a - b) < 1e-12 for a, b in zip(d1, d2)), "same seed gave different resumes"
+
+    def test_seed_is_none_or_passthrough(self):
+        """The seed is None-or-not-None: stored verbatim, never auto-generated.
+        Deterministic models leave it None (no RNG → seed never matters); a
+        stochastic model that wants reproducible resume passes one explicitly."""
+        build = self._build_stochastic_bptk()
+
+        # No seed given → stays None (for both backends).
+        b = build()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["total"], backend="rust")
+        assert b.session_state["backend_seed"] is None
+        b.end_session()
+
+        p = build()
+        p.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["total"], backend="python")
+        assert p.session_state["backend_seed"] is None
+        p.end_session()
+
+        # Explicit seed → stored verbatim.
+        s = build()
+        s.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["total"], backend="rust", seed=98765)
+        assert s.session_state["backend_seed"] == 98765
+        s.end_session()
+
+
+class _FakeRedis:
+    """Minimal in-memory stand-in for a redis.Redis client (dict-backed)."""
+
+    def __init__(self):
+        self._store = {}
+
+    def set(self, key, value):
+        self._store[key] = value
+        return True
+
+    def get(self, key):
+        return self._store.get(key)
+
+    def delete(self, key):
+        existed = key in self._store
+        self._store.pop(key, None)
+        return 1 if existed else 0
+
+    def expire(self, key, seconds):
+        return True
+
+
+class TestRustResumeThroughAdapters:
+    """The rust_state grid must survive the external-state serialisation used by
+    the Postgres and Redis adapters (jsonpickle), not just the FileAdapter (JSON)."""
+
+    def test_rust_state_survives_jsonpickle_roundtrip(self):
+        """jsonpickle is the serializer used by BOTH the Postgres and Redis adapters.
+        Confirm the exported grid round-trips through it byte-for-value."""
+        import jsonpickle
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        for _ in range(5):
+            b.run_step()
+        blob = b.session_state["rust_state"]["mgr"]["base"]
+        restored = jsonpickle.decode(jsonpickle.encode(b.session_state, make_refs=False))
+        b.end_session()
+        rblob = restored["rust_state"]["mgr"]["base"]
+        assert rblob[0] == blob[0]                       # cursor
+        assert set(rblob[1].keys()) == set(blob[1].keys())  # all entities
+        for name in blob[1]:
+            assert rblob[1][name] == blob[1][name]       # grid values
+
+    def test_stateless_cycle_via_redis_adapter_matches_single(self):
+        """Full save/load cycle through a real RedisAdapter (in-memory fake client),
+        externalising after every step, must match a single-process run."""
+        import copy, datetime
+        from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
+        from BPTK_Py.externalstateadapter.redis_adapter import RedisAdapter
+
+        single = _run_session_history(_build_simple_bptk(), ["mgr"], ["base"],
+                                      ["stock", "flow"], steps=10, backend="rust")
+
+        adapter = RedisAdapter(redis_client=_FakeRedis(), compress=True)
+        b = _build_simple_bptk()
+        b.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                        equations=["stock", "flow"], backend="rust")
+        cycled = []
+        for _ in range(10):
+            cycled.append(b.run_step())
+            adapter.save_instance(InstanceState(state=copy.deepcopy(b.session_state),
+                                                instance_id="c",
+                                                time=datetime.datetime.now(),
+                                                timeout={}, step=b.session_state["step"]))
+            b.end_session()
+            loaded = adapter.load_instance("c").state
+            b = _build_simple_bptk()
+            b._set_state(loaded)
+        b.end_session()
+
+        for i in range(10):
+            _assert_step_dicts_equal(single[i], cycled[i], i)

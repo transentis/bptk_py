@@ -150,6 +150,24 @@ class bptk():
         logmod.loglevel = self.config.loglevel
         logmod.logfile = self.config.configuration["log_file"]
 
+        # Default execution backend for SD step-by-step *sessions*. The value is
+        # copied from `configuration` into config.configuration by the generic loop
+        # above (default "python", from config.py); validate it here — after logging
+        # is configured — so an invalid value is reported through the configured
+        # logger and falls back. An explicit backend on begin_session() or the
+        # /begin-session request body overrides this per session.
+        #
+        # Scope: this default applies ONLY to begin_session() (the long-lived,
+        # configured-instance / server path). It intentionally does NOT change the
+        # default of the ad-hoc run_scenarios()/plot_scenarios()/Model.simulate()
+        # calls — those stay "python" unless backend="rust" is passed explicitly.
+        # Rationale: config is for setting up an instance from scratch; a quick
+        # one-off simulate shouldn't silently switch engine because of instance config.
+        self.default_backend = self.config.configuration.get("default_backend", "python")
+        if self.default_backend not in ("python", "rust"):
+            log("[ERROR] Invalid default_backend '{}' — falling back to 'python'".format(self.default_backend))
+            self.default_backend = "python"
+
         # Configure Logfire if specified in configuration
         if self.config.configuration.get("logfire_config") and isinstance(self.config.configuration["logfire_config"], dict):
             try:
@@ -179,7 +197,7 @@ class bptk():
         self.session_state = None
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
-                          agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
+                          agent_properties=[], agent_property_types=[], series_names=None, return_df=False,
                           progress_bar=False):
         """Used to run a scenario repeatedly in episodes.
 
@@ -217,7 +235,9 @@ class bptk():
             dataframe: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
 
-        #TODO: Add tests for train_scenarios
+        # Avoid a shared mutable default: series_names is mutated below (renaming
+        # rule), so a dict default would leak state across calls.
+        series_names = series_names if series_names is not None else {}
 
         log("[INFO] Starting model training")
 
@@ -265,7 +285,7 @@ class bptk():
         return False
 
     def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
-                           agent_properties=[], agent_property_types=[], series_names={}, return_df=False,
+                           agent_properties=[], agent_property_types=[], series_names=None, return_df=False,
                            progress_widget=None):
         """
         Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
@@ -280,6 +300,10 @@ class bptk():
             :param progressBar: shows a progress bar that tracks the epsiode number
             :return: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
+
+        # Avoid a shared mutable default: series_names is mutated below (renaming
+        # rule), so a dict default would leak state across calls.
+        series_names = series_names if series_names is not None else {}
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
         scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
@@ -341,12 +365,8 @@ class bptk():
                 df = dfs.pop(0)
                 for tmp_df in dfs:
                     df = df.join(tmp_df)
-            elif len(dfs) == 1:
-                df = dfs[0]
-
             else:
-                log("[ERROR] No results produced. Check your parameters!")
-                return None
+                df = dfs[0]
 
             return self.visualizer.plot(df=df,
                                         return_df=return_df,
@@ -364,7 +384,8 @@ class bptk():
 
 
     def begin_session(self, scenarios, scenario_managers, settings={},agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0):
+                       agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0,
+                       backend=None, seed=None):
         """Begins a session to allow stepwise simulation.
 
         This resets the internal session cache, there can only be one session at any time.
@@ -396,9 +417,30 @@ class bptk():
                 Timestep at which to start.
             dt: Dt (Default=1.0)
                 Deltatime.
+            backend: String (Default=None)
+                Execution backend for SD scenarios: "python" or "rust". When None
+                (the default), the instance's ``default_backend`` is used (itself
+                "python" unless configured otherwise), so an explicit value here
+                always overrides the instance default. When "rust", each scenario
+                lazily initialises a RustSdModel on its first step; if JSON
+                serialisation or any Rust call fails, that scenario falls back to
+                the Python backend for the rest of the session.
+            seed: Int (Default=None)
+                Optional RNG seed for the Rust backend. Pinning it makes a
+                stochastic model's trajectory reproducible, which is what lets a
+                Rust-backed session be replayed identically after the serving
+                process restarts (state externalisation / resume). Leave it None
+                (the default) for deterministic models — they have no RNG, so the
+                seed never comes into play and resume is exact regardless. A
+                stochastic model that needs resume-reproducibility must pass an
+                explicit seed. Ignored by the Python backend.
 
         """
         self.session_state = None
+
+        # Resolve the backend: an explicit argument wins, otherwise fall back to
+        # the instance default (configurable via configuration["default_backend"]).
+        backend = backend if backend is not None else self.default_backend
 
         scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
         scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
@@ -450,9 +492,15 @@ class bptk():
         stoptime_ = None
 
         scenario_cache = {}
+        # Rust-backed sessions persist the engine's computed memo grid here (analogous
+        # to scenario_cache for Python) so a resumed session can rebuild the Rust
+        # engine by importing the grid instead of replaying every step. None until the
+        # first step of a scenario has run. See _restore_rust_session.
+        rust_state = {}
         for _, manager in self.scenario_manager_factory.scenario_managers.items():
             if manager.name in scenario_managers:
                 scenario_cache[manager.name]={}
+                rust_state[manager.name]={}
                 for scenario,scenario_object in manager.scenarios.items():
                     if scenario in scenarios:
                         if manager.name in settings:
@@ -462,7 +510,12 @@ class bptk():
                         stoptime_ = min(stoptime_,scenario_object.stoptime) if stoptime_ is not None else scenario_object.stoptime
                         self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
                         scenario_cache[manager.name][scenario]=self._get_scenario_cache(manager.name,scenario)
+                        rust_state[manager.name][scenario]=None
     
+        if backend not in ("python", "rust"):
+            log("[ERROR] begin_session: invalid backend '{}' — falling back to 'python'".format(backend))
+            backend = "python"
+
         self.session_state = {
             "scenarios": scenarios,
             "scenario_managers": scenario_managers,
@@ -480,7 +533,10 @@ class bptk():
             "settings_log":{},
             "results_log":{},
             "scenario_cache":scenario_cache,
-            "lock": False
+            "rust_state":rust_state,
+            "lock": False,
+            "backend": backend,
+            "backend_seed": seed,
         }
 
     def end_session(self):
@@ -488,8 +544,20 @@ class bptk():
         if self.session_state is not None:
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
                 if manager.name in self.session_state["scenario_managers"]:
-                    for scenario,scenario_object in manager.scenarios.items():
+                    for scenario, scenario_object in manager.scenarios.items():
                         if scenario in self.session_state["scenarios"]:
+                            # Release any Rust stepping state held on the scenario.
+                            # Scenario objects outlive sessions, so without this the next
+                            # session would inherit a stale rust_model with a wrong cursor.
+                            if getattr(scenario_object, "rust_model", None) is not None:
+                                try:
+                                    scenario_object.rust_model.reset()
+                                except Exception:
+                                    pass
+                                scenario_object.rust_model = None
+                                scenario_object._rust_initial = None
+                                scenario_object._rust_initial_returned = False
+                                scenario_object._rust_failed = False
                             self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
             self.session_state=None
 
@@ -542,6 +610,15 @@ class bptk():
                             if scenario in session_settings[manager.name]:
                                 self._set_scenario_settings(scenario_manager=manager.name, scenario=scenario, settings=session_settings[manager.name][scenario])
 
+        # If this is a Rust-backed session that was just restored from external state,
+        # the in-memory RustSdModel handles are gone. Rebuild them — by importing the
+        # persisted memo grid where available, else by replaying the settings_log — so
+        # the engine's cursor reaches the current step before we compute a new value.
+        # No-op for in-memory (non-resumed) sessions and for the Python backend. Must
+        # run after the scenario caches/settings above are applied.
+        if self.session_state.get("backend", "python") == "rust":
+            self._restore_rust_session()
+
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
@@ -569,7 +646,9 @@ class bptk():
                     scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
                     equations=equations,
                     scenario_manager=manager.name,
-                    settings = settings
+                    settings = settings,
+                    backend=self.session_state.get("backend", "python"),
+                    seed=self.session_state.get("backend_seed"),
                 )
 
                 if(flat):
@@ -590,6 +669,20 @@ class bptk():
                     if scenario in scenarios:
                         self.session_state["scenario_cache"][manager.name][scenario] = self._get_scenario_cache(scenario_manager=manager.name, scenario=scenario)
 
+        # For a Rust-backed session, also persist the engine's memo grid so the
+        # session can resume by importing it (no per-round replay). export_state()
+        # returns None if the scenario has no live rust_model (e.g. Python fallback).
+        if self.session_state.get("backend", "python") == "rust":
+            for _, manager in self.scenario_manager_factory.scenario_managers.items():
+                if manager.name in scenario_managers and manager.type == "sd":
+                    for scenario, sc in manager.scenarios.items():
+                        if scenario in scenarios and getattr(sc, "rust_model", None) is not None:
+                            try:
+                                self.session_state["rust_state"][manager.name][scenario] = sc.rust_model.export_state()
+                            except Exception as e:
+                                log("[WARN] export_state failed for '{}': {} — will fall back to replay on resume".format(scenario, str(e)))
+                                self.session_state["rust_state"][manager.name][scenario] = None
+
             
         # log settings and results
         self.session_state["settings_log"][step] = settings
@@ -599,6 +692,123 @@ class bptk():
         self.session_state["step"]=step+dt
 
         return flat_results if flat else simulation_results
+
+    def _restore_rust_session(self):
+        """Rebuild the Rust engine state for a session restored from external state.
+
+        The Python backend recomputes any timestep from scratch on demand (its
+        evaluator recurses down to starttime), so it resumes implicitly. The Rust
+        engine is a stateful cursor whose live ``RustSdModel`` handle is *not* part
+        of the serialised ``session_state``. After a process restart the handle is
+        gone and must be rebuilt. Two strategies:
+
+        1. **Import** (fast, default): if the persisted ``rust_state`` holds an
+           exported memo grid for the scenario, rebuild the engine by importing that
+           grid directly — O(1) in the number of rounds. The per-step overrides from
+           ``settings_log`` are folded (last-value-wins) and re-applied so future
+           steps evaluate with the correct equations, but the grid itself is NOT
+           recomputed. For a stochastic model the mid-stream RNG position is not
+           restored, so the resumed run takes a different random path from here on
+           (documented trade-off); already-computed values are preserved exactly.
+        2. **Replay** (fallback): if there is no exported grid (e.g. export failed,
+           or the scenario fell back to the Python backend), replay the recorded
+           ``settings_log`` step-by-step to drive the cursor back to the current
+           step. This is O(rounds) per resume and, per round, O(rounds^2) overall,
+           but it is always correct including bit-identical stochastic replay.
+
+        This is a no-op when the session is still in memory (each scenario already
+        holds a live ``rust_model``) and for scenarios permanently fallen back to
+        Python. It is self-guarding: once a scenario's ``rust_model`` is rebuilt it
+        won't be restored again, so calling this on every ``run_step`` is cheap.
+
+        The step grid (``starttime`` / ``dt`` / current ``step``) — not the
+        ``settings_log`` keys — drives the replay: state compression drops steps
+        whose per-step settings were empty, so the log is not a reliable count.
+        """
+        starttime = float(self.session_state["starttime"])
+        dt = float(self.session_state["dt"])
+        current_step = float(self.session_state["step"])
+
+        # Number of steps already computed before the one we're about to run.
+        n_done = int(round((current_step - starttime) / dt))
+        if n_done <= 0:
+            # Still at the first step — nothing has advanced yet, nothing to restore.
+            return
+
+        scenario_managers = self.session_state["scenario_managers"]
+        scenarios = self.session_state["scenarios"]
+        equations = self.session_state["equations"]
+        seed = self.session_state.get("backend_seed")
+        rust_state = self.session_state.get("rust_state", {})
+
+        # Index the recorded per-step settings by step index so they survive both
+        # the compression-dropped-empties case and JSON key stringification.
+        settings_by_index = {}
+        for k, v in self.session_state.get("settings_log", {}).items():
+            idx = int(round((float(k) - starttime) / dt))
+            settings_by_index[idx] = v
+
+        # Fold the per-step overrides into the cumulative (last-value-wins) state per
+        # scenario. This is what the model's mutable constants/points would hold after
+        # a full replay — the import path re-applies it without re-simulating.
+        folded = {}
+        for i in range(n_done):
+            s = settings_by_index.get(i)
+            if not s:
+                continue
+            for m, scs in s.items():
+                for scn, cfg in scs.items():
+                    fm = folded.setdefault(m, {}).setdefault(scn, {"constants": {}, "points": {}})
+                    fm["constants"].update(cfg.get("constants", {}))
+                    fm["points"].update(cfg.get("points", {}))
+
+        for _, manager in self.scenario_manager_factory.scenario_managers.items():
+            if manager.name not in scenario_managers or manager.type != "sd":
+                continue
+
+            # Scenarios in scope that need their rust_model rebuilt.
+            to_restore = [
+                sc_name for sc_name, sc_obj in manager.scenarios.items()
+                if sc_name in scenarios
+                and getattr(sc_obj, "rust_model", None) is None
+                and not getattr(sc_obj, "_rust_failed", False)
+            ]
+            if not to_restore:
+                continue
+
+            runner = SdRunner(self.scenario_manager_factory)
+            replay_scenarios = []
+            for sc_name in to_restore:
+                sc = manager.scenarios[sc_name]
+                blob = rust_state.get(manager.name, {}).get(sc_name)
+                if blob is None:
+                    replay_scenarios.append(sc_name)
+                    continue
+                try:
+                    runner.restore_scenario_state_rust(
+                        sc, manager.name, sc_name, equations, blob,
+                        folded.get(manager.name, {}).get(sc_name), seed=seed,
+                    )
+                except (ValueError, ImportError, AttributeError) as e:
+                    log("[WARN] Rust import_state failed for '{}': {} — replaying instead".format(sc_name, str(e)))
+                    sc.rust_model = None
+                    sc._rust_initial = None
+                    sc._rust_initial_returned = False
+                    replay_scenarios.append(sc_name)
+
+            # Fallback: replay any scenario without a usable exported grid.
+            for i in range(n_done):
+                if not replay_scenarios:
+                    break
+                runner.run_scenario_step(
+                    step=starttime + i * dt,
+                    scenarios=replay_scenarios,
+                    equations=equations,
+                    scenario_manager=manager.name,
+                    settings=settings_by_index.get(i),
+                    backend="rust",
+                    seed=seed,
+                )
 
     def session_results(self, index_by_time=True, flat=False):
         """Return the results collected so far within a session
@@ -622,7 +832,9 @@ class bptk():
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
 
                 # Handle Hybrid scenarios
-                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and self.session_state["agents"] > 0:
+                # TODO: ABM sessions are not supported yet — begin_session's cache
+                # machinery is SD/XMILE-only, so this branch is currently unreachable.
+                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and len(self.session_state["agents"]) > 0:
                     print("run_step currently only supports SD scenarios")
                     # Handle SD scenarios and sort by scenarios
                 elif manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
@@ -678,8 +890,12 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
                 The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
-            backend: String.
-                Execution backend: 'python' (default) or 'rust'. Only applies to SD scenarios.
+            backend: String (Default='python').
+                Execution backend: 'python' or 'rust'. Only applies to SD scenarios.
+                Note: this defaults to 'python' regardless of the instance's
+                ``default_backend`` configuration — that config only governs
+                begin_session() sessions. To run an ad-hoc simulation on Rust, pass
+                backend='rust' explicitly here.
 
         Returns:
             Based on the return_format value, results are returned as df, dict, or a json string
@@ -894,6 +1110,11 @@ class bptk():
                 Set True if you want to receive a dataFrame instead of the plot
             format: string
                 Can be either plot (default), axes (matplotlib axes object) or df (pandas dataframe)
+            backend: String (Default='python').
+                Execution backend: 'python' or 'rust'. Only applies to SD scenarios.
+                Like run_scenarios(), this defaults to 'python' regardless of the
+                instance's ``default_backend`` configuration (that config only governs
+                begin_session() sessions); pass backend='rust' explicitly to use Rust.
 
         Returns:
             Dataframe with simulation results if return_df=True.

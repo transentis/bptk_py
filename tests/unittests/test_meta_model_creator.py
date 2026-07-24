@@ -118,6 +118,89 @@ class TestModelCreator(unittest.TestCase):
         self.assertEqual(agent.properties,{})
         self.assertEqual(agent.agent_type,"testAgent")
 
+    def testModelCreator_create_model_sd_returns_json_dict(self):
+        """For SD/undefined models create_model returns the stored json_dict unchanged."""
+        json_dict = {"someManager": {"type": "sd"}}
+        modelCreator = ModelCreator(name="sm", type="sd", json_dict=json_dict)
+
+        model, dictionary = modelCreator.create_model()
+
+        self.assertIsNone(model)
+        self.assertEqual(dictionary, json_dict)
+
+    def testModelCreator_short_model_name_gets_package_prefix(self):
+        """A single-character model name is prefixed with 'model.'."""
+        modelCreator = ModelCreator(name="sm", model="m")
+        self.assertEqual(modelCreator.model, "model.m")
+
+    def testModelCreator_loads_specific_model_class_without_datacollector(self):
+        """create_model imports and instantiates the configured model class."""
+        modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
+        modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
+
+        model, _ = modelCreator.create_model()
+
+        self.assertIsInstance(model, Model)
+        self.assertIsNone(model.data_collector)
+
+    def testModelCreator_loads_specific_model_class_with_datacollector(self):
+        """The configured model class is instantiated with the data collector."""
+        dataCollector = DataCollector()
+        modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
+        modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1, datacollector=dataCollector)
+
+        model, _ = modelCreator.create_model()
+
+        self.assertIsInstance(model, Model)
+        self.assertEqual(model.data_collector, dataCollector)
+
+    def testModelCreator_falls_back_to_standard_model_with_datacollector(self):
+        """An unimportable model class falls back to a standard Model with the collector."""
+        import sys, io
+
+        dataCollector = DataCollector()
+        modelCreator = ModelCreator(name="sm", model="nonexistent.module.Foo")
+        modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1, datacollector=dataCollector)
+
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            model, _ = modelCreator.create_model()
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertIsInstance(model, Model)
+        self.assertEqual(model.data_collector, dataCollector)
+
+    def testModelCreator_agent_factory_missing_module_returns_none(self):
+        """The generated agent factory returns None if the agent module is missing."""
+        modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
+        modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
+        modelCreator.add_agent(
+            scenario="s",
+            agent=serializable_agent(name="a", count=1, step=1, classname="nonexistent.module.Foo"),
+        )
+
+        model, _ = modelCreator.create_model()
+        result = model.agent_factories["a"](agent_id=1, model=Model(), properties={})
+
+        self.assertIsNone(result)
+
+    def testModelCreator_agent_factory_missing_class_returns_none(self):
+        """The generated agent factory returns None if the class is not in the module."""
+        modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
+        modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
+        modelCreator.add_agent(
+            scenario="s",
+            agent=serializable_agent(name="a", count=1, step=1, classname="BPTK_Py.DoesNotExist"),
+        )
+
+        model, _ = modelCreator.create_model()
+        result = model.agent_factories["a"](agent_id=1, model=Model(), properties={})
+
+        self.assertIsNone(result)
+
+
 class TestSerializableAgent(unittest.TestCase):
     def setUp(self):
         pass

@@ -196,6 +196,58 @@ class InstanceManager:
 ######################
 
 
+def _check_for_py_callbacks(model_def):
+    """
+    Walk the JSON expression trees of an ``/execute`` model definition and
+    refuse it if any ``py_callback`` node is present.
+
+    ``py_callback`` is the future (Phase 6) node type that lets a Rust model
+    invoke a Python function during evaluation. Phase 4 has no mechanism to
+    register such functions on the server, so requests containing them
+    cannot succeed — we reject them up-front with a clear error rather than
+    let the Rust engine fail mid-load with a less obvious message.
+
+    Returns ``None`` if the model is clean, or a human-readable error
+    message describing why it was rejected.
+
+    The walk is O(total nodes in the model) and runs once per request. It
+    descends into every dict / list value so nodes nested under ``if`` /
+    binary-op / call args are caught even when buried deep in an
+    expression tree.
+    """
+    def walk(node):
+        if not isinstance(node, dict):
+            return None
+        if node.get("type") == "py_callback":
+            return "py_callback nodes are not supported by /execute (Phase 6)"
+        for v in node.values():
+            if isinstance(v, dict):
+                err = walk(v)
+                if err:
+                    return err
+            elif isinstance(v, list):
+                for item in v:
+                    err = walk(item)
+                    if err:
+                        return err
+        return None
+
+    if not isinstance(model_def, dict):
+        return "model must be a JSON object"
+
+    entities = model_def.get("entities", {})
+    # The four entity kinds that carry expression trees. Stocks have both
+    # ``initial_value`` and ``equation``; the others only ``equation``.
+    for kind in ("stocks", "flows", "biflows", "converters", "constants"):
+        for ent in entities.get(kind, []) or []:
+            for field in ("equation", "initial_value"):
+                if field in ent:
+                    err = walk(ent[field])
+                    if err:
+                        return err
+    return None
+
+
 class BptkServer(Flask):
     """
     This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn't expose any further public methods.
@@ -218,6 +270,11 @@ class BptkServer(Flask):
         self.route("/", methods=['GET'],strict_slashes=False)(self._home_resource)
         self.route("/healthy", methods=['GET'],strict_slashes=False)(self._healthy_resource)
         self.route("/run", methods=['POST', 'PUT'], strict_slashes=False)(self._run_resource)
+        # /execute is a self-contained sibling of /run: the request body carries the
+        # model definition itself (JSON, same schema as Model.to_json()) and the server
+        # runs it through the Rust engine. No pre-registered scenario manager required.
+        # Primary consumer: the visual modeler (design doc §6.1).
+        self.route("/execute", methods=['POST'], strict_slashes=False)(self._execute_resource)
         self.route("/scenarios", methods=['GET'], strict_slashes=False)(self._scenarios_resource)
         self.route("/equations", methods=['POST'], strict_slashes=False)(self._equations_resource)
         self.route("/agents", methods=['POST', 'PUT'], strict_slashes=False)(self._agents_resource)
@@ -470,6 +527,167 @@ class BptkServer(Flask):
         return resp
 
     @token_required
+    def _execute_resource(self):
+        """
+        Stateless on-the-fly execution of a JSON model through the Rust engine.
+
+        Unlike ``/run``, which selects from scenario managers pre-registered on
+        the server via ``bptk_factory``, ``/execute`` receives the **complete
+        model definition** in the request body. It does not touch ``self._bptk``,
+        the instance manager, or the external state adapter — each request is
+        fully self-contained.
+
+        Primary consumer: the visual modeler, where a user designs a model in a
+        browser UI and POSTs it to the server for execution. See design doc
+        §6.1 and the Phase 4 implementation plan, Substep 4e.
+
+        Request body (Content-Type: application/json)::
+
+            {
+              "model": { ... JSON model, same schema as Model.to_json() ... },
+              "scenarios": {
+                "baseline": {
+                  "constants": {"transmission_prob": 0.001, ...},
+                  "points":    {"rate_table": [[0, 1], [10, 5]]},
+                  "runspecs":  {"starttime": 0.0, "stoptime": 50.0, "dt": 0.25}
+                },
+                "high_contact": { ... }
+              },
+              "equations": ["susceptible", "infected", "recovered"]
+            }
+
+        ``scenarios`` is optional; if omitted the model runs once under the
+        synthetic name ``"default"`` with no overrides. Each scenario applies
+        its overrides to a fresh ``RustSdModel`` so per-scenario tweaks do not
+        leak into siblings within the same request.
+
+        Response: HTTP 200 with a JSON dict ``{scenario_name: {equation: {t_str: value}}}``
+        matching the Rust engine's ``simulate()`` return shape directly.
+
+        Errors:
+            * HTTP 400 — malformed request body, missing/empty ``model`` or
+              ``equations``, ``py_callback`` node present (rejected as a Phase
+              4 non-goal — see Phase 6), or engine load/runtime error from
+              user-supplied JSON (unknown function name, bad expression
+              shape, etc.).
+            * HTTP 500 — Rust engine extension not built on this server.
+
+        Notes:
+            * Backend is always Rust — there is no "Python backend" for raw
+              JSON because Python execution requires the Element-graph object
+              tree, not the engine's flat node format.
+            * Floating-point time keys (e.g. ``"0.30000000000000004"`` for
+              ``dt=0.1``) carry through verbatim from the engine. See the
+              Phase 3 known issue on ``format_time``; the fix lives at the
+              engine level and is independent of this endpoint.
+        """
+        if not request.is_json:
+            return self._error_response(
+                "please pass the request with content-type application/json", 400
+            )
+
+        content = request.get_json()
+
+        # Required fields. Missing keys → 400 with the offending field name so the
+        # caller gets a precise error instead of a generic "missing field".
+        try:
+            model_def = content["model"]
+            equations = content["equations"]
+        except KeyError as e:
+            return self._error_response(
+                "missing required field: {}".format(e.args[0]), 400
+            )
+
+        if not isinstance(equations, list) or not equations:
+            return self._error_response("equations must be a non-empty list", 400)
+
+        # Default to a single anonymous scenario when the client omits the
+        # scenarios block entirely — common case for "just run the model".
+        scenarios = content.get("scenarios", {"default": {}})
+
+        # Importing here, not at module top, so that environments without the
+        # compiled extension can still import bptkServer (e.g. /run-only deployments).
+        try:
+            from BPTK_Py._rust_engine import RustSdEngine
+        except ImportError:
+            return self._error_response("Rust engine is not available on this server", 500)
+
+        # Phase 4 hard-rejects py_callback nodes anywhere in the model. Phase 6
+        # will lift this once a server-side function registry exists.
+        rejection = _check_for_py_callbacks(model_def)
+        if rejection:
+            return self._error_response(rejection, 400)
+
+        # Re-serialize the dict to a JSON string. The Rust engine's load_model
+        # takes a string, not a Python dict.
+        try:
+            model_json_str = json.dumps(model_def)
+        except (TypeError, ValueError) as e:
+            return self._error_response(
+                "model is not JSON-serializable: {}".format(e), 400
+            )
+
+        engine = RustSdEngine()
+        results = {}
+
+        try:
+            for scenario_name, overrides in scenarios.items():
+                # Each scenario gets its own freshly loaded model so per-scenario
+                # constant/point overrides do not bleed into the next iteration.
+                rust_model = engine.load_model(model_json_str)
+
+                for name, value in overrides.get("constants", {}).items():
+                    rust_model.set_constant(name, float(value))
+
+                for name, points in overrides.get("points", {}).items():
+                    # PyO3's set_points signature is Vec<(f64, f64)> — tuples
+                    # required. JSON has no tuple type, so normalize from
+                    # list-of-list, matching the per-step path in sd_runner.
+                    rust_model.set_points(
+                        name,
+                        [(float(x), float(y)) for x, y in points],
+                    )
+
+                if "runspecs" in overrides:
+                    rs = overrides["runspecs"]
+                    specs = model_def.get("specs", {})
+                    rust_model.set_runspecs(
+                        float(rs.get("starttime", specs.get("starttime"))),
+                        float(rs.get("stoptime",  specs.get("stoptime"))),
+                        float(rs.get("dt",        specs.get("dt"))),
+                    )
+
+                results[scenario_name] = rust_model.simulate(equations)
+        except (ValueError, KeyError, TypeError) as e:
+            # ValueError covers the most common engine-side failures: unknown
+            # function names, malformed expression trees, unknown constant
+            # names in overrides, set_runspecs after init (cannot happen on
+            # this path but kept for symmetry), etc.
+            return self._error_response("Rust engine error: {}".format(e), 400)
+
+        resp = make_response(json.dumps(results), 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    def _error_response(self, msg, status):
+        """
+        Return a JSON error response with the canonical headers.
+
+        Used by ``/execute`` (and reserved for any new endpoints) to keep
+        error handling consistent. The existing endpoints (``/run``,
+        ``/scenarios``, ``/begin-session``, ...) deliberately keep their
+        inline ``make_response('{"error": "..."}', 500)`` pattern — they
+        return HTTP 500 for client errors, which is wrong but stable. Phase
+        4 leaves that alone to keep the diff focused; a separate cleanup
+        can normalise them later.
+        """
+        resp = make_response(json.dumps({"error": msg}), status)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    @token_required
     def _scenarios_resource(self):
         """
         The endpoint returns all available scenarios for the current simulation.
@@ -546,11 +764,10 @@ class BptkServer(Flask):
         equations_names["constants"] = [name for name in constants_names]
         equations_names["points"] = [name for name in points_names]
 
-        if equations_names is not None:
-            resp = make_response(equations_names, 200)
-        else:
-            resp = make_response('{"error": "no data was returned from simulation"}', 500)
-
+        # `equations_names` is built as a `{}` literal and only ever has keys
+        # added to it — it is never None by construction. No defensive
+        # "no data" branch is necessary.
+        resp = make_response(equations_names, 200)
         return resp
 
     @token_required
@@ -600,10 +817,7 @@ class BptkServer(Flask):
             agent_properties = list(agent.properties.keys())
             agents_dict[agent_name]["properties"] = agent_properties
 
-        if agents_dict is not None:
-            resp = make_response(agents_dict, 200)
-        else:
-            resp = make_response('{"error": "no data was returned from simulation"}', 500)
+        resp = make_response(agents_dict, 200)
 
         return resp
 
@@ -624,20 +838,18 @@ class BptkServer(Flask):
                 content = request.get_json()
                 if "timeout" in content:
                     timeout = content["timeout"]
+            # `create_instance` always returns a fresh `uuid.uuid1().hex`,
+            # so the previous `if instance_uuid is not None` branch was
+            # unreachable in practice — removed to keep the code honest.
             instance_uuid = self._instance_manager.create_instance(**timeout)
+            response_data = {"instance_uuid": instance_uuid, "timeout": timeout}
+            resp = make_response(json.dumps(response_data), 200)
 
-            if instance_uuid is not None:
-                response_data = {"instance_uuid":instance_uuid,"timeout":timeout}
-                resp = make_response(json.dumps(response_data), 200)
-            else:
-                resp = make_response('{"error": "instance could not be started"}', 500)
-
-            resp.headers['Content-Type']='application/json'
-            resp.headers['Access-Control-Allow-Origin']='*'
+            resp.headers['Content-Type'] = 'application/json'
+            resp.headers['Access-Control-Allow-Origin'] = '*'
 
             # Cleanup new instance if needed (for stateless operation)
-            if instance_uuid:
-                self._cleanup_new_instances_if_needed([instance_uuid])
+            self._cleanup_new_instances_if_needed([instance_uuid])
 
             return resp
 
@@ -758,6 +970,29 @@ class BptkServer(Flask):
             if("settings" in content.keys()):
                 settings = content["settings"]
 
+            # Optional `backend` field — selects the execution backend for the
+            # entire session ("python" or "rust"). When omitted, it is left as
+            # None so bptk.begin_session falls through to the instance's
+            # default_backend (configurable via configuration["default_backend"];
+            # itself "python" unless overridden). An explicit value here always
+            # wins over the instance default. Invalid values are rejected up
+            # front rather than silently falling back, to make configuration
+            # errors visible. See Phase 4 design doc §6, Substep 4d for the
+            # bptk.begin_session plumbing and Substep 4i for default_backend.
+            backend = content.get("backend")
+            if backend is not None and backend not in ("python", "rust"):
+                # Cleanup instance if needed (for stateless operation)
+                self._cleanup_instance_if_needed(instance_uuid)
+                return self._error_response(
+                    "backend must be 'python' or 'rust', got '{}'".format(backend), 400
+                )
+
+            # Optional `seed` field — pins the Rust backend's RNG so a stochastic
+            # session replays bit-identically after a process restart (state
+            # externalisation / resume). Omitting it lets bptk auto-generate and
+            # persist one for Rust sessions; ignored by the Python backend.
+            seed = content.get("seed", None)
+
             instance = self._instance_manager.get_instance(instance_uuid)
 
             instance.begin_session(
@@ -769,7 +1004,9 @@ class BptkServer(Flask):
                 agent_states=agent_states,
                 agent_properties=agent_properties,
                 agent_property_types=agent_property_types,
-                individual_agent_properties=individual_agent_properties
+                individual_agent_properties=individual_agent_properties,
+                backend=backend,
+                seed=seed,
             )
 
             resp = make_response('{"msg":"session started"}', 200)
@@ -984,10 +1221,7 @@ class BptkServer(Flask):
                 return resp
         except:
             instance.unlock()
-        if result is not None:
-            resp = make_response(jsonpickle.dumps(result), 200)
-        else:
-            resp = make_response('{"error": "no data was returned from run_step"}', 500)
+        resp = make_response(jsonpickle.dumps(result), 200)
 
         resp.headers['Content-Type'] = 'application/json'
         resp.headers['Access-Control-Allow-Origin']='*'

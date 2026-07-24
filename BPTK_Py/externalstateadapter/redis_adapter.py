@@ -6,22 +6,6 @@ import numpy as np
 from .externalStateAdapter import ExternalStateAdapter, InstanceState
 from ..logger import log
 
-# Try to configure ujson backend, but fall back gracefully if not available
-try:
-    import ujson
-    jsonpickle.load_backend('ujson', 'ujson', ValueError)
-    jsonpickle.set_preferred_backend('ujson')
-    jsonpickle.set_encoder_options('ujson', ensure_ascii=False, sort_keys=True)
-    jsonpickle.set_decoder_options('ujson', precise_float=True)
-    log("[INFO] jsonpickle configured to use ujson backend")
-except (ImportError, AssertionError) as e:
-    # Fall back to default JSON backend if ujson is not available
-    log(f"[INFO] ujson not available ({e}), using default JSON backend")
-    pass
-
-# Configure safer numpy serialization - convert to native Python types
-# Use proper BaseHandler classes as per jsonpickle documentation
-
 class NumpyFloatHandler(jsonpickle.handlers.BaseHandler):
     def flatten(self, obj, data):
         return float(obj)

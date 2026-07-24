@@ -287,6 +287,28 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario.constants["constant1"],301.0)
         self.assertEqual(scenario.constants["constant2"],202.0)
 
+    def testScenario_rust_field_defaults(self):
+        """The four fields added in Phase 4 Substep 4d must default to safe
+        values so step-by-step Rust dispatch sees a clean slate on first call."""
+        scenario_empty = SimulationScenario(dictionary={}, name="rustFieldsEmpty",
+                                            model=None, scenario_manager_name="mgr")
+        self.assertIsNone(scenario_empty.rust_model)
+        self.assertIsNone(scenario_empty._rust_initial)
+        self.assertFalse(scenario_empty._rust_initial_returned)
+        self.assertFalse(scenario_empty._rust_failed)
+
+        # Same defaults when the constructor populates other fields from a dict.
+        scenario_with_dict = SimulationScenario(
+            dictionary={"constants": {"c": 1.0}},
+            name="rustFieldsWithDict",
+            model=Model(),
+            scenario_manager_name="mgr",
+        )
+        self.assertIsNone(scenario_with_dict.rust_model)
+        self.assertIsNone(scenario_with_dict._rust_initial)
+        self.assertFalse(scenario_with_dict._rust_initial_returned)
+        self.assertFalse(scenario_with_dict._rust_failed)
+
     def testScenario_get_property_vallue(self):
         dictionary = {
             "constants": {

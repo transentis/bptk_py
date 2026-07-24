@@ -199,6 +199,33 @@ class TestFileAdapter(unittest.TestCase):
 
         tmpdir.cleanup()
 
+    def test_load_instance_non_string_time(self):
+        """When the persisted time is not a string it is used verbatim."""
+        import jsonpickle
+        tmpdir = tempfile.TemporaryDirectory()
+
+        instance_id = "numeric_time"
+        numeric_time = 1234567890  # e.g. a raw value, not an ISO-8601 string
+        data = {
+            "data": {
+                "state": jsonpickle.dumps({"results_log": {}}),
+                "instance_id": instance_id,
+                "time": numeric_time,   # deliberately NOT a string
+                "timeout": {},
+                "step": 1,
+            }
+        }
+        with open(os.path.join(tmpdir.name, instance_id + ".json"), "w") as f:
+            f.write(jsonpickle.dumps(data))
+
+        fileAdapter = FileAdapter(compress=True, path=tmpdir.name)
+        instance = fileAdapter._load_instance(instance_uuid=instance_id)
+
+        self.assertIsInstance(instance, InstanceState)
+        self.assertEqual(instance.time, numeric_time)
+
+        tmpdir.cleanup()
+
     def test_delete_instance_exception(self):
         instance_id_delete = "dir_instead_of_file"
         tmpdir = tempfile.TemporaryDirectory()

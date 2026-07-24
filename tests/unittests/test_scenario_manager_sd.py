@@ -162,7 +162,47 @@ class TestScenarioManagerSD(unittest.TestCase):
     def testScenarioManagerSD_get_cloned_model_none(self):
         scenarioManager = ScenarioManagerSd()
 
-        self.assertIsNone(scenarioManager.get_cloned_model(model=None))      
+        self.assertIsNone(scenarioManager.get_cloned_model(model=None))
+
+    def testScenarioManagerSD_instantiate_model_source_file_missing(self):
+        """A compiled model with a source path that no longer exists clears source."""
+        import BPTK_Py.logger.logger as logmod
+        import tempfile, os
+        logmod.loglevel = "INFO"
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        tmpdir = tempfile.TemporaryDirectory()
+        # a compiled .py exists on disk, but the referenced source file does not
+        with open(os.path.join(tmpdir.name, "model.py"), "w", encoding="utf-8") as f:
+            f.write("simulation_model = None\n")
+        missing_source = os.path.join(tmpdir.name, "missing.itmx")
+
+        scenarioManager = ScenarioManagerSd(
+            scenarios={}, name="mgr",
+            model_file=os.path.join(tmpdir.name, "model"),
+            source=missing_source,
+        )
+
+        scenarioManager.instantiate_model()
+
+        # The missing source was reported and reset to "".
+        self.assertEqual(scenarioManager.source, "")
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn("[ERROR] Source model file not found", content)
+
+        tmpdir.cleanup()
+
+    def testScenarioManagerSD_instantiate_model_bare_model_filename(self):
+        """A model file without a parent directory uses just the stem as the package link."""
+        # model_file has no directory component -> Path("baremodel.py").parent.name == ""
+        scenarioManager = ScenarioManagerSd(scenarios={}, name="mgr", model_file="baremodel", source="")
+
+        # The import will fail (no such module), which is caught internally and clears scenarios.
+        scenarioManager.instantiate_model()
+
+        self.assertEqual(scenarioManager.scenarios, {})
 
 if __name__ == '__main__':
-    unittest.main()   
+    unittest.main()

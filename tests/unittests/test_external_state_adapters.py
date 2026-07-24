@@ -577,5 +577,48 @@ class TestRedisAdapter(BaseExternalStateAdapterTest):
         finally:
             self.cleanup_adapter(adapter)
 
+
+class TestExternalStateAdapterOptionalImports(unittest.TestCase):
+    """The externalstateadapter package installs stub classes when the optional
+    psycopg / redis dependencies (and thus the adapter submodules) can't be
+    imported. These tests block the submodule import and reload the package to
+    exercise the ImportError fallback branches in __init__.py, then restore the
+    real classes."""
+
+    def _reload_package_blocking(self, blocked_submodule):
+        import importlib
+        import sys
+        from unittest.mock import patch
+        import BPTK_Py.externalstateadapter as esa
+        with patch.dict(sys.modules, {blocked_submodule: None}):
+            importlib.reload(esa)
+        return esa
+
+    def _restore_package(self):
+        import importlib
+        import BPTK_Py.externalstateadapter as esa
+        importlib.reload(esa)
+
+    def test_postgres_stub_when_submodule_missing(self):
+        esa = self._reload_package_blocking(
+            "BPTK_Py.externalstateadapter.postgres_adapter")
+        try:
+            with self.assertRaises(ImportError) as cm:
+                esa.PostgresAdapter()
+            self.assertIn("psycopg", str(cm.exception))
+        finally:
+            self._restore_package()
+
+    def test_redis_stub_when_submodule_missing(self):
+        esa = self._reload_package_blocking(
+            "BPTK_Py.externalstateadapter.redis_adapter")
+        try:
+            with self.assertRaises(ImportError) as cm:
+                esa.RedisAdapter()
+            self.assertIn("redis", str(cm.exception))
+        finally:
+            self._restore_package()
+
+
 if __name__ == '__main__':
     unittest.main()

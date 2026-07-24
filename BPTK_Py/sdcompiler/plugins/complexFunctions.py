@@ -314,10 +314,6 @@ def findLabels(dimensions, stockname):
 
     return labels
 
-def size(model, entity_type, entity, dimensions, expression):
-
-    return expression
-
 def cartesian_product(listoflists):
     """
     Helper for Cartesian product

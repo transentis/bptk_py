@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
 "pandas==2.3.0",
 "matplotlib==3.10.3",
@@ -23,7 +23,6 @@ dependencies = [
 "jsonpickle==4.1.1",
 "psycopg[binary,pool]==3.3.2",
 "redis==6.4.0",
-"ujson==5.10.0",
 "logfire==4.19.0"
 ]
 requires-python = ">=3.11"

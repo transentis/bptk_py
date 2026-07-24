@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from BPTK_Py import Model
 
@@ -210,6 +211,37 @@ class TestElement(unittest.TestCase):
 
         self.assertTrue(dataframe.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))
         self.assertIsNone(result.plot(starttime=0,stoptime=2,dt=1,return_df=False))
+
+    def test_plot_falls_back_to_model_runspecs_on_error(self):
+        """If building the frame for the passed range fails, plot retries with the
+        model's own runspecs."""
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="TestModel")
+
+        scalar = model.constant("scalar")
+        scalar.equation = 1.0
+
+        vector = model.constant("vector")
+        vector.setup_vector(2, [3.0, 4.0])
+
+        # timerange raises on every first (odd) call so the try fails and the except
+        # succeeds on the following (even) call - for both the scalar and arrayed paths.
+        calls = {"n": 0}
+
+        def flaky_timerange(*_args):
+            calls["n"] += 1
+            if calls["n"] % 2 == 1:
+                raise RuntimeError("boom")
+            return [model.starttime, model.starttime + model.dt]
+
+        with patch("BPTK_Py.sddsl.element.timerange", side_effect=flaky_timerange):
+            scalar_df = scalar.plot(return_df=True)   # non-arrayed except (263-264)
+
+        calls["n"] = 0
+        with patch("BPTK_Py.sddsl.element.timerange", side_effect=flaky_timerange):
+            vector_df = vector.plot(return_df=True)    # arrayed except (254-255)
+
+        self.assertEqual(list(scalar_df.columns), ["scalar"])
+        self.assertEqual(len(vector_df.columns), 2)
 
 class TestElementError(unittest.TestCase):
     def setUp(self):

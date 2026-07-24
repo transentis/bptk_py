@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch, MagicMock
 import pandas as pd
 import os
 
@@ -368,5 +369,119 @@ class TestHybridRunner(unittest.TestCase):
 
         self.assertTrue(result2.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_closed_effort_total": [7, 14, 17, 20, 20]}, index=[0, 1, 2, 3, 4])))
 
+    def testHybridRunner_get_df_for_agent_empty_states(self):
+        """With no agent_states the stats fall into the unimplemented placeholder branch
+, which the downstream DataFrame build cannot handle."""
+        hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
+
+        data = {1.0: {"agent1": {"open": {"count": 1}}}}
+
+        # get_stats_for stores a bare 0; the outer loop then calls .items()
+        # on that int and raises - pinning the current (broken) behaviour.
+        with self.assertRaises(AttributeError):
+            hybridRunner.get_df_for_agent(data=data, agent_name="agent1",
+                                          agent_states=[], agent_properties=[], agent_property_types=[])
+
+    def _build_runner(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir, "tests", "unittests", "test_hybrid_runner", "scenarios")
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+        sm.get_scenario_managers(path=testDir)
+        return HybridRunner(scenario_manager_factory=sm), sm
+
+    def testHybridRunner_run_scenario_widget(self):
+        """The widget branch builds and starts the scenario's widget loader."""
+        hybridRunner, sm = self._build_runner()
+        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
+
+        loader = MagicMock()
+        scenario.build_widget = MagicMock(return_value=loader)
+
+        hybridRunner.run_scenario(abm_results_dict={},
+                                  return_format="json",
+                                  scenarios=["test"],
+                                  scenario_managers=["ABMsmSimpleProjectManagement"],
+                                  agents=["task"],
+                                  agent_states=["open"],
+                                  agent_property_types=["total"],
+                                  widget=True)
+
+        scenario.build_widget.assert_called_once()
+        loader.start.assert_called_once()
+
+    def testHybridRunner_run_scenario_skips_unfinished(self):
+        """An unfinished scenario (scheduler.progress < 1.0) is skipped."""
+        hybridRunner, sm = self._build_runner()
+        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
+
+        # First run to populate statistics so the second call does not re-run it.
+        hybridRunner.run_scenario(abm_results_dict={}, return_format="df",
+                                  scenarios=["test"], scenario_managers=["ABMsmSimpleProjectManagement"],
+                                  agents=["task"], agent_states=["open"], agent_property_types=["total"])
+
+        # Simulate a cancelled/unfinished run.
+        scenario.scheduler.progress = 0.5
+
+        result = hybridRunner.run_scenario(abm_results_dict={}, return_format="df",
+                                           scenarios=["test"], scenario_managers=["ABMsmSimpleProjectManagement"],
+                                           agents=["task"], agent_states=["open"], agent_property_types=["total"])
+
+        # The only scenario was skipped -> nothing to concatenate -> empty frame.
+        self.assertTrue(result.equals(pd.DataFrame()))
+
+    def testHybridRunner_run_scenario_no_data(self):
+        """If a finished scenario produces no statistics, an empty frame is returned."""
+        hybridRunner, sm = self._build_runner()
+        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
+
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        with patch.object(scenario, "statistics", return_value={}):
+            result = hybridRunner.run_scenario(abm_results_dict={}, return_format="df",
+                                               scenarios=["test"], scenario_managers=["ABMsmSimpleProjectManagement"],
+                                               agents=["task"], agent_states=["open"], agent_property_types=["total"])
+
+        self.assertTrue(result.equals(pd.DataFrame()))
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("[WARN] No output data produced.", content)
+
+    def testHybridRunner_train_scenario_progress_widget(self):
+        """train_scenario updates a passed-in progress widget each episode."""
+        hybridRunner, sm = self._build_runner()
+        progress_widget = MagicMock()
+        progress_widget.value = -1
+
+        episodes = 3
+        hybridRunner.train_scenario(scenarios=["test"],
+                                    scenario_managers=["ABMsmSimpleProjectManagement"],
+                                    agents=["task"],
+                                    agent_states=["open"],
+                                    agent_property_types=["total"],
+                                    episodes=episodes,
+                                    progress_widget=progress_widget)
+
+        # The widget value was written during training; last update is (episodes-1)/episodes.
+        self.assertEqual(progress_widget.value, (episodes - 1) / episodes)
+
+    def testHybridRunner_run_scenario_step_no_data(self):
+        """run_scenario_step also returns an empty frame when no statistics exist."""
+        hybridRunner, sm = self._build_runner()
+        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
+
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        with patch.object(scenario, "statistics", return_value={}):
+            result = hybridRunner.run_scenario_step(abm_results_dict={}, step=1, return_format="df",
+                                                    scenarios=["test"], scenario_managers=["ABMsmSimpleProjectManagement"],
+                                                    agents=["task"], agent_states=["open"])
+
+        self.assertTrue(result.equals(pd.DataFrame()))
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("[WARN] No output data produced.", content)
+
 if __name__ == '__main__':
-    unittest.main()    
+    unittest.main()

@@ -925,8 +925,6 @@ class DotOperator(BinaryOperator):
         """
         def _get_sub_element_term(element, index, time):
             if isinstance(element, BPTK_Py.sddsl.element.Element):
-                if isinstance(index, (int, float)):
-                    return element[index].term(time)
                 cur = element
                 for i in index:
                     cur = cur[i]

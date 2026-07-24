@@ -26,9 +26,6 @@ class SMILEVisitor(NodeVisitor):
         """ The generic visit method. """
         return visited_children or node
 
-    def visit_Equation(self, node, visited_children):
-        return visited_children
-
     def visit_Sentence(self, node, visited_children):
         _, Sentence, _ = visited_children
         return Sentence[0]
@@ -109,8 +106,10 @@ class SMILEVisitor(NodeVisitor):
         return visited_children[0]  # No Sign
 
     def visit_exponent(self, node, visited_children):
-        e, digits = visited_children
-        return e.text + digits
+        _, digits = visited_children
+        # The 'e'/'e-' marker is an OrderedChoice, so visited_children[0] is a list, not a
+        # node — read the marker text straight from the exponent node's first child.
+        return node.children[0].text + digits
 
     def visit_fraction(self, node, visited_children):
         _, digits = visited_children
@@ -211,9 +210,6 @@ class SMILEVisitor(NodeVisitor):
     Operators
     '''
 
-    def visit_Clocktime(self,node, visited_children):
-        return {"name": "clocktime", "type": "call", "args": []}
-
     def visit_AdditiveOperator(self, node, visited_children):
         return node.text
 
@@ -229,9 +225,6 @@ class SMILEVisitor(NodeVisitor):
     '''
     Keywords
     '''
-
-    def visit_Keyword(self, node, visited_children):
-        return visited_children
 
     def visit_if(self, node, visited_children):
         return node.text.replace(" ","").lower()
@@ -256,9 +249,6 @@ class SMILEVisitor(NodeVisitor):
         return ''
 
     def visit__(self, node, visited_children):
-        return ""
-
-    def visit_strict_whitespace(self, node, visited_children):
         return ""
 
     def visit_Name(self, node, visited_children):

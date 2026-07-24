@@ -142,5 +142,41 @@ class TestScenarioManagerSD(unittest.TestCase):
         self.assertEqual(scenarioManager.scenarios["scenario2"].agent(agent_id=2).get_property_value(name="agentproperty"),"testAgentProperty3")
         self.assertEqual(scenarioManager.scenarios["scenario2"].agent(agent_id=3).get_property_value(name="agentproperty"),"testAgentProperty4")
 
+    def testScenarioManagerHybrid_instantiate_model_missing_module(self):
+        """If the configured model module cannot be imported, the manager logs and skips."""
+        import BPTK_Py.logger.logger as logmod
+        logmod.loglevel = "INFO"
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        json_config = {"model": "nonexistent.module.Foo", "scenarios": {"scenario1": {}}}
+        scenarioManager = ScenarioManagerHybrid(json_config=json_config, name="mgr", model=None)
+
+        scenarioManager.instantiate_model(reset=True)
+
+        self.assertEqual(scenarioManager.scenarios, {})  # nothing instantiated
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn("[ERROR] File nonexistent/module.py not found", content)
+
+    def testScenarioManagerHybrid_instantiate_model_missing_class(self):
+        """If the model class is not found in the module, the manager logs and skips."""
+        import BPTK_Py.logger.logger as logmod
+        logmod.loglevel = "INFO"
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        json_config = {"model": "BPTK_Py.NonExistentClass", "scenarios": {"scenario1": {}}}
+        scenarioManager = ScenarioManagerHybrid(json_config=json_config, name="mgr", model=None)
+
+        scenarioManager.instantiate_model(reset=True)
+
+        self.assertEqual(scenarioManager.scenarios, {})  # nothing instantiated
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn("[ERROR] Could not find class NonExistentClass in BPTK_Py", content)
+
 if __name__ == '__main__':
-    unittest.main()   
+    unittest.main()

@@ -81,9 +81,6 @@ class Model:
 
         self.agent_factories = {}
 
-        for agent_type in self.agent_factories:
-            self.agent_type_map[agent_type] = []
-
     @property
     def model(self):
         return self

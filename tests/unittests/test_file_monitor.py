@@ -55,5 +55,58 @@ class TestFileMonitor(unittest.TestCase):
 
         self.assertEqual(fileMonitor._cached_stamp,100)
 
+    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("os.stat")
+    def test_kill(self, mock_stat, mock_thread):
+        """kill() flips the running flag so the monitor thread terminates."""
+        mock_stat.return_value.st_mtime = 100
+        fileMonitor = FileMonitor(json_file="test.json", update_func=MagicMock())
+
+        self.assertTrue(fileMonitor.running)
+        fileMonitor.kill()
+        self.assertFalse(fileMonitor.running)
+
+    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("os.path.isfile", return_value=True)
+    @patch("os.stat")
+    def test_monitor_survives_update_func_error(self, mock_stat, mock_isfile, mock_thread):
+        """If the update function raises, the monitor logs a warning and keeps running."""
+        mock_stat.return_value.st_mtime = 100
+
+        def raiser(_):
+            raise RuntimeError("boom")
+
+        fileMonitor = FileMonitor(json_file="test.json", update_func=raiser)
+        fileMonitor._cached_stamp = 50  # force a detected change
+        fileMonitor.running = True
+
+        # Run exactly one loop iteration, then stop via the (patched) sleep.
+        with patch("BPTK_Py.modelmonitor.file_monitor.time.sleep",
+                   side_effect=lambda *_: setattr(fileMonitor, "running", False)):
+            fileMonitor._FileMonitor__monitor()
+
+        # The exception was swallowed and the loop exited cleanly.
+        self.assertFalse(fileMonitor.running)
+        self.assertEqual(fileMonitor._cached_stamp, 100)
+
+    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.file_monitor.os.name", "nt")
+    @patch("os.path.isfile", return_value=True)
+    @patch("os.stat")
+    def test_monitor_windows_path(self, mock_stat, mock_isfile, mock_thread):
+        """On Windows the path separators are normalised before stat-ing."""
+        mock_stat.return_value.st_mtime = 100
+
+        mock_update_func = MagicMock()
+        fileMonitor = FileMonitor(json_file="some/dir/test.json", update_func=mock_update_func)
+        fileMonitor._cached_stamp = 50
+        fileMonitor.running = True
+
+        with patch("BPTK_Py.modelmonitor.file_monitor.time.sleep",
+                   side_effect=lambda *_: setattr(fileMonitor, "running", False)):
+            fileMonitor._FileMonitor__monitor()
+
+        mock_update_func.assert_called_once_with("some/dir/test.json")
+
 if __name__ == "__main__":
     unittest.main()

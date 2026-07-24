@@ -71,5 +71,18 @@ class TestSdRunner(unittest.TestCase):
 
         self.assertEqual(sdSimulation.mod.points["a"],4)
 
+    def test_start_arrayed_equation_sums_result(self):
+        """An arrayed equation (name contains "*") resolves to a list, which the
+        simulation sums into a single value per timestep."""
+        from BPTK_Py import Model
+
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="arrayed")
+        model.add_equation("vec[*]", lambda t: [1.0, 2.0, 3.0])
+
+        sdSimulation = SdSimulation(model=model, name="testSimulation")
+        df = sdSimulation.start(output=["frame"], equations=["vec[*]"])
+
+        self.assertEqual(df["vec[*]"].to_dict(), {0.0: 6.0, 1.0: 6.0, 2.0: 6.0})
+
 if __name__ == '__main__':
-    unittest.main()  
+    unittest.main()

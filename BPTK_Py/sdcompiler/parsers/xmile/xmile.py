@@ -286,12 +286,11 @@ def parse_xmile(filename):
             for elem in entity:
                 elem["equation_parsed"] = [makeExpressionAbsolute(name,visitor.visit(grammar.parse(x)),connects=IR["assignments"],entity=entity,dimensions=IR["dimensions"]) for x in elem["equation"]]
 
-                # Handle Non-Negative stocks
+                # Handle Non-Negative stocks. equation_parsed is always a list (built by
+                # the comprehension above), so the value is never a bare float here —
+                # wrap it in a max(0, equation) call.
                 if elem["non_negative"]:
-                    if type(elem["equation_parsed"]) is float: # Fixed value, can be stored directly as the actual max of 0 and value
-                        elem["equation_parsed"] = max(0, elem["equation_parsed"])
-                    else: # Construct Equation: max(0, equation)
-                        elem["equation_parsed"] = {"name": 'max', "type": 'call',
-                                                   "args": [0, deepcopy(elem["equation_parsed"])]}
+                    elem["equation_parsed"] = {"name": 'max', "type": 'call',
+                                               "args": [0, deepcopy(elem["equation_parsed"])]}
 
     return IR

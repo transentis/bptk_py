@@ -165,6 +165,12 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.description,"testModelDescription")
         self.assertEqual(model.number,113)
 
+        # Fallback branch: a name that is not a property but exists in __dict__.
+        # Normal attribute access finds it without invoking __getattr__, so call
+        # __getattr__ directly to exercise the fallback return.
+        model.__dict__["plain_attr"] = "plainValue"
+        self.assertEqual(model.__getattr__("plain_attr"), "plainValue")
+
         with self.assertRaises(AttributeError) as context:
             model.invalid_property
 
@@ -235,6 +241,42 @@ class Test_Model(unittest.TestCase):
         result_value = model.instantiate_model()
 
         self.assertIsNone(result_value)
+
+    def test_run(self):
+        """Model.run delegates to the scheduler and steps every round."""
+        from BPTK_Py.modeling.simultaneousScheduler import SimultaneousScheduler
+
+        class CountingAgent(Agent):
+            def __init__(self, agent_id, model, properties, agent_type="counter"):
+                super().__init__(agent_id, model, properties, agent_type)
+                self.act_calls = 0
+
+            def act(self, time, round_no, step_no):
+                self.act_calls += 1
+
+        def _build_model():
+            model = Model(scheduler=SimultaneousScheduler(), data_collector=DataCollector())
+            # run_specs keeps integer runspecs (the scheduler's range() needs ints);
+            # this mirrors how the framework configures ABM models from scenario JSON.
+            model.run_specs(starttime=1, stoptime=3, dt=1)
+            model.register_agent_factory(
+                agent_type="counter",
+                agent_factory=lambda agent_id, model, properties: CountingAgent(
+                    agent_id=agent_id, model=model, properties=properties),
+            )
+            model.create_agent(agent_type="counter", agent_properties={})
+            return model
+
+        # normal path (show_progress_widget=False)
+        model = _build_model()
+        model.run()
+        # rounds 1, 2, 3 -> one act call per round
+        self.assertEqual(model.agents[0].act_calls, 3)
+
+        # Jupyter progress-widget path (show_progress_widget=True)
+        model = _build_model()
+        model.run(show_progress_widget=True)
+        self.assertEqual(model.agents[0].act_calls, 3)
 
     def test_enqueue_event(self):
         model = Model()

@@ -5,6 +5,7 @@ from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator, DotOperator
 from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator, BinaryOperator, AdditionOperator
 from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
+from BPTK_Py.sddsl.operators import Function, SubtractionOperator, MultiplicationOperator, Pulse, _get_element_dimensions
 
 class TestArrayedEquation(unittest.TestCase):
     def setUp(self):
@@ -1106,6 +1107,116 @@ class TestLnLog10FloorCeilOperators(unittest.TestCase):
         self.assertIs(Log10(element).x, element)
         self.assertIs(Floor(element).x, element)
         self.assertIs(Ceil(element).x, element)
+
+
+class TestOperatorArrayedCoverage(unittest.TestCase):
+    """Covers arrayed-operator edge branches: unresolved-index guards ("0.0"),
+    the non-vector else branches, dimension/index/name helpers and the dot product."""
+
+    def _model(self):
+        m = Model()
+        a = m.constant("a"); a.equation = 1.0
+        a2 = m.constant("a2"); a2.equation = 2.0
+        v3 = m.converter("v3"); v3.setup_vector(3, [4.0, 5.0, 6.0])
+        v3b = m.converter("v3b"); v3b.setup_vector(3, [7.0, 8.0, 9.0])
+        v4 = m.converter("v4"); v4.setup_vector(4, [1.0, 2.0, 3.0, 4.0])
+        mat = m.converter("mat"); mat.setup_matrix([3, 3], [[1.0, 2, 3], [4, 5, 6], [7, 8, 9]])
+        nm = m.converter("nm"); nm.setup_named_matrix({"r1": {"c1": 1.0, "c2": 2.0}, "r2": {"c1": 3.0, "c2": 4.0}})
+        return m, a, a2, v3, v3b, v4, mat, nm
+
+    def test_function_term(self):
+        # Function.term just re-inits and returns None
+        self.assertIsNone(Function().term())
+
+    def test_get_element_dimensions_non_element(self):
+        # neither Element nor Operator -> -1
+        self.assertEqual(_get_element_dimensions(5.0), -1)
+
+    def test_array_size_operator_on_scalar(self):
+        # arr_size on a scalar has vector_size 0 -> "0.0"
+        m, a, *_ = self._model()
+        self.assertEqual(a.arr_size().term(), "0.0")
+
+    def test_arrayed_operators_without_index_return_zero(self):
+        # arrayed operators cannot resolve without an index -> "0.0"
+        m, a, a2, v3, *_ = self._model()
+        self.assertEqual((a + v3).term(), "0.0")   # AdditionOperator
+        self.assertEqual((a - v3).term(), "0.0")   # SubtractionOperator
+        self.assertEqual((v3 / a).term(), "0.0")   # DivisionOperator
+        self.assertEqual((-v3).term(), "0.0")      # NumericalMultiplicationOperator
+        self.assertEqual((a * v3).term(), "0.0")   # MultiplicationOperator
+
+    def test_arrayed_operator_else_branches(self):
+        # arrayed + index set but neither operand is a vector Element -> else branch
+        m, a, a2, *_ = self._model()
+        for op in (AdditionOperator(a, a2), SubtractionOperator(a, a2),
+                   DivisionOperator(a, a2), NumericalMultiplicationOperator(a, a2),
+                   MultiplicationOperator(a, a2)):
+            op.arrayed = True
+            op.index = [0]
+            self.assertIsInstance(op.term(), str)
+            self.assertNotEqual(op.term(), "0.0")
+
+    def test_numerical_multiplication_resolve_dimensions(self):
+        m, a, a2, v3, v3b, v4, *_ = self._model()
+        # dim1 == -1 -> returns dim2
+        self.assertEqual(NumericalMultiplicationOperator(a, v3).resolve_dimensions(), [3, 0])
+        # both arrayed with matching sizes -> returns the shared dimension
+        self.assertEqual(NumericalMultiplicationOperator(v3, v3b).resolve_dimensions(), [3, 0])
+        # both arrayed but different sizes -> raise
+        with self.assertRaises(Exception) as ctx:
+            NumericalMultiplicationOperator(v3, v4, allow_different_sized_arrays=True).resolve_dimensions()
+        self.assertIn("invalid array multiplication", str(ctx.exception))
+
+    def test_numerical_multiplication_index_to_string_and_is_named(self):
+        m, a, a2, v3, v3b, v4, mat, nm = self._model()
+        # int index, element_2 is the vector
+        self.assertEqual(NumericalMultiplicationOperator(a, v3).index_to_string(0), "0")
+        # list index, element_2 is a named matrix
+        self.assertEqual(NumericalMultiplicationOperator(a, nm).index_to_string([0, 1]), "c2")
+        # is_named: element_2 vector and neither vector
+        self.assertFalse(NumericalMultiplicationOperator(a, v3).is_named())
+        self.assertFalse(NumericalMultiplicationOperator(a, a2).is_named())
+
+    def test_dot_operator_success_and_errors(self):
+        m, a, a2, v3, v3b, v4, mat, nm = self._model()
+        # successful vector . vector with index
+        self.assertIsInstance(DotOperator(v3, v3b, index=1).term(), str)
+        # successful vector . matrix with index (list-index sub-element term path)
+        self.assertIsInstance(DotOperator(v3, mat, index=1).term(), str)
+        # operator (not Element) as dot operand -> arrayed_term
+        self.assertIsInstance(DotOperator(v3 + v3, mat, index=0).term(), str)
+        # dot with index None on a matrix -> "0.0"
+        self.assertEqual(DotOperator(mat, v3).term(), "0.0")
+        # value . value with index -> raise
+        with self.assertRaises(Exception):
+            DotOperator(a, a2, index=0).term()
+        # value . value resolve_dimensions -> raise
+        with self.assertRaises(Exception):
+            DotOperator(a, a2).resolve_dimensions()
+
+    def test_array_resolve_and_matrix_element_non_numeric_leaf(self):
+        # Leaf element with a non-numeric equation exercises the extractTerm branch
+        # in _array_resolve and _matrix_element_to_string.
+        m, a, *_ = self._model()
+        k = m.constant("k"); k.equation = 5.0
+        vv = m.converter("vv"); vv.setup_vector(2, [1.0, 2.0])
+        vv[0].equation = k  # non-numeric leaf
+        self.assertIn("memoize", vv.arr_sum().term())     # _array_resolve
+        self.assertIn("mean", vv.arr_mean().term())       # _matrix_element_to_string
+
+    def test_array_resolve_dimension_equals_index(self):
+        # Passing an integer dimension equal to the recursion depth returns ""
+        m = Model()
+        mat = m.converter("m1"); mat.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
+        self.assertEqual(mat.arr_sum(dimension=1).term(), "")
+
+    def test_pulse_term_without_interval(self):
+        # Pulse with interval 0 uses the single-pulse formula
+        m = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="p")
+        term = Pulse(m, volume=10.0, first_pulse=2.0, interval=0.0).term()
+        self.assertIn("if", term)
+        self.assertIn("else 0.0", term)
 
 
 if __name__ == '__main__':

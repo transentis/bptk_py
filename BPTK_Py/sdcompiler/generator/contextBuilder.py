@@ -33,8 +33,7 @@ def generate(IR, template, parseExpression):
                              converters=context["converters"],
                              gfs=context["gfs"],
                              constants=context["constants"],
-                             dimensions=context["dimensions"],
-                             notmemoized=context["notmemoized"])
+                             dimensions=context["dimensions"])
 
     return output
 
@@ -73,7 +72,6 @@ def build_context(IR, parseExpression):
             "specs": IR["specs"],
             "dimensions": IR["dimensions"],
             "header": '',
-            "notmemoized": []
         }
 
     for name, model in IR["models"].items():
@@ -81,9 +79,6 @@ def build_context(IR, parseExpression):
 
             for entity in entities:
                 name = entity["name"]
-
-                if "notmemoized" in entity.keys() and entity["notmemoized"]:
-                    context["notmemoized"] += [name]
 
                 if type(entity["equation_parsed"]) is list and len(entity["equation_parsed"]) == 1 and type(entity["equation_parsed"][0]) is str:
                     expr = 0.0 # Comments

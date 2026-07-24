@@ -67,8 +67,6 @@ def parseExpression(expression):
         result = []
         for elem in expression:
             result += [parseExpression(elem)]
-            if len(result) == 0:
-                return 0
 
         return ",".join([str(x) for x in result if str(x).replace(" ", "") != ","])
 
@@ -82,11 +80,13 @@ def parseExpression(expression):
     Handle Function Calls
     '''
     if expression["type"] == 'call':
+        # Only KeyError is treated as "function not implemented". A TypeError raised
+        # inside a handler is a real bug and is deliberately left to propagate rather
+        # than being swallowed here (that swallowing is exactly what once hid the
+        # NORMAL handler bug), so it must NOT be added to the except clause below.
         try:
             macro = builtins[expression["name"].lower()]
             return macro(expression["args"])
-        except TypeError as e:
-            raise e
         except KeyError as e:
             logging.warning(expression["name"].lower() + " has not been implemented yet! Skipping...")
             return "0"
@@ -135,18 +135,6 @@ def parseExpression(expression):
             return "self.memoize(\'{}[".format(name) + ",".join([str(parseExpression(x)) for x in vargs]) + "]\', t)"
 
         return str(array(expression["name"], expression["args"]))
-
-    '''
-    Comment
-    '''
-    if expression["type"] == 'comment':
-        return "# " + str(" ".join(expression["args"]))
-
-    '''
-    Constants
-    '''
-    if expression["type"] == 'constant':
-        return str(expression)
 
     '''
     Labels
@@ -209,8 +197,8 @@ def pulse(*args):
     if first == interval == None:
         return '(( ' + str(volume) + ' ) / self.dt)'
 
-    if first == None:
-        first = ' self.starttime '
+    # first is None only for the single-argument form handled above, so here first is
+    # always set.
 
     if interval == None:
         return '('+str(volume) + ' /self.dt if ' + str(first) + ' <= t else 0)'
@@ -231,23 +219,27 @@ def derivn_(*args):
 
 def previous(*args):
     args = remove_nesting(args)
-    res = parseExpression(args)
 
-    body = res
+    # Drop comma tokens so positional access is reliable: args[0] is the input and an
+    # optional args[1] is the initial value used before the first timestep. (Previously
+    # all arguments were joined into one string, so the initial value was parsed into the
+    # body and never applied — PREVIOUS silently ignored its initial value.)
+    parsed = [a for a in args if a != "," and a != ", "]
 
-    initial = None if (not type(res) is list) else res[1]
+    body = str(parseExpression(parsed[0]))
+    initial = parseExpression(parsed[1]) if len(parsed) > 1 else None
+
+    # Shift the time reference back by one dt so the expression reads the previous value.
     pattern_selfdt = r"\(?\,?(self.[dt+\-]+)\)"
-    body = re.sub(pattern_selfdt, "(self.dt-self.dt)", str(body))
+    body = re.sub(pattern_selfdt, "(self.dt-self.dt)", body)
 
     pattern_t = r"\(?\,? ([t+\-]+)\)"
     body = re.sub(pattern_t, ",t-self.dt)", body)
 
     if initial:
+        return '((' + str(initial) + ') if t <= self.starttime else (' + body + '))'
 
-        return '((' + str(initial) + ') if t <= self.starttime else ' + '(' + str(body) + '))' if initial else str(body)
-    else:
-
-        return str(body)
+    return body
 
 def ramp_(*args):
     args = remove_nesting(args)
@@ -286,12 +278,6 @@ def if_(expression):
     otherwise = parseExpression(expression[2])
 
     return '( (' + str(then) + ') if (' + str(condition) + ') else (' + str(otherwise) + ') )'
-
-def sum_(*args):
-    args = remove_nesting(args)
-    if len(args) > 1:
-        return 'sum([' + " , ".join([str(parseExpression(x)) for x in remove_nesting(args) if x != "," or x != ", "]) + '])'
-    return 'sum(' + " , ".join([str(parseExpression(x)) for x in remove_nesting(args) if x != "," or x != ", "]) + ')'
 
 
 
@@ -570,8 +556,8 @@ def normal_(*args):
             elem.remove(",")
         except:
             pass
-    mean = args[0] if type(args[0]) is str or type(args[0]) is float else args[0][0]
-    dev = args[1] if type(args[1]) is str or type(args[1]) is float else args[1][0]
+    mean = parseExpression(args[0])
+    dev = parseExpression(args[1])
 
     if len(args) > 2:
         seed = parseExpression(args[2])
@@ -644,7 +630,7 @@ def history_(*args):
 
     t = parseExpression(args[1])
     if "self.memoize" in t:
-        return "self.memoize(\”{}\",\' {} \')".format(name,t)
+        return "self.memoize(\"{}\",\' {} \')".format(name,t)
     return "self.memoize(\"{}\", {})".format(name,t)
 
 def rank_(*args):
@@ -760,26 +746,21 @@ def pv_(*args):
 def irr_(*args):
     args = remove_nesting(args)
 
-    if type(args[0]) is dict and args[0]["type"] == "identifier":
-        stock_name = args[0]["name"]
+    # The complexFunctions plugin transforms IRR before code generation and always
+    # supplies the stock/flow identifier as the first argument, so a non-identifier
+    # first argument can never reach this handler.
+    stock_name = args[0]["name"]
 
-        missing = parseExpression(args[1]) if len(args) > 1 else "None"
-        myname = args[2]
+    missing = parseExpression(args[1]) if len(args) > 1 else "None"
+    myname = args[2]
 
-        return "( self.irr(\'{}\', {}, t, \'{}\') )".format(stock_name,missing,myname)
-
-    else:
-        import logging
-        logging.error("First Argument of IRR needs to be a Stock or Flow identifier! No terms are supported here.")
-        return "0"
+    return "( self.irr(\'{}\', {}, t, \'{}\') )".format(stock_name,missing,myname)
 
 def smth3_(*args):
     args = remove_nesting(args)
-    inputstream = parseExpression(args[0])
-    try:
-        inputstream = "\"{}\"".format(args[0]["name"])
-    except:
-        pass
+    # complexFunctions rejects non-identifier inputs before generation, so the
+    # input stream is always an identifier with a "name".
+    inputstream = "\"{}\"".format(args[0]["name"])
 
     averaging_time = parseExpression(args[1])
     initial = "None" if len(args) < 3 else parseExpression(args[2])
@@ -788,11 +769,9 @@ def smth3_(*args):
 
 def smth1_(*args):
     args = remove_nesting(args)
-    inputstream = parseExpression(args[0])
-    try:
-        inputstream = "\"{}\"".format(args[0]["name"])
-    except:
-        pass
+    # complexFunctions rejects non-identifier inputs before generation, so the
+    # input stream is always an identifier with a "name".
+    inputstream = "\"{}\"".format(args[0]["name"])
 
     averaging_time = parseExpression(args[1])
     initial = "None" if len(args) < 3 else parseExpression(args[2])
@@ -801,11 +780,9 @@ def smth1_(*args):
 
 def smthn_(*args):
     args = remove_nesting(args)
-    inputstream = parseExpression(args[0])
-    try:
-        inputstream = "\"{}\"".format(args[0]["name"])
-    except:
-        pass
+    # complexFunctions rejects non-identifier inputs before generation, so the
+    # input stream is always an identifier with a "name".
+    inputstream = "\"{}\"".format(args[0]["name"])
 
     averaging_time = parseExpression(args[1])
     n = parseExpression(args[2])

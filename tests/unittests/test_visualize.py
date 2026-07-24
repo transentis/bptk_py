@@ -172,5 +172,18 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertEqual(formatter(1.2345,None),str(1))
 
+    def test_plot_returns_axes(self):
+        """With format="axes" the plot returns the matplotlib Axes object."""
+        import matplotlib.axes
+        df = pd.DataFrame({"stock": [1.0, 2.0, 3.0]}, index=[1.0, 2.0, 3.0])
+
+        ax = self.testBptk.visualizer.plot(
+            df=df, return_df=False, visualize_from_period=0, visualize_to_period=0,
+            stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
+            format="axes",
+        )
+
+        self.assertIsInstance(ax, matplotlib.axes.Axes)
+
 if __name__ == '__main__':
     unittest.main()

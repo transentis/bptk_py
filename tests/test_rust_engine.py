@@ -2297,3 +2297,453 @@ class TestParityStatisticalDeterministic:
         assert py_val == pytest.approx(rust_val, abs=1e-6), \
             f"normalcdf: Python={py_val}, Rust={rust_val}"
         assert py_val == pytest.approx(0.6827, abs=0.001)
+
+
+# ---------------------------------------------------------------------------
+# Setup Rust Engine Phase 4 Substep 4b: PyO3 init / step / current_time / steps_remaining / reset
+# ---------------------------------------------------------------------------
+
+LINEAR_GROWTH_JSON = json.dumps({
+    "name": "linear",
+    "specs": {"starttime": 0.0, "stoptime": 5.0, "dt": 1.0},
+    "entities": {
+        "stocks": [
+            {
+                "name": "level",
+                "initial_value": {"type": "literal", "value": 0.0},
+                "equation": {"type": "ref", "name": "inflow"},
+            }
+        ],
+        "flows": [
+            {"name": "inflow", "equation": {"type": "literal", "value": 10.0}}
+        ],
+    },
+})
+
+
+class TestStepByStep:
+    """Tests for the new step-by-step PyO3 API on RustSdModel (Substep 4b).
+
+    Validates that init/step/current_time/steps_remaining/reset behave as
+    documented and that walking the simulation by hand yields the same memo
+    as simulate() composes.
+    """
+
+    def _load(self):
+        return RustSdEngine().load_model(LINEAR_GROWTH_JSON)
+
+    def test_init_returns_step_zero_values(self):
+        model = self._load()
+        snapshot = model.init(["level", "inflow"])
+        assert snapshot == {"level": 0.0, "inflow": 10.0}
+        assert model.current_time() == pytest.approx(0.0)
+
+    def test_init_subset_of_equations(self):
+        """init() only returns the equations asked for."""
+        model = self._load()
+        snapshot = model.init(["level"])
+        assert snapshot == {"level": 0.0}
+        # step() returns the same set captured at init time.
+        next_snapshot = model.step()
+        assert list(next_snapshot.keys()) == ["level"]
+
+    def test_step_advances_one_timestep(self):
+        model = self._load()
+        model.init(["level", "inflow"])
+        snapshot = model.step()
+        assert snapshot == {"level": 10.0, "inflow": 10.0}
+        assert model.current_time() == pytest.approx(1.0)
+
+    def test_manual_stepping_matches_simulate(self):
+        """The defining safety net: hand-walked trajectory ≡ simulate() output."""
+        # Reference run via simulate().
+        reference_model = self._load()
+        full = reference_model.simulate(["level", "inflow"])
+
+        # Step-by-step run.
+        step_model = self._load()
+        collected = {"level": {}, "inflow": {}}
+        initial = step_model.init(["level", "inflow"])
+        t = step_model.current_time()
+        for eq, val in initial.items():
+            collected[eq][f"{t:.1f}"] = val
+        while step_model.steps_remaining() > 0:
+            snapshot = step_model.step()
+            t = step_model.current_time()
+            for eq, val in snapshot.items():
+                collected[eq][f"{t:.1f}"] = val
+
+        assert collected == full
+
+    def test_step_without_init_raises(self):
+        model = self._load()
+        with pytest.raises(ValueError, match="without init"):
+            model.step()
+
+    def test_step_past_stoptime_raises(self):
+        model = self._load()
+        model.init(["level"])
+        # 5 step()s exhaust steps 1..5; the sixth must fail.
+        for _ in range(5):
+            model.step()
+        assert model.steps_remaining() == 0
+        with pytest.raises(ValueError, match="PastStoptime"):
+            model.step()
+
+    def test_current_time_without_init_raises(self):
+        model = self._load()
+        with pytest.raises(ValueError, match="without init"):
+            model.current_time()
+
+    def test_steps_remaining_decrements_to_zero(self):
+        model = self._load()
+        model.init(["level"])
+        # 6 timesteps total → 5 remaining after init.
+        assert model.steps_remaining() == 5
+        model.step()
+        assert model.steps_remaining() == 4
+        for _ in range(4):
+            model.step()
+        assert model.steps_remaining() == 0
+
+    def test_reset_clears_state(self):
+        model = self._load()
+        model.init(["level"])
+        model.step()
+        model.reset()
+        with pytest.raises(ValueError, match="without init"):
+            model.step()
+        with pytest.raises(ValueError, match="without init"):
+            model.current_time()
+
+    def test_set_runspecs_rejected_after_init(self):
+        model = self._load()
+        model.init(["level"])
+        with pytest.raises(ValueError, match="set_runspecs.*not allowed after init"):
+            model.set_runspecs(0.0, 10.0, 0.5)
+
+    def test_set_runspecs_works_again_after_reset(self):
+        model = self._load()
+        model.init(["level"])
+        model.reset()
+        model.set_runspecs(0.0, 4.0, 1.0)
+        snapshot = model.init(["level"])
+        assert snapshot == {"level": 0.0}
+        assert model.steps_remaining() == 4  # 5 timesteps now → 4 remaining
+
+    def test_simulate_after_init_clears_state(self):
+        """simulate() must work even after init() — it discards stepping state."""
+        model = self._load()
+        model.init(["level"])
+        model.step()
+        # simulate() should now run cleanly from starttime.
+        results = model.simulate(["level"])
+        assert results["level"]["0.0"] == 0.0
+        assert results["level"]["5.0"] == 50.0
+        # State is cleared — current_time() and step() are again invalid.
+        with pytest.raises(ValueError, match="without init"):
+            model.current_time()
+
+    def test_set_constant_takes_effect_from_next_step(self):
+        """Per-step constant overrides apply to the next step()'s evaluation only."""
+        # Use a model where a constant feeds a flow into a stock.
+        json_str = json.dumps({
+            "name": "const_step",
+            "specs": {"starttime": 0.0, "stoptime": 3.0, "dt": 1.0},
+            "entities": {
+                "stocks": [
+                    {
+                        "name": "level",
+                        "initial_value": lit(0.0),
+                        "equation": ref("inflow"),
+                    }
+                ],
+                "flows": [{"name": "inflow", "equation": ref("rate")}],
+                "constants": [{"name": "rate", "equation": lit(1.0)}],
+            },
+        })
+        model = RustSdEngine().load_model(json_str)
+        model.init(["level"])
+        # t=0: rate=1, level=0; step 1 stock pre-integrated as 0+1*1=1.
+        # Override rate→100 BEFORE step(); the new flow value drives step 2's stock.
+        model.set_constant("rate", 100.0)
+        snap1 = model.step()  # t=1: rate=100, level=1 (pre-integrated with old rate)
+        assert snap1["level"] == pytest.approx(1.0)
+        snap2 = model.step()  # t=2: level=1+1*100=101
+        assert snap2["level"] == pytest.approx(101.0)
+
+    def test_simulate_signature_unchanged(self):
+        """Pre-Phase-4 callers must see no API change on simulate()."""
+        engine = RustSdEngine()
+        model = engine.load_model(LINEAR_GROWTH_JSON)
+        results = model.simulate(["level", "inflow"])
+        assert results["level"]["0.0"] == 0.0
+        assert results["level"]["5.0"] == 50.0
+        assert results["inflow"]["3.0"] == 10.0
+
+
+# ---------------------------------------------------------------------------
+# Stochastic smoke: prove the engine actually has stochastic primitives wired
+# in. Determinism via the explicit seed lets us pin exact expected values, so
+# this catches regressions where a distribution becomes a no-op (returns the
+# mean) or where seed handling silently breaks.
+# ---------------------------------------------------------------------------
+
+class TestStochasticSmoke:
+    """One representative test per shape — distribution returns finite,
+    seed-reproducible values across the time horizon."""
+
+    def _run(self, equation_call, name):
+        """Build a one-converter Rust model whose equation is `equation_call`
+        (e.g. ('normal', [lit(0.0), lit(1.0)])); run with seed=42 twice and
+        verify (a) every value is finite, and (b) re-running with the same
+        seed yields exactly the same sequence."""
+        engine = make_engine()
+        rust_json = build_json(
+            name,
+            {"starttime": 0.0, "stoptime": 5.0, "dt": 1.0},
+            {"converters": [{"name": "x", "equation": call(*equation_call)}]},
+        )
+
+        run1 = engine.load_model(rust_json).simulate(["x"], seed=42)
+        run2 = engine.load_model(rust_json).simulate(["x"], seed=42)
+
+        # Finite
+        for t_key, v in run1["x"].items():
+            assert math.isfinite(v), f"{name}: non-finite value at {t_key}: {v}"
+        # Reproducible
+        assert run1 == run2, f"{name}: seed=42 not reproducible: {run1} vs {run2}"
+        # And different from another seed (sanity)
+        run3 = engine.load_model(rust_json).simulate(["x"], seed=99)
+        assert run3 != run1, f"{name}: seed=99 produced same output as seed=42"
+
+        return run1
+
+    def test_uniform(self):
+        r = self._run(("uniform", [lit(0.0), lit(1.0)]), "uniform_smoke")
+        for v in r["x"].values():
+            assert 0.0 <= v <= 1.0
+
+    def test_normal(self):
+        # No range constraint — just finite + reproducible.
+        self._run(("normal", [lit(0.0), lit(1.0)]), "normal_smoke")
+
+    def test_poisson(self):
+        r = self._run(("poisson", [lit(3.0)]), "poisson_smoke")
+        for v in r["x"].values():
+            assert v >= 0 and v == int(v), f"poisson must be non-negative integer, got {v}"
+
+    def test_binomial(self):
+        r = self._run(("binomial", [lit(10.0), lit(0.5)]), "binomial_smoke")
+        for v in r["x"].values():
+            assert 0 <= v <= 10 and v == int(v)
+
+    def test_exprnd(self):
+        r = self._run(("exprnd", [lit(1.0)]), "exprnd_smoke")
+        for v in r["x"].values():
+            assert v >= 0.0
+
+    def test_seed_omitted_runs_without_raising(self):
+        """seed=None (the default) must work — just not be reproducible."""
+        engine = make_engine()
+        rust_json = build_json(
+            "no_seed",
+            {"starttime": 0.0, "stoptime": 3.0, "dt": 1.0},
+            {"converters": [{"name": "x",
+                             "equation": call("normal", [lit(0.0), lit(1.0)])}]},
+        )
+        run = engine.load_model(rust_json).simulate(["x"])
+        for v in run["x"].values():
+            assert math.isfinite(v)
+
+
+class TestStochasticGuardsSmoke:
+    """Engine-direct guard coverage: a distribution called with an
+    out-of-domain argument must produce NaN at every timestep — not clamp, raise,
+    or return a sentinel.
+
+    Mirrors ``tests/test_parity.py::TestParityStochasticGuards`` (which checks
+    Python==Rust==NaN) and ``tests/test_rust_backend.py::TestStochasticGuards``
+    (bptk layer), closing the one empty cell in the cross-layer coverage matrix:
+    guard behaviour at the engine-direct layer. A regression where a distribution
+    starts silently clamping or returning a finite sentinel is caught here.
+
+    Note: ``sd.gamma`` serialises to the ``gamma_dist`` builtin (json_serializer.py),
+    so the gamma cases call ``gamma_dist`` directly.
+    """
+
+    def _run_nan(self, equation_call, name):
+        """Build a one-converter Rust model with `equation_call`
+        (e.g. ('normal', [lit(0.0), lit(-1.0)])), run with seed=42, and assert
+        every output value is NaN."""
+        engine = make_engine()
+        rust_json = build_json(
+            name,
+            {"starttime": 0.0, "stoptime": 5.0, "dt": 1.0},
+            {"converters": [{"name": "x", "equation": call(*equation_call)}]},
+        )
+        result = engine.load_model(rust_json).simulate(["x"], seed=42)
+        for t_key, v in result["x"].items():
+            assert math.isnan(v), f"{name}: expected NaN at {t_key}, got {v}"
+
+    def test_normal_negative_stddev(self):
+        self._run_nan(("normal", [lit(0.0), lit(-1.0)]), "normal_neg_std")
+
+    def test_beta_negative_a(self):
+        self._run_nan(("beta", [lit(-1.0), lit(2.0)]), "beta_neg_a")
+
+    def test_beta_zero_b(self):
+        self._run_nan(("beta", [lit(2.0), lit(0.0)]), "beta_zero_b")
+
+    def test_binomial_negative_n(self):
+        self._run_nan(("binomial", [lit(-5.0), lit(0.5)]), "binom_neg_n")
+
+    def test_binomial_p_negative(self):
+        self._run_nan(("binomial", [lit(10.0), lit(-0.1)]), "binom_p_neg")
+
+    def test_binomial_p_gt_one(self):
+        self._run_nan(("binomial", [lit(10.0), lit(1.1)]), "binom_p_gt1")
+
+    def test_negbinomial_negative_n(self):
+        self._run_nan(("negbinomial", [lit(-5.0), lit(0.5)]), "negbinom_neg_n")
+
+    def test_negbinomial_zero_n(self):
+        self._run_nan(("negbinomial", [lit(0.0), lit(0.5)]), "negbinom_zero_n")
+
+    def test_negbinomial_p_negative(self):
+        self._run_nan(("negbinomial", [lit(5.0), lit(-0.1)]), "negbinom_p_neg")
+
+    def test_negbinomial_p_gt_one(self):
+        self._run_nan(("negbinomial", [lit(5.0), lit(1.1)]), "negbinom_p_gt1")
+
+    def test_poisson_negative_mu(self):
+        self._run_nan(("poisson", [lit(-5.0)]), "poisson_neg_mu")
+
+    def test_gamma_negative_shape(self):
+        self._run_nan(("gamma_dist", [lit(-1.0), lit(2.0)]), "gamma_neg_shape")
+
+    def test_gamma_zero_scale(self):
+        self._run_nan(("gamma_dist", [lit(2.0), lit(0.0)]), "gamma_zero_scale")
+
+    def test_exprnd_negative_scale(self):
+        self._run_nan(("exprnd", [lit(-1.0)]), "exprnd_neg")
+
+    def test_exprnd_zero_scale(self):
+        self._run_nan(("exprnd", [lit(0.0)]), "exprnd_zero")
+
+    def test_lognormal_negative_stddev(self):
+        self._run_nan(("lognormal", [lit(0.0), lit(-1.0)]), "lognorm_neg_std")
+
+    def test_logistic_negative_scale(self):
+        self._run_nan(("logistic", [lit(0.0), lit(-1.0)]), "logistic_neg_scale")
+
+    def test_triangular_lower_gt_upper(self):
+        self._run_nan(("triangular", [lit(10.0), lit(5.0), lit(1.0)]), "tri_lower_gt_upper")
+
+    def test_triangular_mode_gt_upper(self):
+        self._run_nan(("triangular", [lit(0.0), lit(15.0), lit(10.0)]), "tri_mode_gt_upper")
+
+    def test_triangular_mode_lt_lower(self):
+        self._run_nan(("triangular", [lit(5.0), lit(2.0), lit(10.0)]), "tri_mode_lt_lower")
+
+    def test_triangular_lower_eq_upper_mode_differs(self):
+        self._run_nan(("triangular", [lit(5.0), lit(3.0), lit(5.0)]), "tri_leq_u_m_diff")
+
+    def test_weibull_negative_shape(self):
+        self._run_nan(("weibull", [lit(-1.0), lit(2.0)]), "weibull_neg_shape")
+
+    def test_weibull_zero_scale(self):
+        self._run_nan(("weibull", [lit(2.0), lit(0.0)]), "weibull_zero_scale")
+
+    def test_pareto_negative_shape(self):
+        self._run_nan(("pareto", [lit(-1.0), lit(1.0)]), "pareto_neg_shape")
+
+    def test_pareto_zero_shape(self):
+        self._run_nan(("pareto", [lit(0.0), lit(1.0)]), "pareto_zero_shape")
+
+    def test_pareto_negative_scale(self):
+        self._run_nan(("pareto", [lit(1.0), lit(-1.0)]), "pareto_neg_scale")
+
+    def test_pareto_zero_scale(self):
+        self._run_nan(("pareto", [lit(1.0), lit(0.0)]), "pareto_zero_scale")
+
+    def test_invnorm_p_negative(self):
+        self._run_nan(("invnorm", [lit(-0.5), lit(0.0), lit(1.0)]), "invnorm_p_neg")
+
+    def test_invnorm_p_gt_one(self):
+        self._run_nan(("invnorm", [lit(1.5), lit(0.0), lit(1.0)]), "invnorm_p_gt1")
+
+    def test_invnorm_negative_stddev(self):
+        self._run_nan(("invnorm", [lit(0.5), lit(0.0), lit(-1.0)]), "invnorm_neg_std")
+
+    def test_invnorm_zero_stddev(self):
+        self._run_nan(("invnorm", [lit(0.5), lit(7.0), lit(0.0)]), "invnorm_zero_std")
+
+    def test_normalcdf_negative_stddev(self):
+        self._run_nan(("normalcdf", [lit(-1.0), lit(1.0), lit(0.0), lit(-1.0)]), "ncdf_neg_std")
+
+    def test_normalcdf_zero_stddev(self):
+        self._run_nan(("normalcdf", [lit(-1.0), lit(1.0), lit(0.0), lit(0.0)]), "ncdf_zero_std")
+
+
+# ---------------------------------------------------------------------------
+# export_state / import_state — session-resume grid transfer (PyO3 surface)
+# ---------------------------------------------------------------------------
+
+class TestExportImportState:
+    """Cover the export_state/import_state bindings, including their error paths."""
+
+    @staticmethod
+    def _delay_json():
+        m = Model(starttime=1, stoptime=20, dt=1, name="d")
+        orders = m.converter("orders")
+        incoming = m.flow("incoming")
+        inv = m.stock("inventory")
+        orders.equation = 8.0
+        incoming.equation = sd.delay(m, orders, 3.0, 8.0)  # lookback exercises history
+        inv.initial_value = 0.0
+        inv.equation = incoming
+        return m.to_json()
+
+    def test_export_state_none_before_init(self):
+        model = make_engine().load_model(self._delay_json())
+        assert model.export_state() is None
+
+    def test_export_import_roundtrip_matches_uninterrupted(self):
+        eq = ["orders", "incoming", "inventory"]
+        js = self._delay_json()
+
+        ref = make_engine().load_model(js)
+        ref.set_runspecs(1, 20, 1)
+        vref = [ref.init(eq)]
+        for _ in range(19):
+            vref.append(ref.step())
+
+        a = make_engine().load_model(js)
+        a.set_runspecs(1, 20, 1)
+        a.init(eq)
+        for _ in range(8):
+            a.step()
+        cur, memo = a.export_state()
+        assert cur == 8
+        assert set(memo) == {"orders", "incoming", "inventory"}  # ALL entities
+
+        b = make_engine().load_model(js)
+        b.set_runspecs(1, 20, 1)
+        b.import_state(cur, memo, eq)
+        for k in range(9, 20):
+            got = b.step()
+            for e in eq:
+                assert abs(got[e] - vref[k][e]) < 1e-9
+
+    def test_import_state_rejects_out_of_range_cursor(self):
+        model = make_engine().load_model(self._delay_json())
+        model.set_runspecs(1, 20, 1)
+        with pytest.raises(ValueError):
+            model.import_state(9999, {"orders": [8.0]}, ["orders"])
+
+    def test_import_state_rejects_unknown_entity(self):
+        model = make_engine().load_model(self._delay_json())
+        model.set_runspecs(1, 20, 1)
+        with pytest.raises(ValueError):
+            model.import_state(0, {"does_not_exist": [1.0]}, ["orders"])
