@@ -5,6 +5,8 @@ through the full BPTK scenario pipeline.
 """
 
 import importlib
+import os
+
 import pytest
 import pandas as pd
 from pandas._testing import assert_frame_equal
@@ -13,6 +15,7 @@ from BPTK_Py import Model
 import BPTK_Py
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.sddsl import functions as sd
+from BPTK_Py.scenariorunners.sd_runner import SdRunner
 
 
 # ---------------------------------------------------------------------------
@@ -831,6 +834,7 @@ class TestBiflowModel:
 # Tests: fallback behaviour
 # ---------------------------------------------------------------------------
 
+@pytest.mark.allow_rust_fallback
 class TestFallback:
     """Tests that models with unsupported features fall back to Python and log [WARN]."""
 
@@ -1726,10 +1730,10 @@ class TestStochasticGuards:
 # ---------------------------------------------------------------------------
 
 def _run_session_history(bptk, scenario_managers, scenarios, equations, steps,
-                         settings_per_step=None, backend="python"):
+                         settings_per_step=None, backend="python", seed=None):
     """Drive a session for `steps` calls; return the list of run_step results."""
     bptk.begin_session(scenarios=scenarios, scenario_managers=scenario_managers,
-                       equations=equations, backend=backend)
+                       equations=equations, backend=backend, seed=seed)
     history = []
     try:
         for i in range(steps):
@@ -2707,3 +2711,453 @@ class TestRustResumeThroughAdapters:
 
         for i in range(10):
             _assert_step_dicts_equal(single[i], cycled[i], i)
+
+
+# ---------------------------------------------------------------------------
+# Tests: feedback loops through the bptk layer
+#
+# These are the tests that would have caught the beergame blocker. They rely on
+# the no_silent_rust_fallback guard in conftest.py: without it, a model the engine
+# refuses is computed in Python on *both* runs and the comparison passes for the
+# wrong reason.
+# See docs/internal/architecture/rust-engine-delay-cycle-issue.md
+# ---------------------------------------------------------------------------
+
+class TestDelayFeedbackLoop:
+    """A loop broken only by a delay must run on the Rust backend, not fall back."""
+
+    def _build_loop_bptk(self):
+        model = Model(starttime=1, stoptime=5, dt=1, name="delay_loop")
+        a = model.converter("a")
+        b = model.converter("b")
+        c = model.converter("c")
+        d = model.converter("d")
+        a.equation = d + 1.0
+        b.equation = a * 2.0
+        c.equation = b + 1.0
+        d.equation = sd.delay(model, c, 1.0, 0.0)
+
+        bptk = BPTK_Py.bptk()
+        bptk.register_scenario_manager({"mgr": {"model": model}})
+        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        return bptk
+
+    def test_run_scenarios_parity(self):
+        bptk = self._build_loop_bptk()
+        py, rust = _run_both(bptk, "mgr", ["base"], ["a", "b", "c", "d"])
+        assert_frame_equal(py, rust, atol=1e-10)
+
+    def test_step_parity(self):
+        bptk_py_run = self._build_loop_bptk()
+        bptk_rust_run = self._build_loop_bptk()
+        equations = ["a", "b", "c", "d"]
+
+        py_history = _run_session_history(
+            bptk_py_run, ["mgr"], ["base"], equations, steps=5, backend="python")
+        rust_history = _run_session_history(
+            bptk_rust_run, ["mgr"], ["base"], equations, steps=5, backend="rust")
+
+        assert len(py_history) == len(rust_history)
+        for i, (py_step, rust_step) in enumerate(zip(py_history, rust_history)):
+            _assert_step_dicts_equal(py_step, rust_step, i)
+
+
+# ---------------------------------------------------------------------------
+# Tests: the model handle crossing threads
+#
+# A threaded WSGI server (Flask's dev server, uwsgi with threads) serves consecutive
+# requests on different threads, while the runner keeps `sc.rust_model` on the
+# Scenario between requests — so the handle really does travel between threads. With
+# `#[pyclass(unsendable)]` that killed the process with a PyO3 PanicException on the
+# second request. See docs/internal/architecture/rust-engine-delay-cycle-issue.md
+# ---------------------------------------------------------------------------
+
+class TestRustHandleAcrossThreads:
+
+    def test_steps_from_different_threads(self):
+        """Each step runs in its own thread, as a threaded server would do."""
+        import threading
+
+        equations = ["stock", "flow"]
+        rust_bptk = _build_simple_bptk()
+        rust_bptk.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                               equations=equations, backend="rust")
+        collected, failures = [], []
+
+        def one_step():
+            try:
+                collected.append(rust_bptk.run_step())
+            except BaseException as e:            # PyO3 panics are BaseExceptions
+                failures.append(e)
+
+        try:
+            for _ in range(5):
+                thread = threading.Thread(target=one_step)
+                thread.start()
+                thread.join()
+        finally:
+            rust_bptk.end_session()
+
+        assert not failures, "stepping from another thread failed: {!r}".format(failures[0])
+        assert len(collected) == 5
+
+        py_bptk = _build_simple_bptk()
+        py_history = _run_session_history(py_bptk, ["mgr"], ["base"], equations,
+                                         steps=5, backend="python")
+        for i, (py_step, rust_step) in enumerate(zip(py_history, collected)):
+            _assert_step_dicts_equal(py_step, rust_step, i)
+
+    def test_run_scenarios_from_another_thread(self):
+        """A whole-run simulation started on a thread other than the one that built
+        the bptk instance."""
+        import threading
+
+        bptk = _build_simple_bptk()
+        results, failures = [], []
+
+        def run():
+            try:
+                results.append(bptk.run_scenarios(
+                    scenario_managers=["mgr"], scenarios=["base"],
+                    equations=["stock"], backend="rust"))
+            except BaseException as e:
+                failures.append(e)
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        thread.join()
+
+        assert not failures, "running on another thread failed: {!r}".format(failures[0])
+        assert not results[0].empty
+
+
+# ---------------------------------------------------------------------------
+# Tests: overrides passed with the *first* run_step
+#
+# init() evaluates step 0 (t == starttime) and its values are what the first
+# run_step() returns, so the per-step settings of that first call must be applied
+# before init(). Overriding a constant in round 1 was silently ignored by the Rust
+# backend until 2026-08-11 — invisible whenever the override happened to equal the
+# model's own default, which is exactly the case in the beergame's first round.
+# ---------------------------------------------------------------------------
+
+class TestRustFirstStepOverride:
+
+    def _bptk(self):
+        """`constant` defaults to 1.0 in the model; the tests override it to 7.0."""
+        return _build_simple_bptk()
+
+    def test_constant_override_in_first_step(self):
+        equations = ["stock", "flow", "constant"]
+        # deliberately different from both the model default (1.0) and the scenario
+        # value, so an ignored override cannot pass unnoticed
+        settings = [{"mgr": {"base": {"constants": {"constant": 7.0}}}} for _ in range(4)]
+
+        py_history = _run_session_history(self._bptk(), ["mgr"], ["base"], equations,
+                                         steps=4, settings_per_step=settings,
+                                         backend="python")
+        rust_history = _run_session_history(self._bptk(), ["mgr"], ["base"], equations,
+                                           steps=4, settings_per_step=settings,
+                                           backend="rust")
+
+        # The override must be visible in the very first step, not from the second on.
+        first_step = rust_history[0]["mgr"]["base"]
+        starttime_key = sorted(first_step["constant"].keys())[0]
+        assert first_step["constant"][starttime_key] == 7.0, \
+            "override passed with the first run_step was ignored: {}".format(first_step)
+
+        for i, (py_step, rust_step) in enumerate(zip(py_history, rust_history)):
+            _assert_step_dicts_equal(py_step, rust_step, i)
+
+    def test_points_override_in_first_step(self):
+        def build():
+            # A fresh Model per session: change_points() mutates model.points, so a
+            # shared model would leak the Python run's override into the Rust run's
+            # to_json() and mask the bug.
+            model = Model(starttime=1, stoptime=5, dt=1, name="first_step_points")
+            out = model.converter("out")
+            model.points["tbl"] = [(float(t), 100.0) for t in range(1, 6)]
+            out.equation = sd.lookup(sd.time(), "tbl")
+
+            bptk = BPTK_Py.bptk()
+            bptk.register_scenario_manager({"mgr": {"model": model}})
+            bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return bptk
+
+        overridden = [[float(t), 100.0 + 10.0 * t] for t in range(1, 6)]
+        settings = [{"mgr": {"base": {"points": {"tbl": overridden}}}} for _ in range(3)]
+
+        py_history = _run_session_history(build(), ["mgr"], ["base"], ["out"], steps=3,
+                                         settings_per_step=settings, backend="python")
+        rust_history = _run_session_history(build(), ["mgr"], ["base"], ["out"], steps=3,
+                                           settings_per_step=settings, backend="rust")
+
+        first_step = rust_history[0]["mgr"]["base"]["out"]
+        assert list(first_step.values())[0] == 110.0, \
+            "points override passed with the first run_step was ignored: {}".format(first_step)
+
+        for i, (py_step, rust_step) in enumerate(zip(py_history, rust_history)):
+            _assert_step_dicts_equal(py_step, rust_step, i)
+
+    def test_stochastic_steps_from_different_threads(self):
+        """The RNG sits behind a Mutex since the unsendable fix. Stepping a stochastic
+        model from different threads must neither deadlock nor change the trajectory a
+        given seed produces."""
+        import threading
+
+        def build():
+            model = Model(starttime=1, stoptime=6, dt=1, name="threaded_stochastic")
+            draw = model.converter("draw")
+            total = model.stock("total")
+            inflow = model.flow("inflow")
+            draw.equation = sd.normal(100.0, 10.0)
+            inflow.equation = draw
+            total.initial_value = 0.0
+            total.equation = inflow
+
+            bptk = BPTK_Py.bptk()
+            bptk.register_scenario_manager({"mgr": {"model": model}})
+            bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return bptk
+
+        equations = ["draw", "total"]
+
+        threaded_bptk = build()
+        threaded_bptk.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                                   equations=equations, backend="rust", seed=42)
+        threaded, failures = [], []
+
+        def one_step():
+            try:
+                threaded.append(threaded_bptk.run_step())
+            except BaseException as e:
+                failures.append(e)
+
+        try:
+            for _ in range(6):
+                thread = threading.Thread(target=one_step)
+                thread.start()
+                thread.join(timeout=30)
+                assert not thread.is_alive(), "stepping deadlocked on the RNG mutex"
+        finally:
+            threaded_bptk.end_session()
+
+        assert not failures, "stochastic stepping across threads failed: {!r}".format(failures[0])
+
+        single = _run_session_history(build(), ["mgr"], ["base"], equations, steps=6,
+                                     backend="rust", seed=42)
+        for i, (single_step, threaded_step) in enumerate(zip(single, threaded)):
+            _assert_step_dicts_equal(single_step, threaded_step, i)
+
+
+# ---------------------------------------------------------------------------
+# Tests: the fallback guard itself
+#
+# conftest.py fails any test during which bptk gave up on the Rust engine, because a
+# parity test that compares "python" against a "rust" run that never happened compares
+# Python with Python and passes for the wrong reason — how the delay-cycle limitation
+# stayed hidden until 2026-08-11. Detection is by log message, so the guard is only as
+# good as its marker list; these tests keep that list honest.
+# ---------------------------------------------------------------------------
+
+class TestFallbackGuard:
+
+    # Log sites that mention falling back but do *not* mean "the Rust engine did not
+    # run", each with the reason it is out of the guard's scope.
+    KNOWN_NON_ENGINE_FALLBACKS = {
+        "Invalid default_backend": "configuration validation, no engine involved",
+        "invalid backend": "begin_session argument validation, no engine involved",
+        "will fall back to replay": "Rust did run; only the resume shortcut degrades",
+        "Failed to create Logfire span": "logging concern, unrelated to the backend",
+    }
+
+    def _fallback_log_sites(self):
+        """Every log() call in BPTK_Py whose message talks about falling back."""
+        import pathlib
+        import re
+
+        package_root = pathlib.Path(BPTK_Py.__file__).parent
+        sites = []
+        for path in sorted(package_root.rglob("*.py")):
+            for number, line in enumerate(path.read_text(encoding="UTF-8").splitlines(), 1):
+                if "log(" not in line:
+                    continue
+                if re.search(r"fall(?:ing|s)?\s+back|fallback", line, re.IGNORECASE):
+                    sites.append((path.relative_to(package_root).as_posix(), number, line.strip()))
+        return sites
+
+    def test_every_fallback_log_site_is_covered(self):
+        """A new fallback path — or a reworded message — must not slip past the guard.
+
+        On failure: add the message to _RUST_FALLBACK_MARKERS in conftest.py, or, if it
+        does not mean "Rust did not run", to KNOWN_NON_ENGINE_FALLBACKS above.
+        """
+        from conftest import _RUST_FALLBACK_MARKERS
+
+        sites = self._fallback_log_sites()
+        assert sites, "found no fallback log sites at all — has the search pattern rotted?"
+
+        uncovered = []
+        for path, number, line in sites:
+            if any(known in line for known in self.KNOWN_NON_ENGINE_FALLBACKS):
+                continue
+            if not any(marker in line.lower() for marker in _RUST_FALLBACK_MARKERS):
+                uncovered.append("{}:{}: {}".format(path, number, line))
+
+        assert not uncovered, (
+            "these fallback log sites are invisible to the guard in conftest.py:\n  "
+            + "\n  ".join(uncovered))
+
+    def test_known_non_engine_fallbacks_still_exist(self):
+        """The exception list must not outlive the messages it exempts."""
+        lines = "\n".join(line for _, _, line in self._fallback_log_sites())
+        for known, reason in self.KNOWN_NON_ENGINE_FALLBACKS.items():
+            assert known in lines, (
+                "'{}' is exempted from the guard ({}) but no longer appears in BPTK_Py "
+                "— drop it from KNOWN_NON_ENGINE_FALLBACKS".format(known, reason))
+
+    @pytest.mark.allow_rust_fallback
+    def test_guard_detects_a_real_fallback(self):
+        """Provoke a fallback and confirm the guard's own helpers see it. Marked, so
+        the guard does not fail this test for doing exactly what it is testing."""
+        from conftest import _fallback_lines_since, _logfile_size
+
+        model = Model(starttime=0, stoptime=3, dt=1, name="guard_probe")
+        stock = model.stock("stock")
+        flow = model.flow("flow")
+        stock.initial_value = 100.0
+        stock.equation = flow
+        # A custom NaryOperator: works in Python, cannot be serialised to JSON.
+        my_fn = model.function("my_custom_fn", lambda model, t, *args: 5.0)
+        flow.equation = my_fn(model.stock("stock"))
+
+        offset = _logfile_size()
+        result = model.simulate(["stock"], backend="rust")
+
+        assert result is not None, "the fallback must still produce Python results"
+        assert _fallback_lines_since(offset), (
+            "the guard did not notice a fallback that definitely happened — its marker "
+            "list or the log destination has drifted")
+
+    # The branches below are never taken in a green run — the guard only fails a test
+    # when something went wrong — so they are exercised directly.
+
+    def _drive_guard(self, item, appended_line=None):
+        """Run the guard's hook wrapper around a fake test and return its Result."""
+        from pluggy import Result
+        import conftest as guard
+
+        wrapper = guard.pytest_runtest_call(item)
+        next(wrapper)  # the guard snapshots the logfile size here
+        if appended_line:
+            with open(logmod.logfile, "a", encoding="UTF-8") as f:
+                f.write(appended_line + "\n")
+        outcome = Result.from_call(lambda: None)
+        try:
+            wrapper.send(outcome)
+        except StopIteration:
+            pass
+        return outcome
+
+    @pytest.mark.allow_rust_fallback  # writes a probe line into the real logfile
+    def test_guard_turns_a_fallback_into_a_failure(self):
+        """The wiring, not just the detection: a fallback during a test must surface as
+        an AssertionError on the call outcome."""
+        class _UnmarkedItem:
+            def get_closest_marker(self, name):
+                return None
+
+        outcome = self._drive_guard(
+            _UnmarkedItem(),
+            "2026-01-01 00:00:00, [WARN] Rust engine failed: probe — falling back to Python")
+
+        with pytest.raises(AssertionError, match="fell back to Python"):
+            outcome.get_result()
+
+    @pytest.mark.allow_rust_fallback  # writes a probe line into the real logfile
+    def test_guard_respects_the_opt_out_marker(self):
+        """A marked test keeps its result even with a fallback in the log."""
+        class _MarkedItem:
+            def get_closest_marker(self, name):
+                return object() if name == "allow_rust_fallback" else None
+
+        outcome = self._drive_guard(
+            _MarkedItem(),
+            "2026-01-01 00:00:00, [WARN] Rust engine failed: probe — falling back to Python")
+
+        assert outcome.get_result() is None
+
+    def test_guard_survives_a_truncated_or_missing_logfile(self):
+        """Tests that wipe the logfile must not make the guard raise on its own."""
+        from conftest import _fallback_lines_since
+
+        # offset far beyond the current size: the file was truncated meanwhile
+        assert _fallback_lines_since(10 ** 9) == []
+
+        original = logmod.logfile
+        try:
+            logmod.logfile = "does-not-exist.log"
+            assert _fallback_lines_since(0) == []
+        finally:
+            logmod.logfile = original
+
+
+# ---------------------------------------------------------------------------
+# Tests: how loudly a mid-session fallback is reported
+#
+# Falling back to Python on the first step is harmless. Falling back later is not: the
+# Python backend has no record of the rounds the Rust engine already played, so it
+# rebuilds that history from the settings of the current step and anything stateful
+# comes out wrong. Measured on a stock model: continuing a Rust session in Python from
+# round 4 gave 24 instead of 18. That must not be reported as a mere [WARN].
+# ---------------------------------------------------------------------------
+
+@pytest.mark.allow_rust_fallback
+class TestMidSessionFallbackIsLoud:
+
+    def _bptk(self):
+        return _build_simple_bptk()
+
+    def _fail_rust_from_step(self, monkeypatch, threshold):
+        """Make the Rust step path raise once the session has reached `threshold`."""
+        original = SdRunner._run_scenario_step_rust
+
+        def maybe_raise(self, sc, step, settings, scenario_manager, scenario, equations, seed=None):
+            if float(step) >= threshold:
+                raise ValueError("simulated engine failure")
+            return original(self, sc, step, settings, scenario_manager, scenario, equations, seed=seed)
+
+        monkeypatch.setattr(SdRunner, "_run_scenario_step_rust", maybe_raise)
+
+    def _logfile_since(self, offset):
+        with open(logmod.logfile, "r", encoding="UTF-8", errors="replace") as f:
+            f.seek(offset)
+            return f.read()
+
+    def test_fallback_on_the_first_step_is_a_warning(self, monkeypatch):
+        self._fail_rust_from_step(monkeypatch, threshold=0.0)   # fail immediately
+        offset = os.path.getsize(logmod.logfile) if os.path.exists(logmod.logfile) else 0
+
+        history = _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
+                                       steps=3, backend="rust")
+
+        content = self._logfile_since(offset)
+        assert "[WARN] Rust step failed" in content
+        assert "[ERROR] Rust step failed" not in content
+        # results are still correct - Python simply ran the whole session
+        python_history = _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
+                                              steps=3, backend="python")
+        for i, (py_step, fallback_step) in enumerate(zip(python_history, history)):
+            _assert_step_dicts_equal(py_step, fallback_step, i)
+
+    def test_fallback_after_the_session_advanced_is_an_error(self, monkeypatch):
+        self._fail_rust_from_step(monkeypatch, threshold=3.0)   # fail from step 3 on
+        offset = os.path.getsize(logmod.logfile) if os.path.exists(logmod.logfile) else 0
+
+        _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
+                             steps=4, backend="rust")
+
+        content = self._logfile_since(offset)
+        assert "[ERROR] Rust step failed" in content, content[-500:]
+        assert "may be wrong" in content
+        assert "at step 3.0" in content

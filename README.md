@@ -41,23 +41,32 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 2.4.1
+
+* Bugfix: Rust backend — a feedback loop whose only time offset is a `delay()` is no longer rejected as cyclic. This is the standard System Dynamics ordering policy (supply chain, capacity and workforce models), which previously fell back to the Python backend without the caller noticing
+* Bugfix: Rust backend — fixed a crash (`PanicException: RustSdModel is unsendable`) that killed the process when a threaded WSGI server continued a step-by-step session on another thread
+* Bugfix: Rust backend — constant and graphical-function overrides passed with the *first* `run_step()` now take effect in that step, as they do on the Python backend
+* Feature: Rust backend — when a model is rejected because its equations form a circular dependency, the error now names the equations involved (`Cyclic dependency among non-stock entities: a → b → a`) instead of only reporting that one exists
+* Feature: a fallback from the Rust backend to Python that happens *after* a step-by-step session has already advanced is now logged as `[ERROR]` rather than `[WARN]`, because the Python backend cannot see the rounds the Rust engine already played and recomputes them with the settings of the current step
+
 ### 2.4.0
 
-* Step-by-step execution on the Rust backend (`RustSdModel.init()` / `step()`), wired through `bptk.run_step()` so server step-by-step sessions can run on Rust
-* New stateless `/execute` server endpoint: POST a complete JSON model plus scenarios and get results back (primary path for the visual modeler)
-* `/begin-session` accepts a `backend` field, and `bptk` accepts a `default_backend` configuration option, so a server can run Rust-backed sessions
-* Rust-backed session resume through the external state adapter (settings-log replay with seed plumbing)
-* Various XMILE compiler fixes (`NORMAL`/`PREVIOUS` code generation, scientific-notation parsing, Windows encoding) and substantially expanded test coverage
+* Feature: Step-by-step execution on the Rust backend (`RustSdModel.init()` / `step()`), wired through `bptk.run_step()` so server step-by-step sessions can run on Rust
+* Feature: New stateless `/execute` server endpoint: POST a complete JSON model plus scenarios and get results back (primary path for the visual modeler)
+* Feature: `/begin-session` accepts a `backend` field, and `bptk` accepts a `default_backend` configuration option, so a server can run Rust-backed sessions
+* Feature: Rust-backed session resume through the external state adapter: the engine's memo grid is externalized and imported on resume (no re-simulation), with seed plumbing for reproducible stochastic models
+* Bugfix: Various XMILE compiler fixes (`NORMAL`/`PREVIOUS` code generation, scientific-notation parsing, Windows encoding)
+* Substantially expanded test coverage
 
 ### 2.3.0
 
-* Add Rust-based SD execution backend (`backend="rust"`) for significantly faster simulation performance
-* Rust engine supports stocks, flows, biflows, converters, constants, all arithmetic/logical operators, stochastic/statistical distributions, and graphical functions
-* Automatic silent fallback to Python backend for unsupported features (arrays, modules, custom functions)
-* Add `Model.to_json()` for serializing SD DSL models to JSON
-* Add `ln`, `log10`, `floor`, `ceil`, `negbinomial` functions to SD DSL
-* Fix `geometric` and `pareto` distributions in Rust engine to match Python/numpy semantics
-* Fix `ScenarioManagerSd.get_cloned_model()` to properly copy `_equation` attribute
+* Feature: Add Rust-based SD execution backend (`backend="rust"`) for significantly faster simulation performance
+* Feature: Rust engine supports stocks, flows, biflows, converters, constants, all arithmetic/logical operators, stochastic/statistical distributions, and graphical functions
+* Feature: Automatic silent fallback to Python backend for unsupported features (arrays, modules, custom functions)
+* Feature: Add `Model.to_json()` for serializing SD DSL models to JSON
+* Feature: Add `ln`, `log10`, `floor`, `ceil`, `negbinomial` functions to SD DSL
+* Bugfix: Fix `geometric` and `pareto` distributions in Rust engine to match Python/numpy semantics
+* Bugfix: Fix `ScenarioManagerSd.get_cloned_model()` to properly copy `_equation` attribute
 
 ### 2.2.3
 
@@ -66,7 +75,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 2.2.2
 
-* Fix issue in external state adapter
+* Bugfix: Fix issue in external state adapter
 
 ### 2.2.1
 
@@ -74,9 +83,9 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 2.2.0
 
-* Add externalStateAdapters for Postgres and Redis
-* Add option to externalize state completely, thus turning bptkServer into a stateless server
-* Add pydantic logfire as logging backend
+* Feature: Add externalStateAdapters for Postgres and Redis
+* Feature: Add option to externalize state completely, thus turning bptkServer into a stateless server
+* Feature: Add pydantic logfire as logging backend
 * Improve return message on bptkServer /stop-instance
 
 ### 2.1.1
@@ -85,11 +94,11 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 2.1.0
 
-* extend plot_scenario to accept a format parameter
+* Feature: extend plot_scenario to accept a format parameter
 * add unittests
-* fix typos for server output
-* enable operations: not named vector and int/float
-* fix issue with configurable file-path for bptk-object
+* Bugfix: fix typos for server output
+* Feature: enable operations: not named vector and int/float
+* Bugfix: fix issue with configurable file-path for bptk-object
 
 ### 2.0.0
 

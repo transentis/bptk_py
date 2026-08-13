@@ -10,9 +10,13 @@ from BPTK_Py.modelmonitor.file_monitor import FileMonitor
 
 class TestFileMonitor(unittest.TestCase):
 
+    # FileMonitor.__init__ starts a monitor thread of its own. Without suppressing it,
+    # that loop and the one this test starts both see the stale _cached_stamp and race
+    # to call update_func — a coin flip that came up "two calls" on macOS + Python 3.13.
+    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the constructor's thread
     @patch("os.path.isfile", return_value=True)  # simulates that a file exists
     @patch("os.stat")  # mock for the timestamp
-    def test_monitor_detects_file_change(self, mock_stat, mock_isfile):
+    def test_monitor_detects_file_change(self, mock_stat, mock_isfile, mock_thread):
         logmod.loglevel = "INFO"
                
         #cleanup logfile

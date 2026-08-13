@@ -1,6 +1,8 @@
 import unittest
 from unittest import mock
 
+import pytest
+
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
 import BPTK_Py.logger.logger as logmod
@@ -230,6 +232,7 @@ class TestSdRunner(unittest.TestCase):
             py_mock.assert_called_once()
             rust_mock.assert_not_called()
 
+    @pytest.mark.allow_rust_fallback
     def test_run_scenario_step_value_error_triggers_fallback(self):
         runner, sc = self._build_runner_and_scenario()
         with mock.patch.object(SdRunner, "_run_scenario_step_rust",
@@ -244,6 +247,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertIsNone(sc.rust_model)
         self.assertIsNotNone(sc.result)  # python path produced a result
 
+    @pytest.mark.allow_rust_fallback
     def test_run_scenario_step_import_error_triggers_fallback(self):
         runner, sc = self._build_runner_and_scenario()
         with mock.patch.object(SdRunner, "_run_scenario_step_rust",
@@ -257,6 +261,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertTrue(sc._rust_failed)
         self.assertIsNotNone(sc.result)
 
+    @pytest.mark.allow_rust_fallback
     def test_run_scenario_step_attribute_error_triggers_fallback(self):
         """E.g. an XMILE SimulationModel that lacks to_json — must fall back."""
         runner, sc = self._build_runner_and_scenario()
@@ -271,6 +276,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertTrue(sc._rust_failed)
         self.assertIsNotNone(sc.result)
 
+    @pytest.mark.allow_rust_fallback
     def test_run_scenario_step_fallback_logs_warning(self):
         """Fallback must emit a [WARN] log line so operators see the switch."""
         try:

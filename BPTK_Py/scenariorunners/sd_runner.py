@@ -113,7 +113,24 @@ class SdRunner(ScenarioRunner):
                 try:
                     self._run_scenario_step_rust(sc, step, settings, scenario_manager, scenario, equations, seed=seed)
                 except (ValueError, ImportError, AttributeError) as e:
-                    log("[WARN] Rust step failed for '{}': {} — falling back to Python for the rest of this session".format(scenario, str(e)))
+                    # Falling back on the very first step is harmless - there is no
+                    # history yet, so Python starts the session from scratch. Falling
+                    # back later is not: the Python backend has no record of the rounds
+                    # the Rust engine already played (its memo lives in the engine, not
+                    # in scenario_cache), so its lazy evaluator rebuilds them from the
+                    # settings that are current *now*. Anything that carries history -
+                    # a stock, a delay - then comes out wrong, and stays wrong for the
+                    # rest of the session. Loud enough to be seen: a message tagged
+                    # [ERROR] is printed even when logging goes to a file or to Logfire.
+                    if abs(float(step) - float(sc.starttime)) < 1e-9:
+                        log("[WARN] Rust step failed for '{}': {} — falling back to Python for the rest of this session".format(scenario, str(e)))
+                    else:
+                        log("[ERROR] Rust step failed for '{}' at step {}: {} — falling back to Python "
+                            "for the rest of this session. This session has already played earlier "
+                            "steps on the Rust engine, and the Python backend cannot see them: it "
+                            "recomputes that history with the settings of the current step, so results "
+                            "from here on may be wrong wherever the model carries state.".format(
+                                scenario, step, str(e)))
                     sc._rust_failed = True
                     sc.rust_model = None
                     sc._rust_initial = None
@@ -170,7 +187,9 @@ class SdRunner(ScenarioRunner):
         invocation; the common case (session dt == model dt) advances by exactly
         one timestep.
         """
-        if sc.rust_model is None:
+        first_call = sc.rust_model is None
+
+        if first_call:
             from BPTK_Py._rust_engine import RustSdEngine
 
             rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
@@ -191,10 +210,11 @@ class SdRunner(ScenarioRunner):
 
             sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
 
-            sc._rust_initial = sc.rust_model.init(equations, seed)
-            sc._rust_initial_returned = False
-
-        # Apply per-step settings overrides
+        # Apply per-step settings overrides. On the first call this must happen *before*
+        # init(), because init() evaluates step 0 (t == starttime) and its values are what
+        # the first run_step() returns. The Python path applies the settings and only then
+        # computes the step, so overriding a constant in the very first run_step() would
+        # otherwise be silently ignored by the Rust backend.
         if settings and scenario_manager in settings and scenario in settings[scenario_manager]:
             s = settings[scenario_manager][scenario]
             for name, value in s.get("constants", {}).items():
@@ -203,6 +223,10 @@ class SdRunner(ScenarioRunner):
                 # Rust set_points expects list[tuple[float, float]]; settings may carry
                 # list[list[float, float]] (JSON-style).
                 sc.rust_model.set_points(name, [(float(x), float(y)) for x, y in pts])
+
+        if first_call:
+            sc._rust_initial = sc.rust_model.init(equations, seed)
+            sc._rust_initial_returned = False
 
         if not sc._rust_initial_returned:
             values = sc._rust_initial

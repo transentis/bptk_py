@@ -1,6 +1,24 @@
 from pathlib import Path
 import pytest
 
+from BPTK_Py.logger import logger as logmod
+
+
+@pytest.fixture(autouse=True)
+def reset_logfire_state():
+    """Restore the logger module's Logfire state after every test.
+
+    Several logger tests call the real `configure_logfire()`, which sets the module
+    globals `logfire_enabled` / `logfire_adapter` and leaves them set. Every `log()`
+    call in every test that runs afterwards is then routed through that adapter as
+    well. That is harmless while the tests pass `send_to_logfire: False`, but with a
+    real token in the environment it would ship test noise to a live Logfire project
+    — so the state is reset here rather than in each test class.
+    """
+    enabled, adapter = logmod.logfire_enabled, logmod.logfire_adapter
+    yield
+    logmod.logfire_enabled, logmod.logfire_adapter = enabled, adapter
+
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_compiled_models():
@@ -9,3 +27,77 @@ def cleanup_compiled_models():
     test_models_dir = Path(__file__).parent / "test_models"
     for file_path in test_models_dir.glob("*.py"):
         file_path.unlink()
+
+
+# Log messages the bptk layers emit when they give up on the Rust engine and
+# compute in Python instead. Each of these means "the Rust engine did not run".
+# Deliberately excluded: the invalid-backend-string messages (bptk.py) - those are
+# input validation, not engine failures - and the export_state message, where Rust
+# did run and only the resume shortcut fell back to replay.
+_RUST_FALLBACK_MARKERS = (
+    "rust step failed",
+    "rust engine failed",
+    "cannot serialize model to json",
+    "falling back to python engine for scenario",
+    "cannot run with rust backend",
+)
+
+
+def _logfile_size():
+    logfile = Path(logmod.logfile)
+    return logfile.stat().st_size if logfile.exists() else 0
+
+
+def _fallback_lines_since(offset):
+    """Fallback log lines appended since `offset`, if any."""
+    logfile = Path(logmod.logfile)
+    if not logfile.exists():
+        return []
+    # A test may have truncated the logfile; then our offset is meaningless.
+    if logfile.stat().st_size < offset:
+        return []
+    with logfile.open("r", encoding="UTF-8", errors="replace") as f:
+        f.seek(offset)
+        appended = f.read()
+    return [
+        line for line in appended.splitlines()
+        if any(marker in line.lower() for marker in _RUST_FALLBACK_MARKERS)
+    ]
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item):
+    """Fail any test during which bptk silently fell back from Rust to Python.
+
+    The fallback is a production feature: when the engine cannot load or run a
+    model, bptk logs a [WARN] and computes in Python, so results stay correct.
+    In tests it is a trap - a parity test that compares "python" against a "rust"
+    run that never happened compares Python with Python and passes for the wrong
+    reason. That is how the delay-cycle limitation stayed hidden until 2026-08-11
+    (see docs/internal/architecture/rust-engine-delay-cycle-issue.md).
+
+    Tests that exercise the fallback on purpose opt out with
+    ``@pytest.mark.allow_rust_fallback``.
+
+    Limitation: detection is log-based, so a test that sets ``loglevel="ERROR"``
+    suppresses the [WARN] line and can hide a fallback.
+    """
+    if item.get_closest_marker("allow_rust_fallback"):
+        yield
+        return
+
+    offset = _logfile_size()
+    outcome = yield
+
+    # Do not mask a genuine failure with our own.
+    if outcome.excinfo is not None:
+        return
+
+    hits = _fallback_lines_since(offset)
+    if hits:
+        outcome.force_exception(AssertionError(
+            "the Rust backend fell back to Python during this test, so anything "
+            "it asserts about Rust is meaningless:\n  " + "\n  ".join(hits)
+            + "\n(if the fallback is the point of the test, mark it with "
+              "@pytest.mark.allow_rust_fallback)"
+        ))

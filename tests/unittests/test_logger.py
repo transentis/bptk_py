@@ -9,7 +9,10 @@ import sys, io
 
 class TestLogger(unittest.TestCase):
     def setUp(self):
-        pass    
+        pass
+
+    # Logfire module state is restored after every test by the reset_logfire_state
+    # fixture in tests/conftest.py.
 
     def testLogger_loglevel_error(self):
         importlib.reload(logmod)

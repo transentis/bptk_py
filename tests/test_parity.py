@@ -1586,3 +1586,186 @@ class TestParityFloorCeil:
         c = model.converter('c')
         c.equation = sd.ceil(inp)
         run_parity(model, ['f', 'c'], atol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# Test: feedback loops and the topological sort
+#
+# The engine evaluates non-stock entities eagerly, once per timestep, in an order
+# computed by a topological sort at load time. Loops must therefore be broken by
+# something that reads a *past* value: a stock (integrated in the previous step)
+# or a `delay` (reads memo[step - delay_steps]). These tests pin down which
+# shapes must load and which must stay rejected.
+# See docs/internal/architecture/rust-engine-delay-cycle-issue.md
+# ---------------------------------------------------------------------------
+
+class TestParityFeedbackLoops:
+
+    def test_loop_closed_by_stock(self):
+        """Loop broken by a stock — the classic SD case, must keep working."""
+        model = Model(starttime=1, stoptime=6, dt=1, name='loop_stock_par')
+        level = model.stock('level')
+        inflow = model.flow('inflow')
+        rate = model.converter('rate')
+
+        level.initial_value = 10.0
+        level.equation = inflow
+        inflow.equation = rate
+        rate.equation = level * 0.1
+
+        run_parity(model, ['level', 'inflow', 'rate'], atol=1e-10)
+
+    def test_loop_closed_by_delay(self):
+        """Loop broken only by a one-step delay — Python resolves it, so must Rust."""
+        model = Model(starttime=1, stoptime=5, dt=1, name='loop_delay_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        c = model.converter('c')
+        d = model.converter('d')
+
+        a.equation = d + 1.0
+        b.equation = a * 2.0
+        c.equation = b + 1.0
+        d.equation = sd.delay(model, c, 1.0, 0.0)
+
+        run_parity(model, ['a', 'b', 'c', 'd'], atol=1e-10)
+
+    def test_loop_closed_by_multi_step_delay(self):
+        """Same loop, delay of two timesteps."""
+        model = Model(starttime=0, stoptime=8, dt=1, name='loop_delay2_par')
+        a = model.converter('a')
+        d = model.converter('d')
+
+        a.equation = d + 2.0
+        d.equation = sd.delay(model, a, 2.0, 1.0)
+
+        run_parity(model, ['a', 'd'], atol=1e-10)
+
+    def test_loop_closed_by_delay_fractional_dt(self):
+        """Loop broken by a delay with dt < 1, so delay_steps > 1 for a duration of 1."""
+        model = Model(starttime=0, stoptime=4, dt=0.25, name='loop_delay_frac_par')
+        a = model.converter('a')
+        d = model.converter('d')
+
+        a.equation = d * 1.5 + 1.0
+        d.equation = sd.delay(model, a, 1.0, 0.5)
+
+        run_parity(model, ['a', 'd'], atol=1e-10)
+
+    def test_loop_closed_by_delay_with_entity_duration(self):
+        """The delay duration is an entity rather than a literal — the shape of the
+        beergame's orderDelay. Its value is unknown at load time, so breaking the loop
+        requires assuming a non-literal duration is at least one dt.
+
+        The table is constant-valued, like every orderDelay / deliveryDelay in the
+        beergame. A *time-varying* duration is a separate, pre-existing Python/Rust
+        divergence and deliberately not covered here — see
+        docs/internal/architecture/rust-engine-delay-cycle-issue.md.
+        """
+        model = Model(starttime=1, stoptime=6, dt=1, name='loop_delay_dyn_par')
+        duration = model.converter('duration')
+        a = model.converter('a')
+        d = model.converter('d')
+
+        model.points['delay_table'] = [(float(t), 1.0) for t in range(1, 7)]
+        duration.equation = sd.lookup(sd.time(), 'delay_table')
+        a.equation = d + 3.0
+        d.equation = sd.delay(model, a, duration, 0.0)
+
+        run_parity(model, ['a', 'd', 'duration'], atol=1e-10)
+
+    def test_beergame_shaped_ordering_loop(self):
+        """The shape that blocked Substep 4i: an ordering policy whose only time
+        offset is the order delay, with floor() and a lookup-driven duration."""
+        model = Model(starttime=1, stoptime=8, dt=1, name='ordering_loop_par')
+
+        outgoingOrders = model.stock('outgoingOrders')
+        incomingOrders = model.stock('incomingOrders')
+        orderDelay = model.converter('orderDelay')
+        incomingOrder = model.converter('incomingOrder')
+        orderDecision = model.converter('orderDecision')
+        makingOrders = model.flow('makingOrders')
+        sendingOrders = model.flow('sendingOrders')
+        orderFromOrderLine = model.converter('orderFromOrderLine')
+        actualOrder = model.converter('actualOrder')
+        outgoingOrdersIn = model.flow('outgoingOrdersIn')
+        totalOutgoingOrders = model.converter('totalOutgoingOrders')
+        totalIncomingOrders = model.converter('totalIncomingOrders')
+        targetSupplyLine = model.constant('targetSupplyLine')
+        stockAdjustmentTime = model.constant('stockAdjustmentTime')
+
+        outgoingOrders.initial_value = 100.0
+        incomingOrders.initial_value = 0.0
+        targetSupplyLine.equation = 400.0
+        stockAdjustmentTime.equation = 7.0
+
+        model.points['order_delay_table'] = [(float(t), 1.0) for t in range(1, 9)]
+        orderDelay.equation = sd.lookup(sd.time(), 'order_delay_table')
+        incomingOrder.equation = 100.0 + 300.0 * sd.step(1.0, 3.0)
+
+        # the loop: decision → makingOrders → delay → sendingOrders → actualOrder
+        #           → outgoingOrdersIn → totalOutgoingOrders → decision
+        orderDecision.equation = sd.max(
+            incomingOrder + sd.floor(
+                (targetSupplyLine + totalIncomingOrders - totalOutgoingOrders)
+                / stockAdjustmentTime),
+            0.0)
+        makingOrders.equation = orderDecision
+        sendingOrders.equation = sd.delay(model, makingOrders, orderDelay, 100.0)
+        orderFromOrderLine.equation = sendingOrders
+        actualOrder.equation = orderFromOrderLine
+        outgoingOrdersIn.equation = actualOrder
+        outgoingOrders.equation = outgoingOrdersIn
+        totalOutgoingOrders.equation = outgoingOrdersIn + outgoingOrders
+        incomingOrders.equation = incomingOrder
+        totalIncomingOrders.equation = incomingOrders + incomingOrder
+
+        run_parity(model, ['orderDecision', 'sendingOrders', 'actualOrder',
+                           'totalOutgoingOrders', 'outgoingOrders'], atol=1e-10)
+
+    def test_algebraic_loop_is_rejected(self):
+        """A loop with no time offset anywhere cannot be evaluated in one pass, and the
+        error names the equations that form it — Python itself can only offer a
+        RecursionError, so this message is the only cycle diagnosis a model author gets.
+        """
+        model = Model(starttime=1, stoptime=5, dt=1, name='loop_algebraic_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        a.equation = b + 1.0
+        b.equation = a * 2.0
+
+        with pytest.raises(ValueError) as excinfo:
+            RustSdEngine().load_model(model.to_json())
+        assert str(excinfo.value) == \
+            "Cyclic dependency among non-stock entities: a → b → a"
+
+    def test_cycle_error_names_dotted_module_equations(self):
+        """The names are reported verbatim, including Module namespacing — this is what
+        the beergame's ordering policy would have looked like without its delay."""
+        model = Model(starttime=1, stoptime=5, dt=1, name='loop_named_par')
+        decision = model.converter('wholesaler.orderDecision')
+        making = model.flow('wholesaler.makingOrders')
+        sending = model.flow('wholesaler.sendingOrders')
+        decision.equation = sending + 1.0
+        making.equation = decision
+        sending.equation = making
+
+        with pytest.raises(ValueError) as excinfo:
+            RustSdEngine().load_model(model.to_json())
+        assert str(excinfo.value) == (
+            "Cyclic dependency among non-stock entities: "
+            "wholesaler.makingOrders → wholesaler.orderDecision → "
+            "wholesaler.sendingOrders → wholesaler.makingOrders")
+
+    def test_loop_closed_by_zero_duration_delay_is_rejected(self):
+        """delay(x, 0) reads the *current* step, so it breaks no loop."""
+        model = Model(starttime=1, stoptime=5, dt=1, name='loop_delay_zero_par')
+        a = model.converter('a')
+        d = model.converter('d')
+        a.equation = d + 1.0
+        d.equation = sd.delay(model, a, 0.0, 0.0)
+
+        with pytest.raises(ValueError) as excinfo:
+            RustSdEngine().load_model(model.to_json())
+        assert str(excinfo.value) == \
+            "Cyclic dependency among non-stock entities: a → d → a"

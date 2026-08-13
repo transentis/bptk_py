@@ -39,12 +39,13 @@ impl RustSdEngine {
     }
 }
 
-// `unsendable` opts out of PyO3's Sync requirement. `SimulationState` holds a
-// `RefCell<StdRng>` (interior mutability for stochastic functions), which is
-// `!Sync` by design. Sharing a partially-stepped model across threads would
-// also be a correctness hazard — the Python GIL already serializes access in
-// practice.
-#[pyclass(unsendable)]
+// Deliberately NOT `unsendable`: a threaded WSGI server (Flask's dev server, uwsgi
+// with threads) serves consecutive requests on different threads, and the runner
+// caches this handle on the Scenario across requests — so the handle really does
+// travel between threads. PyO3 requires `Send` here, not `Sync`; `RefCell<StdRng>`
+// is `Send` because `StdRng` is, so no lock is needed. The GIL still serializes
+// access, and PyO3's borrow flags still prevent overlapping `&mut self`.
+#[pyclass]
 pub struct RustSdModel {
     model: model::SdModel,
     /// Step-by-step state. `None` before `init()`, `Some` after.

@@ -322,6 +322,9 @@ def redis_app(externalize_state_completely):
         with flask_app.app_context():
             pass  # This ensures proper cleanup of app context
 
+        # Release the connection pool instead of leaving it to the garbage collector
+        redis_client.close()
+
         print("Redis Flask app teardown complete")
     except Exception as e:
         print(f"Error during Redis app teardown: {e}")

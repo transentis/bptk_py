@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "2.4.0"
+version = "2.4.1"
 dependencies = [
 "pandas==2.3.0",
 "matplotlib==3.10.3",
@@ -62,4 +62,7 @@ bindings = "pyo3"
 pythonpath = ["tests"]
 filterwarnings = [
     "ignore::DeprecationWarning:traitlets.*"
+]
+markers = [
+    "allow_rust_fallback: test deliberately triggers the Rust-to-Python fallback",
 ]
