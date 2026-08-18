@@ -605,7 +605,10 @@ class TestExternalStateAdapterOptionalImports(unittest.TestCase):
         try:
             with self.assertRaises(ImportError) as cm:
                 esa.PostgresAdapter()
-            self.assertIn("psycopg", str(cm.exception))
+            self.assertIn("bptk-py[server]", str(cm.exception))
+            # The stub catches any ImportError from the adapter module, so the
+            # original has to stay reachable - it names what actually failed.
+            self.assertIn("postgres_adapter", str(cm.exception.__cause__))
         finally:
             self._restore_package()
 
@@ -615,7 +618,8 @@ class TestExternalStateAdapterOptionalImports(unittest.TestCase):
         try:
             with self.assertRaises(ImportError) as cm:
                 esa.RedisAdapter()
-            self.assertIn("redis", str(cm.exception))
+            self.assertIn("bptk-py[server]", str(cm.exception))
+            self.assertIn("redis_adapter", str(cm.exception.__cause__))
         finally:
             self._restore_package()
 

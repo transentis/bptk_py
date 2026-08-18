@@ -19,7 +19,7 @@ import pandas as pd
 
 from ..logger import log
 
-from ..util import timerange
+from ..util import start_or_run, timerange
 
 class SdSimulation():
     """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
@@ -123,9 +123,9 @@ class SdSimulation():
         
         # TODO: does it make sense to run this in separate threads - in most cases the equations will be inderdependent. Do some performance tests.
         for equation in equations:  # Start one thread for each equation
-            t = Thread(target=self.__simulate, args=(equation, until, start))
-            t.start()
-            self.threads += [t]
+            t = start_or_run(self.__simulate, args=(equation, until, start))
+            if t is not None:
+                self.threads += [t]
 
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until, start):

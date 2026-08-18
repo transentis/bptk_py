@@ -1,4 +1,6 @@
+import pytest
 import io
+import json
 import sys
 import unittest
 from unittest import mock
@@ -337,6 +339,7 @@ class TestBptk(unittest.TestCase):
             configuration={"default_backend": "bogus", "interactive": False})
         self.assertEqual(testBptk.default_backend, "python")
 
+    @pytest.mark.requires_rust
     def testBptk_end_session_clears_rust_state(self):
         """After end_session, the four Rust fields populated mid-session must
         all be reset on the underlying SimulationScenario."""
@@ -751,128 +754,70 @@ class TestBptk(unittest.TestCase):
         finally:
             sys.stdout = old_stdout
 
-    def testBptk_update_already_latest(self):
-        """bptk.update() prints 'up to date' when local version matches PyPI."""
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [
-            {"name": "BPTK-Py", "version": BPTK_Py.__version__}
-        ]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index):
-            output = self._capture_stdout(bptk.update)
-
-        self.assertIn("Nothing to do", output)
-        self.assertIn(BPTK_Py.__version__, output)
-
-    def testBptk_update_installs_newer_version_terminal(self):
-        """bptk.update() pip-installs when PyPI advertises a newer version (terminal flow, no notebook hint)."""
-        newer = "999.0.0"
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [
-            {"name": "Other-Package", "version": "0.0.1"},
-            {"name": "BPTK-Py", "version": newer},
-        ]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
-             mock.patch("subprocess.check_call", return_value=0) as check_call, \
-             mock.patch("builtins.get_ipython", create=True, side_effect=NameError):
-            output = self._capture_stdout(bptk.update)
-
-        check_call.assert_called_once()
-        called_args = check_call.call_args[0][0]
-        self.assertIn("pip", called_args)
-        self.assertIn("BPTK-Py", called_args)
-        self.assertIn("Update successfully completed", output)
-        self.assertNotIn("Jupyter Notebook", output)
-
-    def testBptk_update_pip_failure(self):
-        """bptk.update() prints an error when pip returns a non-zero exit code."""
-        newer = "999.0.0"
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [{"name": "BPTK-Py", "version": newer}]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
-             mock.patch("subprocess.check_call", return_value=1), \
-             mock.patch("builtins.get_ipython", create=True, side_effect=NameError):
-            output = self._capture_stdout(bptk.update)
-
-        self.assertIn("Error Updating", output)
-
-    def testBptk_update_notebook_hint(self):
-        """bptk.update() suggests a kernel restart when running inside a Jupyter notebook shell."""
-        newer = "999.0.0"
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [{"name": "BPTK-Py", "version": newer}]
-
-        fake_shell = mock.Mock()
-        fake_shell.__class__.__name__ = "ZMQInteractiveShell"
-        fake_ipython = mock.Mock(return_value=fake_shell)
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
-             mock.patch("subprocess.check_call", return_value=0), \
-             mock.patch("builtins.get_ipython", create=True, return_value=fake_shell):
-            output = self._capture_stdout(bptk.update)
-
-        self.assertIn("Update successfully completed", output)
-        # Notebook detection branch — isnotebook() returns True for ZMQInteractiveShell.
-        self.assertIn("Jupyter Notebook", output)
-
-    def _capture_stdout(self, fn, *args, **kwargs):
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            fn(*args, **kwargs)
-            return sys.stdout.getvalue()
-        finally:
-            sys.stdout = old_stdout
-
     def testBptk_version_is_resolved(self):
         """BPTK_Py.__version__ resolves to a real version string, not the 'UNAVAILABLE' fallback."""
+        from importlib.metadata import PackageNotFoundError, version as _installed
+        try:
+            _installed("BPTK-Py")
+        except PackageNotFoundError:
+            self.skipTest("BPTK-Py is on sys.path as a source checkout, not installed as a "
+                          "distribution, so there is no metadata to resolve")
+
         self.assertNotEqual(BPTK_Py.__version__, "UNAVAILABLE")
-        # Version must be a dotted numeric string that distlib can compare.
-        from distlib.version import NormalizedVersion
-        NormalizedVersion(BPTK_Py.__version__)
+        # Version must be a dotted numeric string.
+        from importlib.metadata import version as _version
+        self.assertRegex(BPTK_Py.__version__, r"^\d+(\.\d+)*")
+        self.assertEqual(BPTK_Py.__version__, _version("BPTK-Py"))
+
+    # --- bptk.update() ------------------------------------------------------
+    # update() reads PyPI's JSON API. Until 2.4.1 it used distlib's XML-RPC
+    # search, which PyPI switched off years ago - so the method could only ever
+    # raise. The old tests mocked distlib's PackageIndex and therefore never
+    # noticed; testBptk_update_network_error is the regression guard for that.
+
+    @staticmethod
+    def _fake_pypi_response(version):
+        """A stand-in for urlopen's context manager, serving one JSON payload."""
+        payload = json.dumps({"info": {"name": "bptk-py", "version": version}})
+        response = mock.MagicMock()
+        response.__enter__.return_value = io.StringIO(payload)
+        return response
+
+    def testBptk_version_tuple(self):
+        """Versions compare numerically, and a non-numeric suffix truncates."""
+        self.assertEqual(bptk._version_tuple("2.4.1"), (2, 4, 1))
+        self.assertEqual(bptk._version_tuple("2.5.0rc1"), (2, 5, 0))
+        self.assertLess(bptk._version_tuple("2.4.1"), bptk._version_tuple("2.10.0"))
+        self.assertLess(bptk._version_tuple("2.4.1"), bptk._version_tuple("2.4.2"))
+        self.assertFalse(bptk._version_tuple("2.4.1") < bptk._version_tuple("2.4.1"))
 
     def testBptk_update_already_latest(self):
-        """bptk.update() prints 'up to date' when the local version matches PyPI."""
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [
-            {"name": "BPTK-Py", "version": BPTK_Py.__version__}
-        ]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index):
+        """update() prints 'up to date' when the local version matches PyPI."""
+        with mock.patch("urllib.request.urlopen",
+                        return_value=self._fake_pypi_response(BPTK_Py.__version__)):
             output = self._capture_stdout(bptk.update)
 
         self.assertIn("Nothing to do", output)
         self.assertIn(BPTK_Py.__version__, output)
 
     def testBptk_update_installs_newer_version_terminal(self):
-        """bptk.update() pip-installs when PyPI advertises a newer version (terminal flow, no notebook hint)."""
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [
-            {"name": "Other-Package", "version": "0.0.1"},
-            {"name": "BPTK-Py", "version": "999.0.0"},
-        ]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
+        """update() pip-installs when PyPI advertises a newer version (terminal flow)."""
+        with mock.patch("urllib.request.urlopen",
+                        return_value=self._fake_pypi_response("999.0.0")), \
              mock.patch.object(BPTK_Py, "__version__", "1.0.0"), \
              mock.patch("subprocess.check_call", return_value=0) as check_call, \
              mock.patch("builtins.get_ipython", create=True, side_effect=NameError):
             output = self._capture_stdout(bptk.update)
 
-        check_call.assert_called_once()
-        called_args = check_call.call_args[0][0]
-        self.assertIn("pip", called_args)
-        self.assertIn("BPTK-Py", called_args)
         self.assertIn("Update successfully completed", output)
         self.assertNotIn("Jupyter Notebook", output)
+        check_call.assert_called_once()
+        self.assertIn("BPTK-Py", check_call.call_args[0][0])
 
     def testBptk_update_pip_failure(self):
-        """bptk.update() prints an error when pip returns a non-zero exit code."""
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [{"name": "BPTK-Py", "version": "999.0.0"}]
-
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
+        """update() reports an error when pip exits non-zero."""
+        with mock.patch("urllib.request.urlopen",
+                        return_value=self._fake_pypi_response("999.0.0")), \
              mock.patch.object(BPTK_Py, "__version__", "1.0.0"), \
              mock.patch("subprocess.check_call", return_value=1), \
              mock.patch("builtins.get_ipython", create=True, side_effect=NameError):
@@ -880,24 +825,48 @@ class TestBptk(unittest.TestCase):
 
         self.assertIn("Error Updating", output)
 
-    def testBptk_update_notebook_hint(self):
-        """bptk.update() suggests a kernel restart when running inside a Jupyter notebook shell."""
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [{"name": "BPTK-Py", "version": "999.0.0"}]
+    def testBptk_update_network_error(self):
+        """A PyPI that cannot be reached is reported, not raised.
 
-        # isnotebook() inspects get_ipython().__class__.__name__ — fake a ZMQInteractiveShell instance.
-        class ZMQInteractiveShell:
-            pass
+        This is what the distlib version did wrong: PyPI's XML-RPC search
+        answers with a Fault, which escaped to the caller.
+        """
+        import urllib.error
 
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
-             mock.patch.object(BPTK_Py, "__version__", "1.0.0"), \
-             mock.patch("subprocess.check_call", return_value=0), \
-             mock.patch("builtins.get_ipython", create=True,
-                        return_value=ZMQInteractiveShell()):
+        with mock.patch("urllib.request.urlopen",
+                        side_effect=urllib.error.URLError("no route to host")):
             output = self._capture_stdout(bptk.update)
 
+        self.assertIn("Could not reach", output)
+        self.assertNotIn("Nothing to do", output)
+
+    def _run_update_with_shell(self, shell_name):
+        fake_shell = mock.Mock()
+        fake_shell.__class__.__name__ = shell_name
+        with mock.patch("urllib.request.urlopen",
+                        return_value=self._fake_pypi_response("999.0.0")), \
+             mock.patch.object(BPTK_Py, "__version__", "1.0.0"), \
+             mock.patch("subprocess.check_call", return_value=0), \
+             mock.patch("builtins.get_ipython", create=True, return_value=fake_shell):
+            return self._capture_stdout(bptk.update)
+
+    def testBptk_update_notebook_hint(self):
+        """isnotebook() returns True for a ZMQInteractiveShell - the kernel hint appears."""
+        output = self._run_update_with_shell("ZMQInteractiveShell")
         self.assertIn("Update successfully completed", output)
         self.assertIn("Jupyter Notebook", output)
+
+    def testBptk_update_terminal_shell(self):
+        """isnotebook() returns False for a TerminalInteractiveShell - no notebook hint."""
+        output = self._run_update_with_shell("TerminalInteractiveShell")
+        self.assertIn("Update successfully completed", output)
+        self.assertNotIn("Jupyter Notebook", output)
+
+    def testBptk_update_other_shell(self):
+        """isnotebook() returns False for any other shell class - no notebook hint."""
+        output = self._run_update_with_shell("SomeOtherShell")
+        self.assertIn("Update successfully completed", output)
+        self.assertNotIn("Jupyter Notebook", output)
 
     def testBptk_export_scenarios(self):
         from BPTK_Py import Model
@@ -1120,28 +1089,6 @@ class TestBptk(unittest.TestCase):
         finally:
             default_config.configuration.pop("slider_layout", None)
 
-    def _run_update_with_shell(self, shell_name):
-        fake_shell = mock.Mock()
-        fake_shell.__class__.__name__ = shell_name
-        fake_index = mock.Mock()
-        fake_index.search.return_value = [{"name": "BPTK-Py", "version": "999.0.0"}]
-        with mock.patch("distlib.index.PackageIndex", return_value=fake_index), \
-             mock.patch("subprocess.check_call", return_value=0), \
-             mock.patch("builtins.get_ipython", create=True, return_value=fake_shell):
-            return self._capture_stdout(bptk.update)
-
-    def testBptk_update_terminal_shell(self):
-        """isnotebook() returns False for a TerminalInteractiveShell — no notebook hint."""
-        output = self._run_update_with_shell("TerminalInteractiveShell")
-        self.assertIn("Update successfully completed", output)
-        self.assertNotIn("Jupyter Notebook", output)
-
-    def testBptk_update_other_shell(self):
-        """isnotebook() returns False for any other shell class — no notebook hint."""
-        output = self._run_update_with_shell("SomeOtherShell")
-        self.assertIn("Update successfully completed", output)
-        self.assertNotIn("Jupyter Notebook", output)
-
     def testBptk_init_configures_logfire(self):
         """A logfire_config dict triggers configure_logfire during init."""
         import BPTK_Py.logger.logger as logmod2
@@ -1176,7 +1123,7 @@ class TestBptk(unittest.TestCase):
 
     def testBptk_train_scenarios_progress_bar(self):
         """train_scenarios with progress_bar=True runs training on a worker thread
-        while updating a FloatProgress widget."""
+        while updating a tqdm progress bar."""
         testBptk = _build_training_bptk()
         # return_df=True keeps the worker thread off the GUI plotting path (the
         # macOS matplotlib backend must not be driven from a non-main thread).

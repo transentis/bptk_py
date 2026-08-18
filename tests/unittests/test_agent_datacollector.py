@@ -1,3 +1,4 @@
+import pytest
 import unittest
 
 from BPTK_Py import Agent
@@ -51,6 +52,7 @@ class TestAgentDataCollector(unittest.TestCase):
         pd3_data = [[1003, 1, "active", "testAgentType2"]]
         self.assertTrue(return_value["testAgentType2"][1003].equals(pd.DataFrame(data=pd3_data, columns=pd_columns)))    
 
+    @pytest.mark.requires_extra("plotting")
     def testAgentDataCollector_plot_agent_stats(self):
         import matplotlib.pyplot as plt
 

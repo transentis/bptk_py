@@ -27,6 +27,11 @@ except ImportError:
     LOGFIRE_AVAILABLE = False
     LogfireAdapter = None
 
+OBSERVABILITY_EXTRA_HINT = (
+    "Logfire logging requires the observability extra. "
+    "Install it with: pip install bptk-py[observability]"
+)
+
 
 
 def configure_logfire(**logfire_config):
@@ -50,11 +55,13 @@ def configure_logfire(**logfire_config):
     global logfire_adapter, logfire_enabled
 
     if not LOGFIRE_AVAILABLE:
+        # Calling this is an explicit request for Logfire, so returning False
+        # and carrying on would silently ignore what the caller asked for -
+        # the other three extras all say what is missing instead.
         if "logfile" in logmodes:
             with open(logfile, "a", encoding="UTF-8") as myfile:
-                myfile.write(f"{datetime.datetime.now()}, [WARN] Logfire is not installed. "
-                           "Install with: pip install logfire\n")
-        return False
+                myfile.write(f"{datetime.datetime.now()}, [WARN] {OBSERVABILITY_EXTRA_HINT}\n")
+        raise ImportError(OBSERVABILITY_EXTRA_HINT)
 
     try:
         logfire_adapter = LogfireAdapter(**logfire_config)

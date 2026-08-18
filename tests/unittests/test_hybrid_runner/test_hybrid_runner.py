@@ -148,7 +148,7 @@ class TestHybridRunner(unittest.TestCase):
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
 
         self.assertTrue(hybridRunner.run_scenario(abm_results_dict={}, return_format=None, scenarios=[]).equals(pd.DataFrame()))
-        hybridRunner.run_scenario(abm_results_dict={},return_format=None,scenarios={"scenario1","scenario2"},widget=True)
+        hybridRunner.run_scenario(abm_results_dict={},return_format=None,scenarios={"scenario1","scenario2"})
 
         try:
             with open(logmod.logfile, "r", encoding="UTF-8") as file:
@@ -156,9 +156,7 @@ class TestHybridRunner(unittest.TestCase):
         except FileNotFoundError:
             self.fail()
 
-        self.assertIn("[ERROR] No scenario to simulate found", content)  
-        self.assertIn("[ERROR] Currently, we can only spawn a widget for exactly one ABM/hybrid simulation! Try to run for only one scenario", content)  
-        self.assertIn("Make sure you implement the build_widget() method in your ABM model!",content)
+        self.assertIn("[ERROR] No scenario to simulate found", content)
 
     def testHybriderRunner_run_scenario(self):
         currentDir = os.path.abspath(os.getcwd())
@@ -388,26 +386,6 @@ class TestHybridRunner(unittest.TestCase):
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
         sm.get_scenario_managers(path=testDir)
         return HybridRunner(scenario_manager_factory=sm), sm
-
-    def testHybridRunner_run_scenario_widget(self):
-        """The widget branch builds and starts the scenario's widget loader."""
-        hybridRunner, sm = self._build_runner()
-        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
-
-        loader = MagicMock()
-        scenario.build_widget = MagicMock(return_value=loader)
-
-        hybridRunner.run_scenario(abm_results_dict={},
-                                  return_format="json",
-                                  scenarios=["test"],
-                                  scenario_managers=["ABMsmSimpleProjectManagement"],
-                                  agents=["task"],
-                                  agent_states=["open"],
-                                  agent_property_types=["total"],
-                                  widget=True)
-
-        scenario.build_widget.assert_called_once()
-        loader.start.assert_called_once()
 
     def testHybridRunner_run_scenario_skips_unfinished(self):
         """An unfinished scenario (scheduler.progress < 1.0) is skipped."""

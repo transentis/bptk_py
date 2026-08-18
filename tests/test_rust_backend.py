@@ -898,6 +898,7 @@ class TestFallback:
         assert "[WARN]" in content
         assert "falling back" in content.lower()
 
+    @pytest.mark.requires_extra("plotting")
     def test_fallback_plot_scenarios(self, unsupported_model):
         """plot_scenarios(backend='rust') falls back to Python and still produces output."""
         import matplotlib
@@ -2682,6 +2683,7 @@ class TestRustResumeThroughAdapters:
         for name in blob[1]:
             assert rblob[1][name] == blob[1][name]       # grid values
 
+    @pytest.mark.requires_extra("server")
     def test_stateless_cycle_via_redis_adapter_matches_single(self):
         """Full save/load cycle through a real RedisAdapter (in-memory fake client),
         externalising after every step, must match a single-process run."""

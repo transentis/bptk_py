@@ -20,7 +20,7 @@ from ..logger import log
 from .scenario_manager import ScenarioManager
 from .scenario import SimulationScenario
 from ..modeling.model import Model
-from BPTK_Py.sdcompiler.compile import compile_xmile as compile
+from BPTK_Py.sdcompiler import compile_xmile as compile
 
 class ScenarioManagerSd(ScenarioManager):
     """
@@ -231,6 +231,10 @@ class ScenarioManagerSd(ScenarioManager):
         if not os.path.isfile(py_model_file_path) or last_stamp_source > last_stamp_model:
             if not self.source is None and os.path.isfile(self.source):  ## <- Only do if the source actually exists
                 compile(target="py", src=self.source, dest=py_model_file_path)
+                # The file below is imported straight after being written. CPython
+                # usually notices because FileFinder tracks the directory's mtime;
+                # Pyodide does not, and the import fails with ModuleNotFoundError.
+                importlib.invalidate_caches()
         try:
             ## FROM "model/model_name" I have to come to python-specific notation "model.model_name"
             full_file_path = Path(py_model_file_path)

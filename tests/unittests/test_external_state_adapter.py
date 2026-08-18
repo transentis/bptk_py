@@ -152,8 +152,8 @@ class TestExternalStateAdapter(unittest.TestCase):
                 pkg.PostgresAdapter()  # oder mit args, spielt keine Rolle
 
             msg = str(cm.exception)
-            self.assertIn("PostgresAdapter requires 'psycopg' to be installed", msg)
-            self.assertIn("Install it with: pip install psycopg[binary]", msg)
+            self.assertIn("PostgresAdapter requires the server extra", msg)
+            self.assertIn("Install it with: pip install bptk-py[server]", msg)
 
     def test_redis_adapter_importerror(self):
         target_pkg = "BPTK_Py.externalstateadapter"
@@ -167,8 +167,8 @@ class TestExternalStateAdapter(unittest.TestCase):
                 pkg.RedisAdapter()
 
             msg = str(cm.exception)
-            self.assertIn("RedisAdapter requires 'redis' to be installed", msg)
-            self.assertIn("Install it with: pip install redis", msg)
+            self.assertIn("RedisAdapter requires the server extra", msg)
+            self.assertIn("Install it with: pip install bptk-py[server]", msg)
 
 if __name__ == '__main__':
     unittest.main()            

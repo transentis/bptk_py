@@ -1,3 +1,4 @@
+import pytest
 import unittest
 
 from BPTK_Py import Model, Agent, Event, DataCollector
@@ -449,6 +450,7 @@ class Test_Model(unittest.TestCase):
 
         self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                        
 
+    @pytest.mark.requires_extra("plotting")
     def test_plot_lookup(self):
         model = Model()
         import BPTK_Py.sddsl.functions as sd

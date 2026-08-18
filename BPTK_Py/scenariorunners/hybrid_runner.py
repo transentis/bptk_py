@@ -80,7 +80,7 @@ class HybridRunner(ScenarioRunner):
 
         return pd.DataFrame(output).fillna(0)
 
-    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False, widget=False):
+    def run_scenario(self, abm_results_dict, return_format, scenarios, equations=[], agents=[], scenario_managers=[], progress_bar=False, agent_states=[], agent_properties=[], agent_property_types=[], rerun=False):
         """
         Method that generates the required dataframe(s) for the simulations
         :param abm_results_dict: a dictionary that contains the latest updated values of the simulation results in a dictionary format.
@@ -106,9 +106,6 @@ class HybridRunner(ScenarioRunner):
                         
         # Obtain simulation results
         scenario_objects = []
-        if widget and len(scenarios) > 1:
-            log("[ERROR] Currently, we can only spawn a widget for exactly one ABM/hybrid simulation! Try to run for only one scenario")
-            
         for manager_name in scenario_managers:
             manager = self.scenario_manager_factory.scenario_managers[manager_name]
             scenario_objects += [scenario_obj for name, scenario_obj in manager.scenarios.items() if name in scenarios]
@@ -119,26 +116,14 @@ class HybridRunner(ScenarioRunner):
 
         dfs = []
 
-        if widget:
-            try:
-                widgetLoader = scenario_objects[0].build_widget()
-                from ipywidgets import Output
-                from IPython.display import display
-
-
-                widgetLoader.start()
-
-            except Exception as e:
-                log("[ERROR] Make sure you implement the build_widget() method in your ABM model!")
-
         threads = []
-        from threading import Thread
+        from ..util import start_or_run
         for scenario in scenario_objects:
 
             if not len(scenario.statistics()) > 0:
-                threads += [Thread(target=scenario.run,args=(progress_bar,))]
-        for thread in threads:
-            thread.start()
+                thread = start_or_run(scenario.run, args=(progress_bar,))
+                if thread is not None:
+                    threads += [thread]
 
         for thread in threads:
             thread.join()

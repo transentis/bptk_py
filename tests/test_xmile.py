@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 import pytest
 import numpy as np
@@ -447,6 +448,30 @@ def test_smooth():
 
     for i in np.arange(sim.starttime, sim.stoptime, sim.dt):
         assert sim.equation('exponentialAverage', i) == sim.equations['smooth'](i)
+
+
+def test_single_entity_model_keeps_its_entities(test_models_path):
+    """A model with exactly one stock must not compile to an empty model.
+
+    Regression, found 2026-08-18 while building the browser CI job. The parser
+    told "one entity" from "several" with ``type(x) == OrderedDict``. xmltodict
+    returned OrderedDict up to 0.12.0 and a plain dict from 0.13.0 on, so that
+    branch silently stopped matching and every single-entity model compiled to
+    runspecs with no equations at all.
+
+    The tests below catch it too - they raise KeyError on the missing equation -
+    but only from the symptom. This asserts the property directly, and on the
+    generated source, so it also holds if the model can no longer be imported.
+    """
+    src = test_models_path / "test_abs.stmx"
+    dest = test_models_path / "test_abs.py"
+    compile_xmile(src, dest, "py")
+
+    generated = dest.read_text()
+
+    assert "'stock1'" in generated, "the stock's equation is missing from the generated model"
+    assert re.search(r"self\.stocks = \[\s*'stock1'", generated), \
+        "the stock is missing from self.stocks"
 
 
 def test_abs():

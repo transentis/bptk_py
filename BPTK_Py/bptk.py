@@ -10,6 +10,7 @@
 # MIT License
 
 import itertools
+import re
 import sys
 import threading
 
@@ -62,8 +63,28 @@ class bptk():
 
     """
 
+    #: PyPI's JSON API. It replaced the XML-RPC search endpoint distlib used
+    #: until 2.4.1 - PyPI switched that off, so `update` could only ever raise.
+    PYPI_URL = "https://pypi.org/pypi/bptk-py/json"
+
+    @staticmethod
+    def _version_tuple(version):
+        """Parse a dotted version string into a tuple of integers.
+
+        BPTK versions are plain X.Y.Z, so comparing numeric tuples is enough and
+        saves a dependency for what is a single `<`. Any non-numeric suffix on a
+        component (`2.5.0rc1`) is cut off, and so are the components after it.
+        """
+        parts = []
+        for component in str(version).split("."):
+            digits = re.match(r"\d+", component)
+            if not digits:
+                break
+            parts.append(int(digits.group()))
+        return tuple(parts)
+
     @classmethod
-    def update(self):
+    def update(cls):
         """Update BPTK to latest version
 
         This method updates BPTK to the newest version that's available on PyPi.
@@ -81,24 +102,23 @@ class bptk():
             except NameError:
                 return False  # Probably standard Python interpreter
 
-        from distlib.index import PackageIndex
-        index = PackageIndex()
-        from distlib.version import NormalizedVersion as version
         import BPTK_Py
         import subprocess
-        results = index.search('bptk-py')
-        package_version = ""
+        import urllib.error
+        import urllib.request
 
-        for res in results:
-            if res["name"] == "BPTK-Py":
-                package_version = res["version"]
-                break
+        try:
+            with urllib.request.urlopen(cls.PYPI_URL, timeout=10) as response:
+                package_version = json.load(response)["info"]["version"]
+        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
+            print("Could not reach the Python Packaging Index (PyPI): {}".format(e))
+            return
 
         print(
             "Available version from Python Packaging Index (PyPI): {}. Your version is: {}".format(package_version,
                                                                                                    BPTK_Py.__version__))
 
-        if version(BPTK_Py.__version__) < version(package_version):
+        if cls._version_tuple(BPTK_Py.__version__) < cls._version_tuple(package_version):
             print("Attempting to update to newer version. This may take a little while.")
             errorCode = subprocess.check_call([sys.executable, '-m', 'pip', 'install', "-U", 'BPTK-Py'])
             if errorCode == 0:
@@ -173,14 +193,23 @@ class bptk():
             try:
                 if logmod.configure_logfire(**self.config.configuration["logfire_config"]):
                     log("[INFO] Pydantic Logfire configured successfully")
+            except ImportError:
+                # The observability extra is missing. Asking for Logfire and
+                # getting silence would be worse than the error.
+                raise
             except Exception as e:
                 log(f"[WARN] Failed to configure Logfire: {e}")
 
-        # Setup matplotlib
+        # Setup matplotlib. It ships as bptk-py[plotting] and `interactive`
+        # defaults to True, so a headless install must not fail here - the plot
+        # methods say what is missing once someone actually plots.
         if self.config.configuration["interactive"]:
-            import matplotlib.pyplot as plt
-            for key, value in self.config.matplotlib_rc_settings.items():
-                plt.rcParams[key] = value
+            try:
+                import matplotlib.pyplot as plt
+                for key, value in self.config.matplotlib_rc_settings.items():
+                    plt.rcParams[key] = value
+            except ImportError:
+                pass
 
         self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
 
@@ -243,25 +272,16 @@ class bptk():
 
         progress_widget = None
         if progress_bar:
-            import ipywidgets as widgets
-            from IPython.display import display
-            from IPython import get_ipython
+            from .util import ProgressBar, start_or_run
 
-            progress_widget = widgets.FloatProgress(
-                value=0.0,
-                min=0.0,
-                max=1.0,
-                description='Running',
-                bar_style='info',
-                orientation='horizontal'
-            )
+            progress_widget = ProgressBar(description='Running')
 
-            thread = threading.Thread(target=self._train_scenarios, args=(
+            thread = start_or_run(self._train_scenarios, args=(
             scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types,
             series_names, return_df, progress_widget))
-            display(progress_widget)
-            thread.start()
-            thread.join()
+            if thread is not None:
+                thread.join()
+            progress_widget.close()
         else:
             return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
                                            agent_properties, agent_property_types, series_names, return_df)

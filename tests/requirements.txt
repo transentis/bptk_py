@@ -1,6 +1,5 @@
-pytest
-pytest-cov
-python-dotenv
-psycopg[binary]
-redis
-logfire
+# Superseded by the [test] extra in pyproject.toml, which pulls pytest,
+# python-dotenv and the four optional dependency groups in one place. Kept as a
+# pointer so nobody re-adds a second, drifting list here.
+#
+#   pip install -e ".[test]"

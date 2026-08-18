@@ -13,10 +13,19 @@ try:
     from .plugins import StockExpressions,ExpandArrays, sortEntities,FindComplexFunctions, resolveSelf, resolveAsterisk, fixLabels, filterGhosts, replaceDimensionNames
     standalone = False
 
-except:
-    from parsers.xmile.xmile import parse_xmile
-    from plugins import StockExpressions,ExpandArrays, sortEntities, FindComplexFunctions, resolveSelf, resolveAsterisk, fixLabels, filterGhosts, replaceDimensionNames
-    standalone = True
+except ImportError as package_import_error:
+    # The relative imports fail both when this module is loaded outside the
+    # package (standalone, exercised by tests/unittests/test_sdcompiler_*.py)
+    # and when a dependency of the xmile extra is missing. Only the first case
+    # is served by the absolute imports below; in the second they fail too, with
+    # "No module named 'parsers'", which says nothing about the real problem.
+    # Re-raising the original keeps the missing package in the message.
+    try:
+        from parsers.xmile.xmile import parse_xmile
+        from plugins import StockExpressions,ExpandArrays, sortEntities, FindComplexFunctions, resolveSelf, resolveAsterisk, fixLabels, filterGhosts, replaceDimensionNames
+        standalone = True
+    except ImportError:
+        raise package_import_error from None
 
 import importlib
 

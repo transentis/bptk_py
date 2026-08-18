@@ -4,7 +4,6 @@
 
 - Valid login for test.pypi.org
 - Valid login for official PyPi.org
-- Logged in to Docker Hub (``docker login``) and Rights to push to ```transentis/bptk-py``` repo!
 
 ## Before building
 
@@ -12,7 +11,6 @@
 
 1. Make sure you have the basic build tools on your machine. We need ``make`` which is usually included in your Linux distro. Mac OS X may require some extra installations.
 2. Run ``pip install -r requirements-dev.txt`` inside the main directory of this repo.
-3. Install docker on your machine if you want to create Docker containers and publish to dockerhub. Run ``docker login`` to login to Dockerhub using your account credentials. Obtain access rights for the ``transentis/bptk-py`` repo from the admin.
 4. Get an account for [pypi.org](https://pypi.org) as well as [test.pypi.org](https://test.pypi.org) and become a maintainer for the BPTK_Py package.
 
 ## How we build
@@ -32,11 +30,6 @@ To make sure all requirements are sufficient and all tests pass in a fresh Pytho
 Just execute ``make publish_bptk`` in the root directory of the repo.
 
 WARNING: Make sure you start the process from an activated venv with Python version >=3.11
-
-## Publish to Docker
-
-For building the docker container, we are now providing a new Python script. It uses Python's lowlevel API for Docker. 
-Hence, for building, tagging and publishing to docker, run ``make publish_docker`` in the root directory of the repo.
 
 ## Build and Publish documentation
 

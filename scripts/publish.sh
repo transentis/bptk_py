@@ -42,11 +42,11 @@ echo "-------------------------------------"
 cd ..
 python3 -m venv venv_temp
 source ./venv_temp/bin/activate
-pip install pytest
-pip install python-dotenv
 # pip install -e . triggers a maturin PEP 517 build, compiling the Rust
 # extension into the venv. Requires a working Rust toolchain locally.
-pip install -e .
+# The [test] extra pulls pytest, python-dotenv and every optional dependency
+# group - the suite covers all four extras, so the base install cannot run it.
+pip install -e ".[test]"
 
 if ! pytest ./ ; then
     echo "Tests failed! Not continuing. Please fix your code"
@@ -70,9 +70,14 @@ echo "      not here. This local build is for Test PyPI smoke-testing only."
 
 pip install twine
 pip install maturin
+pip install wheel
 rm -rf dist/
 # Current-platform wheel for local validation against Test PyPI.
 maturin build --release --out dist
+# The pure-Python wheel the browser installs: same distribution and version,
+# without the Rust extension. Derived from the platform wheel so that both carry
+# byte-identical metadata (A.12).
+python3 scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
 # Universal sdist (fallback for users on platforms with no published wheel).
 maturin sdist --out dist
 
@@ -85,7 +90,7 @@ if ! twine upload --verbose --repository bptk-py-test dist/* ; then
   echo "Upload to Test PyPi failed! Aborting"
   rm -rf dist/
   rm -rf build/
-  rm -rf BPTK_Py.egg-info
+  rm -rf ./*.egg-info
   exit 1
 fi
 
@@ -104,11 +109,27 @@ python3 -m venv venv_temp
 source ./venv_temp/bin/activate
 pip install pytest
 pip install python-dotenv
-# Pull bptk-py from Test PyPI; deps come from real PyPI.
-pip install --index-url https://test.pypi.org/simple/ bptk_py --extra-index-url https://pypi.org/simple
+# Pull bptk-py from Test PyPI; deps come from real PyPI. The extras are listed
+# explicitly rather than via [test], which would resolve its self-reference
+# against the index and is needless indirection here.
+pip install --index-url https://test.pypi.org/simple/ \
+    "bptk_py[plotting,xmile,server,observability]" \
+    --extra-index-url https://pypi.org/simple
 
 # Sanity check: the Rust extension must load on this platform.
 python3 -c "from BPTK_Py import _rust_engine; print('Rust engine loaded:', _rust_engine)"
+
+# Sanity check: the published metadata really carries the four extras. A typo
+# in pyproject.toml would otherwise only surface as a missing dependency later.
+python3 - <<'PYCHECK'
+from importlib.metadata import metadata
+declared = set(metadata("BPTK-Py").get_all("Provides-Extra") or [])
+expected = {"plotting", "xmile", "server", "observability"}
+missing = expected - declared
+if missing:
+    raise SystemExit(f"Published metadata is missing extras: {sorted(missing)}")
+print("Extras present in published metadata:", sorted(declared))
+PYCHECK
 
 if ! pytest ./; then
     echo "Tests failed! Not continuing. Please fix your code"
@@ -123,13 +144,17 @@ rm -f ./tests/test_models/*.py
 echo "-------------------------"
 echo "All Test PyPI checks passed."
 echo ""
-echo "Final PyPI publish is handled by GitHub Actions (publish.yml)."
-echo "To cut the release, push a tag:"
-echo "    git tag vX.Y.Z && git push origin vX.Y.Z"
+echo "Final PyPI publish is handled by GitHub Actions (publish.yml), and it runs"
+echo "from the PUBLIC repository - sync there first if you have not already."
+echo ""
+echo "To cut the release, push a tag. The pattern is what publish.yml listens for"
+echo "and what every release since 2.1.0 has used - a v-prefixed tag fires nothing:"
+echo "    git tag release-X.Y.Z && git push origin release-X.Y.Z"
 echo "CI will then build wheels for Linux x86_64+aarch64, macOS x86_64+aarch64,"
-echo "Windows x86_64, plus the sdist, and upload them via trusted publishing."
+echo "Windows x86_64, the py3-none-any wheel and the sdist, and upload them via"
+echo "trusted publishing."
 echo "-------------------------"
 
 rm -rf dist/
 rm -rf build/
-rm -rf BPTK_Py.egg-info
+rm -rf ./*.egg-info

@@ -13,9 +13,9 @@
 import os
 import time
 
-from threading import Thread
 
 from ..logger import log
+from ..util import start_or_skip
 
 
 ########################
@@ -51,8 +51,8 @@ class FileMonitor():
         self._cached_stamp = os.stat(self.json_file).st_mtime
 
         # Starting the thread
-        t = Thread(target=self.__monitor, args=())
-        t.start()
+        if start_or_skip(self.__monitor, what="scenario file monitoring") is None:
+            self.running = False
 
     def kill(self):
         """

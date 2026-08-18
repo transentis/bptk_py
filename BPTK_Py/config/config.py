@@ -12,8 +12,6 @@
 
 import os
 
-from ipywidgets import Layout
-
 import BPTK_Py
 
 

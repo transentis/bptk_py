@@ -12,10 +12,8 @@
 
 import random
 
-import ipywidgets as widgets
 import numpy as np
 import math
-from IPython.display import display
 from scipy.interpolate import interp1d
 
 from ..util import floating_point as fp
@@ -413,26 +411,10 @@ class Model:
 
         """
         if show_progress_widget:
-            progress_widget = widgets.FloatProgress(
-                value=0.0,
-                min=0.0,
-                max=1.0,
-                description='Running {}'.format(self.name),
-                bar_style='info',
-                orientation='horizontal',
-                style = {'description_width': 'initial'}
-            )
+            from ..util import ProgressBar
 
-            out = widgets.Output()
-            display(out)
-
-            with out:
-                display(progress_widget)
-
-            self.scheduler.run(self,progress_widget,collect_data)
-            out.clear_output()
-
-
+            with ProgressBar(description='Running {}'.format(self.name)) as progress_widget:
+                self.scheduler.run(self, progress_widget, collect_data)
         else:
             self.scheduler.run(self, None, collect_data)
 
@@ -451,7 +433,13 @@ class Model:
                 If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
 
         """
-        return self.scheduler.run_step(self, 0, step, show_progress_widget, collect_data)
+        if show_progress_widget:
+            from ..util import ProgressBar
+
+            with ProgressBar(description='Running {}'.format(self.name)) as progress_widget:
+                return self.scheduler.run_step(self, 0, step, progress_widget, collect_data)
+
+        return self.scheduler.run_step(self, 0, step, None, collect_data)
         
 
     def begin_round(self, time, sim_round, step):

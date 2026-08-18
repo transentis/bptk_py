@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from unittest.mock import patch, MagicMock
 import os
@@ -13,9 +14,10 @@ class TestFileMonitor(unittest.TestCase):
     # FileMonitor.__init__ starts a monitor thread of its own. Without suppressing it,
     # that loop and the one this test starts both see the stale _cached_stamp and race
     # to call update_func — a coin flip that came up "two calls" on macOS + Python 3.13.
-    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the constructor's thread
+    @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the constructor's thread
     @patch("os.path.isfile", return_value=True)  # simulates that a file exists
     @patch("os.stat")  # mock for the timestamp
+    @pytest.mark.requires_threads
     def test_monitor_detects_file_change(self, mock_stat, mock_isfile, mock_thread):
         logmod.loglevel = "INFO"
                
@@ -59,7 +61,7 @@ class TestFileMonitor(unittest.TestCase):
 
         self.assertEqual(fileMonitor._cached_stamp,100)
 
-    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the background thread
     @patch("os.stat")
     def test_kill(self, mock_stat, mock_thread):
         """kill() flips the running flag so the monitor thread terminates."""
@@ -70,7 +72,7 @@ class TestFileMonitor(unittest.TestCase):
         fileMonitor.kill()
         self.assertFalse(fileMonitor.running)
 
-    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the background thread
     @patch("os.path.isfile", return_value=True)
     @patch("os.stat")
     def test_monitor_survives_update_func_error(self, mock_stat, mock_isfile, mock_thread):
@@ -93,7 +95,7 @@ class TestFileMonitor(unittest.TestCase):
         self.assertFalse(fileMonitor.running)
         self.assertEqual(fileMonitor._cached_stamp, 100)
 
-    @patch("BPTK_Py.modelmonitor.file_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the background thread
     @patch("BPTK_Py.modelmonitor.file_monitor.os.name", "nt")
     @patch("os.path.isfile", return_value=True)
     @patch("os.stat")
@@ -111,6 +113,20 @@ class TestFileMonitor(unittest.TestCase):
             fileMonitor._FileMonitor__monitor()
 
         mock_update_func.assert_called_once_with("some/dir/test.json")
+
+    @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip", return_value=None)
+    @patch("os.stat")
+    def test_stops_when_no_thread_can_start(self, mock_stat, mock_start):
+        """Without a thread there is nothing watching, so the monitor is not running.
+
+        Pyodide cannot start threads at all. Leaving `running` True would claim a
+        watcher exists and make kill() and the log read as if one had been there.
+        """
+        mock_stat.return_value.st_mtime = 100
+
+        monitor = FileMonitor(json_file="scenarios.json", update_func=MagicMock())
+
+        self.assertFalse(monitor.running)
 
 if __name__ == "__main__":
     unittest.main()

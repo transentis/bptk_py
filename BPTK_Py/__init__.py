@@ -10,7 +10,25 @@ sys_version = sys.version_info
 if(sys_version[0] < 3 or (sys_version[0] == 3 and sys_version[1] < 11)):
     print("BPTK Server requires Python 3.11 or later. Please update Python to use the BPTK Server!")
 else:
-    from .server import BptkServer
+    # Flask ships as bptk-py[server]. Following the pattern
+    # externalstateadapter already uses for psycopg and redis, the name stays
+    # importable and explains itself on use.
+    try:
+        from .server import BptkServer
+    except ImportError as _server_import_error:
+        # Chained deliberately: this catches every ImportError raised while
+        # loading the server, not just a missing Flask. Without the cause, a
+        # genuine failure inside bptkServer.py would be reported as a missing
+        # extra - advice that would be wrong and untraceable.
+        _server_error = _server_import_error
+
+        class BptkServer:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "BptkServer requires the server extra. "
+                    "Install it with: pip install bptk-py[server]"
+                ) from _server_error
+
     from .externalstateadapter import ExternalStateAdapter, InstanceState, FileAdapter
 
 try:

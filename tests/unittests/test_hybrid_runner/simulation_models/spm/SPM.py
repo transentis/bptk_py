@@ -1,5 +1,4 @@
 from BPTK_Py import Model
-from BPTK_Py.widgets import WidgetLoader
 from .staffMember import StaffMember
 from .task import Task
 from .controlling import Controlling
@@ -74,13 +73,4 @@ class SPM(Model):
 
         return self._schedule_pressure
 
-
-    def build_widget(self):
-        widget_loader = WidgetLoader()
-        states = {1: "in_progress", 2: "closed"}
-        agents = [agent for agent in self.agents if agent.agent_type == "task"]
-        
-        widget_loader.create_widget("AgentStatusWidget", states=states, agents=agents)
-        
-        return widget_loader
 

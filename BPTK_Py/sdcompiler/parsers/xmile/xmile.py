@@ -42,10 +42,14 @@ def extract_connects(model_name, connects_raw):
         return qualified_name
 
     connects = {}
-    if type(connects_raw) == OrderedDict:
+    # isinstance, not an exact type check: xmltodict returned OrderedDict up to
+    # 0.12.0 and a plain dict from 0.13.0 on, since dicts have been ordered since
+    # Python 3.7. An exact comparison silently stopped matching, and a model with
+    # exactly one connection lost it without a word.
+    if isinstance(connects_raw, dict):
         return handle_connect(connects_raw)
 
-    elif type(connects_raw) == list:
+    elif isinstance(connects_raw, list):
         for connect in connects_raw:
             connects.update(handle_connect(connect))
 
@@ -166,11 +170,14 @@ def get_entities(entity_type, model):
 
     if entity_type in model["variables"].keys():
 
-        if type(model["variables"][entity_type]) == OrderedDict:  # One entity in Model
+        # See the note above on isinstance: with an exact OrderedDict comparison
+        # this branch stopped running under xmltodict 0.13.0, so every model with
+        # exactly one stock, flow or converter compiled to an empty model.
+        if isinstance(model["variables"][entity_type], dict):  # One entity in Model
             entity = model["variables"][entity_type]
             entities += [parse_entity(entity, model_name)]
 
-        elif type(model["variables"][entity_type]) == list: # More than one entity (list of entities)
+        elif isinstance(model["variables"][entity_type], list): # More than one entity (list of entities)
             for entity in model["variables"][entity_type]:  # For each entity
                 entities += [parse_entity(entity, model_name)]
 

@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from unittest.mock import patch
 
@@ -191,6 +192,7 @@ class TestElement(unittest.TestCase):
 
         self.assertRaises(Exception,stock1._handle_arrayed,equation=stock2)  
 
+    @pytest.mark.requires_extra("plotting")
     def testElement_plot(self):
         model = Model(starttime = 0.0, stoptime= 5.0, dt= 1.0, name="TestModel")
         
@@ -242,6 +244,48 @@ class TestElement(unittest.TestCase):
 
         self.assertEqual(list(scalar_df.columns), ["scalar"])
         self.assertEqual(len(vector_df.columns), 2)
+
+    def _plot_model(self):
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="TestModel")
+        constant = model.constant("constant")
+        constant.equation = 2.0
+        return constant
+
+    @pytest.mark.requires_extra("plotting")
+    def testElement_plot_format_axes(self):
+        """format="axes" returns the Axes, the way visualizer.plot() does.
+
+        Without a return value the method only ever produced output as a side
+        effect of Jupyter's inline backend; marimo and plain scripts render a
+        cell's value, so they need the object handed back.
+        """
+        import matplotlib.axes
+
+        ax = self._plot_model().plot(format="axes")
+
+        self.assertIsInstance(ax, matplotlib.axes.Axes)
+        self.assertEqual(ax.get_title(), "constant")
+
+    def testElement_plot_format_df(self):
+        """format="df" is the same thing return_df=True does."""
+        constant = self._plot_model()
+
+        by_format = constant.plot(format="df")
+        by_flag = constant.plot(return_df=True)
+
+        self.assertIsInstance(by_format, pd.DataFrame)
+        self.assertTrue(by_format.equals(by_flag))
+
+    def testElement_plot_return_df_overrides_format(self):
+        """The older flag keeps working even when format says otherwise."""
+        result = self._plot_model().plot(return_df=True, format="axes")
+
+        self.assertIsInstance(result, pd.DataFrame)
+
+    @pytest.mark.requires_extra("plotting")
+    def testElement_plot_default_returns_nothing(self):
+        """The default stays as it was - drawing, with no return value."""
+        self.assertIsNone(self._plot_model().plot())
 
 class TestElementError(unittest.TestCase):
     def setUp(self):

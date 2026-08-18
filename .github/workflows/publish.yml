@@ -51,10 +51,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -U wheel
           python -m pip install pytest-cov maturin
-          python -m pip install --prefer-binary -r tests/requirements.txt
-          python -m pip install --prefer-binary "psycopg[binary]" redis python-dotenv "ipywidgets>=8.1,<9"
       - name: Build and install BPTK_Py with Rust extension (editable)
-        run: pip install -e .
+        # The [test] extra pulls every optional dependency group; see
+        # python-package.yml for why they are no longer listed by hand.
+        run: pip install --prefer-binary -e ".[test]"
       - name: Run Rust engine tests
         run: cargo test --no-default-features
       - name: Test with pytest
@@ -86,9 +86,71 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter python3.11
           manylinux: auto
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.target }}
+          path: dist
+
+  # The pure-Python wheel micropip installs in the browser (A.12). Built once,
+  # from a platform wheel, so that its dependencies and extras are the very same
+  # metadata rather than a second declaration that could drift.
+  anywheel:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Build a platform wheel to derive from
+        uses: PyO3/maturin-action@v1
+        with:
+          target: x86_64
+          args: --release --out platform-dist --interpreter python3.11
+          manylinux: auto
+      - name: Derive the py3-none-any wheel
+        run: |
+          python -m pip install wheel
+          python scripts/build_any_wheel.py platform-dist/*-abi3-*.whl --out dist
+      # Both wheel kinds, installed into a clean venv with NO extras (A.15).
+      # Checked here rather than on every push: this is where the artefacts are
+      # built, and the suite already covers the behaviour. What is left is what
+      # only an installed artefact can answer.
+      - name: Check both wheels as a base install
+        run: |
+          check() {
+            echo "::group::wheel contents - $1"
+            rm -rf smoke && python -m venv smoke
+            ./smoke/bin/pip install --quiet "$2"
+            EXPECT_RUST="$3" KIND="$1" \
+              "$GITHUB_WORKSPACE/smoke/bin/python" "$GITHUB_WORKSPACE/.github/wheel_check.py"
+            echo "::endgroup::"
+          }
+          cat > .github/wheel_check.py <<'PY'
+          """Inspect an installed wheel. Must run from outside the checkout,
+          which would otherwise shadow the installation."""
+          import importlib.util as util, os, sys
+          import BPTK_Py
+
+          kind, expect_rust = os.environ["KIND"], os.environ["EXPECT_RUST"] == "yes"
+          optional = ["matplotlib", "parsimonious", "xmltodict", "flask",
+                      "psycopg", "redis", "logfire"]
+
+          problems = [f"{p} came with the base install" for p in optional if util.find_spec(p)]
+          if "site-packages" not in BPTK_Py.__file__:
+              problems.append(f"imported from {BPTK_Py.__file__}, not from the wheel")
+          if (util.find_spec("BPTK_Py._rust_engine") is not None) != expect_rust:
+              problems.append(f"_rust_engine {'missing' if expect_rust else 'present'}")
+
+          if problems:
+              sys.exit(f"{kind} wheel FAILED:\n  - " + "\n  - ".join(problems))
+          print(f"{kind} wheel OK: BPTK-Py {BPTK_Py.__version__}")
+          PY
+          check "platform"     platform-dist/*-abi3-*.whl  yes
+          check "py3-none-any" dist/*-py3-none-any.whl     no
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-any
           path: dist
 
   macos:
@@ -107,7 +169,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter python3.11
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.target }}
           path: dist
@@ -125,7 +187,7 @@ jobs:
         with:
           target: x64
           args: --release --out dist --interpreter python
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-x64
           path: dist
@@ -140,19 +202,24 @@ jobs:
         with:
           command: sdist
           args: --out dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
 
   publish:
-    needs: [test, linux, macos, windows, sdist]
+    needs: [test, linux, macos, windows, sdist, anywheel]
+    # Only a tag publishes. Without this, running the workflow by hand from the
+    # Actions tab would upload to PyPI - which makes it unusable as the release
+    # rehearsal it should be: build every wheel, run the base-install checks,
+    # keep the artefacts, publish nothing.
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write   # for trusted publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true

@@ -13,11 +13,11 @@
 import os
 import time
 
-from threading import Thread
 
 import BPTK_Py.config.config as config
 from ..logger import log
-from BPTK_Py.sdcompiler.compile import compile_xmile as compile
+from ..util import start_or_skip
+from BPTK_Py.sdcompiler import compile_xmile as compile
 
 ########################
 ## ClASS MODELMONITOR ##
@@ -54,8 +54,8 @@ class ModelMonitor():
         self._cached_stamp = os.stat(self.source_file).st_mtime
 
         # Starting the thread
-        t = Thread(target=self.__monitor, args=())
-        t.start()
+        if start_or_skip(self.__monitor, what="model monitoring") is None:
+            self.running = False
 
     def kill(self):
         """

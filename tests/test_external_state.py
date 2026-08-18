@@ -1,5 +1,4 @@
 from BPTK_Py.server import BptkServer
-import requests
 import json
 import pytest
 from BPTK_Py import FileAdapter

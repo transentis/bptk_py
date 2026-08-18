@@ -12,18 +12,43 @@ This means you can build models in a XMILE-compatible visual modeling environmen
 
 The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](https://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
 
+**Contents:** [Main Features](#main-features) · [Installation](#installation) · [Getting Help](#getting-help) · [Changelog](#changelog)
+
 
 ## Main Features
 
 *   The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
 *   The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
-*   All plotting is done using [Matplotlib](https://www.matplotlib.org).
+*   All plotting is done using [Matplotlib](https://www.matplotlib.org), which is installed with the `plotting` extra — see [Installation](#installation).
 *   Simulation results are returned as [Pandas dataframes](https://pandas.pydata.org) and thus can easily be used for analytics.
 *   Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
 
+## Installation
+
+BPTK-Py requires Python 3.11 or later.
+
+```bash
+pip install bptk-py
+```
+
+That gives you everything needed to build and simulate models: the SD DSL, agent-based modeling, hybrid models, and the Rust execution engine. The engine ships pre-compiled inside the wheel — there is no Rust toolchain to install and nothing to configure.
+
+Capabilities that a modeller does not always need are available as extras:
+
+| Install | Adds |
+|---|---|
+| `pip install bptk-py[plotting]` | Plotting via [Matplotlib](https://www.matplotlib.org) — `plot_scenarios`, `Element.plot`, `plot_lookup` |
+| `pip install bptk-py[xmile]` | The XMILE compiler, for models built in Stella or iThink |
+| `pip install bptk-py[server]` | `BptkServer` and the Postgres and Redis state adapters |
+| `pip install bptk-py[observability]` | Logging to [Pydantic Logfire](https://logfire.pydantic.dev) |
+
+They combine: `pip install "bptk-py[plotting,xmile]"`. Note the quotes — some shells, zsh among them, treat the brackets as a filename pattern.
+
+Using a capability without its extra raises an error naming the extra to install, so nothing fails silently.
+
 ## Getting Help
 
-BPTK-Py is developed and maintained by [transentis labs](https://www.transentis.com/business-prototyping-toolki/en/).
+BPTK-Py is developed and maintained by [transentis labs](https://www.transentis.com).
 
 The first place to go to for help and installation instructions is the [online documentation](https://bptk.transentis.com).
 
@@ -31,15 +56,25 @@ The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provide
 
 The online documentation is generated from an extensive set of Jupyter notebooks, the __BPTK Tutorial__. The tutorial is available as a [git repository](https://github.com/transentis/bptk_py_tutorial) on GitHub.
 
-Our [Business Prototyping Toolkit Meetup Group](https://www.transentis.com/business-prototyping-toolkit-meetup/en/) gathers online regularly. This is a good place to see BPTK in action, ask questions and suggest new features. We record every session and you can _view past recordings_ on the [meetup homepage](https://www.transentis.com/resources/business-prototyping-toolkit-meetup).
-
 We used BPTK to build our implementation of the infamous [Beer Distribution Game](https://beergame.transentis.com).
 
-Our [beergame repository](https://github.com/transentis/bptk_py_tutorial/tree/master/model_library/beergame) contains Jupyter notebooks that analyse the Beergame in-depth and also provides XMILE, SD DSL and Agent-based versions of the Beergame.
+If you want to build simulation models using a UI and AI, plesae check our [Metapad](https://www.metapad.ai) platform.
 
 For any questions our suggestions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 3.0.0
+
+* Breaking: introduced extras `plotting`, `xmile`, `server`, `observability` — see [Installation](#installation). Base install no longer pulls matplotlib, flask, psycopg, redis, logfire, parsimonious, xmltodict, jinja2
+* Breaking: removed the widget layer — `SimpleDashboard`, `ScenarioWidget`, `ModelConnection`, the `BPTK_Py.widgets` package, `HybridRunner.run_scenario(widget=…)`, ipywidgets
+* Breaking: removed the unused dependencies `cachetools`, `requests`, `distlib`, the unused `BPTK_Py.sdcompiler.sdmodel` module, and the Docker image — it had not built since the maturin migration
+* Breaking: `configure_logfire()` raises `ImportError` when Logfire is missing instead of returning `False`
+* Feature: added a pure-Python wheel next to the platform wheels, so `micropip` can install BPTK in the browser
+* Feature: rebuilt `progress_bar` on `tqdm` — works in the terminal, in marimo and in Jupyter
+* Feature: added `format="plot" | "axes" | "df"` to `Element.plot()`, matching `visualizer.plot()`
+* Feature: replaced sympy in the XMILE built-in `CGROWTH` with a closed form; results unchanged
+* Various small bugfixes
 
 ### 2.4.1
 

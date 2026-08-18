@@ -17,7 +17,14 @@ test: dev
 
 # Build a wheel for the current platform
 build:
-    . {{venv}}/bin/activate && maturin build --release
+    . {{venv}}/bin/activate && maturin build --release --out dist
+
+# Build both wheel kinds: the platform wheel with the Rust engine, and the
+# py3-none-any wheel without it that micropip installs in the browser (A.12).
+build-all: build
+    {{venv}}/bin/pip install --quiet wheel
+    {{venv}}/bin/python scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
+    @ls -1 dist/*.whl
 
 # Publish BPTK
 publish:
@@ -27,10 +34,11 @@ publish:
 publish_without_test:
     cd scripts && ./publish_without_test.sh
 
-# Publish Docker
-publish_docker:
-    python3 ./build_docker.py
-
 # Count lines of code
 cloc:
-    cloc . --exclude-dir venv,__pycache__,_templates,docker_conf,docs
+    cloc . --exclude-dir venv,__pycache__,_templates,docs,node_modules
+
+# Run the test suite in the browser platform (Pyodide under node). Needs node.
+test-browser:
+    npm install --no-save --silent pyodide@314.0.5
+    node scripts/run_suite_in_pyodide.mjs .

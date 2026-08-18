@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from unittest.mock import patch, MagicMock
 import contextlib
@@ -16,11 +17,12 @@ class TestModelMonitor(unittest.TestCase):
     # that loop and the one this test starts both see the stale _cached_stamp and race
     # to call update_func — the same coin flip that made the FileMonitor test fail on
     # macOS + Python 3.13.
-    @patch("BPTK_Py.modelmonitor.model_monitor.Thread")  # suppress the constructor's thread
+    @patch("BPTK_Py.modelmonitor.model_monitor.start_or_skip")  # suppress the constructor's thread
     @patch("os.path.isfile", return_value=True)  # simulates that a file exists
     @patch("os.getcwd", return_value="testDir")  # simulates that a folder exists
     @patch("os.stat")  # mock for the timestamp
     @patch("BPTK_Py.modelmonitor.model_monitor.compile", return_value="testOutput")  # Mock for `compile`
+    @pytest.mark.requires_threads
     def test_monitor_detects_file_change(self, mock_compile, mock_stat, mock_cwd, mock_isfile, mock_thread):
         logmod.loglevel = "INFO"
                
@@ -64,7 +66,7 @@ class TestModelMonitor(unittest.TestCase):
 
         self.assertEqual(modelMonitor._cached_stamp,100)
 
-    @patch("BPTK_Py.modelmonitor.model_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.model_monitor.start_or_skip")  # suppress the background thread
     @patch("os.stat")
     def test_kill(self, mock_stat, mock_thread):
         """kill() flips the running flag so the monitor thread terminates."""
@@ -75,7 +77,7 @@ class TestModelMonitor(unittest.TestCase):
         modelMonitor.kill()
         self.assertFalse(modelMonitor.running)
 
-    @patch("BPTK_Py.modelmonitor.model_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.model_monitor.start_or_skip")  # suppress the background thread
     @patch("os.path.isfile", return_value=True)
     @patch("os.getcwd", return_value="testDir")
     @patch("os.stat")
@@ -96,7 +98,7 @@ class TestModelMonitor(unittest.TestCase):
         mock_update_func.assert_not_called()
         self.assertFalse(modelMonitor.running)
 
-    @patch("BPTK_Py.modelmonitor.model_monitor.Thread")  # suppress the background thread
+    @patch("BPTK_Py.modelmonitor.model_monitor.start_or_skip")  # suppress the background thread
     @patch("BPTK_Py.modelmonitor.model_monitor.os.name", "nt")
     @patch("os.path.isfile", return_value=True)
     @patch("os.getcwd", return_value="testDir")
@@ -117,6 +119,16 @@ class TestModelMonitor(unittest.TestCase):
             modelMonitor._ModelMonitor__monitor()
 
         mock_update_func.assert_called_once_with("some/dir/test.itmx")
+
+    @patch("BPTK_Py.modelmonitor.model_monitor.start_or_skip", return_value=None)
+    @patch("os.stat")
+    def test_stops_when_no_thread_can_start(self, mock_stat, mock_start):
+        """See the FileMonitor test of the same name."""
+        mock_stat.return_value.st_mtime = 100
+
+        monitor = ModelMonitor(source_file="model.stmx", dest="model", update_func=MagicMock())
+
+        self.assertFalse(monitor.running)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,3 +1,4 @@
+import pytest
 import unittest
 import sys
 import importlib
@@ -12,6 +13,7 @@ class TestLogfireAdapter(unittest.TestCase):
     def test_import(self):
         self.assertTrue(hasattr(lf_adapter, "LOGFIRE_AVAILABLE"))
 
+    @pytest.mark.requires_extra("observability")
     def test_init(self):
         config = {
             "environment": "test",
@@ -44,6 +46,7 @@ class TestLogfireAdapter(unittest.TestCase):
             self.assertIn("Please install it with: pip install logfire", str(cm.exception))
 
     @patch("BPTK_Py.logger.logfire_adapter.logfire")
+    @pytest.mark.requires_extra("observability")
     def test_logging(self, mock_logfire):
         config = {
             "environment": "test",

@@ -303,6 +303,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertIn("[WARN]", content)
         self.assertIn("falling back to Python", content)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_first_call_initialises_model(self):
         """The first invocation of _run_scenario_step_rust must populate
         rust_model, _rust_initial, and flip _rust_initial_returned to True."""
@@ -320,6 +321,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertEqual(list(sc.result.index), [0.0])
         self.assertAlmostEqual(sc.result.loc[0.0, "totalValue"], 1000.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_subsequent_call_advances_cursor(self):
         runner, sc = self._build_runner_and_scenario()
         runner._run_scenario_step_rust(sc, step=0, settings=None,
@@ -334,6 +336,7 @@ class TestSdRunner(unittest.TestCase):
         # interestRate=0.01, depositRate=1000 → totalValue(1)=1000+1000+10=2010
         self.assertAlmostEqual(sc.result.loc[1.0, "totalValue"], 2010.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_per_step_constant_override(self):
         """A constants override in `settings` takes effect during the run_step
         call where it is applied: the integration for the cursor advance uses
@@ -365,6 +368,7 @@ class TestSdRunner(unittest.TestCase):
                                        equations=["totalValue"])
         self.assertAlmostEqual(sc.result.loc[2.0, "totalValue"], 4015.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_per_step_points_override_accepts_list_of_list(self):
         """The runner accepts list-of-list (JSON shape) points and normalises
         them to list-of-tuple before sending to rust_model.set_points. We verify
@@ -390,6 +394,7 @@ class TestSdRunner(unittest.TestCase):
         # missing, set_points would raise TypeError above.
         self.assertEqual(list(sc.result.index), [1.0])
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_settings_for_other_manager_ignored(self):
         """Settings under a different scenario_manager name must not affect
         the active scenario — observable via the unchanged stepwise value."""
@@ -408,6 +413,7 @@ class TestSdRunner(unittest.TestCase):
         # interestRate stayed at 0.01 → totalValue(1) = 2010, not 100k+.
         self.assertAlmostEqual(sc.result.loc[1.0, "totalValue"], 2010.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_settings_for_other_scenario_ignored(self):
         runner, sc = self._build_runner_and_scenario()
         runner._run_scenario_step_rust(sc, step=0, settings=None,
@@ -423,6 +429,7 @@ class TestSdRunner(unittest.TestCase):
             equations=["totalValue"])
         self.assertAlmostEqual(sc.result.loc[1.0, "totalValue"], 2010.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_missing_settings_is_no_op(self):
         """Empty / None settings must not change behaviour."""
         runner, sc = self._build_runner_and_scenario()
@@ -437,6 +444,7 @@ class TestSdRunner(unittest.TestCase):
                                        equations=["totalValue"])
         self.assertAlmostEqual(sc.result.loc[1.0, "totalValue"], 2010.0)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_rust_non_numeric_constant_raises(self):
         """A non-numeric value in sc.constants must raise ValueError so the
         runner can fall back to Python."""
@@ -473,6 +481,7 @@ class TestSdRunner(unittest.TestCase):
                                          equations=["totalValue"])
         self.assertIs(sc.sd_simulation, first_sim)
 
+    @pytest.mark.requires_rust
     def test_run_scenario_step_dt_mismatch_advances_multiple_internal_steps(self):
         """When session dt > model dt, the Rust runner must issue multiple
         internal step() calls per run_step so the returned t matches the caller.

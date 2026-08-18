@@ -36,3 +36,24 @@ tests/test_models/*.py
 
 # marimo session/autosave caches (the notebook .py itself IS tracked)
 __marimo__/
+
+# uv artefacts. uv creates both in the repo root when it resolves a sandbox —
+# the marimo engine does this, and the Pyodide checks will too. Neither belongs
+# to the project, which builds with maturin and uses venv/.
+# (.venv also ships its own .gitignore containing "*", so it hides itself — but
+# that is uv's convention, not our rule, so state it explicitly.)
+.venv/
+uv.lock
+
+# Build output: `just build-all` and the CI wheel job write here
+dist/
+platform-dist/
+smoke/
+
+# node, used only by the Pyodide test runner
+node_modules/
+package-lock.json
+
+# Coverage output
+.coverage
+htmlcov/

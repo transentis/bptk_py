@@ -282,12 +282,14 @@ def abm_results(bptk):
     return results
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_get_scenarios(abm_model):
     scenarios_path = Path(__file__).resolve().parent / "scenarios"
     result = abm_model.get_scenario_names(scenario_managers=["testAbmManager"], path=scenarios_path)
     assert set(result) == set(["testScenario", "testScenario2"])
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_results_data_type(abm_model):
     """
     Testing the datatype of the model if it is pandas dataframe or not.
@@ -298,6 +300,7 @@ def test_abm_results_data_type(abm_model):
     assert isinstance(results, pd.DataFrame)
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_results_col_names(abm_model):
     """
     Testing the column names of the dataframe generated from the model.
@@ -319,6 +322,7 @@ def test_abm_results_col_names(abm_model):
     assert all(col in expected_column_names for col in columns_names) # making sure that the column names exist
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_results_content(abm_model):
     """
     Testng the content of the dataframe generated from the agent based model.
@@ -354,6 +358,7 @@ def abm_run_scenarios_results(bptk, agent_property_type):
     return results
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_run_scenarios_df_results(abm_model):
     """
     Testing the df return of run simulations in a simple agent-based model.
@@ -370,6 +375,7 @@ def test_abm_run_scenarios_df_results(abm_model):
     assert_frame_equal(results, test_df)
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_run_scenarios_json_results(abm_model):
     """
     Testing the json return of run simulations in a simple agent-based model.
@@ -422,6 +428,7 @@ def test_abm_run_scenarios_json_results(abm_model):
     assert results==expected_json
 
 
+@pytest.mark.requires_extra("xmile")
 def test_abm_delete_agent(abm_model):
     model = abm_model.get_scenario(scenario_manager="testAbmManager",scenario="testScenario2")
 

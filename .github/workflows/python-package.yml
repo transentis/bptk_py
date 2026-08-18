@@ -56,11 +56,12 @@ jobs:
         python -m pip install flake8
         python -m pip install pytest-cov
         python -m pip install maturin
-        python -m pip install --prefer-binary -r tests/requirements.txt
-        python -m pip install --prefer-binary "psycopg[binary]" redis python-dotenv "ipywidgets>=8.1,<9"
     - name: Build and install BPTK_Py with Rust extension (editable)
+      # The [test] extra pulls pytest, python-dotenv and every optional
+      # dependency group. Listing them by hand went stale once already - it
+      # still installed ipywidgets after the widget layer was removed.
       run: |
-        pip install -e .
+        pip install --prefer-binary -e ".[test]"
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
@@ -118,11 +119,9 @@ jobs:
         python -m pip install flake8
         python -m pip install pytest-cov
         python -m pip install maturin
-        python -m pip install --prefer-binary -r tests/requirements.txt
-        python -m pip install --prefer-binary python-dotenv "ipywidgets>=8.1,<9"
     - name: Build and install BPTK_Py with Rust extension (editable)
       run: |
-        pip install -e .
+        pip install --prefer-binary -e ".[test]"
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
@@ -136,3 +135,24 @@ jobs:
         ENABLE_REDIS_TESTS: "false"
       run: |
         pytest
+
+  # The browser as a fourth platform (A.28). Linux, macOS and Windows above test
+  # the code on that OS against an editable install; this does the same for
+  # Emscripten, where BPTK now ships a wheel. No wheel is involved: the source
+  # tree is mounted into Pyodide, exactly as `pip install -e .` mounts it there.
+  #
+  # The Rust engine is absent by construction and tests/conftest.py handles the
+  # rest - it drops what the platform cannot do (threads, subprocesses, the
+  # compiled engine) and skips nothing on any other platform.
+  browser:
+    name: Test (Browser, Pyodide)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+    - name: Run the suite in Pyodide
+      run: |
+        npm install --no-save --silent pyodide@314.0.5
+        node scripts/run_suite_in_pyodide.mjs .

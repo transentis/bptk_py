@@ -15,6 +15,28 @@ import statistics
 import pandas as pd
 
 
+PLOTTING_EXTRA_HINT = (
+    "Plotting requires the plotting extra. "
+    "Install it with: pip install bptk-py[plotting]"
+)
+
+
+def require_matplotlib():
+    """Raise a self-explanatory error when matplotlib is not installed.
+
+    matplotlib ships as `bptk-py[plotting]`. Plotting itself goes through
+    `df.plot()`, so without this check a missing extra surfaces as an ImportError
+    from inside pandas rather than as an instruction.
+
+    Mirrors `compile_xmile` in `BPTK_Py/sdcompiler/__init__.py`: the package that
+    owns an optional capability owns the message for it.
+    """
+    try:
+        import matplotlib  # noqa: F401
+    except ImportError as error:
+        raise ImportError(PLOTTING_EXTRA_HINT) from error
+
+
 class visualizer():
     """
     Class for building plots from dataframes. Includes capabilities to produce time series data.
@@ -72,6 +94,11 @@ class visualizer():
 
         ## If user did not set return_df=True, plot the simulation results (default behavior)
         if not (return_df or format=="df"):
+
+            # matplotlib ships as bptk-py[plotting]. Only this branch needs it -
+            # the dataframe branch below stays available without it, which is
+            # what a headless server uses.
+            require_matplotlib()
 
             ### Get the plot object
             if visualize_to_period == 0:

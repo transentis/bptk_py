@@ -396,21 +396,16 @@ class simulation_model():
         return round(right - left, 3)
 
     def cgrowth(self, p):
-        from sympy.core.numbers import Float
-        import sympy as sy
-        z = sy.symbols('z', real=True) # We want to find z
+        """The per-step growth rate z that compounds to p over one time unit.
+
+        Closed form of what the symbolic version solved for: the compounding
+        loop only ever produced x = (1 + dt*z)**n with n = int(1/dt), so
+        1 + p = (1 + dt*z)**n resolves directly.
+        """
         dt = self.dt
-
-        x = (1 + dt * (1 * z))
-
-        for i in range(1, int(1 / dt)): x = (x + dt * (x * z))
-
-        # Definition of the equation to be solved
-        eq = sy.Eq(1 + p, x)
-
-        # Solve the equation
-        results = [x for x in (sy.solve(eq)) if type(x) is Float and x > 0] # Quadratic problem, hence usually a positive, negative and 2 complex solutions. We only require the positive one
-        return float(results[0])
+        # dt > 1 left the old loop empty, i.e. a single factor.
+        n = max(int(1 / dt), 1)
+        return ((1.0 + p) ** (1.0 / n) - 1.0) / dt
 
     def montecarlo(self,probability,seed, t):
         """

@@ -1,3 +1,4 @@
+import pytest
 import unittest
 import importlib
 
@@ -119,6 +120,7 @@ class TestLogger(unittest.TestCase):
         self.assertNotIn("[INFO]: This is an info message", content)      
 
     @patch("BPTK_Py.logger.logfire_adapter.logfire")
+    @pytest.mark.requires_extra("observability")
     def testLogger_log_with_logfire(self, mock_logfire):
         importlib.reload(logmod)
 
@@ -148,6 +150,7 @@ class TestLogger(unittest.TestCase):
             written = "".join(call.args[0] for call in handle.write.call_args_list)
             self.assertIn("[WARN] Failed to send log to Logfire: broken", written)
 
+    @pytest.mark.requires_extra("observability")
     def test_configure_logfire(self):
         importlib.reload(logmod)
         #cleanup logfile
@@ -197,17 +200,26 @@ class TestLogger(unittest.TestCase):
             self.assertIn("fail", written)        
 
     def test_configure_logfire_warn(self):
+        """Without the observability extra, configuring Logfire must say so.
+
+        It used to return False and note the fact in the logfile, which meant an
+        explicit request for Logfire was silently ignored. The other three
+        extras all raise with their install instruction; this one now matches.
+        """
         importlib.reload(logmod)
         with patch.object(logmod, "LOGFIRE_AVAILABLE", False), \
              patch("builtins.open", mock_open()) as m:
-            result = logmod.configure_logfire( config = {"environment": "test", "send_to_logfire": False})
-            self.assertFalse(result)
+            with self.assertRaises(ImportError) as raised:
+                logmod.configure_logfire(config={"environment": "test", "send_to_logfire": False})
+
+            self.assertEqual(str(raised.exception), logmod.OBSERVABILITY_EXTRA_HINT)
+            self.assertIn("bptk-py[observability]", str(raised.exception))
             m.assert_called_once_with(logmod.logfile, "a", encoding="UTF-8")
             handle = m()
             written = "".join(call.args[0] for call in handle.write.call_args_list)
-            self.assertIn("Logfire is not installed", written)
-            self.assertIn("Install with: pip install logfire", written)
+            self.assertIn("bptk-py[observability]", written)
 
+    @pytest.mark.requires_extra("observability")
     def test_disable_logfire(self):
         #cleanup logfile
         importlib.reload(logmod)
@@ -311,6 +323,7 @@ class Test_FallbackSpan(unittest.TestCase):
             if f"[INFO] SPAN_END: my_span" in line:
                 self.assertNotIn("duration", line)
 
+    @pytest.mark.requires_extra("observability")
     def test_span(self):
         importlib.reload(logmod)
         config = {

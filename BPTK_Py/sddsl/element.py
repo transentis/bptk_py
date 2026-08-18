@@ -219,7 +219,7 @@ class Element:
     def function_string(self, function_string):
         self._function_string = function_string
 
-    def plot(self, starttime=None, stoptime=None, dt=None, return_df=False):
+    def plot(self, starttime=None, stoptime=None, dt=None, return_df=False, format="plot"):
         """Plot the equation.
 
         Parameters:
@@ -230,10 +230,21 @@ class Element:
             dt:  Fraction of 1 (Default None)
                 The timestep to plot. If set to None, then the plot uses the Models dt.
             return_df: Boolean (Default False).
-                Whether to plot the equation or return the underlying dataframe.
+                Whether to plot the equation or return the underlying dataframe. Equivalent to
+                format="df", which it overrides when set.
+            format: String (Default "plot").
+                What to return: "plot" draws the diagram and returns nothing, "axes" returns the
+                matplotlib Axes, "df" returns the underlying dataframe. Same values as
+                visualizer.plot().
 
         Returns:
-            The plot (via matplotlib) or a Pandas dataframe if return_df=True
+            Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
+            for format="df" (or return_df=True).
+
+        Note:
+            format="plot" relies on the notebook displaying the figure as a side effect, which only
+            Jupyter's inline backend does. In marimo, and in a plain script, use format="axes" - the
+            returned object is what those render.
         """
 
         # Equation von start bis stop
@@ -265,21 +276,27 @@ class Element:
                     self.model.starttime, self.model.stoptime+dt, dt)}})
         # ensure column is of float type and not e.g. an integer
 
-        if return_df:
+        if return_df or format == "df":
             return df
-        else:
-            ax = df.plot(kind="area",
-                         stacked=False,
-                         figsize=config.configuration["figsize"],
-                         title=self.name,
-                         alpha=config.configuration["alpha"], color=config.configuration["colors"],
-                         lw=config.configuration["linewidth"])
 
-            for ymaj in ax.yaxis.get_majorticklocs():
-                ax.axhline(y=ymaj, ls='-', alpha=0.05,
-                           color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+        from BPTK_Py.visualizations import require_matplotlib
+        require_matplotlib()
 
-            self.update_plot_formats(ax)
+        ax = df.plot(kind="area",
+                     stacked=False,
+                     figsize=config.configuration["figsize"],
+                     title=self.name,
+                     alpha=config.configuration["alpha"], color=config.configuration["colors"],
+                     lw=config.configuration["linewidth"])
+
+        for ymaj in ax.yaxis.get_majorticklocs():
+            ax.axhline(y=ymaj, ls='-', alpha=0.05,
+                       color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+
+        self.update_plot_formats(ax)
+
+        if format == "axes":
+            return ax
 
     def arr_sum(self, dimension="*"):
         """Element-wise sum of vector/matrix."""

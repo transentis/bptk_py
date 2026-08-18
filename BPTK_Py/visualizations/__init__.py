@@ -1,2 +1,1 @@
-from .visualize import visualizer
-from .simple_dashboard import SimpleDashboard
+from .visualize import visualizer, require_matplotlib, PLOTTING_EXTRA_HINT
