@@ -13,7 +13,7 @@
 
 ## Local pre-flight publish script.
 ##
-## Architecture note (see docs/internal/architecture/rust-engine-packaging.md):
+## Architecture note:
 ##   bptk-py is now a maturin-built package containing both the Python sources
 ##   and the Rust engine (BPTK_Py._rust_engine). Production releases are cut by
 ##   tagging vX.Y.Z and letting .github/workflows/publish.yml build the full
@@ -76,7 +76,7 @@ rm -rf dist/
 maturin build --release --out dist
 # The pure-Python wheel the browser installs: same distribution and version,
 # without the Rust extension. Derived from the platform wheel so that both carry
-# byte-identical metadata (A.12).
+# byte-identical metadata.
 python3 scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
 # Universal sdist (fallback for users on platforms with no published wheel).
 maturin sdist --out dist
@@ -107,21 +107,34 @@ echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
 python3 -m venv venv_temp
 source ./venv_temp/bin/activate
-pip install pytest
-pip install python-dotenv
-# Pull bptk-py from Test PyPI; deps come from real PyPI. The extras are listed
-# explicitly rather than via [test], which would resolve its self-reference
-# against the index and is needless indirection here.
+# Pull bptk-py from Test PyPI; deps come from real PyPI. [test] pulls the test
+# tooling AND the four capability extras, so nothing here is listed by hand. It
+# used to be - pytest and python-dotenv - and that list went stale the moment the
+# suite gained a dependency on wheel: six tests failed for want of a package the
+# extra already declared.
 pip install --index-url https://test.pypi.org/simple/ \
-    "bptk_py[plotting,xmile,server,observability]" \
+    "bptk_py[test]" \
     --extra-index-url https://pypi.org/simple
 
-# Sanity check: the Rust extension must load on this platform.
-python3 -c "from BPTK_Py import _rust_engine; print('Rust engine loaded:', _rust_engine)"
+# Both checks below run from a temporary directory on purpose. The checkout is
+# sys.path[0] here, so from the repo root `import BPTK_Py` finds the working tree
+# rather than what was just installed - and importlib.metadata finds any stale
+# *.egg-info lying around, which once reported version 2.2.3 with no extras long
+# after the real package had moved on.
+CHECK_DIR="$(mktemp -d)"
+(
+  cd "$CHECK_DIR"
+  # The Rust extension must load on this platform, from the installed wheel.
+  python3 - <<'PYCHECK'
+import BPTK_Py
+from BPTK_Py import _rust_engine
+assert "site-packages" in BPTK_Py.__file__, f"imported from {BPTK_Py.__file__}, not from the install"
+print("Rust engine loaded from the installed wheel:", _rust_engine.version())
+PYCHECK
 
-# Sanity check: the published metadata really carries the four extras. A typo
-# in pyproject.toml would otherwise only surface as a missing dependency later.
-python3 - <<'PYCHECK'
+  # The published metadata must carry the four extras. A typo in pyproject.toml
+  # would otherwise only surface later, as a dependency that never got installed.
+  python3 - <<'PYCHECK'
 from importlib.metadata import metadata
 declared = set(metadata("BPTK-Py").get_all("Provides-Extra") or [])
 expected = {"plotting", "xmile", "server", "observability"}
@@ -130,7 +143,14 @@ if missing:
     raise SystemExit(f"Published metadata is missing extras: {sorted(missing)}")
 print("Extras present in published metadata:", sorted(declared))
 PYCHECK
+) || { echo "Checks against the Test PyPI install failed"; deactivate; rm -rf venv_temp/ "$CHECK_DIR"; exit 1; }
+rm -rf "$CHECK_DIR"
 
+# NOTE on what this run does and does not prove. The suite has to run from the
+# checkout - tests/ is a package and several tests build paths from the working
+# directory - so the code it exercises is the working tree, not the wheel from
+# Test PyPI. What it genuinely verifies is that the published dependency set,
+# extras included, resolves and is sufficient to run the whole suite.
 if ! pytest ./; then
     echo "Tests failed! Not continuing. Please fix your code"
     deactivate

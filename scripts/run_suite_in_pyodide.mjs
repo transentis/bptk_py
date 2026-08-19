@@ -1,4 +1,4 @@
-// Runs the BPTK suite inside Pyodide - the browser as a fourth platform (A.28).
+// Runs the BPTK suite inside Pyodide - the browser as a fourth platform.
 //
 // The source tree is mounted rather than a wheel installed, mirroring the
 // editable install the other three platforms use. The Rust engine is absent by

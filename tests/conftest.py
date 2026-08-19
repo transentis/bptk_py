@@ -188,8 +188,7 @@ def pytest_runtest_call(item):
     model, bptk logs a [WARN] and computes in Python, so results stay correct.
     In tests it is a trap - a parity test that compares "python" against a "rust"
     run that never happened compares Python with Python and passes for the wrong
-    reason. That is how the delay-cycle limitation stayed hidden until 2026-08-11
-    (see docs/internal/architecture/rust-engine-delay-cycle-issue.md).
+    reason. That is how the delay-cycle limitation stayed hidden until 2026-08-11.
 
     Tests that exercise the fallback on purpose opt out with
     ``@pytest.mark.allow_rust_fallback``.

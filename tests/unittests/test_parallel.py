@@ -45,7 +45,7 @@ class TestStartOrRun(unittest.TestCase):
         self.assertIn("in sequence", message)
 
     def test_inline_exceptions_reach_the_caller(self):
-        """A difference worth knowing about, and the reason C.2 stays open.
+        """A difference worth knowing about.
 
         An exception raised inside a thread never reaches whoever joins it; run
         inline it propagates. This only ever applies where the threaded path

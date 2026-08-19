@@ -6,9 +6,7 @@ extra silently dropped from CI, or a module-level import that pulls an optional
 package back into `import BPTK_Py`. These tests cover that seam.
 
 What they cannot cover is what a wheel actually contains - that needs a clean
-venv and belongs in CI (A.15). See
-docs/internal/architecture/marimo-documentation.md section 3.1 for the shape
-these assertions encode.
+venv and belongs in CI.
 """
 
 import subprocess
@@ -84,7 +82,7 @@ class TestDependencyGroups:
 
 
 class TestChangelog:
-    """The release gate (A.18).
+    """The release gate.
 
     The changelog lives in README.md rather than a CHANGELOG.md, deliberately:
     GitHub renders the README on the repository landing page, so that is where
@@ -92,7 +90,7 @@ class TestChangelog:
     site is generated from it as of Release B.
 
     Implemented as a test rather than a separate CI step because publishing is
-    already gated on the suite (D5), so this gates it too.
+    already gated on the suite, so this gates it too.
     """
 
     @staticmethod

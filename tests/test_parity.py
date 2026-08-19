@@ -1596,7 +1596,6 @@ class TestParityFloorCeil:
 # something that reads a *past* value: a stock (integrated in the previous step)
 # or a `delay` (reads memo[step - delay_steps]). These tests pin down which
 # shapes must load and which must stay rejected.
-# See docs/internal/architecture/rust-engine-delay-cycle-issue.md
 # ---------------------------------------------------------------------------
 
 class TestParityFeedbackLoops:
@@ -1659,8 +1658,7 @@ class TestParityFeedbackLoops:
 
         The table is constant-valued, like every orderDelay / deliveryDelay in the
         beergame. A *time-varying* duration is a separate, pre-existing Python/Rust
-        divergence and deliberately not covered here — see
-        docs/internal/architecture/rust-engine-delay-cycle-issue.md.
+        divergence and deliberately not covered here.
         """
         model = Model(starttime=1, stoptime=6, dt=1, name='loop_delay_dyn_par')
         duration = model.converter('duration')

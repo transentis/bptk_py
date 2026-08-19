@@ -2722,7 +2722,6 @@ class TestRustResumeThroughAdapters:
 # the no_silent_rust_fallback guard in conftest.py: without it, a model the engine
 # refuses is computed in Python on *both* runs and the comparison passes for the
 # wrong reason.
-# See docs/internal/architecture/rust-engine-delay-cycle-issue.md
 # ---------------------------------------------------------------------------
 
 class TestDelayFeedbackLoop:
@@ -2771,7 +2770,7 @@ class TestDelayFeedbackLoop:
 # requests on different threads, while the runner keeps `sc.rust_model` on the
 # Scenario between requests — so the handle really does travel between threads. With
 # `#[pyclass(unsendable)]` that killed the process with a PyO3 PanicException on the
-# second request. See docs/internal/architecture/rust-engine-delay-cycle-issue.md
+# second request.
 # ---------------------------------------------------------------------------
 
 class TestRustHandleAcrossThreads:

@@ -32,10 +32,9 @@ def start_or_run(target, args=()):
     computing slowly beats failing.
 
     **Note on exceptions.** An exception raised in a thread never reaches whoever
-    joins it; run inline, it propagates to the caller. That difference is the
-    subject of C.2 in docs/internal/architecture/marimo-documentation.md and is
-    deliberately not decided here: this only changes environments where the
-    threaded path does not run at all.
+    joins it; run inline, it propagates to the caller. That difference is left
+    open deliberately: this only changes environments where the threaded path
+    does not run at all.
 
     Args:
         target: The callable to run.

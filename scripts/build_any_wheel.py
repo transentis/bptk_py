@@ -11,7 +11,7 @@
 
 """Derive the pure-Python `py3-none-any` wheel from a platform wheel.
 
-Why this exists (A.12 in docs/internal/architecture/marimo-documentation.md):
+Why this exists:
 Pyodide cannot load a native extension, so `micropip.install("bptk-py")` needs a
 wheel without `_rust_engine`. It has to be the *same distribution and version*
 as the platform wheels, so that pip and micropip select by platform tag without

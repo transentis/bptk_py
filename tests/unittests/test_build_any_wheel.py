@@ -48,7 +48,7 @@ def _make_platform_wheel(target_dir, with_extension=True, tag="cp311-abi3-macosx
 
 
 class TestBuildAnyWheel(unittest.TestCase):
-    """The derivation of the browser wheel (A.12).
+    """The derivation of the browser wheel.
 
     The `any` wheel has to be the same distribution and version as the platform
     wheels, differing only in the missing extension and the tags - that is what

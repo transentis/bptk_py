@@ -64,6 +64,10 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 3.0.1
+
+* Fix publication issue: variable pins on the Emscripten platform, so the browser wheel installs with `micropip`
+
 ### 3.0.0
 
 * Breaking: introduced extras `plotting`, `xmile`, `server`, `observability` — see [Installation](#installation). Base install no longer pulls matplotlib, flask, psycopg, redis, logfire, parsimonious, xmltodict, jinja2

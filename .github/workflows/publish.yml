@@ -91,7 +91,7 @@ jobs:
           name: wheels-linux-${{ matrix.target }}
           path: dist
 
-  # The pure-Python wheel micropip installs in the browser (A.12). Built once,
+  # The pure-Python wheel micropip installs in the browser. Built once,
   # from a platform wheel, so that its dependencies and extras are the very same
   # metadata rather than a second declaration that could drift.
   anywheel:
@@ -112,7 +112,7 @@ jobs:
         run: |
           python -m pip install wheel
           python scripts/build_any_wheel.py platform-dist/*-abi3-*.whl --out dist
-      # Both wheel kinds, installed into a clean venv with NO extras (A.15).
+      # Both wheel kinds, installed into a clean venv with NO extras.
       # Checked here rather than on every push: this is where the artefacts are
       # built, and the suite already covers the behaviour. What is left is what
       # only an installed artefact can answer.

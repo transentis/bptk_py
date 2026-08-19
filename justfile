@@ -20,7 +20,7 @@ build:
     . {{venv}}/bin/activate && maturin build --release --out dist
 
 # Build both wheel kinds: the platform wheel with the Rust engine, and the
-# py3-none-any wheel without it that micropip installs in the browser (A.12).
+# py3-none-any wheel without it that micropip installs in the browser.
 build-all: build
     {{venv}}/bin/pip install --quiet wheel
     {{venv}}/bin/python scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist

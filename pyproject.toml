@@ -4,11 +4,22 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.0.0"
+version = "3.0.1"
+# Two renderings of the same requirement, chosen by the installer rather than
+# by the wheel: both wheels carry these lines and the marker decides. Pyodide
+# builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
+# so an exact pin there could only fail, never bind - micropip refuses the
+# install outright. Lower bounds keep the floor we tested against, and the
+# browser CI job runs the whole suite against those Pyodide builds every time.
+# Everything without a marker is pure Python, comes from PyPI everywhere and
+# stays exact.
 dependencies = [
-"pandas==2.3.0",
-"scipy==1.15.3",
-"numpy==2.3.1",
+"pandas==2.3.0; sys_platform != 'emscripten'",
+"pandas>=2.3.0; sys_platform == 'emscripten'",
+"scipy==1.15.3; sys_platform != 'emscripten'",
+"scipy>=1.15.3; sys_platform == 'emscripten'",
+"numpy==2.3.1; sys_platform != 'emscripten'",
+"numpy>=2.3.1; sys_platform == 'emscripten'",
 "tqdm==4.67.1",
 "xlsxwriter==3.2.5",
 "jsonpickle==4.1.1"
@@ -31,10 +42,11 @@ classifiers = [
 
 [project.optional-dependencies]
 # Extras are named after capabilities, not after the libraries behind them, so
-# a dependency can be swapped without renaming the extra. See D13 and section
-# 3.1 of docs/internal/architecture/marimo-documentation.md.
+# a dependency can be swapped without renaming the extra.
 plotting = [
-    "matplotlib==3.10.3"
+    # Pyodide ships matplotlib too - same reasoning as the base dependencies.
+    "matplotlib==3.10.3; sys_platform != 'emscripten'",
+    "matplotlib>=3.10.3; sys_platform == 'emscripten'"
 ]
 xmile = [
     "parsimonious==0.10.0","xmltodict==1.0.4","jinja2==3.1.6"

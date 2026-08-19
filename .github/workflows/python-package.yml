@@ -136,7 +136,7 @@ jobs:
       run: |
         pytest
 
-  # The browser as a fourth platform (A.28). Linux, macOS and Windows above test
+  # The browser as a fourth platform. Linux, macOS and Windows above test
   # the code on that OS against an editable install; this does the same for
   # Emscripten, where BPTK now ships a wheel. No wheel is involved: the source
   # tree is mounted into Pyodide, exactly as `pip install -e .` mounts it there.
