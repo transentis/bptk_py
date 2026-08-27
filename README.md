@@ -54,7 +54,14 @@ The first place to go to for help and installation instructions is the [online d
 
 The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK.
 
-The online documentation is generated from an extensive set of Jupyter notebooks, the __BPTK Tutorial__. The tutorial is available as a [git repository](https://github.com/transentis/bptk_py_tutorial) on GitHub.
+The online documentation is generated from an extensive set of [marimo](https://marimo.io) notebooks, and those notebooks are in this repository under `docs/tutorial`. To run them yourself:
+
+```bash
+pip install -r docs/tutorial/requirements.txt
+marimo edit docs/tutorial/quickstart/quickstart.py
+```
+
+Every notebook brings the models and scenario files it needs. The diagrams do not travel with them - they are on the website, where the same notebook is rendered with its figures, so a notebook opened locally shows a broken image where the website shows a diagram.
 
 We used BPTK to build our implementation of the infamous [Beer Distribution Game](https://beergame.transentis.com).
 
