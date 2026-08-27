@@ -691,6 +691,38 @@ class TestBptk(unittest.TestCase):
         self.assertIsInstance(result["testManager2_scenario21"],SimulationScenario)    
         self.assertIsInstance(result["testManager2_scenario22"],SimulationScenario)    
 
+    def testBptk_list_equations_prints_each_kind_once(self):
+        """Two flows must not print the converters twice.
+
+        Until 3.0.2 the converter and constant loops sat inside the flow loop, so the
+        list came out multiplied by the number of flows - on a model with a handful of
+        flows the output was unreadable and looked like the model had duplicates.
+        """
+        from BPTK_Py import Model
+        import io
+        from contextlib import redirect_stdout
+
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="two_flows")
+        model.stock("s").equation = 1.0
+        model.flow("f1").equation = 1.0
+        model.flow("f2").equation = 1.0
+        model.converter("c").equation = 1.0
+        model.constant("k").equation = 1.0
+
+        testBptk = bptk()
+        testBptk.register_scenario_manager({"sm": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="sm")
+
+        captured = io.StringIO()
+        with redirect_stdout(captured):
+            testBptk.list_equations(scenario_managers=["sm"])
+        output_text = captured.getvalue()
+
+        self.assertEqual(output_text.count("\tconverter: \t\tc"), 1)
+        self.assertEqual(output_text.count("\tconstant: \t\tk"), 1)
+        self.assertEqual(output_text.count("\tflow: \t\t\tf1"), 1)
+        self.assertEqual(output_text.count("\tflow: \t\t\tf2"), 1)
+
     def testBptk_list_equations(self):
         from BPTK_Py import Model
         model = Model(starttime=0.0,stoptime=15.0,dt=1.0,name='test')
@@ -1156,6 +1188,36 @@ class TestBptk(unittest.TestCase):
                                       lookup_names="testpoints", return_df=True)
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result.columns), 1)
+
+    def testBptk_plot_scenarios_without_data_returns_none(self):
+        """A run that produced nothing must not reach the visualizer.
+
+        run_scenarios() returns None when no scenario matched, and passing that
+        on raised `'NoneType' object has no attribute 'columns'` - a traceback on
+        a documentation page where the reason was already in the log.
+        """
+        testBptk = bptk()
+        with mock.patch.object(testBptk, "run_scenarios", return_value=None):
+            with mock.patch.object(testBptk.visualizer, "plot") as plot:
+                result = testBptk.plot_scenarios(scenarios=["nope"], scenario_managers=["nope"])
+        self.assertIsNone(result)
+        plot.assert_not_called()
+
+    @pytest.mark.requires_extra("plotting")
+    def testBptk_plot_lookup_format_axes(self):
+        """format="axes" hands the Axes back, as plot_scenarios() already did."""
+        import matplotlib.axes
+        from BPTK_Py import Model
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="lk")
+        model.points["testpoints"] = [[0, 0.1], [1, 0.6]]
+        testBptk = bptk()
+        testBptk.register_scenario_manager({"lkManager": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="lkManager")
+
+        ax = testBptk.plot_lookup(scenarios=["base"], scenario_managers=["lkManager"],
+                                  lookup_names="testpoints", format="axes")
+
+        self.assertIsInstance(ax, matplotlib.axes.Axes)
 
     def testBptk_reset_scenario_delegates_to_factory(self):
         """reset_scenario and reset_all_scenarios delegate to the factory."""

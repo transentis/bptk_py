@@ -42,3 +42,8 @@ cloc:
 test-browser:
     npm install --no-save --silent pyodide@314.0.5
     node scripts/run_suite_in_pyodide.mjs .
+
+# The documentation recipes live in their own file, because everything that builds,
+# tests or publishes the site stays internal - `docs.just` is not synced to the
+# public repository, and the optional import keeps this justfile working there.
+import? 'docs.just'

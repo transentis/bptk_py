@@ -1,0 +1,17 @@
+{
+    "sm":{
+    "model":"simulation_models/model",
+    "base_constants": {
+      "initialValue": 1000.0,
+      "interestRate": 0.05,
+      "depositRate": 1000.0
+    },
+    "scenarios": {
+      "scenario2": {
+          "constants":{  
+            "initialValue" : 2000.0
+          }
+     }
+    }
+  }
+}

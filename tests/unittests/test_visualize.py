@@ -187,6 +187,46 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertIsInstance(ax, matplotlib.axes.Axes)
 
+    def test_series_names_warns_about_a_key_that_matches_nothing(self):
+        """A key that renames nothing used to do so in silence.
+
+        A column of a multi-scenario result is called `manager_scenario_equation`, so a
+        key naming a manager the call does not use renames nothing and the chart keeps
+        its raw column name. Seven such keys sat in the documentation for months.
+        """
+        import BPTK_Py.logger.logger as logmod
+
+        df = pd.DataFrame({"sm_base_stock": [1.0, 2.0]}, index=[1.0, 2.0])
+
+        with open(logmod.logfile, "w", encoding="UTF-8") as file:
+            pass
+        self.testBptk.visualizer.plot(
+            df=df, return_df=True, visualize_from_period=0, visualize_to_period=0,
+            stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
+            series_names={"anderer_manager_base_stock": "Stock"},
+        )
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn("matched no column", content)
+        self.assertIn("anderer_manager_base_stock", content)
+
+    def test_series_names_stays_quiet_when_every_key_matches(self):
+        import BPTK_Py.logger.logger as logmod
+
+        df = pd.DataFrame({"sm_base_stock": [1.0, 2.0]}, index=[1.0, 2.0])
+
+        with open(logmod.logfile, "w", encoding="UTF-8") as file:
+            pass
+        result = self.testBptk.visualizer.plot(
+            df=df, return_df=True, visualize_from_period=0, visualize_to_period=0,
+            stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
+            series_names={"sm_base_stock": "Stock"},
+        )
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertNotIn("matched no column", content)
+        self.assertIn("Stock", list(result.columns))
+
 
 class TestPlottingExtraGuard(unittest.TestCase):
     """matplotlib ships as `bptk-py[plotting]`.

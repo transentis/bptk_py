@@ -135,6 +135,17 @@ class ScenarioManagerSd(ScenarioManager):
                     if not points in scenario["points"].keys():
                         scenario["points"][points] = value
 
+            # A name that is already taken by a *different* definition is a mistake:
+            # the later registration silently wins, and then a chart meant to show the
+            # first one shows the second. Re-registering the same definition is the
+            # ordinary case - a notebook cell run again - so that stays quiet.
+            existing = self.scenarios.get(name)
+            if existing is not None and getattr(existing, "dictionary", None) != scenario:
+                log(
+                    "[WARN] {}: scenario '{}' is already registered with a different "
+                    "definition - the one registered last wins".format(self.name, name)
+                )
+
             self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
                                scenario_manager_name=self.name)
 

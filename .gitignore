@@ -37,6 +37,24 @@ tests/test_models/*.py
 # marimo session/autosave caches (the notebook .py itself IS tracked)
 __marimo__/
 
+# Quarto documentation build
+docs/tutorial/_output/
+docs/tutorial/.quarto/
+docs/tutorial/_freeze/
+*.quarto_ipynb
+# Quarto recreates this on every render; its two patterns are covered above
+docs/tutorial/.gitignore
+
+# What the pages write when they execute. All three are outputs of a lesson
+# rather than inputs to one, so a render must not leave the tree dirty:
+#   - export_data and exporting_simulation_results call export_scenarios()
+#   - beergame_ql dumps a freshly trained q-table; training is stochastic, so the
+#     file differs on every build. The q-tables the pages *read*
+#     (q_tables_12500..50000.json) are genuine inputs and stay tracked.
+docs/tutorial/model_library/customer_acquisition/export/
+docs/tutorial/xmile/exporting_simulation_results/data/customer_acquisition.xlsx
+docs/tutorial/model_library/beergame/data/q_tables_10.json
+
 # uv artefacts. uv creates both in the repo root when it resolves a sandbox —
 # the marimo engine does this, and the Pyodide checks will too. Neither belongs
 # to the project, which builds with maturin and uses venv/.

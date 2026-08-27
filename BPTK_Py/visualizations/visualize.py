@@ -14,6 +14,8 @@
 import statistics
 import pandas as pd
 
+from ..logger import log
+
 
 PLOTTING_EXTRA_HINT = (
     "Plotting requires the plotting extra. "
@@ -84,11 +86,28 @@ class visualizer():
 
 
             new_columns = {}
+            matched = set()
             for column in df.columns:
                 for series_names_key in series_names_keys:
                     if series_names_key in column:
                         new_column = column.replace(series_names_key, series_names[series_names_key])
                         new_columns[column] = new_column
+                        matched.add(series_names_key)
+
+            # A key that matches no column renames nothing, and the chart keeps its raw
+            # column name - which is how seven keys in the documentation went unnoticed
+            # for months. A column of a multi-scenario result is called
+            # `manager_scenario_equation`, so a key naming a manager the call does not
+            # use, or an equation it does not plot, silently does nothing.
+            unmatched = [k for k in series_names_keys if k not in matched]
+            if unmatched:
+                log(
+                    "[WARN] series_names: {} matched no column, so nothing was renamed. "
+                    "The columns are: {}".format(
+                        ", ".join(repr(k) for k in sorted(unmatched)),
+                        ", ".join(repr(c) for c in df.columns),
+                    )
+                )
 
             df.rename(columns=new_columns, inplace=True)
 
@@ -100,12 +119,30 @@ class visualizer():
             # what a headless server uses.
             require_matplotlib()
 
+            # Where the axes come from. `df.plot()` goes through pyplot, which keeps
+            # every figure it creates in a global registry until someone closes it -
+            # fine for a script that ends, fatal for a notebook cell the reader runs
+            # again and again: in Pyodide the accumulated figures exhaust the WASM
+            # heap and the kernel dies mid-session, which cost the documentation 28
+            # pages that stopped answering after a few clicks.
+            #
+            # Only for `format="axes"`, where the caller receives the axes and its own
+            # environment renders them. The default path has to stay on pyplot: a
+            # script or a Jupyter cell shows the figure *because* it is registered.
+            if format == "axes":
+                from matplotlib.figure import Figure
+
+                figure = Figure(figsize=self.config.configuration["figsize"])
+                target_axes = figure.add_subplot(111)
+            else:
+                target_axes = None
+
             ### Get the plot object
             if visualize_to_period == 0:
 
                 ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
                                                           figsize=self.config.configuration["figsize"],
-                                                          title=title,
+                                                          title=title, ax=target_axes,
                                                           alpha=alpha, color=self.config.configuration["colors"],
                                                           lw=self.config.configuration["linewidth"])
 
@@ -120,7 +157,7 @@ class visualizer():
 
                 ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
                                                                              figsize=self.config.configuration["figsize"],
-                                                                             title=title,
+                                                                             title=title, ax=target_axes,
                                                                              alpha=alpha,
                                                                              color=self.config.configuration["colors"],
                                                                              lw=self.config.configuration["linewidth"])

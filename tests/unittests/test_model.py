@@ -55,6 +55,34 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.data_collector.agent_statistics,{})
         self.assertEqual(model.data_collector.event_statistics,{})
 
+    def test_reset_restarts_the_agent_ids(self):
+        """A reconfigured model must hand out ids that index into its own agent list.
+
+        The docstring of `reset` promises that the factories survive so the model can be
+        reconfigured - and until 3.0.2 the id counter survived too, so the next agent got
+        id 10 while `agents` was a fresh list of ten. Anything indexing by receiver_id -
+        the simultaneous scheduler does - then raised IndexError.
+        """
+        model = Model()
+        model.register_agent_factory(
+            agent_factory=lambda agent_id, model, properties: Agent(
+                agent_id=agent_id, model=model, properties=properties
+            ),
+            agent_type="testType",
+        )
+        for _ in range(10):
+            model.create_agent(agent_type="testType", agent_properties={})
+        self.assertEqual([a.id for a in model.agents], list(range(10)))
+
+        model.reset()
+        for _ in range(10):
+            model.create_agent(agent_type="testType", agent_properties={})
+
+        self.assertEqual([a.id for a in model.agents], list(range(10)))
+        # The point of it: every id is a valid index into the new list.
+        for agent in model.agents:
+            self.assertIs(model.agents[agent.id], agent)
+
     def test_reset_cache(self):
         model = Model()
 
@@ -458,6 +486,34 @@ class Test_Model(unittest.TestCase):
         model.converters["test"].equation = sd.lookup(1,[ (0,0.3) , (4,0.7)])
 
         self.assertIsNone(model.plot_lookup("test"))
+
+    def _lookup_model(self):
+        import BPTK_Py.sddsl.functions as sd
+        model = Model()
+        model.converter(name="test")
+        model.converters["test"].equation = sd.lookup(1, [(0, 0.3), (4, 0.7)])
+        return model
+
+    @pytest.mark.requires_extra("plotting")
+    def test_plot_lookup_format_axes(self):
+        """format="axes" hands the Axes back, the way Element.plot() does.
+
+        Without it the method only produced output as a side effect of Jupyter's
+        inline backend, so the documentation pages showed nothing under marimo.
+        """
+        import matplotlib.axes
+
+        ax = self._lookup_model().plot_lookup("test", format="axes")
+
+        self.assertIsInstance(ax, matplotlib.axes.Axes)
+
+    def test_plot_lookup_format_df(self):
+        """format="df" returns the underlying dataframe."""
+        import pandas as pd
+
+        df = self._lookup_model().plot_lookup("test", format="df")
+
+        self.assertIsInstance(df, pd.DataFrame)
 
     def test_add_equation(self):
         #cleanup logfile

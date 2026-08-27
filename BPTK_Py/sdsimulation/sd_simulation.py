@@ -11,6 +11,7 @@
 
 
 import datetime
+import difflib
 import os
 from threading import Thread
 
@@ -180,6 +181,23 @@ class SdSimulation():
         :param value: either a lambda method or a numerical value (int/float)
         :return: None
         """
+
+        # A name the model does not have is a mistake, not a new equation: nothing
+        # reads it, so the scenario silently has no effect. That is how a typo in a
+        # scenario definition - `Utilzation` for `Utilization` - left two scenarios
+        # identical to the base case with nothing in the log to say why.
+        if name not in self.mod.equations.keys():
+            close_matches = difflib.get_close_matches(name, list(self.mod.equations.keys()), n=3)
+            log(
+                "[WARN] {}: '{}' is not an equation of this model, so setting it has no "
+                "effect{}".format(
+                    self.name,
+                    name,
+                    " - did you mean {}?".format(" or ".join(repr(k) for k in close_matches))
+                    if close_matches
+                    else "",
+                )
+            )
 
         # Store numeric values
         if not callable(value):

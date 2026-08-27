@@ -9,6 +9,7 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 
+import sys
 from threading import Thread
 
 from ..logger import log
@@ -31,6 +32,14 @@ def start_or_run(target, args=()):
     threads is covered - including a normal one that has run out of them, where
     computing slowly beats failing.
 
+    Emscripten is the one platform checked by name, because there the condition
+    cannot be trusted. A host may replace `threading.Thread` with a shim that
+    schedules on the browser event loop - marimo does this in its notebook
+    runtime - so `start()` succeeds and only `join()` fails, one step later and
+    with a message about JSPI. Threads are synthetic under Pyodide either way:
+    no OS threads, no parallel bytecode. Running inline costs nothing there and
+    keeps the browsers without JSPI, Safari among them, working.
+
     **Note on exceptions.** An exception raised in a thread never reaches whoever
     joins it; run inline, it propagates to the caller. That difference is left
     open deliberately: this only changes environments where the threaded path
@@ -43,6 +52,12 @@ def start_or_run(target, args=()):
     Returns:
         The started `Thread`, or `None` when it has already run inline.
     """
+    if sys.platform == "emscripten":
+        log("[INFO] No usable thread model in the browser, running in sequence "
+            "instead. Results are unaffected.")
+        target(*args)
+        return None
+
     thread = Thread(target=target, args=args)
 
     try:
@@ -64,6 +79,11 @@ def start_or_skip(target, args=(), what="background task"):
     Skipping is the only sensible degradation - and no loss in the browser, where
     nobody is editing the scenario files being watched.
 
+    Emscripten is checked by name for the same reason as in `start_or_run`, and
+    the stakes are higher: under a shim that schedules threads on the browser
+    event loop, an endless monitor loop would take that loop over and freeze the
+    page.
+
     Args:
         target: The callable to run.
         args: Positional arguments for it.
@@ -72,6 +92,10 @@ def start_or_skip(target, args=(), what="background task"):
     Returns:
         The started `Thread`, or `None` when it was skipped.
     """
+    if sys.platform == "emscripten":
+        log("[INFO] No usable thread model in the browser, continuing without {}.".format(what))
+        return None
+
     thread = Thread(target=target, args=args)
 
     try:

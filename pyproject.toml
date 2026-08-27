@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.0.1"
+version = "3.0.2"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
@@ -77,6 +77,13 @@ bindings = "pyo3"
 
 [tool.pytest.ini_options]
 pythonpath = ["tests"]
+# The documentation lives in the repository as marimo notebooks, and some of
+# them are named like test modules - `model_library/beergame/test/q_table_test.py`
+# is a page, not a test. Without this, collection reaches into docs/ and the
+# suite dies before it starts. The other entries are pytest's own defaults,
+# which naming this key would otherwise replace.
+testpaths = ["tests"]
+norecursedirs = ["docs", "venv", "build", "dist", "target", "node_modules", "*.egg", ".*"]
 filterwarnings = [
     "ignore::DeprecationWarning:traitlets.*"
 ]

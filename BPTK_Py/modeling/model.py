@@ -188,6 +188,11 @@ class Model:
             self.agent_type_map[agent_type] = []
 
         self.agents = []
+        # With the agent list emptied, the id counter has to start over with it. Left
+        # running, the next agent got id 10 while `agents` was a fresh list of ten, so
+        # `model.agents[event.receiver_id]` in the scheduler raised IndexError - and the
+        # docstring above promises exactly the reconfiguration that did not work.
+        self.next_agent_id = 0
 
         self.reset_cache()
 
@@ -761,15 +766,26 @@ class Model:
         return float(f(x))
 
 
-    def plot_lookup(self,lookup_names,config=None):
+    def plot_lookup(self,lookup_names,config=None,format="plot"):
         """
         Plots lookup functions for the given list of lookup names
 
         Args:
             lookup_names: String or List.
                 A name or list of names of lookup functions. The list can be passed as a Python list or a comma separated string.
+            format: String (Default "plot").
+                What to return: "plot" draws the diagram and returns nothing, "axes" returns the
+                matplotlib Axes, "df" returns the underlying dataframe. Same values as
+                bptk.plot_lookup() and Element.plot().
+
+        Returns:
+            Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
+            for format="df".
+
+        Note:
+            format="plot" relies on the notebook displaying the figure as a side effect, which only
+            Jupyter's inline backend does. In marimo, and in a plain script, use format="axes".
         """
-        #TODO write test for plot_lookup
         from ..util import lookup_data
         from ..visualizations import visualizer
 
@@ -783,6 +799,7 @@ class Model:
 
         return visualizer(config).plot(df=df,
                                     return_df=False,
+                                    format=format,
                                     visualize_from_period=0,
                                     visualize_to_period=0,
                                     stacked=config.configuration["stacked"],

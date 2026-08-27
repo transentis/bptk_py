@@ -1,2 +1,6 @@
 [run]
-omit = tests/*
+omit =
+    tests/*
+    scripts/*
+    docs/*
+    examples/*

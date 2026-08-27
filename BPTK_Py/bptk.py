@@ -1152,6 +1152,15 @@ class bptk():
                                   backend=backend
                                  )
 
+        # run_scenarios() returns None when it produced no rows - a scenario that
+        # does not exist, or an ABM whose agents never reached the state asked
+        # for. Handing that to the visualizer raised
+        # `'NoneType' object has no attribute 'columns'`, which put a traceback on
+        # the page where the reason had already been logged one line earlier.
+        if df is None:
+            log("[ERROR] plot_scenarios: nothing to plot, see the errors above")
+            return None
+
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
                                     format=format,
@@ -1171,7 +1180,7 @@ class bptk():
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
-                    freq="D", series_names={}, kind=None):
+                    freq="D", series_names={}, kind=None, format="plot"):
         """Plot lookup functions.
 
         If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
@@ -1206,10 +1215,20 @@ class bptk():
             series_names: Dict.
                 Names of series to rename to, using a dict: {equation_name : rename_to}
             return_df: Boolean.
-                Set to True if you want to receive a dataFrame instead of the plot
+                Set to True if you want to receive a dataFrame instead of the plot. Equivalent to
+                format="df", which it overrides when set.
+            format: String (Default "plot").
+                What to return: "plot" draws the diagram and returns nothing, "axes" returns the
+                matplotlib Axes, "df" returns the underlying dataframe. Same values as
+                plot_scenarios() and Element.plot().
 
         Returns:
-            Dataframe with simulation results if return_df=True, else it plots the lookup function.
+            Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
+            for format="df" (or return_df=True).
+
+        Note:
+            format="plot" relies on the notebook displaying the figure as a side effect, which only
+            Jupyter's inline backend does. In marimo, and in a plain script, use format="axes".
         """
 
         from .util import lookup_data
@@ -1251,6 +1270,7 @@ class bptk():
 
         return self.visualizer.plot(df=df,
                                     return_df=return_df,
+                                    format=format,
                                     visualize_from_period=visualize_from_period,
                                     visualize_to_period= min(visualize_to_period,len(df)),
                                     stacked=stacked,
@@ -1446,14 +1466,17 @@ class bptk():
                     print("Scenario: {}".format(scenario.name))
                     print("" + "-" * len(key))
 
+                    # One loop per kind, all at the same level. The converter and
+                    # constant loops used to sit *inside* the flow loop, so a model with
+                    # two flows printed its converters and constants twice.
                     for equation in sorted(scenario.model.stocks):
                         print("\tstock: \t\t\t{}".format(equation))
                     for equation in sorted(scenario.model.flows):
                         print("\tflow: \t\t\t{}".format(equation))
-                        for equation in sorted(scenario.model.converters):
-                            print("\tconverter: \t\t{}".format(equation))
-                        for equation in sorted(scenario.model.constants):
-                            print("\tconstant: \t\t{}".format(equation))
+                    for equation in sorted(scenario.model.converters):
+                        print("\tconverter: \t\t{}".format(equation))
+                    for equation in sorted(scenario.model.constants):
+                        print("\tconstant: \t\t{}".format(equation))
                     print(" ")
 
     def register_model(self, model, scenario_manager=None, scenario=None):
@@ -1506,8 +1529,18 @@ class bptk():
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
                 manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
+                # The model handed in here is dropped, which is easy to miss when the
+                # call comes from a notebook cell run a second time: the cell built a
+                # new model, and the scenarios keep running against the old one. Say so
+                # in as many words, and say what to do about it.
                 log(
-                    "[WARN] The scenario manager already exists. Will not change the model. Use another name to avoid surprising errors!")
+                    "[WARN] Scenario manager '{}' already exists, so the model passed in "
+                    "now was ignored and its scenarios keep running against the model "
+                    "registered first. Call bptk.reset_all_scenarios() before "
+                    "registering again, or use a different name.".format(
+                        scenario_manager_name
+                    )
+                )
 
             else:
                 model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None

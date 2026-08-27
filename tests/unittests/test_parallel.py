@@ -13,6 +13,12 @@ class TestStartOrRun(unittest.TestCase):
     Pyodide - BPTK in the browser - raises `RuntimeError: can't start new thread`.
     Measured 2026-08-18: without this, `bptk.run_scenarios()` fails there for both
     SD and agent-based models, which is most of the documented API.
+
+    The tests that exercise that probe pin `sys.platform` away from Emscripten.
+    Running under Pyodide they would otherwise take the platform branch before
+    ever reaching the probe - and three of them would still pass, because the
+    visible result is the same. A test that goes green while measuring something
+    else is worse than one that fails.
     """
 
     @pytest.mark.requires_threads
@@ -28,15 +34,34 @@ class TestStartOrRun(unittest.TestCase):
     def test_runs_inline_when_no_thread_can_start(self):
         collected = []
 
-        with patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
+        with patch("BPTK_Py.util.parallel.sys.platform", "linux"), \
+             patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
             thread = start_or_run(collected.append, args=(42,))
 
         # None tells the caller there is nothing to join - the work is already done.
         self.assertIsNone(thread)
         self.assertEqual(collected, [42])
 
+    def test_runs_inline_in_the_browser_without_touching_threads(self):
+        """The platform is checked, not only the condition.
+
+        A host may replace `threading.Thread` with a shim that schedules on the
+        browser event loop - marimo does - so `start()` succeeds and `join()`
+        raises about JSPI instead. Emscripten therefore never gets as far as
+        building a thread.
+        """
+        collected = []
+
+        with patch("BPTK_Py.util.parallel.sys.platform", "emscripten"), \
+             patch.object(Thread, "start", side_effect=AssertionError("must not be reached")):
+            thread = start_or_run(collected.append, args=(42,))
+
+        self.assertIsNone(thread)
+        self.assertEqual(collected, [42])
+
     def test_says_so_in_the_log(self):
-        with patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")), \
+        with patch("BPTK_Py.util.parallel.sys.platform", "linux"), \
+             patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")), \
              patch("BPTK_Py.util.parallel.log") as logged:
             start_or_run(lambda: None)
 
@@ -54,7 +79,8 @@ class TestStartOrRun(unittest.TestCase):
         def boom():
             raise ValueError("equation is circular")
 
-        with patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
+        with patch("BPTK_Py.util.parallel.sys.platform", "linux"), \
+             patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
             with self.assertRaises(ValueError):
                 start_or_run(boom)
 
@@ -94,15 +120,32 @@ class TestStartOrSkip(unittest.TestCase):
     def test_skips_rather_than_running_inline(self):
         collected = []
 
-        with patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
+        with patch("BPTK_Py.util.parallel.sys.platform", "linux"), \
+             patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")):
             thread = start_or_skip(collected.append, args=(42,))
 
         self.assertIsNone(thread)
         # The distinction from start_or_run: the target must NOT have run.
         self.assertEqual(collected, [])
 
+    def test_skips_in_the_browser_without_touching_threads(self):
+        """Same reason as in start_or_run, with more at stake.
+
+        Under a shim these monitors would start, and their endless loop would
+        take over the browser's event loop.
+        """
+        collected = []
+
+        with patch("BPTK_Py.util.parallel.sys.platform", "emscripten"), \
+             patch.object(Thread, "start", side_effect=AssertionError("must not be reached")):
+            thread = start_or_skip(collected.append, args=(42,))
+
+        self.assertIsNone(thread)
+        self.assertEqual(collected, [])
+
     def test_names_what_is_being_skipped(self):
-        with patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")), \
+        with patch("BPTK_Py.util.parallel.sys.platform", "linux"), \
+             patch.object(Thread, "start", side_effect=RuntimeError("can't start new thread")), \
              patch("BPTK_Py.util.parallel.log") as logged:
             start_or_skip(lambda: None, what="scenario file monitoring")
 

@@ -204,5 +204,37 @@ class TestScenarioManagerSD(unittest.TestCase):
 
         self.assertEqual(scenarioManager.scenarios, {})
 
+    def testScenarioManagerSD_add_scenarios_warns_only_on_a_different_definition(self):
+        """Registering the same scenario twice is ordinary; registering two different
+        scenarios under one name is a mistake.
+
+        A notebook cell run again re-registers what it registered before, and warning
+        about that would put a line in the log on every interaction. Two *different*
+        definitions under one name is the case that cost a documentation page its table:
+        the second registration won, and the text above the first one no longer matched.
+        """
+        import BPTK_Py.logger.logger as logmod
+
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="m")
+        model.stock("s").equation = 1.0
+        manager = ScenarioManagerSd(scenarios={}, name="sm", model=model)
+
+        with open(logmod.logfile, "w", encoding="UTF-8") as file:
+            pass
+
+        manager.add_scenarios({"x": {}})
+        manager.add_scenarios({"x": {}})
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            after_same_definition = file.read()
+        self.assertNotIn("already registered with a different", after_same_definition)
+
+        manager.add_scenarios({"x": {"constants": {"s": 2.0}}})
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            after_different_definition = file.read()
+        self.assertIn(
+            "scenario 'x' is already registered with a different definition",
+            after_different_definition,
+        )
+
 if __name__ == '__main__':
     unittest.main()
