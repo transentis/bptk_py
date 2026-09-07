@@ -91,10 +91,9 @@ def _(mo):
 @app.cell
 def _():
     import BPTK_Py
-    import matplotlib.pyplot as plt
 
     bptk_3 = BPTK_Py.bptk()
-    return bptk_3, plt
+    return (bptk_3,)
 
 @app.cell(hide_code=True)
 def _(mo):
@@ -123,13 +122,18 @@ def _(mo):
     return
 
 @app.cell
-def _(bptk_3, plt):
-    # Every run of this cell leaves its figure in matplotlib's registry, and the reader
-    # is invited to change the equation and press play again. Closing the previous
-    # run's figures keeps the browser's heap bounded; they have been rendered by then.
-    plt.close("all")
-
-    bptk_3.plot_scenarios(scenario_managers=['xmile_customer_acquisition'], scenarios=['base', 'high_word_of_mouth', 'low_word_of_mouth'], equations=['customers'], series_names={'xmile_customer_acquisition_base_customers': 'Base', 'xmile_customer_acquisition_low_word_of_mouth_customers': 'Low Word of Mouth', 'xmile_customer_acquisition_high_word_of_mouth_customers': 'High Word of Mouth'}, format="axes")
+def _(bptk_3):
+    bptk_3.plot_scenarios(
+        scenario_managers=['xmile_customer_acquisition'],
+        scenarios=['base', 'high_word_of_mouth', 'low_word_of_mouth'],
+        equations=['customers'],
+        series_names={
+            'xmile_customer_acquisition_base_customers': 'Base',
+            'xmile_customer_acquisition_low_word_of_mouth_customers': 'Low Word of Mouth',
+            'xmile_customer_acquisition_high_word_of_mouth_customers': 'High Word of Mouth',
+        },
+        format="axes",
+    )
     return
 
 @app.cell(hide_code=True)

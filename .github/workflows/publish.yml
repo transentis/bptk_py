@@ -45,16 +45,18 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -U wheel
-          python -m pip install pytest-cov maturin
-      - name: Build and install BPTK_Py with Rust extension (editable)
-        # The [test] extra pulls every optional dependency group; see
-        # python-package.yml for why they are no longer listed by hand.
-        run: pip install --prefer-binary -e ".[test]"
+      - name: The lock file must match pyproject.toml
+        # Change a pin, forget `uv lock`, and every job below installs the previous
+        # resolution without a word. This is the line that turns that into a failure.
+        run: uv lock --check
+      - name: Install the project and its dependencies
+        # Resolved from uv.lock, the same line python-package.yml runs. `--all-extras`
+        # replaces the [test] extra; the website's toolchain is not needed to publish.
+        run: uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
       - name: Run Rust engine tests
         run: cargo test --no-default-features
       - name: Test with pytest
@@ -67,7 +69,7 @@ jobs:
           POSTGRES_USER: "bptk"
           POSTGRES_PASSWORD: bptk_test_ci
           REDIS_URL: "redis://localhost:6379/0"
-        run: pytest
+        run: uv run pytest
 
   linux:
     needs: [test]

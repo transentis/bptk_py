@@ -26,10 +26,12 @@ def lookup_data(model, names):
         try:
             x_vals = np.array([x[0] for x in points])
             y_vals = np.array([x[1] for x in points])
-            xmax = np.max(x_vals)
-            xmin = np.min(x_vals)
 
-            x2 = x_vals #TODO check whether this setting is optimal in all cases, i.e. also for lookups not index by time
+            # Sampled at the given points rather than on a grid. For linear
+            # interpolation that is the same polyline, whether or not the lookup is
+            # indexed by time - a denser grid would add rows and no information. The
+            # `xmin`/`xmax` that used to be computed here were never used by anything.
+            x2 = x_vals
             f = interp1d(x_vals, y_vals)
             data = {}
             data[name] = []

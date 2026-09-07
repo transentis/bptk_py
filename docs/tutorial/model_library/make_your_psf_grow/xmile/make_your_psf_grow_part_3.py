@@ -189,7 +189,15 @@ def _(bptk, pd):
     df_psf_base=bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['base'], 
-        equations=["cash.cash","revenue.revenue","cost.overheadCost","cost.staffCost","cash.easyTargetCash","revenue.projectDeliveryFee","revenue.collectionTime"],
+        equations=[
+            "cash.cash",
+            "revenue.revenue",
+            "cost.overheadCost",
+            "cost.staffCost",
+            "cash.easyTargetCash",
+            "revenue.projectDeliveryFee",
+            "revenue.collectionTime",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",
@@ -380,7 +388,12 @@ def _(as_table, bptk):
     as_table(bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['growth1Person'], 
-        equations=["staff.hiringRate","staff.businessDevelopmentAllocation%","staff.professionalStaff","projects.projects"],
+        equations=[
+            "staff.hiringRate",
+            "staff.businessDevelopmentAllocation%",
+            "staff.professionalStaff",
+            "projects.projects",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",
@@ -437,7 +450,13 @@ def _(as_table, bptk):
     as_table(bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['growth9Person'], 
-        equations=["staff.hiringRate","staff.businessDevelopmentAllocation%","staff.professionalStaff","projects.projects","kpi.projectBacklog"],
+        equations=[
+            "staff.hiringRate",
+            "staff.businessDevelopmentAllocation%",
+            "staff.professionalStaff",
+            "projects.projects",
+            "kpi.projectBacklog",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",
@@ -563,10 +582,14 @@ def _(mo):
 
 @app.cell
 def _(businessDeveloperMonths, cashShortfall, collectionTime, projectDeliveryFee, projectDeliveryMonths, staffCost_1):
-    from sympy import symbols, solve
-    x = symbols('x')
-    nBuDS_expr = (projectDeliveryMonths - collectionTime - 1) * projectDeliveryFee * 4 * x - (businessDeveloperMonths - 1) * x * staffCost_1 - (projectDeliveryMonths - 1) * 4 * x * staffCost_1 - cashShortfall
-    newBusinessDevelopmentStaff = solve(nBuDS_expr)[0]
+    # The equation is linear in the number of new business developers, so the solution
+    # is one division: every term above is that number times a cash figure per head.
+    cashPerNewBusinessDeveloper = (
+        (projectDeliveryMonths - collectionTime - 1) * projectDeliveryFee * 4
+        - (businessDeveloperMonths - 1) * staffCost_1
+        - (projectDeliveryMonths - 1) * 4 * staffCost_1
+    )
+    newBusinessDevelopmentStaff = cashShortfall / cashPerNewBusinessDeveloper
     newBusinessDevelopmentStaff
     return
 
@@ -611,7 +634,14 @@ def _(as_table, bptk):
     as_table(bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['growth145Person'], 
-        equations=["staff.hiringRate","staff.businessDevelopmentAllocation%","staff.professionalStaff","projects.projects","kpi.projectBacklog","cash.cash"],
+        equations=[
+            "staff.hiringRate",
+            "staff.businessDevelopmentAllocation%",
+            "staff.professionalStaff",
+            "projects.projects",
+            "kpi.projectBacklog",
+            "cash.cash",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",

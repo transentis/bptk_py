@@ -133,7 +133,7 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name=None,agent_states=["state1"],agent_properties=["property1"],agent_property_types=["type1"]).equals(pd.DataFrame()))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=["property1"],agent_property_types=["type1"]).equals(pd.DataFrame(data=pd1_data,index=pd_index,columns=pd1_columns)))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent2",agent_states=["state1","state2"],agent_properties=["property1","property2"],agent_property_types=["type1","type2"]).equals(pd.DataFrame(data=pd2_data,index=pd_index,columns=pd2_columns)))
-        #agent_states =[] is not covered yet
+        # agent_states=[] has its own test below
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=[],agent_property_types=["type1"]).equals(pd.DataFrame(data=pd3_data, index=pd_index,columns=pd3_columns)))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=["property1"],agent_property_types=[]).equals(pd.DataFrame()))
 
@@ -368,17 +368,24 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(result2.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_closed_effort_total": [7, 14, 17, 20, 20]}, index=[0, 1, 2, 3, 4])))
 
     def testHybridRunner_get_df_for_agent_empty_states(self):
-        """With no agent_states the stats fall into the unimplemented placeholder branch
-, which the downstream DataFrame build cannot handle."""
+        """With no agent_states named, every state the agent has is returned.
+
+        This test used to pin the opposite: `get_stats_for` stored a bare `0` for the
+        timestep and the loop below it called `.items()` on that int, so the most
+        ordinary ABM call there is - plot an agent - raised AttributeError. The
+        behaviour was recorded rather than fixed. Naming no state means all of them.
+        """
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
 
-        data = {1.0: {"agent1": {"open": {"count": 1}}}}
+        data = {1.0: {"agent1": {"open": {"count": 1}, "closed": {"count": 2}}}}
 
-        # get_stats_for stores a bare 0; the outer loop then calls .items()
-        # on that int and raises - pinning the current (broken) behaviour.
-        with self.assertRaises(AttributeError):
-            hybridRunner.get_df_for_agent(data=data, agent_name="agent1",
-                                          agent_states=[], agent_properties=[], agent_property_types=[])
+        df = hybridRunner.get_df_for_agent(data=data, agent_name="agent1",
+                                           agent_states=[], agent_properties=[],
+                                           agent_property_types=[])
+
+        self.assertEqual(sorted(df.columns), ["closed", "open"])
+        self.assertEqual(df.loc[1.0, "open"], 1)
+        self.assertEqual(df.loc[1.0, "closed"], 2)
 
     def _build_runner(self):
         currentDir = os.path.abspath(os.getcwd())

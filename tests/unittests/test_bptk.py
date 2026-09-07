@@ -92,14 +92,13 @@ class TestBptk(unittest.TestCase):
             'legend.fontsize': 18,
         }     
 
-        testbptk1 = bptk(configuration={"interactive": False})
+        testbptk1 = bptk()
         self.assertEqual(testbptk1.config.matplotlib_rc_settings,default_config.matplotlib_rc_settings)
         self.assertEqual(testbptk1.config.configuration["matplotlib_rc_settings"],default_config.matplotlib_rc_settings)    
 
-        testbptk2 = bptk(configuration={"matplotlib_rc_settings" : matplotlib_via_config, "interactive": False})
+        testbptk2 = bptk(configuration={"matplotlib_rc_settings" : matplotlib_via_config})
         self.assertEqual(testbptk2.config.matplotlib_rc_settings,matplotlib_via_config)
         self.assertEqual(testbptk2.config.configuration["matplotlib_rc_settings"],matplotlib_via_config)
-        self.assertFalse(testbptk2.config.configuration["interactive"])
         self.assertEqual(testbptk2.config.loglevel,"WARN")        
 
         #cleanup logfile
@@ -155,6 +154,10 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=["property"]))  
         self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=["property"],agent_property_types=[],agents=["agent"]))
         self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"],agent_properties=[],agent_property_types=["property_type"],agents=["agent"]))
+        # No offending combination, just nothing to train: this is the call that reaches
+        # the "No agents given" check. It used to be reached by the four above as well,
+        # because their guards ended in a `sys.exit` that does nothing.
+        self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"]))
 
         try:
             with open(logmod.logfile, "r", encoding="UTF-8") as file:
@@ -167,6 +170,160 @@ class TestBptk(unittest.TestCase):
         self.assertIn("[ERROR] No agents given, aborting!", content)  
         self.assertIn("[ERROR] You must set the relevant property types if you specify an agent_property!", content)  
         self.assertIn("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!", content)  
+
+    def _sd_session_bptk(self):
+        """A bptk with one SD scenario manager, enough to begin a session on."""
+        testBptk = bptk()
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="sessionModel")
+        stock = model.stock("stock")
+        stock.initial_value = 1.0
+        stock.equation = model.converter("rate")
+        model.converter("rate").equation = 1.0
+        testBptk.register_scenario_manager({"smSession": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="smSession")
+        return testBptk
+
+    def testBptk_begin_session_reports_an_unknown_scenario_manager(self):
+        """A typo in a manager name used to start a session that carried nothing.
+
+        run_scenarios has reported this since 3.0.0, with a suggestion. A session that
+        swallows it is worse: the caller steps a session that will never produce the
+        scenario they asked for, and nothing ever says why.
+        """
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        testBptk = self._sd_session_bptk()
+
+        testBptk.begin_session(scenarios=["base"], scenario_managers=["smSessio"],
+                               equations=["stock"])
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn('begin_session: scenario manager "smSessio" not found!', content)
+        self.assertIn("smSession", content)
+        testBptk.destroy()
+
+    def testBptk_begin_session_reports_an_unknown_scenario(self):
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        testBptk = self._sd_session_bptk()
+
+        testBptk.begin_session(scenarios=["bse"], scenario_managers=["smSession"],
+                               equations=["stock"])
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn('begin_session: scenario "bse" not found', content)
+        self.assertIn("base", content)
+        testBptk.destroy()
+
+    def testBptk_begin_session_stays_quiet_when_every_name_matches(self):
+        """The guard must not report the ordinary case."""
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        testBptk = self._sd_session_bptk()
+
+        testBptk.begin_session(scenarios=["base"], scenario_managers=["smSession"],
+                               equations=["stock"])
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertNotIn("begin_session: scenario", content)
+        testBptk.destroy()
+
+    def testBptk_begin_session_refuses_an_agent_based_manager(self):
+        """Sessions are SD-only, and used to say so by crashing.
+
+        The cache asks every scenario for its memo grid, which an agent-based model has
+        no equivalent of, so the call died on
+        `AttributeError: _TrainingModel._get_cache is invalid` several frames down. The
+        branch in run_step that prints "run_step currently only supports SD scenarios"
+        was unreachable for the same reason: no such session ever began.
+        """
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        testBptk = _build_training_bptk()
+
+        result = testBptk.begin_session(scenarios=["trainScenario"],
+                                        scenario_managers=["trainManager"],
+                                        agents=["learner"])
+
+        self.assertIsNone(result)
+        self.assertIsNone(testBptk.session_state)
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn("sessions support System Dynamics scenarios only", content)
+        self.assertIn("trainManager", content)
+        testBptk.destroy()
+
+    def testBptk_version_tuple_stops_at_a_non_numeric_component(self):
+        """`2.5.0rc1` cuts at the suffix; a component with no digits at all ends the tuple.
+
+        The `break` was the one line of `_version_tuple` no test reached, and it is the
+        one that decides what happens to a version string nobody planned for.
+
+        The strings are arbitrary and deliberately not this package's version: it is the
+        parser under test, and nothing here should have to be touched at a release.
+        """
+        self.assertEqual(bptk._version_tuple("1.2.3"), (1, 2, 3))
+        self.assertEqual(bptk._version_tuple("2.5.0rc1"), (2, 5, 0))
+        self.assertEqual(bptk._version_tuple("3.0.dev0"), (3, 0))
+        self.assertEqual(bptk._version_tuple("dev"), ())
+
+    def testBptk_logfire_import_error_is_not_swallowed(self):
+        """Asking for Logfire without the extra has to say so.
+
+        Every other failure while configuring it is logged and the run continues; an
+        ImportError is re-raised, because silence would look like success.
+        """
+        from unittest.mock import patch
+        import BPTK_Py.logger.logger as logmod
+
+        configuration = {"logfire_config": {"service_name": "test"}}
+
+        with patch.object(logmod, "configure_logfire", side_effect=ImportError("no logfire")):
+            with self.assertRaises(ImportError):
+                bptk(configuration=configuration)
+
+        with patch.object(logmod, "configure_logfire", side_effect=RuntimeError("boom")):
+            testBptk = bptk(configuration=configuration)   # logged, not raised
+            testBptk.destroy()
+
+    def testBptk_train_scenarios_without_a_matching_manager(self):
+        """Agents that belong to no registered manager produce no dataframes at all."""
+        testBptk = _build_training_bptk()
+
+        result = testBptk.train_scenarios(
+            scenarios=["trainScenario"],
+            scenario_managers=["noSuchManager"],
+            episodes=1,
+            agents=["learner"],
+            return_df=True,
+        )
+
+        self.assertIsNone(result)
+        testBptk.destroy()
+
+    def testBptk_begin_session_reports_a_name_with_nothing_to_suggest(self):
+        """The other half of the didyoumean branch: no candidates at all.
+
+        `didyoumean` offers the nearest name however far it is, so the plain message
+        only appears when nothing is registered to compare against - which is exactly
+        the case where a reader most needs to be told the name matched nothing.
+        """
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        testBptk = bptk()
+
+        testBptk.begin_session(scenarios=["zzzzzzzz"], scenario_managers=["qqqqqqqq"],
+                               equations=["stock"])
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            content = file.read()
+        self.assertIn('begin_session: scenario manager "qqqqqqqq" not found!', content)
+        self.assertIn('begin_session: scenario "zzzzzzzz" not found', content)
+        self.assertNotIn("Did you maybe mean", content)
+        testBptk.destroy()
 
     def testBptk_begin_session_errors(self):
         #cleanup logfile
@@ -315,7 +472,7 @@ class TestBptk(unittest.TestCase):
         on Rust when begin_session omits the backend argument; an explicit backend
         still overrides the instance default."""
         testBptk = self._build_simple_step_bptk(
-            configuration={"default_backend": "rust", "interactive": False})
+            configuration={"default_backend": "rust"})
         self.assertEqual(testBptk.default_backend, "rust")
 
         # Omitted backend ⇒ inherits the 'rust' instance default.
@@ -336,7 +493,7 @@ class TestBptk(unittest.TestCase):
         """An invalid default_backend in the configuration logs an [ERROR] and
         leaves the instance default at 'python'."""
         testBptk = self._build_simple_step_bptk(
-            configuration={"default_backend": "bogus", "interactive": False})
+            configuration={"default_backend": "bogus"})
         self.assertEqual(testBptk.default_backend, "python")
 
     @pytest.mark.requires_rust
@@ -1024,6 +1181,68 @@ class TestBptk(unittest.TestCase):
 
         testBptk.destroy()
 
+    def testBptk_run_scenarios_agents_without_agent_states(self):
+        """Naming an agent but no states must return that agent's states, not crash.
+
+        `get_stats_for` put a plain `0` into the per-timestep output when no state was
+        named, and the loop right below it asked that output for `.items()`. So the
+        most ordinary ABM call there is - plot an agent - raised
+        `AttributeError: 'int' object has no attribute 'items'`. Naming no state now
+        means all of them.
+        """
+        import pandas as pd
+
+        testBptk = _build_training_bptk()
+
+        df = testBptk.run_scenarios(
+            scenario_managers=["trainManager"],
+            scenarios=["trainScenario"],
+            agents=["learner"],
+        )
+
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(list(df.columns), ["trainManager_trainScenario_learner_active"])
+        self.assertEqual(df.iloc[0].iloc[0], 1)
+        testBptk.destroy()
+
+    def testBptk_run_scenarios_agents_with_and_without_states_agree(self):
+        """Asking for the only state the agent has is the same as asking for none."""
+        without = _build_training_bptk().run_scenarios(
+            scenario_managers=["trainManager"], scenarios=["trainScenario"],
+            agents=["learner"])
+        with_state = _build_training_bptk().run_scenarios(
+            scenario_managers=["trainManager"], scenarios=["trainScenario"],
+            agents=["learner"], agent_states=["active"])
+
+        self.assertTrue(without.equals(with_state))
+
+    def testBptk_train_scenarios_invalid_arguments_stop_before_training(self):
+        """The four argument guards used to log and then train anyway.
+
+        Each ended in `sys.exit` without parentheses - an expression with no effect. The
+        test above could not see it: it asserted `None`, and `None` came back either
+        way. What has to be asserted is that the run does not happen.
+        """
+        from unittest.mock import patch
+        from BPTK_Py.scenariorunners.hybrid_runner import HybridRunner
+
+        testBptk = _build_training_bptk()
+
+        with patch.object(HybridRunner, "train_scenario") as trainer:
+            result = testBptk.train_scenarios(
+                scenarios=["trainScenario"],
+                scenario_managers=["trainManager"],
+                episodes=2,
+                agents=["learner"],
+                agent_properties=["x"],
+                agent_property_types=[],
+                return_df=True,
+            )
+
+        self.assertIsNone(result)
+        trainer.assert_not_called()
+        testBptk.destroy()
+
     def testBptk_train_scenarios_no_agents_returns_none(self):
         """Without agents there is nothing to train, so None is returned."""
         testBptk = _build_training_bptk()
@@ -1305,6 +1524,173 @@ class TestBptk(unittest.TestCase):
             self.assertIn("[ERROR] Please define a name for the new scenario manager", content)
         finally:
             os.unlink(tmp.name)
+
+    def testBptk_register_scenario_manager_twice_changes_nothing(self):
+        """A second registration under the same name is a no-op, not a partial one.
+
+        It used to drop the model but still merge the scenarios from the same
+        dictionary, so a scenario added in that call ran against the model the caller
+        had just replaced - and the log said "Successfully registered" right after
+        saying the model was ignored.
+        """
+        model_first = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="first")
+        stock = model_first.stock("stock")
+        stock.initial_value = 0.0
+        stock.equation = model_first.constant("rate")
+        model_first.constant("rate").equation = 1.0
+
+        model_second = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="second")
+        stock2 = model_second.stock("stock")
+        stock2.initial_value = 0.0
+        stock2.equation = model_second.constant("rate")
+        model_second.constant("rate").equation = 99.0
+
+        testBptk = bptk()
+        testBptk.register_scenario_manager({"sm": {"model": model_first, "scenarios": {"base": {}}}})
+
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        testBptk.register_scenario_manager({"sm": {"model": model_second, "scenarios": {"added": {}}}})
+
+        manager = testBptk.scenario_manager_factory.scenario_managers["sm"]
+        # Neither half of the call was applied: no scenario was merged in, and the
+        # scenario that was already there still runs the first model - rate 1.0, not 99.
+        self.assertEqual(sorted(manager.scenarios.keys()), ["base"])
+        df = testBptk.run_scenarios(
+            scenario_managers=["sm"], scenarios=["base"], equations=["stock"]
+        )
+        self.assertEqual(df.iloc[-1].iloc[0], 1.0)
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as f:
+            content = f.read()
+        self.assertIn("[ERROR] Scenario manager 'sm' is already registered", content)
+        self.assertNotIn("Successfully registered scenario manager sm", content)
+
+
+class TestMatplotlibStyling(unittest.TestCase):
+    """One central plotting configuration, read by every plot method.
+
+    `plotting_config` is process-wide by design, so each test starts from the package
+    defaults - otherwise the order the tests happen to run in decides the outcome.
+    """
+
+    DEFAULT_TITLESIZE = default_config.matplotlib_rc_settings["axes.titlesize"]
+
+    def setUp(self):
+        pytest.importorskip("matplotlib.pyplot")
+        from BPTK_Py.visualizations import plotting_config
+
+        plotting_config.reset()
+
+    tearDown = setUp
+
+    @staticmethod
+    def _element():
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="demo")
+        constant = model.constant("constant")
+        constant.equation = 2.0
+        return constant
+
+    def _titlesize_of_a_scenario_plot(self, testBptk, **kwargs):
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="styling")
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        stock.equation = model.constant("rate")
+        model.constant("rate").equation = 1.0
+        testBptk.register_model(model, scenario_manager="smStyling")
+        axes = testBptk.plot_scenarios(
+            scenario_managers=["smStyling"], scenarios=["base"],
+            equations=["stock"], format="axes", **kwargs
+        )
+        return axes.title.get_fontsize()
+
+    def test_constructing_bptk_leaves_rcparams_alone(self):
+        """bptk() used to write config.matplotlib_rc_settings into plt.rcParams."""
+        import matplotlib.pyplot as plt
+        plt.rcdefaults()
+        before = plt.rcParams["axes.titlesize"]
+
+        bptk()
+
+        self.assertEqual(plt.rcParams["axes.titlesize"], before)
+
+    def test_element_plot_is_styled_without_a_bptk_instance(self):
+        """Our own plot must not depend on a bptk() having been built."""
+        import matplotlib.pyplot as plt
+        plt.rcdefaults()
+
+        axes = self._element().plot(format="axes")
+
+        self.assertEqual(axes.title.get_fontsize(), self.DEFAULT_TITLESIZE)
+        # ...and the style is gone again once the call returns, so a chart drawn
+        # outside BPTK keeps matplotlib's own defaults.
+        self.assertEqual(plt.rcParams["axes.titlesize"], "large")
+
+    def test_instance_configuration_applies_to_every_plot_method(self):
+        """Configuring one bptk() styles all of them, and Element.plot() too."""
+        testBptk = bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
+
+        self.assertEqual(self._titlesize_of_a_scenario_plot(testBptk), 7.0)
+        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(), 7.0)
+        # A second instance, built without any configuration, draws in the same style.
+        self.assertEqual(self._titlesize_of_a_scenario_plot(bptk()), 7.0)
+
+    def test_per_call_settings_win_and_leave_the_central_config_alone(self):
+        """The override is for one draw; the next plot is central again."""
+        testBptk = bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
+        override = {"axes.titlesize": 21}
+
+        self.assertEqual(
+            self._element().plot(format="axes", matplotlib_rc_settings=override).title.get_fontsize(),
+            21.0,
+        )
+        self.assertEqual(
+            self._titlesize_of_a_scenario_plot(testBptk, matplotlib_rc_settings=override),
+            21.0,
+        )
+        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(), 7.0)
+
+    def test_figsize_and_linewidth_are_mirrored_between_both_forms(self):
+        """`figsize` and `figure.figsize` name the same thing, in either direction.
+
+        The plot calls pass figsize and lw as explicit arguments, and an explicit argument
+        beats an rc setting - so without the mirror, setting `figure.figsize` did nothing.
+        """
+        def measure(axes):
+            return (
+                tuple(round(float(v), 1) for v in axes.figure.get_size_inches()),
+                axes.get_lines()[0].get_linewidth() if axes.get_lines() else None,
+            )
+
+        # the rc form, centrally
+        bptk(configuration={"matplotlib_rc_settings": {"figure.figsize": (4, 3), "lines.linewidth": 1}})
+        self.assertEqual(measure(self._element().plot(format="axes")), ((4.0, 3.0), 1.0))
+
+        # the convenience form, centrally
+        self.setUp()
+        bptk(configuration={"figsize": (6, 5), "linewidth": 7})
+        self.assertEqual(measure(self._element().plot(format="axes")), ((6.0, 5.0), 7.0))
+
+        # the rc form on a single call, and gone again afterwards
+        self.setUp()
+        axes = self._element().plot(
+            format="axes", matplotlib_rc_settings={"figure.figsize": (8, 2), "lines.linewidth": 5}
+        )
+        self.assertEqual(measure(axes), ((8.0, 2.0), 5.0))
+        default_figsize = tuple(float(v) for v in default_config.matplotlib_rc_settings["figure.figsize"])
+        self.assertEqual(measure(self._element().plot(format="axes"))[0], default_figsize)
+
+    def test_reset_returns_to_the_package_defaults(self):
+        from BPTK_Py.visualizations import plotting_config
+
+        bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
+        plotting_config.reset()
+
+        self.assertEqual(
+            self._element().plot(format="axes").title.get_fontsize(), self.DEFAULT_TITLESIZE
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

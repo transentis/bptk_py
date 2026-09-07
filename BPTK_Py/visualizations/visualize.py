@@ -12,6 +12,8 @@
 
 
 import statistics
+from contextlib import contextmanager
+
 import pandas as pd
 
 from ..logger import log
@@ -21,6 +23,121 @@ PLOTTING_EXTRA_HINT = (
     "Plotting requires the plotting extra. "
     "Install it with: pip install bptk-py[plotting]"
 )
+
+
+#: The keys of `config.configuration` that describe how a chart is drawn, as opposed to
+#: where models and logs live. Everything in this list belongs to `plotting_config`.
+PLOT_SETTING_KEYS = ("kind", "stacked", "alpha", "colors", "figsize", "linewidth")
+
+#: Two of those exist under two names: a convenience key in `configuration` and a
+#: matplotlib rc setting. They are kept in step, in both directions, so that setting
+#: either form reaches the chart.
+MIRRORED_SETTINGS = {"figsize": "figure.figsize", "linewidth": "lines.linewidth"}
+
+
+class PlottingConfig:
+    """The single source of truth for how BPTK draws.
+
+    Every plot method reads this - `Element.plot()`, `Visualizer.plot()` and
+    `AgentDataCollector.plot_agent_stats()` alike. Before, they disagreed: the two
+    methods that had no `bptk()` in reach read the package defaults out of
+    `BPTK_Py.config.config`, while `Visualizer` read a deepcopy held by whichever
+    `bptk()` instance owned it, so `bptk(configuration=...)` reached one and not the
+    others. The matplotlib rc settings appeared to reach all three only because the
+    constructor wrote them into the global `plt.rcParams`, which restyled unrelated
+    charts as a side effect.
+
+    Process-wide by design: `bptk(configuration=...)` writes here, so a configuration
+    given to one instance applies to every plot in the process, whichever object draws
+    it. Where a single chart should differ, pass `matplotlib_rc_settings` to that plot
+    call instead - it is laid over this configuration for the one draw and leaves it
+    alone. `reset()` gets back to the package defaults.
+
+    What stays out of it: charts drawn outside BPTK. The settings are applied through
+    `plt.rc_context` around our own drawing calls, never written into the global
+    `plt.rcParams`.
+    """
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        """Restore the package defaults. Mainly for tests and notebooks."""
+        from copy import deepcopy
+        from BPTK_Py.config import config as default_config
+
+        self.matplotlib_rc_settings = deepcopy(default_config.matplotlib_rc_settings)
+        self.settings = {key: deepcopy(default_config.configuration[key]) for key in PLOT_SETTING_KEYS}
+
+    def update(self, configuration):
+        """Take over the plot-relevant entries of a `configuration` dictionary.
+
+        The two mirrored settings are kept in step here: `figsize` and `figure.figsize`
+        name the same thing, as do `linewidth` and `lines.linewidth`. Whichever form is
+        given wins, and the convenience key wins over the rc form when a call gives both.
+        """
+        if not configuration:
+            return
+        for key in PLOT_SETTING_KEYS:
+            if key in configuration:
+                self.settings[key] = configuration[key]
+        if "matplotlib_rc_settings" in configuration:
+            self.matplotlib_rc_settings = dict(configuration["matplotlib_rc_settings"])
+            # The rc form reaches the draw only through the mirror: the plot calls pass
+            # figsize and lw as explicit arguments, and an explicit argument beats an rc
+            # setting. Without this, setting figure.figsize did nothing at all.
+            for key, rc_key in MIRRORED_SETTINGS.items():
+                if rc_key in self.matplotlib_rc_settings:
+                    self.settings[key] = self.matplotlib_rc_settings[rc_key]
+        for key, rc_key in MIRRORED_SETTINGS.items():
+            if key in configuration:
+                self.settings[key] = configuration[key]
+                self.matplotlib_rc_settings[rc_key] = configuration[key]
+
+    def resolved(self, matplotlib_rc_settings=None):
+        """The effective settings for one drawing call.
+
+        Same mirror as `update`, for the per-call overrides: `matplotlib_rc_settings` on a
+        plot call can name `figure.figsize` or `lines.linewidth`, and those have to reach
+        the explicit arguments the call passes on.
+        """
+        settings = dict(self.settings)
+        if matplotlib_rc_settings:
+            for key, rc_key in MIRRORED_SETTINGS.items():
+                if rc_key in matplotlib_rc_settings:
+                    settings[key] = matplotlib_rc_settings[rc_key]
+        return settings
+
+    def __getitem__(self, key):
+        return self.settings[key]
+
+
+#: Process-wide plotting configuration. `bptk(configuration=...)` updates it.
+plotting_config = PlottingConfig()
+
+
+@contextmanager
+def bptk_style(matplotlib_rc_settings=None):
+    """Apply the matplotlib settings from `plotting_config` for one drawing call.
+
+    Scoped to the draw rather than to the process, which is what keeps charts drawn
+    outside BPTK untouched: constructing a `bptk()` no longer restyles them, and our own
+    plots look right whether or not such an object was ever built.
+
+    Args:
+        matplotlib_rc_settings: Dict (Default None).
+            Settings for this one call, laid over the central configuration rather than
+            replacing it - pass only the keys that should differ. `plotting_config` stays
+            as it is, so the next plot is styled centrally again.
+    """
+    import matplotlib.pyplot as plt
+
+    settings = plotting_config.matplotlib_rc_settings
+    if matplotlib_rc_settings:
+        settings = {**settings, **matplotlib_rc_settings}
+
+    with plt.rc_context(settings):
+        yield
 
 
 def require_matplotlib():
@@ -49,7 +166,8 @@ class visualizer():
         self.config = config
 
     def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
-             y_label, start_date="1/1/2018", freq="D", series_names={},format="plot"):
+             y_label, start_date="1/1/2018", freq="D", series_names={},format="plot",
+             matplotlib_rc_settings=None):
         """
         Plot method. Creates plots from dataframes
         :param df: DataFrame input
@@ -65,17 +183,19 @@ class visualizer():
         :param start_date: Start date for time series
         :param freq: Frequency setting for time series
         :param series_names: series renaming patterns
+        :param matplotlib_rc_settings: matplotlib settings for this call only, laid over
+            the central plotting_config rather than replacing it (default: None)
         :return: depends on format flag: either just a plot, which formally returns nothing, or Matplotlib axes, or a dataframe
         """
 
         if not kind:
-            kind=self.config.configuration["kind"]
+            kind=plotting_config["kind"]
 
         if not stacked:
-            stacked = self.config.configuration["stacked"]
+            stacked = plotting_config["stacked"]
 
         if not alpha:
-            alpha = self.config.configuration["alpha"]
+            alpha = plotting_config["alpha"]
 
         if not start_date == "":
             df.index = pd.date_range(start_date, periods=len(df), freq=freq)
@@ -129,48 +249,53 @@ class visualizer():
             # Only for `format="axes"`, where the caller receives the axes and its own
             # environment renders them. The default path has to stay on pyplot: a
             # script or a Jupyter cell shows the figure *because* it is registered.
-            if format == "axes":
-                from matplotlib.figure import Figure
+            # One style block around both draw branches. It has to be active while the
+            # axes are built: figure size, line width and the tick label sizes are read
+            # at creation, so update_plot_formats() below could not put them right.
+            settings = plotting_config.resolved(matplotlib_rc_settings)
+            with bptk_style(matplotlib_rc_settings):
+                if format == "axes":
+                    from matplotlib.figure import Figure
 
-                figure = Figure(figsize=self.config.configuration["figsize"])
-                target_axes = figure.add_subplot(111)
-            else:
-                target_axes = None
+                    figure = Figure(figsize=settings["figsize"])
+                    target_axes = figure.add_subplot(111)
+                else:
+                    target_axes = None
 
-            ### Get the plot object
-            if visualize_to_period == 0:
+                ### Get the plot object
+                if visualize_to_period == 0:
 
-                ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
-                                                          figsize=self.config.configuration["figsize"],
-                                                          title=title, ax=target_axes,
-                                                          alpha=alpha, color=self.config.configuration["colors"],
-                                                          lw=self.config.configuration["linewidth"])
+                    ax = df.iloc[visualize_from_period:].plot(kind=kind, stacked=stacked,
+                                                              figsize=settings["figsize"],
+                                                              title=title, ax=target_axes,
+                                                              alpha=alpha, color=settings["colors"],
+                                                              lw=settings["linewidth"])
 
-            elif visualize_from_period == visualize_to_period:
-                print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
-                                                                              str(visualize_to_period)))
-                return None
+                elif visualize_from_period == visualize_to_period:
+                    print("[INFO] No data to plot for period t={} to t={}".format(str(visualize_from_period),
+                                                                                  str(visualize_to_period)))
+                    return None
 
-            else:
-                if visualize_to_period + 1 > len(df):
-                    visualize_to_period = len(df)
+                else:
+                    if visualize_to_period + 1 > len(df):
+                        visualize_to_period = len(df)
 
-                ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
-                                                                             figsize=self.config.configuration["figsize"],
-                                                                             title=title, ax=target_axes,
-                                                                             alpha=alpha,
-                                                                             color=self.config.configuration["colors"],
-                                                                             lw=self.config.configuration["linewidth"])
-                ### Set axes labels and set the formats
-            if (len(x_label) > 0):
-                ax.set_xlabel(x_label)
+                    ax = df.iloc[visualize_from_period:visualize_to_period].plot(kind=kind, stacked=stacked,
+                                                                                 figsize=settings["figsize"],
+                                                                                 title=title, ax=target_axes,
+                                                                                 alpha=alpha,
+                                                                                 color=settings["colors"],
+                                                                                 lw=settings["linewidth"])
+                    ### Set axes labels and set the formats
+                if (len(x_label) > 0):
+                    ax.set_xlabel(x_label)
 
-                # Set the y-axis label
-            if (len(y_label) > 0):
-                ax.set_ylabel(y_label)
+                    # Set the y-axis label
+                if (len(y_label) > 0):
+                    ax.set_ylabel(y_label)
 
-            for ymaj in ax.yaxis.get_majorticklocs():
-                ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+                for ymaj in ax.yaxis.get_majorticklocs():
+                    ax.axhline(y=ymaj, ls='-', alpha=0.05, color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
 
             self.update_plot_formats(ax)
 

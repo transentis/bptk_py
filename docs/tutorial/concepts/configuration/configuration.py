@@ -239,22 +239,21 @@ def _(savings):
         equations=["totalValue", "interest", "deposit"],
         format="axes",
     )
-    return (BPTK_Py,)
+    return (BPTK_Py, bptk_default)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    You can set the kind of diagram (`line`, `area`, `bar`), whether the series are stacked,
-    the colours, the transparency and any matplotlib rc setting. Change a value below and press
-    play to see the difference:
-    """)
-    return
+    ### One configuration for every plot
 
+    The plot settings live in one place that every plot method reads — `plot_scenarios`,
+    `plot_lookup`, `Element.plot` and the agent data collector alike. Passing
+    `configuration` to the constructor writes into it, so the settings apply to **every**
+    plot in the process, not only to the plots of the instance you configured:
 
-@app.cell
-def _(BPTK_Py, savings):
-    bptk_styled = BPTK_Py.bptk(
+    ```python
+    BPTK_Py.bptk(
         configuration={
             "kind": "bar",              # bars instead of lines
             "stacked": False,           # side by side rather than on top of each other
@@ -267,12 +266,39 @@ def _(BPTK_Py, savings):
             },
         }
     )
-    bptk_styled.register_model(savings)
-    bptk_styled.plot_scenarios(
+    ```
+
+    That is deliberate — you configure the look of your plots once — but it is worth
+    knowing before you build a second instance and wonder why it draws in the first
+    instance's style. `BPTK_Py.plotting_config.reset()` gets back to the defaults.
+
+    Charts you draw yourself are not affected. The settings are applied around our own
+    drawing calls, never written into matplotlib's global `rcParams`, so a figure you
+    build with `plt.subplots()` keeps matplotlib's own defaults.
+
+    ### Styling a single plot
+
+    Where one chart should differ, hand the settings to that call instead. They are laid
+    over the central configuration for this one draw and leave it as it is, so the plot
+    above keeps its own look. Change a value and press play:
+    """)
+    return
+
+
+@app.cell
+def _(bptk_default):
+    bptk_default.plot_scenarios(
         scenario_managers="smSavings",
         scenarios="base",
         equations=["totalValue", "interest", "deposit"],
         format="axes",
+        kind="bar",                     # bars instead of lines
+        alpha=0.98,                     # almost opaque
+        matplotlib_rc_settings={
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 12,
+            "legend.fontsize": 14,
+        },
     )
     return
 

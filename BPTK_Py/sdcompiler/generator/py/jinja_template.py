@@ -9,14 +9,23 @@
 # Copyright (c) 2019 transentis labs GmbH
 # MIT License
 
-template = '''
+# The banner every generated model opens with. It gets a raw string of its own: the
+# ASCII art is made of `\|` and `\_`, which are not Python escape sequences, and
+# doubling the backslashes to silence the SyntaxWarning would leave the art
+# unreadable here. The template as a whole cannot be raw - it carries `\'\'\'` for the
+# docstrings of the generated file, and a raw string would keep those backslashes in
+# the value. The two `\\[` in the regexes further down are doubled for the same
+# reason: in this literal a single backslash is an invalid escape.
+_banner = r'''
 #      _                   _ _
 #  _____| |__ ___ _ __  _ __(_| |___ _ _
 # (_-/ _` / _/ _ | '  \| '_ | | / -_| '_|
 # /__\__,_\__\___|_|_|_| .__|_|_\___|_|
 #                      |_|
 # Copyright (c) 2013-2020 transentis management & consulting. All rights reserved.
-#
+#'''
+
+template = _banner + '''
     
 import numpy as np
 from scipy.interpolate import interp1d
@@ -548,7 +557,7 @@ class simulation_model():
             return [stock + "[{}]".format(x) for x in stockdimensions[list(stockdimensions.keys())[0]]]
 
     def get_dimensions(self, equation, t):
-        re_find_indices = r'\[([^)]+)\]'
+        re_find_indices = r'\\[([^)]+)\\]'
         group = re.search(re_find_indices, equation).group(0).replace("[", "").replace("]", "")
         equation_basic = equation.replace(group, "").replace("[]", "")
         labels = []
@@ -603,7 +612,7 @@ class simulation_model():
 
             # match array pattern and find non-arrayed var
             import re
-            match = re.findall(r'\[[a-zA-Z1-9,_]*\]', equation)
+            match = re.findall(r'\\[[a-zA-Z1-9,_]*\\]', equation)
 
             if match:
 

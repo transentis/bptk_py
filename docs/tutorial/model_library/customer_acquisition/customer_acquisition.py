@@ -128,7 +128,6 @@ def _(mo):
 def _(mo):
     ## Load the BPTK Package
     from BPTK_Py.bptk import bptk
-    import matplotlib.pyplot as plt
 
     bptk = bptk()
     advertising_success = mo.ui.slider(
@@ -150,7 +149,6 @@ def _(mo):
     return (
         advertising_success,
         bptk,
-        plt,
         referral_free_months,
         referral_program_adoption,
         referrals,
@@ -158,21 +156,7 @@ def _(mo):
 
 
 @app.cell
-def _(
-    advertising_success,
-    bptk,
-    mo,
-    plt,
-    referral_free_months,
-    referral_program_adoption,
-    referrals,
-):
-    # Every plot_scenarios call leaves its figure in matplotlib's registry, and this
-    # cell makes one per chart on every move of a control - a dozen moves fill the
-    # browser's heap and the page stops answering. Closing the previous run's figures
-    # keeps it bounded; they have already been rendered by then.
-    plt.close("all")
-
+def _(advertising_success, bptk, mo, referral_free_months, referral_program_adoption, referrals):
     scenario = bptk.get_scenario("smCustomerAcquisition", "interactiveScenario")
     scenario.constants["advertisingSuccess%"] = advertising_success.value
     scenario.constants["referralProgramAdoption%"] = referral_program_adoption.value

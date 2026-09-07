@@ -37,8 +37,7 @@ class conf:
     def __init__(self):
         self.loglevel = default_config.loglevel
         self.matplotlib_rc_settings = deepcopy(default_config.matplotlib_rc_settings)
-        self.colors = deepcopy(default_config.transentis_colors)
-        
+
         cfg = default_config.configuration
         layout = cfg.pop("slider_layout", None) # Remove Widget since it can not be deepcopied
         self.configuration = deepcopy(cfg)  
@@ -200,16 +199,16 @@ class bptk():
             except Exception as e:
                 log(f"[WARN] Failed to configure Logfire: {e}")
 
-        # Setup matplotlib. It ships as bptk-py[plotting] and `interactive`
-        # defaults to True, so a headless install must not fail here - the plot
-        # methods say what is missing once someone actually plots.
-        if self.config.configuration["interactive"]:
-            try:
-                import matplotlib.pyplot as plt
-                for key, value in self.config.matplotlib_rc_settings.items():
-                    plt.rcParams[key] = value
-            except ImportError:
-                pass
+        # Plot settings go to the one place every plot method reads. They are NOT written
+        # into the global plt.rcParams any more: that restyled every chart in the process,
+        # including ones that have nothing to do with us, and made element.plot() depend
+        # on whether a bptk() happened to exist - in a marimo notebook the same cell then
+        # looked different depending on what the reader had clicked before.
+        #
+        # visualizations imports matplotlib lazily, so this is safe on a headless install.
+        if configuration and isinstance(configuration, dict):
+            from BPTK_Py.visualizations import plotting_config
+            plotting_config.update(configuration)
 
         self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
 
@@ -222,7 +221,6 @@ class bptk():
         self.scenario_manager_factory.get_scenario_managers(path=self.config.configuration["scenario_storage"]) 
 
         self.visualizer = visualizer(config=self.config)
-        self.abmrunner = HybridRunner(self.scenario_manager_factory) #TODO rename self.abmrunner to self.model_runner if still needed
         self.session_state = None
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
@@ -339,22 +337,21 @@ class bptk():
         # Make sure that agent_states is only used when agent is used!
         if len(agent_states) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            sys.exit
+            return None
 
         if len(agent_properties) > 0 and len(agents) == 0:
             log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
-            sys.exit
+            return None
 
         if len(agent_properties) > 0 and len(agent_property_types) == 0:
             log("[ERROR] You must set the relevant property types if you specify an agent_property!")
-            sys.exit
+            return None
 
         if len(agent_property_types) > 0 and len(agent_properties) == 0:
             log(
                 "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
-            sys.exit
+            return None
 
-        #TODO: Add tests for training
         dfs = []
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
@@ -504,9 +501,49 @@ class bptk():
                     self.config.configuration["scenario_storage"]))
             return None
 
-        #TODO add handling regarding "erroneous names" in analogy to run_scenarios
+        # Names that matched nothing. run_scenarios reports these with a suggestion;
+        # a session that swallows a typo is worse than a run that does, because the
+        # caller then steps a session which will never carry the scenario they asked
+        # for and nothing ever says why.
+        known_managers = self.scenario_manager_factory.scenario_managers
+        for scenario_manager_name in scenario_managers:
+            if scenario_manager_name in known_managers:
+                continue
+            nearest = didyoumean(scenario_manager_name,
+                                 [name for name in known_managers if name != scenario_manager_name], 3)
+            if len(nearest) > 0:
+                log("[ERROR] begin_session: scenario manager \"{}\" not found! Did you maybe mean one of \"{}\"?".format(
+                    scenario_manager_name, ", ".join(nearest)))
+            else:
+                log("[ERROR] begin_session: scenario manager \"{}\" not found!".format(scenario_manager_name))
 
         #TODO need methods in scenario_manager_factory to make the following easier ...
+
+        available_scenarios = self.scenario_manager_factory.get_scenarios(
+            scenario_managers=[name for name in scenario_managers if name in known_managers])
+        for scenario_name in scenarios:
+            if scenario_name in available_scenarios:
+                continue
+            nearest = didyoumean(scenario_name,
+                                 [name for name in available_scenarios if name != scenario_name], 3)
+            if len(nearest) > 0:
+                log("[ERROR] begin_session: scenario \"{}\" not found in any of the scenario managers given! Did you maybe mean one of \"{}\"?".format(
+                    scenario_name, ", ".join(nearest)))
+            else:
+                log("[ERROR] begin_session: scenario \"{}\" not found in any of the scenario managers given!".format(
+                    scenario_name))
+
+        # Sessions are System Dynamics only. The cache below asks every scenario for
+        # its memo grid, which an agent-based model has no equivalent of, so the call
+        # used to die several frames down on `AttributeError: _get_cache is invalid`.
+        # The branch in run_step that prints "run_step currently only supports SD
+        # scenarios" was unreachable for the same reason: no such session ever began.
+        agent_based = [name for name in scenario_managers
+                       if name in known_managers and known_managers[name].type != "sd"]
+        if len(agent_based) > 0:
+            log("[ERROR] begin_session: sessions support System Dynamics scenarios only, and \"{}\" is agent-based. Use run_scenarios() to simulate it.".format(
+                ", ".join(agent_based)))
+            return None
 
         starttime_ = starttime
         stoptime_ = None
@@ -642,7 +679,9 @@ class bptk():
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
             # Handle Hybrid scenarios
-            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:
+            # Unreachable, like its twin further down: begin_session refuses an
+            # agent-based scenario manager, so no session can be standing here with one.
+            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:  # pragma: no cover
                 runner = HybridRunner(self.scenario_manager_factory)
                 simulation_results[manager.name] = runner.run_scenario_step(
                     step=step,
@@ -852,9 +891,11 @@ class bptk():
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
 
                 # Handle Hybrid scenarios
-                # TODO: ABM sessions are not supported yet — begin_session's cache
-                # machinery is SD/XMILE-only, so this branch is currently unreachable.
-                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and len(self.session_state["agents"]) > 0:
+                # Unreachable: begin_session refuses an agent-based scenario manager, so
+                # no session can be standing here with one. Kept as the place where ABM
+                # sessions would begin if the cache machinery ever grows a memo grid an
+                # agent-based model can supply.
+                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and len(self.session_state["agents"]) > 0:  # pragma: no cover
                     print("run_step currently only supports SD scenarios")
                     # Handle SD scenarios and sort by scenarios
                 elif manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
@@ -1082,7 +1123,8 @@ class bptk():
                        progress_bar=False,
                        return_df=False,
                        format="plot",
-                       backend="python"
+                       backend="python",
+                       matplotlib_rc_settings=None
                       ):
 
         """Plot scenarios for SD, ABM and hybrid models.
@@ -1130,6 +1172,11 @@ class bptk():
                 Set True if you want to receive a dataFrame instead of the plot
             format: string
                 Can be either plot (default), axes (matplotlib axes object) or df (pandas dataframe)
+            matplotlib_rc_settings: Dict (Default None).
+                matplotlib settings for this one plot, laid over the central plotting
+                configuration rather than replacing it. The central configuration - set
+                through the `configuration` argument of the constructor - is left alone,
+                so the next plot is styled centrally again.
             backend: String (Default='python').
                 Execution backend: 'python' or 'rust'. Only applies to SD scenarios.
                 Like run_scenarios(), this defaults to 'python' regardless of the
@@ -1174,13 +1221,15 @@ class bptk():
                                     y_label=y_label,
                                     start_date=start_date,
                                     freq=freq,
-                                    series_names=series_names
+                                    series_names=series_names,
+                                    matplotlib_rc_settings=matplotlib_rc_settings
                                     )
 
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
-                    freq="D", series_names={}, kind=None, format="plot"):
+                    freq="D", series_names={}, kind=None, format="plot",
+                    matplotlib_rc_settings=None):
         """Plot lookup functions.
 
         If they come with  very different indices, do not be surprised that the plot looks weird as I greedily try to plot everything
@@ -1221,6 +1270,9 @@ class bptk():
                 What to return: "plot" draws the diagram and returns nothing, "axes" returns the
                 matplotlib Axes, "df" returns the underlying dataframe. Same values as
                 plot_scenarios() and Element.plot().
+            matplotlib_rc_settings: Dict (Default None).
+                matplotlib settings for this one plot, laid over the central plotting
+                configuration rather than replacing it.
 
         Returns:
             Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
@@ -1281,7 +1333,8 @@ class bptk():
                                     y_label=y_label,
                                     start_date=start_date,
                                     freq=freq,
-                                    series_names=series_names)
+                                    series_names=series_names,
+                                    matplotlib_rc_settings=matplotlib_rc_settings)
 
     def destroy(self):
         """ Destroy the BPTK object without stopping the Python Kernel.
@@ -1519,6 +1572,12 @@ class bptk():
 
         Register a manually defined Scenario manager using the common dictionary notation. Keep in mind that it HAS TO contain a reference to a live model instance.
 
+        This creates a scenario manager, it does not replace one. A name that is already
+        registered is left exactly as it is: the model and any scenarios passed in are
+        ignored and an error is logged. To add scenarios to an existing manager, use
+        register_scenarios(); to discard everything and register from scratch, call
+        reset_all_scenarios() first.
+
         Args:
             scenario_manager: Dict.
                 Dictionary notation as used in the scenarios definitions. The scenario manager definition does not necessarily need to contain scenarios, but it can.
@@ -1528,39 +1587,40 @@ class bptk():
         # TODO refactoring - much of this code should be part of scenario_manager_factory
         for scenario_manager_name, values in scenario_manager.items():
             if scenario_manager_name in self.scenario_manager_factory.scenario_managers.keys():
-                manager = self.scenario_manager_factory.scenario_managers[scenario_manager_name]
-                # The model handed in here is dropped, which is easy to miss when the
-                # call comes from a notebook cell run a second time: the cell built a
-                # new model, and the scenarios keep running against the old one. Say so
-                # in as many words, and say what to do about it.
+                # Registering is a create, not an upsert. Doing half the call - dropping
+                # the model but still merging the scenarios from the same dictionary -
+                # left a freshly added scenario running against the model the caller had
+                # just replaced, and logged "[INFO] Successfully registered" right after
+                # saying the model was ignored. So do nothing at all, and name the two
+                # methods that do what the caller was probably after.
                 log(
-                    "[WARN] Scenario manager '{}' already exists, so the model passed in "
-                    "now was ignored and its scenarios keep running against the model "
-                    "registered first. Call bptk.reset_all_scenarios() before "
-                    "registering again, or use a different name.".format(
+                    "[ERROR] Scenario manager '{}' is already registered, so nothing was "
+                    "changed - neither the model nor any scenarios passed in now. To add "
+                    "scenarios to it, use bptk.register_scenarios(); to start over, call "
+                    "bptk.reset_all_scenarios() first.".format(
                         scenario_manager_name
                     )
                 )
+                continue
 
+            model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
+            model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
+            if "type" in values.keys() and values["type"]=="abm":
+                manager = ScenarioManagerHybrid(
+                    json_config=values,
+                    name=scenario_manager_name,
+                    model=model
+                )
             else:
-                model = values["model"] if "model" in values.keys() and type(values["model"]) is not str else None
-                model_file = values["model"] if "model" in values.keys() and type(values["model"]) is str else ""
-                if "type" in values.keys() and values["type"]=="abm":
-                    manager = ScenarioManagerHybrid(
-                        json_config=values,
-                        name=scenario_manager_name,
-                        model=model
-                    )
-                else:
-                    manager = ScenarioManagerSd(
-                        scenarios={},
-                        model=model,
-                        name=scenario_manager_name,
-                        base_constants=values["base_constants"] if "base_constants" in values.keys() else {},
-                        base_points=values["base_points"] if "base_points" in values.keys() else {},
-                        source=values["source"] if "source" in values.keys() else "",
-                        model_file=model_file
-                    )
+                manager = ScenarioManagerSd(
+                    scenarios={},
+                    model=model,
+                    name=scenario_manager_name,
+                    base_constants=values["base_constants"] if "base_constants" in values.keys() else {},
+                    base_points=values["base_points"] if "base_points" in values.keys() else {},
+                    source=values["source"] if "source" in values.keys() else "",
+                    model_file=model_file
+                )
 
             # Add scenario if any in the dictionary is found
             if "scenarios" in values.keys():

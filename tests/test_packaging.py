@@ -81,13 +81,38 @@ class TestDependencyGroups:
             assert extra in test_extra, f"[{extra}] is not covered by the test extra"
 
 
+    def test_the_marimo_pin_agrees_with_the_readers_requirements(self, pyproject):
+        """One version in two files, and the site is a different site if they differ.
+
+        The `docs` group is what a checkout renders with; `docs/tutorial/requirements.txt`
+        is what a reader installs to run the notebooks. The marimo release decides which
+        islands runtime the pages embed - unpinned, CI once rendered 437 files where a
+        laptop rendered 405 from the same sources.
+        """
+        requirements = PYPROJECT.parent / "docs" / "tutorial" / "requirements.txt"
+        if not requirements.is_file():
+            pytest.skip("documentation sources not available - public checkout")
+
+        group = pyproject.get("dependency-groups", {}).get("docs", [])
+        in_group = [r for r in group if _requirement_name(r) == "marimo"]
+        in_file = [
+            line.strip() for line in requirements.read_text().splitlines()
+            if _requirement_name(line) == "marimo" and not line.startswith("#")
+        ]
+
+        assert len(in_group) == 1 and len(in_file) == 1
+        assert in_group[0] == in_file[0], (
+            f"pyproject pins {in_group[0]}, requirements.txt pins {in_file[0]}"
+        )
+
+
 class TestChangelog:
     """The release gate.
 
     The changelog lives in README.md rather than a CHANGELOG.md, deliberately:
     GitHub renders the README on the repository landing page, so that is where
     it stays visible. It is also the only copy - the one on the documentation
-    site is generated from it as of Release B.
+    site is generated from it.
 
     Implemented as a test rather than a separate CI step because publishing is
     already gated on the suite, so this gates it too.
@@ -105,6 +130,24 @@ class TestChangelog:
         assert f"### {version}" in self._readme(), (
             f"pyproject.toml declares {version}, but README.md has no '### {version}' "
             f"changelog entry. Add one before releasing.")
+
+    def test_the_newest_entry_is_the_declared_version(self, pyproject):
+        """A changelog section for a version that does not exist yet.
+
+        The check above asks whether the declared version *has* an entry, which stays
+        true while the entry runs ahead: on 2026-09-02 pyproject said 3.0.2 and README
+        already carried a `### 3.0.3` section full of release notes. That is the state
+        this catches - the newest heading has to be the version being released.
+        """
+        import re
+
+        changelog = self._readme().split("## Changelog", 1)[1]
+        headings = re.findall(r"^### (\S+)", changelog, re.M)
+
+        assert headings, "the changelog has no version headings"
+        assert headings[0] == pyproject["project"]["version"], (
+            f"README.md's newest changelog entry is {headings[0]}, but pyproject.toml "
+            f"declares {pyproject['project']['version']}. Bump one of them.")
 
     def test_changelog_section_exists(self):
         """A rename would make the check above vacuous rather than failing."""

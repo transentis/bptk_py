@@ -33,8 +33,8 @@ This directory contains comprehensive tests for the BPTK external state adapters
 ### 1. Basic Setup
 
 ```bash
-# Install test dependencies
-pip install pytest python-dotenv
+# Install everything the suite needs, from uv.lock
+uv sync --all-extras
 
 # Copy configuration template
 cp tests/.env.example tests/.env
@@ -103,12 +103,11 @@ docker run -p 6379:6379 redis:alpine
 
 ### 4. Install Database Dependencies
 
-```bash
-# For PostgreSQL tests
-pip install psycopg[binary]
+Both drivers come with the `server` extra, so `uv sync --all-extras` has already
+installed them. To add just that one extra:
 
-# For Redis tests
-pip install redis
+```bash
+uv sync --extra server
 ```
 
 ## Running Tests
@@ -117,35 +116,34 @@ pip install redis
 
 ```bash
 # From project root
-pytest tests/unittests/test_external_state_adapters.py -v
-pytest tests/unittests/test_stateless_bptk_server.py -v
+uv run pytest tests/unittests/test_external_state_adapters.py -v
+uv run pytest tests/unittests/test_stateless_bptk_server.py -v
 ```
 
 ### Run Specific Test Categories
 
 ```bash
 # Only PostgreSQL tests
-pytest tests/unittests/test_external_state_adapters.py::TestPostgresAdapter -v
+uv run pytest tests/unittests/test_external_state_adapters.py::TestPostgresAdapter -v
 
 # Only Redis tests
-pytest tests/unittests/test_external_state_adapters.py::TestRedisAdapter -v
+uv run pytest tests/unittests/test_external_state_adapters.py::TestRedisAdapter -v
 
 # Only stateless server tests
-pytest tests/unittests/test_stateless_bptk_server.py::TestStatelessBptkServer -v
+uv run pytest tests/unittests/test_stateless_bptk_server.py::TestStatelessBptkServer -v
 ```
 
 ### Run Tests Without External Dependencies
 
 ```bash
 # This will skip database tests if dependencies aren't available
-pytest tests/unittests/test_external_state_adapters.py -v
+uv run pytest tests/unittests/test_external_state_adapters.py -v
 ```
 
 ### Run with Coverage
 
 ```bash
-pip install pytest-cov
-pytest tests/unittests/test_external_state_adapters.py --cov=BPTK_Py.externalstateadapter --cov-report=html
+uv run --group ci pytest tests/unittests/test_external_state_adapters.py --cov=BPTK_Py.externalstateadapter --cov-report=html
 ```
 
 ## Test Configuration Options
@@ -222,11 +220,11 @@ Full workflow tests combining:
 ```
 ImportError: no pq wrapper available
 ```
-Solution: Install PostgreSQL client library
+Solution: install the `server` extra, which carries the driver
 ```bash
-pip install psycopg[binary]
-# or
-brew install postgresql  # macOS
+uv sync --extra server
+# or, for the system library on macOS
+brew install postgresql
 ```
 
 **Redis Connection Failed**
@@ -245,7 +243,7 @@ Solution: Set `ENABLE_REDIS_TESTS=true` in `.env`
 
 Enable verbose output:
 ```bash
-pytest tests/unittests/test_external_state_adapters.py -v -s
+uv run pytest tests/unittests/test_external_state_adapters.py -v -s
 ```
 
 View test configuration:
@@ -259,62 +257,13 @@ print("Redis config:", TestConfig.get_redis_config())
 
 ## CI/CD Integration
 
-### GitHub Actions Example
+These tests run in `.github/workflows/python-package.yml`, in the Linux job: it brings up
+the Postgres and Redis service containers, sets `ENABLE_POSTGRES_TESTS` and
+`ENABLE_REDIS_TESTS`, and runs the whole suite. Read that file rather than a copy here -
+an example workflow in a README drifts from the real one and then teaches the wrong thing.
 
-```yaml
-name: External State Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: bptk_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-
-    - name: Install dependencies
-      run: |
-        pip install pytest psycopg[binary] redis python-dotenv
-
-    - name: Run tests
-      env:
-        POSTGRES_HOST: localhost
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: test
-        POSTGRES_DB: bptk_test
-        REDIS_URL: redis://localhost:6379/0
-        ENABLE_POSTGRES_TESTS: true
-        ENABLE_REDIS_TESTS: true
-      run: |
-        pytest tests/unittests/test_external_state_adapters.py -v
-        pytest tests/unittests/test_stateless_bptk_server.py -v
-```
+macOS and Windows run without either service, which is why every test in this file is
+guarded by its `requires_*` decorator.
 
 ## Contributing
 

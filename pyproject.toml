@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.0.2"
+version = "3.0.3"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
@@ -63,6 +63,26 @@ test = [
     "bptk-py[plotting,xmile,server,observability]"
 ]
 
+# Not part of the published package: uv installs these for development only, so a
+# checkout can build the Rust extension without anyone installing maturin by hand.
+# `uv sync` picks the group up on its own; the build-system requirement above is what
+# a *consumer* builds the wheel with.
+[dependency-groups]
+dev = ["maturin>=1.7,<2.0"]
+# What renders the website. The same pin lives in docs/tutorial/requirements.txt,
+# which is what a *reader* installs to run the notebooks themselves; a test in
+# test_packaging.py keeps the two from drifting apart.
+docs = ["marimo==0.23.13"]
+# What CI adds on top: the linter and the coverage plugin. Here rather than in the
+# workflow so they are resolved from uv.lock like everything else - a version that
+# only exists in a `pip install` line is the one that changes without anyone noticing.
+ci = ["flake8", "pytest-cov"]
+
+[tool.uv]
+# Both groups belong to a working checkout, so `uv sync` installs them without
+# anyone having to remember a flag.
+default-groups = ["dev", "docs"]
+
 [project.urls]
 Homepage = "https://bptk.transentis.com"
 Documentation = "https://bptk.transentis.com"
@@ -77,11 +97,12 @@ bindings = "pyo3"
 
 [tool.pytest.ini_options]
 pythonpath = ["tests"]
-# The documentation lives in the repository as marimo notebooks, and some of
-# them are named like test modules - `model_library/beergame/test/q_table_test.py`
-# is a page, not a test. Without this, collection reaches into docs/ and the
-# suite dies before it starts. The other entries are pytest's own defaults,
-# which naming this key would otherwise replace.
+# The documentation lives in the repository as marimo notebooks, and a notebook
+# named like a test module is a page, not a test - `q_table_test.py` was one until
+# it became a real test. Without this, collection reaches into docs/ and the suite
+# dies before it starts. It also keeps `tests/docs/` out of the library run, which
+# is why the four platform jobs do not need the documentation's dependencies. The
+# other entries are pytest's own defaults, which naming this key would replace.
 testpaths = ["tests"]
 norecursedirs = ["docs", "venv", "build", "dist", "target", "node_modules", "*.egg", ".*"]
 filterwarnings = [

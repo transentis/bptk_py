@@ -1,2 +1,7 @@
 BPTK-Py[plotting,xmile]
-marimo
+# Pinned, because the version decides what the site *is*: the marimo release determines
+# which islands runtime the pages embed, and therefore which bundle patch_islands mirrors
+# and patches. Unpinned, CI rendered with 0.24.0 and 437 files while a laptop rendered
+# 0.23.13 and 405 - the same sources, two different websites. Upgrading is a deliberate
+# step: change this line, re-render, check the gate, and confirm the patch still applies.
+marimo==0.23.13

@@ -52,7 +52,13 @@ def _():
         title="Order Behaviour in a Typical Game",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.actualProduction","distributor.actualOrder","wholesaler.actualOrder","retailer.actualOrder", "retailer.incomingOrder"],
+        equations=[
+            "brewery.actualProduction",
+            "distributor.actualOrder",
+            "wholesaler.actualOrder",
+            "retailer.actualOrder",
+            "retailer.incomingOrder",
+        ],
         series_names={
             "smBeergameSD_typical_brewery.actualProduction" : "Brewery",
             "smBeergameSD_typical_distributor.actualOrder" : "Distributor",
@@ -90,7 +96,13 @@ def _(bptk):
         title="Surplus in a Typical Game",
         x_label="Weeks",
         y_label="Beer Surplus",
-        equations=["brewery.surplus","distributor.surplus","wholesaler.surplus","retailer.surplus", "retailer.surplus"],
+        equations=[
+            "brewery.surplus",
+            "distributor.surplus",
+            "wholesaler.surplus",
+            "retailer.surplus",
+            "retailer.surplus",
+        ],
         series_names={
             "smBeergameSD_typical_brewery.surplus" : "Brewery",
             "smBeergameSD_typical_distributor.surplus" : "Distributor",
@@ -219,7 +231,13 @@ def _(bptk):
         title="Remember Open Orders – Order Behaviour",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.actualProduction","distributor.actualOrder","wholesaler.actualOrder","retailer.actualOrder", "retailer.incomingOrder"],
+        equations=[
+            "brewery.actualProduction",
+            "distributor.actualOrder",
+            "wholesaler.actualOrder",
+            "retailer.actualOrder",
+            "retailer.incomingOrder",
+        ],
         series_names={
             "smBeergameSD_includeSupplyLine_brewery.actualProduction" : "Brewery",
             "smBeergameSD_includeSupplyLine_distributor.actualOrder" : "Distributor",
@@ -258,7 +276,13 @@ def _(bptk):
         title="Order Behaviour – 8 Weeks Inventory Adjustment Time",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.actualProduction","distributor.actualOrder","wholesaler.actualOrder","retailer.actualOrder", "retailer.incomingOrder"],
+        equations=[
+            "brewery.actualProduction",
+            "distributor.actualOrder",
+            "wholesaler.actualOrder",
+            "retailer.actualOrder",
+            "retailer.incomingOrder",
+        ],
         series_names={
             "smBeergameSD_inventoryAdjustmentTime8_brewery.actualProduction" : "Brewery",
             "smBeergameSD_inventoryAdjustmentTime8_distributor.actualOrder" : "Distributor",

@@ -6,7 +6,7 @@
             "initialCustomers":0,
             "targetCustomerDilution%":80,
             "personsReachedPerEuro":100,
-            "classicAdvertisingCost":10000,
+            "classicalAdvertisingCost":10000,
             "targetMarket":6000000,
             "initialInvestmentInService":1000000,
             "serviceMargin":0.5,

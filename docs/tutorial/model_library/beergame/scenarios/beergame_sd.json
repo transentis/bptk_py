@@ -6,7 +6,7 @@
         "policySettings.steadyStateOn":0,
         "policySettings.sophisticatedOrderDecisionOn":0,
         "policySettings.weightingOpenOrders":0,
-        "policySettings.weightingBackOrders":1,
+        "policySettings.weightingBackorder":1,
         "policySettings.stockAdjustmentTime":1
     },
     "scenarios": {

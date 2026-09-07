@@ -40,13 +40,14 @@ echo "Running tests on local version"
 echo "-------------------------------------"
 
 cd ..
-python3 -m venv venv_temp
+# A throwaway environment rather than the working one, so this proves what a fresh
+# checkout does. `uv pip install -e .` triggers a maturin PEP 517 build, compiling the
+# Rust extension into it - a working Rust toolchain is required locally. The [test]
+# extra pulls pytest, python-dotenv and every optional dependency group; the suite
+# covers all four extras, so a base install cannot run it.
+uv venv venv_temp
 source ./venv_temp/bin/activate
-# pip install -e . triggers a maturin PEP 517 build, compiling the Rust
-# extension into the venv. Requires a working Rust toolchain locally.
-# The [test] extra pulls pytest, python-dotenv and every optional dependency
-# group - the suite covers all four extras, so the base install cannot run it.
-pip install -e ".[test]"
+uv pip install -e ".[test]"
 
 if ! pytest ./ ; then
     echo "Tests failed! Not continuing. Please fix your code"
@@ -68,25 +69,29 @@ echo "-------------------------------------"
 echo "NOTE: cross-platform wheels are produced by .github/workflows/publish.yml,"
 echo "      not here. This local build is for Test PyPI smoke-testing only."
 
-pip install twine
-pip install maturin
-pip install wheel
 rm -rf dist/
+# maturin and wheel come from the project environment, which uv resolves from
+# uv.lock - the same versions `just build` uses. twine is fetched on demand
+# because it exists for this one upload and nothing else.
 # Current-platform wheel for local validation against Test PyPI.
-maturin build --release --out dist
+uv run maturin build --release --out dist
 # The pure-Python wheel the browser installs: same distribution and version,
 # without the Rust extension. Derived from the platform wheel so that both carry
 # byte-identical metadata.
-python3 scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
+uv run python scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
 # Universal sdist (fallback for users on platforms with no published wheel).
-maturin sdist --out dist
+uv run maturin sdist --out dist
 
 
 ## Upload to Test PyPi
 echo "-------------------------------------"
 echo "Uploading to Test-PyPi!"
 echo "-------------------------------------"
-if ! twine upload --verbose --repository bptk-py-test dist/* ; then
+# Still twine rather than `uv publish`: the repository name is resolved from
+# ~/.pypirc, where the Test PyPI credentials live. `uv publish` takes a URL and a
+# token instead, so moving to it is a change to how this machine authenticates -
+# a decision, not a rename.
+if ! uvx twine upload --verbose --repository bptk-py-test dist/* ; then
   echo "Upload to Test PyPi failed! Aborting"
   rm -rf dist/
   rm -rf build/
@@ -105,14 +110,14 @@ echo "-------------------------------------"
 
 echo "Waiting a few seconds so PyPi can index the new version"
 sleep 8
-python3 -m venv venv_temp
+uv venv venv_temp
 source ./venv_temp/bin/activate
 # Pull bptk-py from Test PyPI; deps come from real PyPI. [test] pulls the test
 # tooling AND the four capability extras, so nothing here is listed by hand. It
 # used to be - pytest and python-dotenv - and that list went stale the moment the
 # suite gained a dependency on wheel: six tests failed for want of a package the
 # extra already declared.
-pip install --index-url https://test.pypi.org/simple/ \
+uv pip install --index-url https://test.pypi.org/simple/ \
     "bptk_py[test]" \
     --extra-index-url https://pypi.org/simple
 

@@ -1,9 +1,12 @@
 import os
+import pathlib
 import tempfile
 import unittest
 from unittest import mock
 
 from BPTK_Py.sdcompiler.compile import compile_xmile
+
+TRIPLE_QUOTE = chr(39) * 3
 
 
 def _minimal_xmile(equations):
@@ -110,6 +113,38 @@ class TestSdCompilerCompile(unittest.TestCase):
             sys.path[:] = saved_path
             for name in set(sys.modules) - saved_modules:
                 del sys.modules[name]
+
+    def test_template_compiles_without_a_syntax_warning(self):
+        r"""The ASCII art in the template used to be invalid escape sequences.
+
+        `\|`, `\_` and `\[` are none of Python's escapes, so importing the module
+        warned - and since Python 3.12 an invalid escape sequence is a SyntaxWarning on
+        its way to becoming a SyntaxError.
+        """
+        import warnings
+        from BPTK_Py.sdcompiler.generator.py import jinja_template
+
+        source = pathlib.Path(jinja_template.__file__).read_text(encoding="utf-8")
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            compile(source, jinja_template.__file__, "exec")
+
+        offenders = [str(w.message) for w in caught if issubclass(w.category, SyntaxWarning)]
+        self.assertEqual(offenders, [])
+
+    def test_generated_docstrings_survive_the_escape_fix(self):
+        """The obvious fix - making the template a raw string - would break the output.
+
+        The template carries escaped triple quotes for the docstrings of the *generated*
+        model: the backslash is what keeps a triple quote inside a triple-quoted literal
+        from closing it. In a raw string those backslashes would stay in the value, and
+        every compiled model would carry them where its docstrings belong.
+        """
+        code = _compile_equations({"a": "1"})
+
+        self.assertIn(TRIPLE_QUOTE, code)
+        self.assertNotIn("\\" + "'" + "\\" + "'" + "\\" + "'", code)
 
     def test_unknown_function_is_skipped(self):
         """An unimplemented SMILE function falls into the KeyError branch of

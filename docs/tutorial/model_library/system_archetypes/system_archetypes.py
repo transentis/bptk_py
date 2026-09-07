@@ -1,6 +1,11 @@
 # Front matter the .py format cannot carry; injected on export.
 # keywords: system dynamics, causal loops, bptk, bptk-py, python, business simulation
 # description: Simulation models and interactive dashboards of system archetypes
+#
+# A section overview: prose and nothing else - not one chart, and no cell that offers
+# a decision to take. Left reactive it booted Pyodide, some 8 MB, to display text, and
+# it is the page a reader arrives on first.
+# interactive: false
 import marimo
 
 __generated_with = "0.23.13"

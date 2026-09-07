@@ -14,7 +14,6 @@ import os
 import time
 
 
-import BPTK_Py.config.config as config
 from ..logger import log
 from ..util import start_or_skip
 from BPTK_Py.sdcompiler import compile_xmile as compile
@@ -87,15 +86,9 @@ class ModelMonitor():
                     self._cached_stamp = stamp
 
                     # File has changed, so parse model again
-                    # Store current directory and chdir to sd compiler dir
-                    current_dir = str(os.getcwd())
-                    #os.chdir(config.configuration["sd_py_compiler_root"])
                     print(self.source_file)
 
                     output = compile(target="py",src=self.source_file,dest=self.dest + ".py")
-
-                    # Go back to working dir
-                    #os.chdir(current_dir)
 
                     ## Check if everything went well, i.e. exit status of the script = 0
                     if "error" in str(output).lower():

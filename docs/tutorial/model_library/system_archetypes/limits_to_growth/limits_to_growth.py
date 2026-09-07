@@ -54,7 +54,6 @@ def _(mo):
 def _():
     from BPTK_Py import Model, bptk
     from BPTK_Py import sd_functions as sd
-    import matplotlib.pyplot as plt
     model = Model(starttime=0.0,stoptime=260.0,dt=1.0,name='Limits_to_growth')
     # decleare elements
     state = model.stock("state")
@@ -77,7 +76,7 @@ def _():
     delay_resource_adequacy.equation = 0.0
     bptk_1 = bptk()
     bptk_1.register_model(model)
-    return bptk_1, plt
+    return (bptk_1,)
 
 
 @app.cell(hide_code=True)
@@ -90,7 +89,13 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    bptk_1.plot_scenarios(title='S-Shaped Growth', scenario_managers=['smLimits_to_growth'], scenarios=['base'], equations=['state', 'carrying_capacity'], format="axes")
+    bptk_1.plot_scenarios(
+        title='S-Shaped Growth',
+        scenario_managers=['smLimits_to_growth'],
+        scenarios=['base'],
+        equations=['state', 'carrying_capacity'],
+        format="axes",
+    )
     return
 
 
@@ -104,13 +109,21 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    bptk_1.register_scenarios(scenario_manager='smLimits_to_growth', scenarios={'oscillations': {'constants': {'delay_resource_adequacy': 10.0}}})
+    bptk_1.register_scenarios(
+        scenario_manager='smLimits_to_growth',
+        scenarios={'oscillations': {'constants': {'delay_resource_adequacy': 10.0}}},
+    )
     return
 
 
 @app.cell
 def _(bptk_1):
-    bptk_1.plot_scenarios(scenario_managers=['smLimits_to_growth'], scenarios=['oscillations'], equations=['state', 'carrying_capacity'], format="axes")
+    bptk_1.plot_scenarios(
+        scenario_managers=['smLimits_to_growth'],
+        scenarios=['oscillations'],
+        equations=['state', 'carrying_capacity'],
+        format="axes",
+    )
     return
 
 
@@ -137,13 +150,7 @@ def _(bptk_1, mo):
 
 
 @app.cell
-def _(bptk_1, change_rate_slider, delay_slider, mo, plt):
-    # Every plot leaves its figure in matplotlib's registry, and this cell re-runs on
-    # every move of a slider - a dozen moves fill the browser's heap and the page stops
-    # answering. Closing the previous run's figures keeps it bounded; they have already
-    # been rendered by then.
-    plt.close("all")
-
+def _(bptk_1, change_rate_slider, delay_slider, mo):
     scenario = bptk_1.get_scenario("smLimits_to_growth", "interactive")
     scenario.constants["delay_resource_adequacy"] = delay_slider.value
     scenario.constants["fractional_change"] = change_rate_slider.value

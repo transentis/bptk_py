@@ -132,7 +132,13 @@ def _(bptk):
         title="Order Behaviour in a Typical Game",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.sending_orders","distributor.sending_orders","wholesaler.sending_orders","retailer.sending_orders", "consumer.sending_orders"],
+        equations=[
+            "brewery.sending_orders",
+            "distributor.sending_orders",
+            "wholesaler.sending_orders",
+            "retailer.sending_orders",
+            "consumer.sending_orders",
+        ],
         series_names={
             "sd_dsl_beergame_typical_brewery.sending_orders" : "Brewery",
             "sd_dsl_beergame_typical_distributor.sending_orders" : "Distributor",
@@ -445,7 +451,13 @@ def _(bptk):
         title="Remember Open Orders – Order Behaviour",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.sending_orders","distributor.sending_orders","wholesaler.sending_orders","retailer.sending_orders", "consumer.sending_orders"],
+        equations=[
+            "brewery.sending_orders",
+            "distributor.sending_orders",
+            "wholesaler.sending_orders",
+            "retailer.sending_orders",
+            "consumer.sending_orders",
+        ],
         series_names={
             "sd_dsl_beergame_include_supply_line_brewery.sending_orders" : "Brewery",
             "sd_dsl_beergame_include_supply_line_distributor.sending_orders" : "Distributor",
@@ -511,7 +523,13 @@ def _(bptk):
         title="Order Behaviour – 8 Weeks Inventory Adjustment Time",
         x_label="Weeks",
         y_label="Beer Ordered",
-        equations=["brewery.sending_orders","distributor.sending_orders","wholesaler.sending_orders","retailer.sending_orders", "consumer.sending_orders"],
+        equations=[
+            "brewery.sending_orders",
+            "distributor.sending_orders",
+            "wholesaler.sending_orders",
+            "retailer.sending_orders",
+            "consumer.sending_orders",
+        ],
         series_names={
             "sd_dsl_beergame_inventory_adjustment_time_8_brewery.sending_orders" : "Brewery",
             "sd_dsl_beergame_inventory_adjustment_time_8_distributor.sending_orders" : "Distributor",

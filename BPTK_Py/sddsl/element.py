@@ -13,7 +13,6 @@
 import logging
 from .operators import *
 
-import BPTK_Py.config.config as config
 import pandas as pd
 import numpy as np
 import statistics
@@ -219,7 +218,8 @@ class Element:
     def function_string(self, function_string):
         self._function_string = function_string
 
-    def plot(self, starttime=None, stoptime=None, dt=None, return_df=False, format="plot"):
+    def plot(self, starttime=None, stoptime=None, dt=None, return_df=False, format="plot",
+             matplotlib_rc_settings=None):
         """Plot the equation.
 
         Parameters:
@@ -236,6 +236,10 @@ class Element:
                 What to return: "plot" draws the diagram and returns nothing, "axes" returns the
                 matplotlib Axes, "df" returns the underlying dataframe. Same values as
                 visualizer.plot().
+            matplotlib_rc_settings: Dict (Default None).
+                Settings for this one plot, laid over the central configuration rather than
+                replacing it. The central configuration is left alone, so the next plot is
+                styled centrally again.
 
         Returns:
             Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
@@ -279,21 +283,47 @@ class Element:
         if return_df or format == "df":
             return df
 
-        from BPTK_Py.visualizations import require_matplotlib
+        from BPTK_Py.visualizations import require_matplotlib, bptk_style, plotting_config
         require_matplotlib()
 
-        ax = df.plot(kind="area",
-                     stacked=False,
-                     figsize=config.configuration["figsize"],
-                     title=self.name,
-                     alpha=config.configuration["alpha"], color=config.configuration["colors"],
-                     lw=config.configuration["linewidth"])
+        # Where the axes come from. `df.plot()` goes through pyplot, which keeps every
+        # figure it creates in a global registry until someone closes it. The same branch
+        # in visualizations/visualize.py explains what that cost: in Pyodide the
+        # accumulated figures exhaust the WASM heap and the kernel dies mid-session, so a
+        # slider stops answering after a few moves. This method is the other way into it.
+        #
+        # Only for `format="axes"`, where the caller receives the axes and its own
+        # environment renders them. The default path has to stay on pyplot: a script or a
+        # Jupyter cell shows the figure *because* it is registered.
+        # The style has to be active while the axes are built - figure size, line width
+        # and the tick label sizes are read at creation, not afterwards, so
+        # update_plot_formats() below could not put them right. No bptk() instance is in
+        # reach here, which is the whole point: this plot now looks the same whether one
+        # was ever constructed.
+        settings = plotting_config.resolved(matplotlib_rc_settings)
+        with bptk_style(matplotlib_rc_settings):
+            if format == "axes":
+                from matplotlib.figure import Figure
 
-        for ymaj in ax.yaxis.get_majorticklocs():
-            ax.axhline(y=ymaj, ls='-', alpha=0.05,
-                       color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+                figure = Figure(figsize=settings["figsize"])
+                target_axes = figure.add_subplot(111)
+            else:
+                target_axes = None
 
-        self.update_plot_formats(ax)
+            ax = df.plot(kind="area",
+                         stacked=False,
+                         figsize=settings["figsize"],
+                         title=self.name,
+                         ax=target_axes,
+                         alpha=settings["alpha"], color=settings["colors"],
+                         lw=settings["linewidth"])
+
+            for ymaj in ax.yaxis.get_majorticklocs():
+                ax.axhline(y=ymaj, ls='-', alpha=0.05,
+                           color=(34.1 / 100, 32.9 / 100, 34.1 / 100))
+
+        from BPTK_Py.visualizations import visualizer
+        visualizer().update_plot_formats(ax)
 
         if format == "axes":
             return ax
@@ -406,12 +436,6 @@ class Element:
     def __pow__(self, power):
         "Power Operator"
         return PowerOperator(self, power)
-
-    @ classmethod
-    def update_plot_formats(self, ax):
-        # TODO: check if we couldn't just remove this ... the visualizer could be used directly in the calling method.
-        from BPTK_Py.visualizations import visualizer
-        return visualizer().update_plot_formats(ax)
 
     def setup_vector(self, size, default_value=0.0, set_stack_equation = False):
         """

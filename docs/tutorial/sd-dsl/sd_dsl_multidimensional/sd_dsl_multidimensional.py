@@ -140,7 +140,10 @@ def _(model):
     # Define a sd dsl element
     matrix2 = model.converter('matrix2')
     # Create a named vector of lenght 2 using string-valued indices
-    matrix2.setup_named_matrix({'value1': {'value11': 2.0, 'value12': 3.0}, 'value2': {'value21': 4.0, 'value22': 5.0}})
+    matrix2.setup_named_matrix({
+        'value1': {'value11': 2.0, 'value12': 3.0},
+        'value2': {'value21': 4.0, 'value22': 5.0},
+    })
     return
 
 
@@ -865,7 +868,11 @@ def _(mo):
 def _(model):
     #Calculate the element-wise mean of a named matrix
     matrixMean = model.converter('matrixMean')
-    matrixMean.setup_named_matrix({'value1': {'value11': 2.0, 'value12': 4.0}, 'value2': {'value21': 6.0, 'value22': 8.0}, 'value3': {'value31': 10.0, 'value32': 12.0}})
+    matrixMean.setup_named_matrix({
+        'value1': {'value11': 2.0, 'value12': 4.0},
+        'value2': {'value21': 6.0, 'value22': 8.0},
+        'value3': {'value31': 10.0, 'value32': 12.0},
+    })
     meanResult = model.converter('meanResult')
     meanResult.equation = matrixMean.arr_mean()
     return (meanResult,)
@@ -1556,7 +1563,10 @@ def _(mo):
 @app.cell
 def _(model):
     matrix3 = model.converter('matrix3')
-    matrix3.setup_named_matrix({'value1': {'value11': 6.0, 'value12': 7.0}, 'value2': {'value21': 8.0, 'value22': 9.0}})
+    matrix3.setup_named_matrix({
+        'value1': {'value11': 6.0, 'value12': 7.0},
+        'value2': {'value21': 8.0, 'value22': 9.0},
+    })
     matrix3['value1'].plot(format="axes")
     return
 
@@ -1626,9 +1636,27 @@ def _(mo):
 @app.cell
 def _(model, testbptk):
     testbptk.register_model(model)
-    scenario_manager = {'sm': {'model': model, 'base_constants': {'interestRate[bank]': 0.02, 'interestRate[depot]': 0.1, 'depositRate[bank]': 200, 'depositRate[depot]': 100, 'accountInitialValues[bank]': 1000.0, 'accountInitialValues[depot]': 500.0}}}
+    scenario_manager = {'sm': {
+        'model': model,
+        'base_constants': {
+            'interestRate[bank]': 0.02,
+            'interestRate[depot]': 0.1,
+            'depositRate[bank]': 200,
+            'depositRate[depot]': 100,
+            'accountInitialValues[bank]': 1000.0,
+            'accountInitialValues[depot]': 500.0,
+        },
+    }}
     testbptk.register_scenario_manager(scenario_manager)
-    testbptk.register_scenarios(scenario_manager='sm', scenarios={'base': {}, 'scenarioHighDepotInterestRate': {'constants': {'interestRate[depot]': 0.2}}, 'scenarioHighDepotDepositRate': {'constants': {'depositRate[depot]': 250.0}}, 'scenarioHighDepotInitialValue': {'constants': {'accountInitialValues[depot]': 750.0}}})
+    testbptk.register_scenarios(
+        scenario_manager='sm',
+        scenarios={
+            'base': {},
+            'scenarioHighDepotInterestRate': {'constants': {'interestRate[depot]': 0.2}},
+            'scenarioHighDepotDepositRate': {'constants': {'depositRate[depot]': 250.0}},
+            'scenarioHighDepotInitialValue': {'constants': {'accountInitialValues[depot]': 750.0}},
+        },
+    )
     return
 
 
@@ -1642,7 +1670,13 @@ def _(mo):
 
 @app.cell
 def _(testbptk):
-    testbptk.plot_scenarios(scenarios=['base'], scenario_managers='sm', equations=['account[bank]', 'account[depot]', 'totalValue'], series_names={}, format="axes")
+    testbptk.plot_scenarios(
+        scenarios=['base'],
+        scenario_managers='sm',
+        equations=['account[bank]', 'account[depot]', 'totalValue'],
+        series_names={},
+        format="axes",
+    )
     return
 
 
@@ -1656,7 +1690,18 @@ def _(mo):
 
 @app.cell
 def _(testbptk):
-    testbptk.plot_scenarios(scenarios=['base', 'scenarioHighDepotInterestRate', 'scenarioHighDepotDepositRate', 'scenarioHighDepotInitialValue'], scenario_managers='sm', equations=['totalValue'], series_names={}, format="axes")
+    testbptk.plot_scenarios(
+        scenarios=[
+            'base',
+            'scenarioHighDepotInterestRate',
+            'scenarioHighDepotDepositRate',
+            'scenarioHighDepotInitialValue',
+        ],
+        scenario_managers='sm',
+        equations=['totalValue'],
+        series_names={},
+        format="axes",
+    )
     return
 
 

@@ -4,18 +4,18 @@
         "model":"simulation_models/customer_acquisition",
         "base_constants":{
             "initialCustomers":0,
-            "targetCustomerDilutionPct":80,
+            "targetCustomerDilution%":80,
             "personsReachedPerEuro":100,
-            "classicAdvertisingCost":10000,
+            "classicalAdvertisingCost":10000,
             "targetMarket":6000000,
-            "initialInvestmentInServive":1000000,
+            "initialInvestmentInService":1000000,
             "serviceMargin":0.5,
             "serviceFee":10,
             "referralAdvertisingCost":10000,
             "referrals":3,
             "referralFreeMonths":3,
-            "referralProgramAdoptionPct":10,
-            "advertisingSuccessPct":0.1
+            "referralProgramAdoption%":10,
+            "advertisingSuccess%":0.1
         },
         "scenarios":{
             "base":{
@@ -25,18 +25,18 @@
             },
             "serviceFlop":{
                 "constants":{
-                 "referralProgramAdoptionPct":1,
-                 "advertisingSuccessPct":0.01
+                 "referralProgramAdoption%":1,
+                 "advertisingSuccess%":0.01
                 }
             },
              "rethinkAdvertising":{
                  "constants":{ 
-                     "advertisingSuccessPct":0.01
+                     "advertisingSuccess%":0.01
                  }
             },
              "referSomeonePlease":{
                  "constants":{
-                     "referralProgramAdoptionPct":1
+                     "referralProgramAdoption%":1
                  }
             },
             "hereWeGo":{
@@ -44,7 +44,7 @@
              "boomButBust":{
                  "constants":{
                  "referrals":1,
-                 "referralProgramAdoptionPct":30
+                 "referralProgramAdoption%":30
                  }
             }
  

@@ -384,7 +384,14 @@ def _(bptk):
             scenarios=["scenario80"],
              freq="D",
             start_date="1/1/2018",
-            equations=["openTasks","closedTasks","completionRate","remainingTime","schedulePressure","productivity"],
+            equations=[
+                "openTasks",
+                "closedTasks",
+                "completionRate",
+                "remainingTime",
+                "schedulePressure",
+                "productivity",
+            ],
             return_df=True
     )
     return (data,)
@@ -578,7 +585,10 @@ def _(bptk):
         scenarios="scenario80",
         equations='openTasks',
         title="Compare Two Models",
-        series_names={"smSimpleProjectManagement_scenario80_openTasks":"Current Model","smSimpleProjectManagementV0_scenario80_openTasks":"Model v0"}, format="axes"
+        series_names={
+            "smSimpleProjectManagement_scenario80_openTasks": "Current Model",
+            "smSimpleProjectManagementV0_scenario80_openTasks": "Model v0",
+        }, format="axes"
     )
     return
 

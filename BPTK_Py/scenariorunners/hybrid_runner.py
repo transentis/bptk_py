@@ -65,7 +65,12 @@ class HybridRunner(ScenarioRunner):
                                         counts[column] = states[column]["count"]
                                 output[t] = counts
                         else:
-                            output[t] = 0 #TODO: should do something about this
+                            # No states named means all of them. This used to put a
+                            # plain 0 here, and the loop below immediately asked it for
+                            # `.items()` - so `run_scenarios(agents=[...])` without
+                            # `agent_states` raised AttributeError rather than plotting
+                            # anything.
+                            output[t] = {state: counts["count"] for state, counts in states.items()}
             return output
 
         res = get_stats_for(data, agent_name, agent_states, agent_properties, agent_property_types)

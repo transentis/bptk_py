@@ -25,10 +25,10 @@ echo "Generating Distribution"
 echo "-------------------------------------"
 cd ..
 
-pip install twine
-pip install build
-python3 -m build --sdist
-python3 -m build --wheel
+# `uv build` drives the same PEP 517 backend the wheels are built with; twine is
+# fetched on demand because it exists for this one upload.
+uv build --sdist
+uv build --wheel
 
 ##################################
 ## Push to official PyPi Mirror ##
@@ -37,7 +37,7 @@ python3 -m build --wheel
 echo ""
 echo "Uploading to PyPi"
 
-if ! twine upload --verbose --repository bptk-py dist/* ; then
+if ! uvx twine upload --verbose --repository bptk-py dist/* ; then
   echo "Upload to PyPi failed! Aborting. Please retry!"
   rm -rf dist/
   rm -rf build/

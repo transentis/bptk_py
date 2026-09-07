@@ -47,30 +47,39 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
     - name: Set up Rust toolchain
       uses: actions-rust-lang/setup-rust-toolchain@v1
-    - name: Install dependencies
+    - name: The lock file must match pyproject.toml
+      # Change a pin, forget `uv lock`, and every job below installs the previous
+      # resolution without a word. This is the line that turns that into a failure.
+      run: uv lock --check
+    - name: Install the project and its dependencies
+      # Resolved from uv.lock, so CI installs what a checkout installs rather than
+      # whatever the index holds today. `--all-extras` replaces the [test] extra,
+      # the `ci` group carries flake8 and pytest-cov, and `docs` is left out - the
+      # library jobs do not render the website. Installing the project runs the
+      # maturin build backend, which is what compiles the Rust extension.
+      #
+      # `--python` pins uv to the interpreter setup-python provided, so the matrix
+      # still decides the version and `cargo test` links against that same one. It
+      # asks Python for its own path rather than using `which`: under Git Bash on
+      # Windows that yields `/c/hostedtoolcache/.../python`, and uv answered
+      # "No interpreter found at path C:/hostedtoolcache/.../python" - no `.exe`.
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install -U wheel
-        python -m pip install flake8
-        python -m pip install pytest-cov
-        python -m pip install maturin
-    - name: Build and install BPTK_Py with Rust extension (editable)
-      # The [test] extra pulls pytest, python-dotenv and every optional
-      # dependency group. Listing them by hand went stale once already - it
-      # still installed ipywidgets after the widget layer was removed.
-      run: |
-        pip install --prefer-binary -e ".[test]"
+        uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        uv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       env:
         ENABLE_POSTGRES_TESTS: "true"
@@ -82,8 +91,8 @@ jobs:
         POSTGRES_PASSWORD: bptk_test_ci
         REDIS_URL: "redis://localhost:6379/0"
       run: |
-        pytest --cov-config=.coveragerc --cov=./
-        coverage xml
+        uv run pytest --cov-config=.coveragerc --cov=./
+        uv run coverage xml
     - name: Upload coverage to Coveralls
       if: matrix.python-version == '3.11' && github.repository == 'transentis/bptk_py'
       uses: coverallsapp/github-action@v2
@@ -110,31 +119,32 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
     - name: Set up Rust toolchain
       uses: actions-rust-lang/setup-rust-toolchain@v1
-    - name: Install dependencies
+    - name: The lock file must match pyproject.toml
+      # Change a pin, forget `uv lock`, and every job below installs the previous
+      # resolution without a word. This is the line that turns that into a failure.
+      run: uv lock --check
+    - name: Install the project and its dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install -U wheel
-        python -m pip install flake8
-        python -m pip install pytest-cov
-        python -m pip install maturin
-    - name: Build and install BPTK_Py with Rust extension (editable)
-      run: |
-        pip install --prefer-binary -e ".[test]"
+        uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
     - name: Lint with flake8
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        uv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest (no Postgres/Redis)
       env:
         ENABLE_POSTGRES_TESTS: "false"
         ENABLE_REDIS_TESTS: "false"
       run: |
-        pytest
+        uv run pytest
 
   # The browser as a fourth platform. Linux, macOS and Windows above test
   # the code on that OS against an editable install; this does the same for

@@ -12,31 +12,14 @@ class FileAdapter(ExternalStateAdapter):
         log(f"[INFO] FileAdapter initialized with path: {path}, compression: {compress}")
 
     def _is_already_compressed_results(self, results_log):
-        """
-        Check if results_log is already in compressed format.
-        Compressed format: {scenario_manager: {scenario: {constant: [values]}}}
-        Uncompressed format: {step: {scenario_manager: {scenario: {constant: value}}}}
-        """
-        if not isinstance(results_log, dict) or not results_log:
-            return False
+        """Whether `results_log` has already been through the compressor.
 
-        # Check if the first level keys look like scenario managers (strings) rather than steps (floats/step strings)
-        first_key = next(iter(results_log.keys()))
-        if isinstance(first_key, str) and not (first_key.replace('.', '').isdigit()):
-            # This looks like a scenario manager name, so probably compressed format
-            # Double-check by looking at the structure
-            try:
-                first_sm = results_log[first_key]
-                if isinstance(first_sm, dict):
-                    first_scenario = next(iter(first_sm.values()))
-                    if isinstance(first_scenario, dict):
-                        first_constant = next(iter(first_scenario.values()))
-                        # If the constant value is a list, it's likely compressed
-                        return isinstance(first_constant, list)
-            except (StopIteration, KeyError, AttributeError):
-                pass
-
-        return False
+        Asked twice: before compressing, so a state that is saved again is not pivoted
+        a second time, and before decompressing, so a log written without compression
+        is left alone. `statecompression` owns the answer - it knows both the marked
+        format it writes today and the shape of what was written before the marker.
+        """
+        return statecompression.is_compressed(results_log)
 
     def load_instance(self, instance_uuid: str) -> InstanceState:
         """

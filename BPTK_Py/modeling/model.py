@@ -410,7 +410,8 @@ class Model:
         
         Args:
             show_progress_widget: Boolean (Default=False).
-                If True, shows a progress widget (only in Jupyter environment!)
+                If True, shows a progress bar. Since 3.0.0 this is tqdm-backed and
+                renders in the terminal, in marimo and in Jupyter alike.
             collect_data: Boolean (Default=True).
                 If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
 
@@ -433,7 +434,8 @@ class Model:
             step: Int.
                 The step to run
             show_progress_widget: Boolean (Default=False).
-                If True, shows a progress widget (only in Jupyter environment!)
+                If True, shows a progress bar. Since 3.0.0 this is tqdm-backed and
+                renders in the terminal, in marimo and in Jupyter alike.
             collect_data: Boolean (Default=True).
                 If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
 
@@ -766,7 +768,7 @@ class Model:
         return float(f(x))
 
 
-    def plot_lookup(self,lookup_names,config=None,format="plot"):
+    def plot_lookup(self,lookup_names,config=None,format="plot",matplotlib_rc_settings=None):
         """
         Plots lookup functions for the given list of lookup names
 
@@ -777,6 +779,9 @@ class Model:
                 What to return: "plot" draws the diagram and returns nothing, "axes" returns the
                 matplotlib Axes, "df" returns the underlying dataframe. Same values as
                 bptk.plot_lookup() and Element.plot().
+            matplotlib_rc_settings: Dict (Default None).
+                matplotlib settings for this one plot, laid over the central plotting
+                configuration rather than replacing it.
 
         Returns:
             Nothing for format="plot", the matplotlib Axes for format="axes", or a Pandas dataframe
@@ -802,15 +807,19 @@ class Model:
                                     format=format,
                                     visualize_from_period=0,
                                     visualize_to_period=0,
-                                    stacked=config.configuration["stacked"],
-                                    kind=config.configuration["kind"],
+                                    # Left as None so visualizer.plot falls back to the
+                                    # central plotting configuration - passing the module
+                                    # defaults here bypassed it.
+                                    stacked=None,
+                                    kind=None,
                                     title=str(lookup_names).replace("[","").replace("]","").replace("\'",""),
-                                    alpha=config.configuration["alpha"],
+                                    alpha=None,
                                     x_label="",
                                     y_label="",
                                     start_date="",
                                     freq="",
-                                    series_names={})
+                                    series_names={},
+                                    matplotlib_rc_settings=matplotlib_rc_settings)
 
 
 
@@ -831,11 +840,16 @@ class Model:
         return "bptk_"+str(self.equation_id)+"_"
 
     def equation(self,equation, t):
-        #TODO this is the same as the evaluate_equation method. Replace it.
+        # The same thing `evaluate_equation` does, deliberately kept as a second name:
+        # this is what compiled XMILE models call, once per equation per timestep, and
+        # it is the hottest path in the Python engine. Routing it through the other
+        # method would buy tidiness with an extra call in that loop.
         return self.memoize(equation,t)
 
     def memoize(self, equation, arg):
-        #TODO: consider making this into an internal method
+        # Public despite the look of it: every compiled XMILE model calls
+        # `self.memoize('name', t)` - see sdcompiler/generator/py/py.py - so the name is
+        # part of the contract with generated code and cannot move behind an underscore.
 
         #normalize the arg
 
@@ -855,8 +869,8 @@ class Model:
         return result
 
     def add_equation(self, equation, lambda_method):
-
-        #TODO Consider making this an internal method.
+        # Public for the same reason as `memoize`: compiled models and hand-written
+        # hybrid models both call it.
         
         if equation in self.equations.keys():
             log("[WARN] Hybrid Model {}: Overwriting equation {} ".format(str(self.name), str(equation)))

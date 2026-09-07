@@ -219,8 +219,16 @@ def _(mo):
 
 @app.cell
 def _(instance_id, json, requests):
-    content = {'scenario_managers': ['sddsl_customer_acquisition'], 'scenarios': ['interactive_scenario'], 'equations': ['customers', 'word_of_mouth_success']}
-    req_1 = requests.post(f'http://localhost:5000/{instance_id}/begin-session', json.dumps(content), headers={'Content-Type': 'application/json'})
+    content = {
+        'scenario_managers': ['sddsl_customer_acquisition'],
+        'scenarios': ['interactive_scenario'],
+        'equations': ['customers', 'word_of_mouth_success'],
+    }
+    req_1 = requests.post(
+        f'http://localhost:5000/{instance_id}/begin-session',
+        json.dumps(content),
+        headers={'Content-Type': 'application/json'},
+    )
     req_1.json()
     return
 
@@ -236,7 +244,11 @@ def _(mo):
 @app.cell
 def _(instance_id, json, requests):
     step = {'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.7}}}}}
-    req_2 = requests.post(f'http://localhost:5000/{instance_id}/run-step', json.dumps(step), headers={'Content-Type': 'application/json'})
+    req_2 = requests.post(
+        f'http://localhost:5000/{instance_id}/run-step',
+        json.dumps(step),
+        headers={'Content-Type': 'application/json'},
+    )
     req_2.json()
     return
 

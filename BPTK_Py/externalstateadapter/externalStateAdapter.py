@@ -24,13 +24,53 @@ class ExternalStateAdapter(metaclass=ABCMeta):
 
   
 
+    def _compress_logs(self, state):
+        """Return a copy of `state` with its two per-step logs compressed.
+
+        A copy on purpose: the dict belongs to a live session, and compressing it in
+        place would leave the running instance holding the storage format.
+
+        A log that has already been through the compressor is left alone, so saving the
+        same instance twice does not pivot it twice. A compressor that raises leaves its
+        log uncompressed rather than failing the save - the state is worth more than the
+        bytes it would have saved.
+        """
+        compressed = dict(state)
+        for key, compress in (("settings_log", statecompression.compress_settings),
+                              ("results_log", statecompression.compress_results)):
+            log_data = compressed.get(key)
+            if not log_data or statecompression.is_compressed(log_data):
+                continue
+            try:
+                compressed[key] = compress(log_data)
+            except Exception as e:
+                log(f"[WARN] Failed to compress {key}: {str(e)}")
+        return compressed
+
+    def _decompress_logs(self, state):
+        """Expand the two per-step logs of a state read from storage, in place.
+
+        Only what is actually compressed: an instance written while the flag was off
+        holds plain logs, and those must be handed back untouched.
+        """
+        for key, decompress in (("settings_log", statecompression.decompress_settings),
+                                ("results_log", statecompression.decompress_results)):
+            log_data = state.get(key)
+            if not log_data or not statecompression.is_compressed(log_data):
+                continue
+            try:
+                state[key] = decompress(log_data)
+            except Exception as e:
+                log(f"[WARN] Failed to decompress {key}: {str(e)}")
+        return state
+
     def save_instance(self, state: InstanceState):
         log(f"[INFO] Saving instance {state.instance_id if state else 'None'}")
         try:
             if(self.compress and state is not None and state.state is not None):
                 log(f"[INFO] Compressing state for instance {state.instance_id}")
-                state.state["settings_log"] = statecompression.compress_settings(state.state["settings_log"])
-                state.state["results_log"] = statecompression.compress_results(state.state["results_log"])
+                state = InstanceState(self._compress_logs(state.state), state.instance_id,
+                                      state.time, state.timeout, state.step)
                 log(f"[INFO] State compression completed for instance {state.instance_id}")
             result = self._save_instance(state)
             log(f"[INFO] Instance {state.instance_id if state else 'None'} saved successfully")
@@ -53,8 +93,7 @@ class ExternalStateAdapter(metaclass=ABCMeta):
 
             if(self.compress and state.state is not None):
                 log(f"[INFO] Decompressing state for instance {instance_uuid}")
-                state.state["settings_log"] = statecompression.decompress_settings(state.state["settings_log"])
-                state.state["results_log"] = statecompression.decompress_results(state.state["results_log"])
+                self._decompress_logs(state.state)
                 log(f"[INFO] State decompression completed for instance {instance_uuid}")
 
             # Always restore numeric keys in scenario_cache (no compression, just JSON key conversion fix)

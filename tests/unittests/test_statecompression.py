@@ -1,6 +1,6 @@
 import unittest
 
-from BPTK_Py.util.statecompression import compress_settings, decompress_settings, _compress_time_series_data, _decompress_time_series_data, _is_compressed_time_series_data
+from BPTK_Py.util.statecompression import compress_settings, decompress_settings, compress_results, decompress_results, is_compressed, _compress_time_series_data, _decompress_time_series_data, _is_compressed_time_series_data
 
 class TestStateCompression(unittest.TestCase):
     def setUp(self):
@@ -71,18 +71,111 @@ class TestStateCompression(unittest.TestCase):
         }
 
         return_value = compress_settings(settings=settings)
+        compressed = return_value["data"]
 
-        self.assertEqual(return_value["scenarioManager1"]["scenario1"]["constants"]["value1"],[1, 11])
-        self.assertEqual(return_value["scenarioManager1"]["scenario1"]["constants"]["value2"],[2, 22])
-        self.assertEqual(return_value["scenarioManager1"]["scenario2"]["constants"]["value3"],[3, 33])
-        self.assertEqual(return_value["scenarioManager1"]["scenario2"]["constants"]["value4"],[4, 44])
-        self.assertEqual(return_value["scenarioManager2"]["scenario3"]["constants"]["value5"],[5, 55])
-        self.assertEqual(return_value["scenarioManager2"]["scenario3"]["constants"]["value6"],[6, 66])
-        self.assertEqual(return_value["scenarioManager2"]["scenario4"]["constants"]["value7"],[7, 77])
-        self.assertEqual(return_value["scenarioManager2"]["scenario4"]["constants"]["value8"],[8, 88])
- 
-        self.assertEqual(decompress_settings(return_value)["1.0"],settings["1"])
-        self.assertEqual(decompress_settings(return_value)["2.0"],settings["2"])
+        self.assertEqual(compressed["scenarioManager1"]["scenario1"]["constants"]["value1"],[1, 11])
+        self.assertEqual(compressed["scenarioManager1"]["scenario1"]["constants"]["value2"],[2, 22])
+        self.assertEqual(compressed["scenarioManager1"]["scenario2"]["constants"]["value3"],[3, 33])
+        self.assertEqual(compressed["scenarioManager1"]["scenario2"]["constants"]["value4"],[4, 44])
+        self.assertEqual(compressed["scenarioManager2"]["scenario3"]["constants"]["value5"],[5, 55])
+        self.assertEqual(compressed["scenarioManager2"]["scenario3"]["constants"]["value6"],[6, 66])
+        self.assertEqual(compressed["scenarioManager2"]["scenario4"]["constants"]["value7"],[7, 77])
+        self.assertEqual(compressed["scenarioManager2"]["scenario4"]["constants"]["value8"],[8, 88])
+
+        self.assertEqual(decompress_settings(return_value), settings)
+
+    def testStateCompression_keeps_the_steps_it_was_given(self):
+        """The round trip used to renumber every step to 1, 2, 3.
+
+        A session's steps are `starttime`, `starttime + dt`, ... - so a model with
+        starttime 0 came back with every value one step late, and the resume path,
+        which derives an index from the log's own keys, applied the wrong settings to
+        the wrong rounds.
+        """
+        settings = {
+            "0.0": {"sm": {"base": {"constants": {"rate": 1.0}}}},
+            "0.25": {"sm": {"base": {"constants": {"rate": 2.0}}}},
+            "0.5": {"sm": {"base": {"constants": {"rate": 3.0}}}},
+        }
+
+        self.assertEqual(decompress_settings(compress_settings(settings)), settings)
+
+    def testStateCompression_keeps_a_sparse_setting_on_its_own_step(self):
+        """A constant set in only some rounds must not slide to the front.
+
+        The old format stored one list per name and no indices, so a name written at
+        step three came back at step one - silently, and with a plausible-looking
+        value.
+        """
+        settings = {
+            "1.0": {"sm": {"base": {"constants": {"rate": 1.0}}}},
+            "2.0": {"sm": {"base": {"constants": {"rate": 2.0}}}},
+            "3.0": {"sm": {"base": {"constants": {"rate": 3.0, "surcharge": 0.5}}}},
+        }
+
+        compressed = compress_settings(settings)
+
+        self.assertEqual(
+            compressed["data"]["sm"]["base"]["constants"]["surcharge"],
+            {"at": [2], "values": [0.5]},
+        )
+        self.assertEqual(decompress_settings(compressed), settings)
+
+    def testStateCompression_results_round_trip(self):
+        """Results keep their per-step leaf dict, which is the shape a session writes."""
+        results = {
+            "0.0": {"sm": {"base": {"stock": {"0.0": 10.0}}}},
+            "0.5": {"sm": {"base": {"stock": {"0.5": 11.0}}}},
+        }
+
+        self.assertEqual(decompress_results(compress_results(results)), results)
+
+    def testStateCompression_reads_what_the_old_format_wrote(self):
+        """A store written before the format carried its steps still loads.
+
+        Its step keys are not recoverable - they were never written - so it is read
+        with the renumbering it was stored with. That is the reason the new format is
+        marked rather than guessed.
+        """
+        legacy = {"sm": {"base": {"constants": {"rate": [1.0, 2.0]}}}}
+
+        self.assertEqual(sorted(decompress_settings(legacy)), ["1.0", "2.0"])
+        self.assertEqual(decompress_settings(legacy)["1.0"]["sm"]["base"]["constants"]["rate"], 1.0)
+
+    def testStateCompression_is_compressed_tells_the_formats_apart(self):
+        """What an adapter asks before it decompresses."""
+        raw = {"1.0": {"sm": {"base": {"constants": {"rate": 1.0}}}}}
+
+        self.assertTrue(is_compressed(compress_settings(raw)))
+        self.assertTrue(is_compressed({"sm": {"base": {"constants": {"rate": [1.0]}}}}))
+        self.assertFalse(is_compressed(raw))
+        self.assertFalse(is_compressed({}))
+
+    def testStateCompression_a_broken_payload_costs_the_saving_not_the_state(self):
+        """Decompression that raises must leave the log as it found it.
+
+        The whole point of the guard: a payload that says it is compressed and then is
+        not parseable would otherwise take the entire session down on load. The log
+        comes back untouched instead, which is wrong data but recoverable, and the
+        reason is in the logfile.
+        """
+        import BPTK_Py.logger.logger as logmod
+        from BPTK_Py.externalstateadapter import FileAdapter
+
+        broken = {
+            "__format__": "steps-v2",
+            "steps": ["0.0"],
+            "data": {"sm": {"base": {"constants": {"rate": "not a list"}}}},
+        }
+        state = {"settings_log": broken, "results_log": {}}
+
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+        FileAdapter(compress=True, path="./state/")._decompress_logs(state)
+
+        self.assertEqual(state["settings_log"], broken)
+        with open(logmod.logfile, "r", encoding="UTF-8") as file:
+            self.assertIn("Failed to decompress settings_log", file.read())
 
     def testStateCompression_compress_decompress_time_series_data(self):
         self.assertEqual(_compress_time_series_data(data={}), {})

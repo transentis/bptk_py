@@ -10,12 +10,6 @@
 # MIT License
 
 
-import os
-
-import BPTK_Py
-
-
-
 ##################################
 ## BPTK_Py Global Configuration ##
 ##################################
@@ -45,14 +39,8 @@ transentis_colors = {
 
 }
 
-sd_py_compiler_root = str(os.path.dirname(BPTK_Py.__file__)) + "/sd-compiler"
-
 configuration = {
-    "sd_py_compiler_root": sd_py_compiler_root,
-    "bptk_Py_module_path": os.path.dirname(BPTK_Py.__file__),
-
     # Graphic settings
-    "interactive": True,
     "matplotlib_rc_settings": matplotlib_rc_settings,
     "colors": [color for color in transentis_colors.values()],
     "kind": "area",

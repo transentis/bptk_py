@@ -162,8 +162,6 @@ def _(mo, plt):
     # scenario manager that does not exist yet.
     with mo.capture_stdout() as output:
         bptk.list_scenarios(scenario_managers=["smSimpleProject_temp"])
-
-    plt.close("all")
     mo.vstack([
         mo.plain_text(output.getvalue()),
         bptk.plot_scenarios(
@@ -211,8 +209,6 @@ def _(bptk, mo, plt):
         bptk.list_scenarios(
             scenario_managers=["smSimpleProject_temp", "smSimpleProject_another_temp"]
         )
-
-    plt.close("all")
     mo.vstack([
         mo.plain_text(output_1.getvalue()),
         bptk.plot_scenarios(

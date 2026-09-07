@@ -755,7 +755,17 @@ def _(mo):
 @app.cell
 def _(BPTK_Py):
     bptk_1 = BPTK_Py.bptk()
-    bptk_1.plot_scenarios(scenarios='scenario80,scenario100,scenario120', scenario_managers='smSimpleProjectManagementDslClass', equations='openTasks', series_names={'smSimpleProjectManagementDslClass_scenario80_openTasks': 'scenario80', 'smSimpleProjectManagementDslClass_scenario100_openTasks': 'scenario100', 'smSimpleProjectManagementDslClass_scenario120_openTasks': 'scenario120'}, format="axes")
+    bptk_1.plot_scenarios(
+        scenarios='scenario80,scenario100,scenario120',
+        scenario_managers='smSimpleProjectManagementDslClass',
+        equations='openTasks',
+        series_names={
+            'smSimpleProjectManagementDslClass_scenario80_openTasks': 'scenario80',
+            'smSimpleProjectManagementDslClass_scenario100_openTasks': 'scenario100',
+            'smSimpleProjectManagementDslClass_scenario120_openTasks': 'scenario120',
+        },
+        format="axes",
+    )
     return
 
 

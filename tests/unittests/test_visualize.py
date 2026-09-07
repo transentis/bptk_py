@@ -187,6 +187,46 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertIsInstance(ax, matplotlib.axes.Axes)
 
+    def test_plot_sets_the_axis_labels_it_is_given(self):
+        """`x_label` and `y_label` are only applied when non-empty, and nothing ran that.
+
+        Every other test passes empty strings, so the two `if` branches that put a label
+        on the chart were never taken - the arguments could have stopped working without
+        a single test noticing.
+        """
+        df = pd.DataFrame({"stock": [1.0, 2.0, 3.0]}, index=[1.0, 2.0, 3.0])
+
+        ax = self.testBptk.visualizer.plot(
+            df=df, return_df=False, visualize_from_period=0, visualize_to_period=0,
+            stacked=False, kind="line", title="t", alpha=1.0,
+            x_label="time", y_label="units", format="axes",
+        )
+
+        self.assertEqual(ax.get_xlabel(), "time")
+        self.assertEqual(ax.get_ylabel(), "units")
+
+    def test_plot_with_axes_registers_no_figure(self):
+        """The registry-free Figure, which had no test of its own.
+
+        Fixed in the code since August; the property it guarantees was never asserted,
+        so nothing would have noticed it being undone. Its twin lives in
+        test_element.py - the two paths into `df.plot()` need the same guard.
+        """
+        import matplotlib.pyplot as plt
+        df = pd.DataFrame({"stock": [1.0, 2.0, 3.0]}, index=[1.0, 2.0, 3.0])
+
+        plt.close("all")
+        before = set(plt.get_fignums())
+
+        for _ in range(5):
+            self.testBptk.visualizer.plot(
+                df=df, return_df=False, visualize_from_period=0, visualize_to_period=0,
+                stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
+                format="axes",
+            )
+
+        self.assertEqual(set(plt.get_fignums()), before)
+
     def test_series_names_warns_about_a_key_that_matches_nothing(self):
         """A key that renames nothing used to do so in silence.
 

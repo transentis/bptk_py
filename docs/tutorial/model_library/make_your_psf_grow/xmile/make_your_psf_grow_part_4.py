@@ -113,12 +113,10 @@ def _():
     initialCash=1000000
     cash2Years=23*cashFlow+initialCash
     maxCash = df_psf_base["cash.cash"].iloc[12]*1000
-    from sympy import symbols, solve
-
-    y = symbols('y')
-    mBuDH_expr = (y*8*staffCost + 
-     2*y*4*staffCost)-maxCash
-    maximumBusinessDevelopmentHires = solve(mBuDH_expr)[0]
+    # Linear again: each hire costs 8 months of their own salary plus 2 delivery staff
+    # for 4 months, so the maximum is the available cash divided by that.
+    cashPerHire = 8 * staffCost + 2 * 4 * staffCost
+    maximumBusinessDevelopmentHires = maxCash / cashPerHire
     maximumBusinessDevelopmentHires
     return (bptk,)
 
@@ -168,7 +166,28 @@ def _(bptk):
       0], [17, 0], [18, 0], [19, 0], [20, 0], [21, 0], [22, 0], [23, 
       0], [24, 0]],
     "staff.businessDevelopmentAllocation%":[[1, 20], [2, 20], [3, 20], [4, 20], [5, 14300/303], [6, 14300/303],
-    [7, 14300/303], [8, 14300/303], [9, 14300/303], [10, 14300/303], [11, 20], [12, 20], [13, 20], [14, 20], [15, 20], [16, 20], [17, 20], [18, 20], [19, 20], [20, 20], [21, 20], [22, 20], [23, 20], [24, 20]]
+    [
+        7,
+        14300/303,
+    ], [
+        8,
+        14300/303,
+    ], [
+        9,
+        14300/303,
+    ], [
+        10,
+        14300/303,
+    ], [
+        11,
+        20,
+    ], [
+        12,
+        20,
+    ], [
+        13,
+        20,
+    ], [14, 20], [15, 20], [16, 20], [17, 20], [18, 20], [19, 20], [20, 20], [21, 20], [22, 20], [23, 20], [24, 20]]
     }
     }
     })
@@ -197,7 +216,16 @@ def _(as_table, bptk):
     as_table(bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['growth515Person'], 
-        equations=["cash.cash","cash.cashFlow","staff.professionalStaff","staff.hiringRate","staff.businessDevelopmentAllocation%","projects.deliveringProjects","revenue.makingRevenue","revenue.collectingRevenue"],
+        equations=[
+            "cash.cash",
+            "cash.cashFlow",
+            "staff.professionalStaff",
+            "staff.hiringRate",
+            "staff.businessDevelopmentAllocation%",
+            "projects.deliveringProjects",
+            "revenue.makingRevenue",
+            "revenue.collectingRevenue",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",
@@ -280,11 +308,35 @@ def _(bptk):
     "growth505Person":{
     "points":{
     "staff.hiringRate":[[1, 101], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 404], [8, 0], 
-                                                [9, 0], [10, 0], [11, 0], [12, 0], [13, 0], [14, 0], [15, 0], [16, 0], [17, 0], [18, 0], 
+                                                [
+                                                    9,
+                                                    0,
+                                                ], [
+                                                    10,
+                                                    0,
+                                                ], [
+                                                    11,
+                                                    0,
+                                                ], [12, 0], [13, 0], [14, 0], [15, 0], [16, 0], [17, 0], [18, 0], 
                                                 [19, 0], [20, 0], [21, 0], [22, 0], [23, 0], [24, 0]],
     "staff.businessDevelopmentAllocation%":[[1, 20], [2, 20], [3, 20], [4, 20], [5, 14100/301], 
-                                                [6, 14100/301],[7, 14100/301], [8, 14100/301], [9, 14100/301], [10, 14100/301], [11,20], 
-                                                [12, 20], [13, 20], [14, 20], [15, 20], [16, 20], [17, 20], [18,20], [19, 20], [20, 20], 
+                                                [
+                                                    6,
+                                                    14100/301,
+                                                ],[
+                                                    7,
+                                                    14100/301,
+                                                ], [8, 14100/301], [9, 14100/301], [10, 14100/301], [11,20], 
+                                                [
+                                                    12,
+                                                    20,
+                                                ], [
+                                                    13,
+                                                    20,
+                                                ], [
+                                                    14,
+                                                    20,
+                                                ], [15, 20], [16, 20], [17, 20], [18,20], [19, 20], [20, 20], 
                                                 [21, 20], [22, 20], [23, 20], [24, 20]]
     }
     }})

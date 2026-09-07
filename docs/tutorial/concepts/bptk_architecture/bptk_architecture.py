@@ -154,7 +154,7 @@ def _(bptk, mo):
             "openTasks", "closedTasks", "staff", "completionRate",
             "deadline", "remainingTime", "schedulePressure", "effortPerTask",
         ],
-        value=["openTasks"],
+        value=["openTasks", "closedTasks"],
         label="Equations",
     )
     return equation_choice, scenario_choice
@@ -162,11 +162,6 @@ def _(bptk, mo):
 
 @app.cell
 def _(bptk, equation_choice, mo, plt, scenario_choice):
-    # Every plot leaves its figure in matplotlib's registry, and this cell re-runs on
-    # every control change - closing the previous run's figures keeps the browser's
-    # heap bounded.
-    plt.close("all")
-
     _axes = bptk.plot_scenarios(
         scenario_managers=["smSimpleProjectManagement"],
         scenarios=[scenario_choice.value],

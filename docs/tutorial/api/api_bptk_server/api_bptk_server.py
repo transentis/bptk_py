@@ -56,13 +56,11 @@ def _(mo):
 
     ```default
     from BPTK_Py.server import BptkServer
-    from flask_cors import CORS
 
     from model import bptk # assuming your model is in a file called model.py that sets up bptk
 
     # Calling the BptkServer class
     application = BptkServer(__name__, bptk)
-    CORS(application)
 
     if __name__ == "__main__":
        application.run()
@@ -415,7 +413,10 @@ def _(mo):
 
 @app.cell
 def _(requests):
-    response_1 = requests.post(url='http://localhost:5000/equations', json={'scenarioManager': 'sddsl_customer_acquisition', 'scenario': 'interactive_scenario'})
+    response_1 = requests.post(
+        url='http://localhost:5000/equations',
+        json={'scenarioManager': 'sddsl_customer_acquisition', 'scenario': 'interactive_scenario'},
+    )
     return (response_1,)
 
 
@@ -465,7 +466,15 @@ def _(mo):
 
 @app.cell
 def _(requests):
-    response_2 = requests.post(url='http://localhost:5000/run', json={'scenario_managers': ['sddsl_customer_acquisition'], 'scenarios': ['base', 'low_word_of_mouth', 'high_word_of_mouth', 'interactive_scenario'], 'equations': ['customers', 'customer_acquisition', 'market_saturation'], 'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.5}}}}})
+    response_2 = requests.post(
+        url='http://localhost:5000/run',
+        json={
+            'scenario_managers': ['sddsl_customer_acquisition'],
+            'scenarios': ['base', 'low_word_of_mouth', 'high_word_of_mouth', 'interactive_scenario'],
+            'equations': ['customers', 'customer_acquisition', 'market_saturation'],
+            'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.5}}}},
+        },
+    )
     return (response_2,)
 
 
@@ -507,7 +516,14 @@ def _(instance_uuid):
 
 @app.cell
 def _(instance_uuid, requests):
-    response_4 = requests.post(url=f'http://localhost:5000/{instance_uuid}/begin-session', json={'scenario_managers': ['sddsl_customer_acquisition'], 'scenarios': ['interactive_scenario'], 'equations': ['customers', 'word_of_mouth_success']})
+    response_4 = requests.post(
+        url=f'http://localhost:5000/{instance_uuid}/begin-session',
+        json={
+            'scenario_managers': ['sddsl_customer_acquisition'],
+            'scenarios': ['interactive_scenario'],
+            'equations': ['customers', 'word_of_mouth_success'],
+        },
+    )
     return (response_4,)
 
 
@@ -543,7 +559,10 @@ def _(response_5):
 
 @app.cell
 def _(instance_uuid, requests):
-    response_6 = requests.post(url=f'http://localhost:5000/{instance_uuid}/run-step', json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.7}}}}})
+    response_6 = requests.post(
+        url=f'http://localhost:5000/{instance_uuid}/run-step',
+        json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.7}}}}},
+    )
     return (response_6,)
 
 
@@ -581,13 +600,23 @@ def _(another_instance_uuid):
 
 @app.cell
 def _(another_instance_uuid, requests):
-    response_8 = requests.post(url=f'http://localhost:5000/{another_instance_uuid}/begin-session', json={'scenario_managers': ['sddsl_customer_acquisition'], 'scenarios': ['interactive_scenario'], 'equations': ['customers', 'word_of_mouth_success']})
+    response_8 = requests.post(
+        url=f'http://localhost:5000/{another_instance_uuid}/begin-session',
+        json={
+            'scenario_managers': ['sddsl_customer_acquisition'],
+            'scenarios': ['interactive_scenario'],
+            'equations': ['customers', 'word_of_mouth_success'],
+        },
+    )
     return
 
 
 @app.cell
 def _(another_instance_uuid, requests):
-    response_9 = requests.post(url=f'http://localhost:5000/{another_instance_uuid}/run-step', json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.1}}}}})
+    response_9 = requests.post(
+        url=f'http://localhost:5000/{another_instance_uuid}/run-step',
+        json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.1}}}}},
+    )
     return (response_9,)
 
 
@@ -599,7 +628,10 @@ def _(response_9):
 
 @app.cell
 def _(instance_uuid, requests):
-    response_10 = requests.post(url=f'http://localhost:5000/{instance_uuid}/run-step', json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.07}}}}})
+    response_10 = requests.post(
+        url=f'http://localhost:5000/{instance_uuid}/run-step',
+        json={'settings': {'sddsl_customer_acquisition': {'interactive_scenario': {'constants': {'word_of_mouth_success': 0.07}}}}},
+    )
     return (response_10,)
 
 

@@ -9,12 +9,10 @@
 # Copyright (c) 2021 transentis labs GmbH
 # MIT License
 
-import sys
-version = sys.version_info
-if(version[0] < 3 or (version[0] == 3 and version[1] < 9)):
-    print("BPTK Server requires Python 3.9 or later. Please update Python to use the BPTK Server! Exitting now.")
-    sys.exit()
-
+# No Python-version guard here: `requires-python = ">=3.11"` in pyproject.toml is the
+# one that works. The check that used to stand here tested for < 3.9, could therefore
+# never fire, and called sys.exit() - which takes a notebook kernel with it - from
+# inside a library at import time.
 
 from flask import Flask, redirect, url_for, request, make_response, jsonify, Response, g
 from BPTK_Py.bptk import bptk
@@ -622,7 +620,11 @@ class BptkServer(Flask):
         # takes a string, not a Python dict.
         try:
             model_json_str = json.dumps(model_def)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError) as e:  # pragma: no cover - see below
+            # Not reachable through the endpoint: `model_def` came out of
+            # `request.get_json()`, so everything in it is JSON already. Kept because
+            # the method is also called with a dict a caller built themselves, and
+            # dropped from coverage rather than proved by a contrived test.
             return self._error_response(
                 "model is not JSON-serializable: {}".format(e), 400
             )

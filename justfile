@@ -1,29 +1,38 @@
 # Justfile for project automation
 
-# Venv path
-venv := "venv"
+# Sync the environment from uv.lock: every extra, plus the dev group that carries
+# maturin. This also builds the Rust extension, because maturin is the build backend
+# and installing the project compiles it - in release mode, which is the one worth
+# measuring against.
+sync:
+    uv sync --all-extras
 
-# Build the Rust extension into the active venv (maturin builds and installs BPTK_Py._rust_engine)
+# Rebuild the Rust extension after a change to src/. Release on purpose: a debug
+# build is roughly five times slower, and that has already been mistaken for the
+# engine's real speed once. Use `dev-debug` when compile time matters more.
 dev:
-    . {{venv}}/bin/activate && maturin develop
+    uv run maturin develop --release --uv
+
+# The same, unoptimised - faster to compile, far slower to run. Never benchmark on it.
+dev-debug:
+    uv run maturin develop --uv
 
 # Run Rust engine tests
 test-engine:
-    PYO3_PYTHON={{justfile_directory()}}/{{venv}}/bin/python cargo test --no-default-features
+    PYO3_PYTHON={{justfile_directory()}}/.venv/bin/python cargo test --no-default-features
 
-# Run tests
+# Run tests. `uv run` syncs first, so the engine is never stale.
 test: dev
-    {{venv}}/bin/pip install ".[test]" && {{venv}}/bin/pytest ./
+    uv run --all-extras pytest ./
 
 # Build a wheel for the current platform
 build:
-    . {{venv}}/bin/activate && maturin build --release --out dist
+    uv run maturin build --release --out dist
 
 # Build both wheel kinds: the platform wheel with the Rust engine, and the
 # py3-none-any wheel without it that micropip installs in the browser.
 build-all: build
-    {{venv}}/bin/pip install --quiet wheel
-    {{venv}}/bin/python scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
+    uv run python scripts/build_any_wheel.py dist/*-abi3-*.whl --out dist
     @ls -1 dist/*.whl
 
 # Publish BPTK
@@ -34,9 +43,13 @@ publish:
 publish_without_test:
     cd scripts && ./publish_without_test.sh
 
+# Everything: the library suite and the website. The check to make before a merge to
+# main, because a push to main publishes the website.
+test-all: test test-docs
+
 # Count lines of code
 cloc:
-    cloc . --exclude-dir venv,__pycache__,_templates,docs,node_modules
+    cloc . --exclude-dir .venv,__pycache__,_templates,docs,node_modules
 
 # Run the test suite in the browser platform (Pyodide under node). Needs node.
 test-browser:

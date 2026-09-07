@@ -6,9 +6,9 @@ __System Dynamics and Agent-based Modeling in Python__
 
 The Business Prototyping Toolkit for Python (BPTK-Py) is a computational modeling framework that enables you to build simulation models using System Dynamics (SD) and/or agent-based modeling (ABM) natively in Python and manage simulation scenarios with ease.
 
-Next to providing the necessary SD and ABM language constructs to build simulation models directly in Python, the framework also includes a compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code.
+Models run on a compiled Rust engine where speed matters, and on pure Python everywhere else — including inside a browser, on WebAssembly.
 
-This means you can build models in a XMILE-compatible visual modeling environment (such as [Stella](https://www.iseesystems.com) or [iThink](https://www.iseesystems.com)) and then use them _independently_ in an Python environment.
+The framework also includes a compiler for transpiling System Dynamics models conforming to the XMILE standard into Python code, so a model built in a visual modeling environment such as [Stella](https://www.iseesystems.com) or [iThink](https://www.iseesystems.com) can be used _independently_ in a Python environment.
 
 The best way to get started with BPTK-Py is to read the [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) that is part ot the extensive [online documentation](https://bptk.transentis.com). The Quickstart provides a _single page_ overview of all the computational modeling techniques supported by BPTK.
 
@@ -18,10 +18,13 @@ The best way to get started with BPTK-Py is to read the [Quickstart](https://bpt
 ## Main Features
 
 *   The objective of the framework is to let the modeller concentrate on building simulation models by providing a seamless interface for managing model settings and scenarios and for plotting simulation results.
-*   The BPTK-Py framework supports System Dynamics models in XMILE Format, native SD models using a domain-specific language for System Dynamics (SD DSL) and native Agent-based models. You can also build hybrid SD-ABM-Models natively in Python.
+*   **System Dynamics, agent-based and hybrid models.** Native SD models using a domain-specific language for System Dynamics (SD DSL), including multidimensional models; native agent-based models; and hybrid SD-ABM models, all in Python.
+*   **A compiled Rust engine.** SD models run on a Rust engine that ships pre-compiled inside the wheel — nothing to install, nothing to configure. Choose it per run, per session or per server; anything it cannot express falls back to the Python engine automatically. See [Execution Backends](https://bptk.transentis.com/concepts/execution_backends/execution_backends.html).
+*   **Runs in a browser.** BPTK installs into [Pyodide](https://pyodide.org) and runs on WebAssembly, so a model can be published as a page rather than as a notebook someone has to install first. The Python engine is the one that runs there.
+*   **XMILE models become Python.** The compiler transpiles models built in Stella or iThink, and is installed with the `xmile` extra — see [Installation](#installation).
 *   All plotting is done using [Matplotlib](https://www.matplotlib.org), which is installed with the `plotting` extra — see [Installation](#installation).
 *   Simulation results are returned as [Pandas dataframes](https://pandas.pydata.org) and thus can easily be used for analytics.
-*   Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially if using the Jupyter notebook environment.
+*   Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially in a reactive notebook environment such as [marimo](https://marimo.io).
 
 ## Installation
 
@@ -71,6 +74,22 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 3.0.3
+
+* Bugfix: `run_scenarios` with `agents` but without the `agent_states` argument now counts every state the agent has, instead of raising `AttributeError`
+* Bugfix: `begin_session` says that sessions run System Dynamics scenarios only when it is handed an agent-based scenario manager, instead of failing several frames down with `AttributeError: _get_cache is invalid`
+* Bugfix: `begin_session` reports a scenario or scenario manager name that matches nothing, with a suggestion - a typo used to start a session that silently carried neither
+* Bugfix: `train_scenarios` stops when `agent_states`, `agent_properties` or `agent_property_types` are passed without the argument they depend on - the four checks logged an error and then trained anyway
+* Bugfix: `RedisAdapter` compresses session state when `compress` is set - the flag defaults to true and had no effect at all
+* Bugfix: compressed session state keeps the steps it was written with, instead of renumbering them to 1, 2, 3 - a session on a model starting at 0 came back with every value one step out, and a setting made in only some rounds came back under the wrong ones
+* Bugfix: `Element.plot(format="axes")` no longer leaves its figure in matplotlib's global registry - the half of that fix that 3.0.2 missed, so a slider redrawing an element no longer exhausts the browser's memory
+* Bugfix: importing the XMILE code generator no longer raises a `SyntaxWarning` about an invalid escape sequence
+* Breaking: `register_scenario_manager` leaves an already registered manager untouched and logs an error - it used to drop the model but still merge the scenarios passed with it, so a new scenario ran against the model the caller had just replaced. Use `register_scenarios` to add scenarios, or `reset_all_scenarios` to start over
+* Breaking: the plot settings live in one central configuration that every plot method reads, applied around each drawing call instead of being written into the global `plt.rcParams` when a `bptk()` is constructed - charts drawn outside BPTK are no longer restyled, and `Element.plot()` looks the same whether a `bptk()` exists. `configuration` passed to the constructor writes into that central configuration, so it applies to every plot in the process; `BPTK_Py.plotting_config.reset()` returns to the defaults
+* Feature: `plot_scenarios`, `plot_lookup`, `Element.plot` and `visualizer.plot` take `matplotlib_rc_settings` to style a single plot - laid over the central configuration for that one call, which is left unchanged
+* Bugfix: `figure.figsize` and `lines.linewidth` set through `matplotlib_rc_settings` reach the chart - they name the same thing as the `figsize` and `linewidth` settings, and the explicit argument the plot call passed used to win, so setting the rc form did nothing
+* Removed: the configuration keys `interactive`, `bptk_Py_module_path` and `sd_py_compiler_root`, none of which was read by anything
+
 ### 3.0.2
 
 * Feature: `format="plot" | "axes" | "df"` on `Model.plot_lookup()` and `bptk.plot_lookup()`, matching `Element.plot()` and `plot_scenarios()`
@@ -89,7 +108,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ### 3.0.0
 
-* Breaking: introduced extras `plotting`, `xmile`, `server`, `observability` — see [Installation](#installation). Base install no longer pulls matplotlib, flask, psycopg, redis, logfire, parsimonious, xmltodict, jinja2
+* Breaking: introduced extras `plotting`, `xmile`, `server`, `observability` — see [Installation](https://bptk.transentis.com/usage/installation.html). Base install no longer pulls matplotlib, flask, psycopg, redis, logfire, parsimonious, xmltodict, jinja2
 * Breaking: removed the widget layer — `SimpleDashboard`, `ScenarioWidget`, `ModelConnection`, the `BPTK_Py.widgets` package, `HybridRunner.run_scenario(widget=…)`, ipywidgets
 * Breaking: removed the unused dependencies `cachetools`, `requests`, `distlib`, the unused `BPTK_Py.sdcompiler.sdmodel` module, and the Docker image — it had not built since the maturin migration
 * Breaking: `configure_logfire()` raises `ImportError` when Logfire is missing instead of returning `False`
@@ -412,7 +431,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 *   Bugfix for the plotting component that solves compatibility issues with newer versions of matplotlib
 
 ### 1.1.15
-*   New dataCollector for retrieving agent-wise data (Refer to [BPTK-Py Tutorial](https://github.com/transentis/bptk_py_tutorial) for more info)
+*   New dataCollector for retrieving agent-wise data
 
 ### 1.1.14
 *   Fixed a bug in the interactive scenario component that caused scenarios being plotted multiple times

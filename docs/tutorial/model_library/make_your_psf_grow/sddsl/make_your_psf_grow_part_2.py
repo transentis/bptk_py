@@ -1698,7 +1698,15 @@ def _(mo):
 @app.cell
 def _(BPTK_Py):
     bptk_1 = BPTK_Py.bptk()
-    bptk_1.plot_scenarios(scenario_managers=['psf'], scenarios=['base'], equations=['kpi.projectBacklog'], title='Relative Project Backlog', x_label='Months', y_label='Months of Coverage', format="axes")
+    bptk_1.plot_scenarios(
+        scenario_managers=['psf'],
+        scenarios=['base'],
+        equations=['kpi.projectBacklog'],
+        title='Relative Project Backlog',
+        x_label='Months',
+        y_label='Months of Coverage',
+        format="axes",
+    )
     return (bptk_1,)
 
 
@@ -1712,7 +1720,15 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    df_psf_base = bptk_1.plot_scenarios(scenario_managers=['psf'], scenarios=['base'], equations=['cash.cash', 'revenue.revenue', 'cost.staffCost', 'cost.overheadCost'], title='Base Case', x_label='Months', y_label='k€', return_df=True)
+    df_psf_base = bptk_1.plot_scenarios(
+        scenario_managers=['psf'],
+        scenarios=['base'],
+        equations=['cash.cash', 'revenue.revenue', 'cost.staffCost', 'cost.overheadCost'],
+        title='Base Case',
+        x_label='Months',
+        y_label='k€',
+        return_df=True,
+    )
     totalRevenue = df_psf_base['revenue.revenue'].iloc[0] * 1000
     staffCost_1 = df_psf_base['cost.staffCost'].iloc[0] * 1000
     overheadCost_1 = df_psf_base['cost.overheadCost'].iloc[0] * 1000
@@ -1750,7 +1766,13 @@ def _(mo):
 @app.cell
 def _(cashFlow_1, overheadCost_1, staffCost_1, totalCost, totalRevenue):
     import pandas as pd
-    data_psf_base = [['Revenue', totalRevenue], ['Staff Cost', staffCost_1], ['Overhead Cost', overheadCost_1], ['Total Cost', totalCost], ['Cash Flow', cashFlow_1]]
+    data_psf_base = [
+        ['Revenue', totalRevenue],
+        ['Staff Cost', staffCost_1],
+        ['Overhead Cost', overheadCost_1],
+        ['Total Cost', totalCost],
+        ['Cash Flow', cashFlow_1],
+    ]
     df_psf_base_total = pd.DataFrame(data_psf_base, columns=['Position', 'Value'])
     df_psf_base_total.set_index('Position').astype(int)
     return
@@ -1766,13 +1788,27 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    bptk_1.plot_scenarios(scenario_managers=['psf'], scenarios=['base'], equations=['cash.cash', 'cash.easyTargetCash', 'cash.expertTargetCash'], title='Base Case', x_label='Months', y_label='k€', format="axes")
+    bptk_1.plot_scenarios(
+        scenario_managers=['psf'],
+        scenarios=['base'],
+        equations=['cash.cash', 'cash.easyTargetCash', 'cash.expertTargetCash'],
+        title='Base Case',
+        x_label='Months',
+        y_label='k€',
+        format="axes",
+    )
     return
 
 
 @app.cell
 def _(as_table, bptk_1):
-    as_table(bptk_1.plot_scenarios(scenario_managers=['psf'], scenarios=['base'], equations=['cash.cash'], series_names={'psf_base_cash.cash': 'Cash'}, return_df=True))
+    as_table(bptk_1.plot_scenarios(
+        scenario_managers=['psf'],
+        scenarios=['base'],
+        equations=['cash.cash'],
+        series_names={'psf_base_cash.cash': 'Cash'},
+        return_df=True,
+    ))
     return
 
 

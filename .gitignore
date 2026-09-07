@@ -55,13 +55,13 @@ docs/tutorial/model_library/customer_acquisition/export/
 docs/tutorial/xmile/exporting_simulation_results/data/customer_acquisition.xlsx
 docs/tutorial/model_library/beergame/data/q_tables_10.json
 
-# uv artefacts. uv creates both in the repo root when it resolves a sandbox —
-# the marimo engine does this, and the Pyodide checks will too. Neither belongs
-# to the project, which builds with maturin and uses venv/.
-# (.venv also ships its own .gitignore containing "*", so it hides itself — but
-# that is uv's convention, not our rule, so state it explicitly.)
+# The environment uv builds. It ships its own .gitignore containing "*", so it
+# hides itself anyway — stated here because that is uv's convention, not our rule.
+#
+# uv.lock is deliberately NOT ignored. It is what makes `uv sync` install the same
+# versions on a laptop and in CI; ignored, as it was until 2026-09-02, the lock
+# existed on one machine and every other one resolved afresh.
 .venv/
-uv.lock
 
 # Build output: `just build-all` and the CI wheel job write here
 dist/

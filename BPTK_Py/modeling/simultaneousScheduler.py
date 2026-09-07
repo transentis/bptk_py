@@ -62,7 +62,8 @@ class SimultaneousScheduler(Scheduler):
             dt: step of round.
             model: Model instance.
             progress_widget: FloatBarProgress instance.
-                Ipywidgets element used to track progress.
+                Progress bar to report into, or None. tqdm-backed since 3.0.0;
+                the ipywidgets element it used to be was removed with the widget layer.
         """
         self.current_round = sim_round
 

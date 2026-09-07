@@ -20,6 +20,23 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(id(model),id(model))
 
 
+    def test_run_step_with_a_progress_bar(self):
+        """`show_progress_widget=True` was the only branch of run_step nobody ran.
+
+        Until 3.0.0 it built an ipywidgets FloatProgress and therefore only worked in
+        Jupyter, which is presumably why no test touched it. It is tqdm now and runs
+        anywhere, so there is no reason left not to.
+        """
+        from BPTK_Py import SimultaneousScheduler
+
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="progressModel",
+                      scheduler=SimultaneousScheduler())
+
+        with_bar = model.run_step(1, show_progress_widget=True)
+        without_bar = model.run_step(2, show_progress_widget=False)
+
+        self.assertEqual(with_bar, without_bar)
+
     def test_register_agent_factory(self):
         model = Model()
 

@@ -98,7 +98,12 @@ def _():
 
 @app.cell
 def _(customers, plt):
-    plt.close("all")  # see the note on the interactive cell below
+    # `Element.plot()` draws through pyplot, which keeps every figure it makes in a
+    # global registry - and the reader is invited to edit this cell and run it again.
+    # Closing the previous run's figures keeps the browser's heap bounded; they have
+    # been rendered by then. `bptk.plot_scenarios()` does not need this: since 3.0.2
+    # its `format="axes"` builds a figure of its own, outside the registry.
+    plt.close("all")
     customers.plot(format="axes")
     return
 
@@ -213,7 +218,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, plt):
-    plt.close("all")  # see the note on the interactive cell below
     bptk.plot_scenarios(
         scenario_managers=["sddsl_customer_acquisition"],
         scenarios=["base","low_word_of_mouth","high_word_of_mouth"],
@@ -259,12 +263,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo, plt, word_of_mouth_slider):
-    # Every plot_scenarios call leaves its figure in matplotlib's registry, and this
-    # cell makes three of them on every slider move - a dozen moves fill the
-    # browser's heap and the page stops answering. Closing the previous run's
-    # figures keeps it bounded; they have already been rendered by then.
-    plt.close("all")
-
     scenario = bptk.get_scenario("sddsl_customer_acquisition", "interactive_scenario")
     scenario.constants["word_of_mouth_success"] = word_of_mouth_slider.value
     bptk.reset_scenario_cache(

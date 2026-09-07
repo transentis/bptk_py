@@ -105,6 +105,10 @@ class RedisAdapter(ExternalStateAdapter):
         log(f"[INFO] RedisAdapter loading instance {instance_uuid}")
         state = self._load_instance(instance_uuid)
 
+        if(self.compress and state is not None and state.state is not None):
+            log(f"[INFO] Decompressing state for instance {instance_uuid}")
+            self._decompress_logs(state.state)
+
         # Apply scenario_cache numeric key restoration (no compression, just JSON key conversion fix)
         if(state is not None and state.state is not None):
             if "scenario_cache" in state.state:
@@ -118,8 +122,15 @@ class RedisAdapter(ExternalStateAdapter):
         """
         Override the base class method to handle compression internally.
         This prevents double compression issues similar to FileAdapter.
+
+        The override used to skip compression altogether, so `compress=True` - the
+        default - did nothing at all in the one store where session size matters most.
         """
         log(f"[INFO] RedisAdapter saving instance {state.instance_id if state else 'None'}")
+        if self.compress and state is not None and state.state is not None:
+            log(f"[INFO] Compressing state for instance {state.instance_id}")
+            state = InstanceState(self._compress_logs(state.state), state.instance_id,
+                                  state.time, state.timeout, state.step)
         return self._save_instance(state)
 
     def delete_instance(self, instance_uuid: str):

@@ -287,6 +287,45 @@ class TestElement(unittest.TestCase):
         """The default stays as it was - drawing, with no return value."""
         self.assertIsNone(self._plot_model().plot())
 
+    @pytest.mark.requires_extra("plotting")
+    def testElement_plot_format_axes_registers_no_figure(self):
+        """format="axes" must not leave a figure in pyplot's global registry.
+
+        `df.plot()` without an `ax` goes through pyplot, which holds every figure it
+        creates until someone closes it. A slider that redraws on each move then
+        accumulates them, and in Pyodide the WASM heap runs out and the kernel dies -
+        which is what cost the documentation 28 pages. visualizations/visualize.py was
+        fixed for this in August; this method was the other way into the same call.
+        """
+        import matplotlib.pyplot as plt
+
+        constant = self._plot_model()
+        plt.close("all")
+        before = set(plt.get_fignums())
+
+        for _ in range(5):
+            constant.plot(format="axes")
+
+        self.assertEqual(set(plt.get_fignums()), before)
+
+    @pytest.mark.requires_extra("plotting")
+    def testElement_plot_default_keeps_using_pyplot(self):
+        """The default path must stay registered - that is how a notebook shows it.
+
+        The guard above is only correct if it is narrow: a Jupyter cell renders the
+        figure precisely because pyplot holds it, so `format="plot"` has to keep
+        creating one.
+        """
+        import matplotlib.pyplot as plt
+
+        constant = self._plot_model()
+        plt.close("all")
+
+        constant.plot()
+
+        self.assertEqual(len(plt.get_fignums()), 1)
+        plt.close("all")
+
 class TestElementError(unittest.TestCase):
     def setUp(self):
         pass

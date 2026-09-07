@@ -151,7 +151,12 @@ def _(Model, bptk, sd):
     # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_1)
-    bptk.plot_scenarios(scenario_managers=['smAbs'], scenarios=['base'], equations=['input_converter', 'abs_converter'], format="axes")
+    bptk.plot_scenarios(
+        scenario_managers=['smAbs'],
+        scenarios=['base'],
+        equations=['input_converter', 'abs_converter'],
+        format="axes",
+    )
     return
 
 
@@ -194,7 +199,12 @@ def _(Model, bptk, sd):
     # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_2)
-    bptk.plot_scenarios(scenario_managers=['smDelay'], scenarios=['base'], equations=['input_function', 'delayed_input_1', 'delayed_input_2', 'delayed_input_3'], format="axes")
+    bptk.plot_scenarios(
+        scenario_managers=['smDelay'],
+        scenarios=['base'],
+        equations=['input_function', 'delayed_input_1', 'delayed_input_2', 'delayed_input_3'],
+        format="axes",
+    )
     return
 
 
@@ -427,7 +437,12 @@ def _(Model, bptk, sd):
     # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_7)
-    bptk.plot_scenarios(scenario_managers=['smPulse'], scenarios=['base'], equations=['stock', 'flow'], format="axes")
+    bptk.plot_scenarios(
+        scenario_managers=['smPulse'],
+        scenarios=['base'],
+        equations=['stock', 'flow'],
+        format="axes",
+    )
     return
 
 
@@ -475,7 +490,12 @@ def _(Model, bptk, sd):
     # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_8)
-    bptk.plot_scenarios(scenario_managers=['smSmooth'], scenarios=['base'], equations=['input_function', 'smooth'], format="axes")
+    bptk.plot_scenarios(
+        scenario_managers=['smSmooth'],
+        scenarios=['base'],
+        equations=['input_function', 'smooth'],
+        format="axes",
+    )
     return
 
 

@@ -249,7 +249,12 @@ def _(mo):
 
 @app.cell
 def _(model):
-    model.data_collector.plot_agent_stats(agent_ids=[2,3],properties=['remaining_effort'],title="Scenario80",agent_type="task")
+    model.data_collector.plot_agent_stats(
+        agent_ids=[2,3],
+        properties=['remaining_effort'],
+        title="Scenario80",
+        agent_type="task",
+    )
     return
 
 

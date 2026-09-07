@@ -60,7 +60,6 @@ def _(mo):
 def _():
     from BPTK_Py import Model, bptk
     from BPTK_Py import sd_functions as sd
-    import matplotlib.pyplot as plt
     model = Model(starttime=0.0,stoptime=260.0,dt=1.0,name='Balancing')
     # decleare elements
     actual_state = model.stock("actual_state")
@@ -89,7 +88,7 @@ def _():
     action_delay.equation = 0.0
     bptk_1 = bptk()
     bptk_1.register_model(model)
-    return bptk_1, plt
+    return (bptk_1,)
 
 
 @app.cell(hide_code=True)
@@ -102,7 +101,13 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    bptk_1.plot_scenarios(title='Balancing loops are goal seeking loops', scenario_managers=['smBalancing'], scenarios=['base'], equations=['actual_state', 'desired_state'], format="axes")
+    bptk_1.plot_scenarios(
+        title='Balancing loops are goal seeking loops',
+        scenario_managers=['smBalancing'],
+        scenarios=['base'],
+        equations=['actual_state', 'desired_state'],
+        format="axes",
+    )
     return
 
 
@@ -118,13 +123,27 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    bptk_1.register_scenarios(scenario_manager='smBalancing', scenarios={'oscillations': {'constants': {'adjustment_time': 12.0, 'measurement_delay': 4.0, 'decision_delay': 4.0, 'action_delay': 4.0}}})
+    bptk_1.register_scenarios(
+        scenario_manager='smBalancing',
+        scenarios={'oscillations': {'constants': {
+            'adjustment_time': 12.0,
+            'measurement_delay': 4.0,
+            'decision_delay': 4.0,
+            'action_delay': 4.0,
+        }}},
+    )
     return
 
 
 @app.cell
 def _(bptk_1):
-    bptk_1.plot_scenarios(title='Delays lead to oscillations', scenario_managers=['smBalancing'], scenarios=['oscillations'], equations=['actual_state', 'desired_state'], format="axes")
+    bptk_1.plot_scenarios(
+        title='Delays lead to oscillations',
+        scenario_managers=['smBalancing'],
+        scenarios=['oscillations'],
+        equations=['actual_state', 'desired_state'],
+        format="axes",
+    )
     return
 
 
@@ -184,14 +203,7 @@ def _(
     decision_delay_slider,
     measurement_delay_slider,
     mo,
-    plt,
 ):
-    # Every plot leaves its figure in matplotlib's registry, and this cell re-runs on
-    # every move of a slider - a dozen moves fill the browser's heap and the page stops
-    # answering. Closing the previous run's figures keeps it bounded; they have already
-    # been rendered by then.
-    plt.close("all")
-
     scenario = bptk_1.get_scenario("smBalancing", "interactive")
     scenario.constants["adjustment_time"] = adjustment_time_slider.value
     scenario.constants["measurement_delay"] = measurement_delay_slider.value

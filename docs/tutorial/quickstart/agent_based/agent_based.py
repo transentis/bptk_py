@@ -140,7 +140,14 @@ def _(Company, Consumer, DataCollector, SimultaneousScheduler):
         def instantiate_model(self):
             self.register_agent_factory("consumer", lambda agent_id,agent_model,properties: Consumer(agent_id, agent_model,properties))
             self.register_agent_factory("company", lambda agent_id,agent_model, properties: Company(agent_id, agent_model, properties))
-    customer_acquisition_abm=CustomerAcquisitionAbm(1,60,dt=1,name="Customer Acquisition Agent-based Model",scheduler=SimultaneousScheduler(),data_collector=DataCollector())
+    customer_acquisition_abm=CustomerAcquisitionAbm(
+        1,
+        60,
+        dt=1,
+        name="Customer Acquisition Agent-based Model",
+        scheduler=SimultaneousScheduler(),
+        data_collector=DataCollector(),
+    )
     customer_acquisition_abm.instantiate_model()
     return CustomerAcquisitionAbm, customer_acquisition_abm
 
@@ -225,11 +232,8 @@ def _(mo):
 def _(BPTK_Py, CustomerAcquisitionAbm, DataCollector, SimultaneousScheduler):
     bptk_1 = BPTK_Py.bptk()
 
-    # A scenario manager gets its own model instance. Handing it the one we just ran
-    # by hand does not work: `reset()` empties the agent list but keeps the agent id
-    # counter, so the next run's ids point past the list and the run dies with an
-    # IndexError - which is swallowed by the thread it runs in and leaves an empty
-    # chart. Remove this once that is fixed in the library.
+    # A scenario manager gets its own model instance: the one above was run by hand
+    # and carries that run's results, and a scenario manager owns the model it runs.
     customer_acquisition_abm_scenarios = CustomerAcquisitionAbm(
         1, 60, dt=1, name="Customer Acquisition Agent-based Model",
         scheduler=SimultaneousScheduler(), data_collector=DataCollector()
@@ -301,7 +305,13 @@ def _(BPTK_Py, CustomerAcquisitionAbm, DataCollector, SimultaneousScheduler):
     }
     bptk_1.register_scenario_manager(abm_scenario_manager)
 
-    bptk_1.plot_scenarios(scenario_managers=['abm_customer_acquisition'], scenarios=['base'], agents=['consumer'], agent_states=['customer'], format="axes")
+    bptk_1.plot_scenarios(
+        scenario_managers=['abm_customer_acquisition'],
+        scenarios=['base'],
+        agents=['consumer'],
+        agent_states=['customer'],
+        format="axes",
+    )
     return
 @app.cell(hide_code=True)
 def _(mo):

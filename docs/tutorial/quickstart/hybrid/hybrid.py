@@ -134,7 +134,14 @@ def _(Customer, DataCollector, SimultaneousScheduler):
             current_num_customers = self.agent_count("customer")
             agents_needed = required_num_customers-current_num_customers
             self.create_agents({"name":"customer","count":agents_needed})
-    customer_acquisition_hybrid=CustomerAcquisitionHybrid(1,60,dt=1,name="Customer Acquisition Hybrid",scheduler=SimultaneousScheduler(),data_collector=DataCollector())
+    customer_acquisition_hybrid=CustomerAcquisitionHybrid(
+        1,
+        60,
+        dt=1,
+        name="Customer Acquisition Hybrid",
+        scheduler=SimultaneousScheduler(),
+        data_collector=DataCollector(),
+    )
     customer_acquisition_hybrid.instantiate_model()
 
     customer_acquisition_hybrid_config =  {
@@ -264,7 +271,13 @@ def _(BPTK_Py, customer_acquisition_hybrid):
     }
     bptk_2.register_scenario_manager(hybrid_scenario_manager)
 
-    bptk_2.plot_scenarios(scenario_managers=['hybrid_customer_acquisition'], scenarios=['base'], agents=['customer'], agent_states=['active'], format="axes")
+    bptk_2.plot_scenarios(
+        scenario_managers=['hybrid_customer_acquisition'],
+        scenarios=['base'],
+        agents=['customer'],
+        agent_states=['active'],
+        format="axes",
+    )
     return
 @app.cell(hide_code=True)
 def _(mo):

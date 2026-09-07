@@ -1,68 +1,168 @@
+"""Compact the per-step logs of a session so they survive a round trip.
+
+`settings_log` and `results_log` are keyed by step, and every step repeats the same
+scenario-manager, scenario and variable names. Pivoting them - name first, values as a
+list over the steps - drops that repetition, and the saving grows with the number of
+rounds.
+
+The first version of that pivot threw the step keys away and rebuilt them on the way
+back as "1.0", "2.0", ... . That is only correct for a session whose steps happen to be
+1, 2, 3; a session on a model with `starttime=0` and `dt=0.25` came back with every
+value shifted, and one whose per-step settings were sparse came back with values under
+the wrong steps entirely. `bptk.run_step`'s resume path already works around it, by
+deriving the step grid from `starttime`/`dt` rather than trusting the log's own keys.
+
+So the format carries the steps now:
+
+    {"__format__": "steps-v2",
+     "steps": ["0.0", "0.25", ...],
+     "data": {manager: {scenario: {value_type: {name: <entry>}}}}}
+
+An `<entry>` is a plain list when the name has a value at every step - the dense case,
+which is the usual one and costs nothing over the old format. A name that appears only
+at some steps carries its step indices with it:
+
+    {"at": [0, 3], "values": [1.0, 7.0]}
+
+Data written in the old format still reads, with the renumbering it was stored with:
+those step keys are not recoverable, and rewriting them would be a guess of a different
+kind. `is_compressed()` tells the two apart, and anything saved from now on is v2.
+"""
+
+FORMAT_KEY = "__format__"
+FORMAT_V2 = "steps-v2"
+
+
+def is_compressed(payload):
+    """Whether `payload` is a compressed log, in either format."""
+    if not isinstance(payload, dict) or not payload:
+        return False
+    if payload.get(FORMAT_KEY) == FORMAT_V2:
+        return True
+    return _looks_like_legacy(payload)
+
+
+def _looks_like_legacy(payload):
+    """The old format, recognised by its shape: a list where a step dict would be.
+
+    The first level is scenario managers rather than steps, and the deepest level is a
+    list of values rather than a single one. Steps are numbers written as strings, so a
+    first key that is not numeric is already a strong hint.
+    """
+    first_key = next(iter(payload))
+    if not isinstance(first_key, str) or first_key.replace(".", "").isdigit():
+        return False
+    node = payload[first_key]
+    while isinstance(node, dict) and node:
+        node = next(iter(node.values()))
+    return isinstance(node, list)
+
+
+def _pivot(source, depth):
+    """Turn `{step: {...nested...: value}}` into `{...nested...: entry}` plus the steps.
+
+    `depth` is how many dict levels sit between a step and the value: three for
+    settings (manager, scenario, value type) and two for results (manager, scenario),
+    the variable name being the level below that.
+    """
+    steps = [str(step) for step in source]
+    index = {step: i for i, step in enumerate(source)}
+    data = {}
+
+    def walk(node, target, level):
+        for key, value in node.items():
+            if level < depth:
+                walk(value, target.setdefault(key, {}), level + 1)
+            else:
+                entry = target.setdefault(key, {"at": [], "values": []})
+                entry["at"].append(index[step])
+                entry["values"].append(value)
+
+    for step, managers in source.items():
+        walk(managers, data, 0)
+
+    _collapse_dense(data, len(steps), depth)
+    return {FORMAT_KEY: FORMAT_V2, "steps": steps, "data": data}
+
+
+def _collapse_dense(node, step_count, depth, level=0):
+    """Drop the index list wherever a name has a value at every step."""
+    for key, value in node.items():
+        if level < depth:
+            _collapse_dense(value, step_count, depth, level + 1)
+        elif value["at"] == list(range(step_count)):
+            node[key] = value["values"]
+
+
+def _unpivot(payload, depth, leaf):
+    """The inverse of `_pivot`. `leaf` builds the value stored under a name."""
+    steps = payload["steps"]
+    result = {}
+
+    def walk(node, path, level):
+        for key, value in node.items():
+            if level < depth:
+                walk(value, path + [key], level + 1)
+                continue
+            if isinstance(value, list):
+                pairs = list(enumerate(value))
+            else:
+                pairs = list(zip(value["at"], value["values"]))
+            for i, item in pairs:
+                step = steps[i]
+                target = result.setdefault(step, {})
+                for part in path:
+                    target = target.setdefault(part, {})
+                target[key] = leaf(step, item)
+
+    walk(payload["data"], [], 0)
+    return result
+
+
 def compress_settings(settings):
-    #           scenario_manager: scenario: value_type:  value: [float]
-    scenario_managers = dict[str, dict[str, dict[str, dict[str, [float]]]]]()
-        
-    for step in settings.keys():
-        # loop over all scenario managers in the step
-        for scenario_manager_name in settings[step]:
-            scenario_manager = settings[step][scenario_manager_name]
-            
-            if not scenario_manager_name in scenario_managers:
-                scenario_managers[scenario_manager_name] = dict()
-            
-            # loop over all scenarios in the current scenario manager for the current step
-            for scenario in scenario_manager:
-                
-                if not scenario in scenario_managers[scenario_manager_name]:
-                    scenario_managers[scenario_manager_name][scenario] = dict()
-                current_scenario_transformed = scenario_managers[scenario_manager_name][scenario]
-                
-                # loop over all value types in the current scenario in the current scenario manager for the current step.
-                # a value type might for example be "constants"
-                for value_type in scenario_manager[scenario]:
-                    if not value_type in current_scenario_transformed:
-                        current_scenario_transformed[value_type] = dict()
-                    
-                    # add the values in a flattened format 
-                    for constant in scenario_manager[scenario][value_type]:
-                        constant_value = scenario_manager[scenario][value_type][constant]
-                        if not constant in current_scenario_transformed[value_type]:
-                            current_scenario_transformed[value_type][constant] = [constant_value]
-                        else:
-                            current_scenario_transformed[value_type][constant].append(constant_value)
-    return scenario_managers
+    """`{step: {manager: {scenario: {value_type: {name: value}}}}}` -> compressed."""
+    return _pivot(settings, depth=3)
 
 
 def compress_results(results):
-    #           scenario_manager: scenario: value_name: [float]
-    scenario_managers = dict[str, dict[str, dict[str, [float]]]]()
-    
-    for step in results.keys():
-        # loop over all scenario managers in the step
-        for scenario_manager_name in results[step]:
-            scenario_manager = results[step][scenario_manager_name]
-            
-            if not scenario_manager_name in scenario_managers:
-                scenario_managers[scenario_manager_name] = dict()
-            
-            # loop over all scenarios in the current scenario manager for the current step
-            for scenario in scenario_manager:
-                
-                if not scenario in scenario_managers[scenario_manager_name]:
-                    scenario_managers[scenario_manager_name][scenario] = dict()
-                current_scenario_transformed = scenario_managers[scenario_manager_name][scenario]
-                
-                # loop over all constants in the current scenario in the current scenario manager for the current step.
-                # add the constant to the current scenario
-                for constant in scenario_manager[scenario]:
-                    constant_value = scenario_manager[scenario][constant][step]
-                    if not constant in current_scenario_transformed:
-                        current_scenario_transformed[constant] = [constant_value]
-                    else:
-                        current_scenario_transformed[constant].append(constant_value)
-    return scenario_managers
+    """`{step: {manager: {scenario: {name: {step: value}}}}}` -> compressed.
+
+    The leaf is a single-entry dict keyed by the step itself, which is the shape the
+    session writes; only its value is stored.
+    """
+    unwrapped = {
+        step: {
+            manager: {
+                scenario: {
+                    name: series[step] if isinstance(series, dict) and step in series else series
+                    for name, series in scenarios.items()
+                }
+                for scenario, scenarios in managers.items()
+            }
+            for manager, managers in step_data.items()
+        }
+        for step, step_data in results.items()
+    }
+    return _pivot(unwrapped, depth=2)
+
 
 def decompress_settings(settings):
+    """Compressed -> `{step: {manager: {scenario: {value_type: {name: value}}}}}`."""
+    if isinstance(settings, dict) and settings.get(FORMAT_KEY) == FORMAT_V2:
+        return _unpivot(settings, depth=3, leaf=lambda step, value: value)
+    return _decompress_settings_legacy(settings)
+
+
+def decompress_results(results):
+    """Compressed -> `{step: {manager: {scenario: {name: {step: value}}}}}`."""
+    if isinstance(results, dict) and results.get(FORMAT_KEY) == FORMAT_V2:
+        return _unpivot(results, depth=2, leaf=lambda step, value: {step: value})
+    return _decompress_results_legacy(results)
+
+
+# The readers for anything written before the format carried its steps. They rebuild
+# the step keys as "1.0", "2.0", ... , which is what the data was stored with.
+def _decompress_settings_legacy(settings):
     #               step: scenarioManager:  scenario:    constants:   constant: value
     result = dict[str, dict[str, dict[str, dict[str, dict[str, float]]]]]()
     
@@ -95,7 +195,7 @@ def decompress_settings(settings):
                     
     return result
 
-def decompress_results(results):
+def _decompress_results_legacy(results):
     #               step: scenarioManager:  scenario:    constants:   constant: value
     result = dict[str, dict[str, dict[str, dict[str, dict[str, float]]]]]()
     

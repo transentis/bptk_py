@@ -122,7 +122,10 @@ class SdSimulation():
         :return: None
         """
         
-        # TODO: does it make sense to run this in separate threads - in most cases the equations will be inderdependent. Do some performance tests.
+        # One thread per equation, where the platform has them at all. Whether that
+        # helps has never been measured, and the equations are usually interdependent,
+        # so most of the work serialises regardless. For speed the answer is the Rust
+        # engine rather than more threads here.
         for equation in equations:  # Start one thread for each equation
             t = start_or_run(self.__simulate, args=(equation, until, start))
             if t is not None:

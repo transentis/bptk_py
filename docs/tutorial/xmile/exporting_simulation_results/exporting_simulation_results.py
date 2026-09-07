@@ -162,7 +162,12 @@ def _(bptk, scenario_manager, scenarios):
     # create a new dataframe with a column for each equation, indexed by time and scenario
     scenario_dfs = []
     for scenario in scenarios:
-        df_1 = bptk.plot_scenarios(scenario_managers=[scenario_manager], scenarios=[scenario], equations=equations, return_df=True)  # first create a dataframe for each scenario
+        df_1 = bptk.plot_scenarios(
+            scenario_managers=[scenario_manager],
+            scenarios=[scenario],
+            equations=equations,
+            return_df=True,
+        )  # first create a dataframe for each scenario
         df_1['scenario'] = [scenario] * len(df_1.index)
         df_1['time'] = df_1.index
         scenario_dfs = scenario_dfs + [df_1]  # add a colum which will contain the name of the scenario  # create a new column which will contain the time step (which won't be a unique index anymore, as we are concatenating many scenarios)
@@ -213,7 +218,12 @@ def _(bptk, equations, pd, scenario_manager, scenarios):
     for scenario_no, scenario_1 in enumerate(scenarios):
         scenario_dfs_1 = []
         for equation in equations:
-            df_2 = bptk.plot_scenarios(scenario_managers=[scenario_manager], scenarios=[scenario_1], equations=[equation], return_df=True)  # loop through the equations
+            df_2 = bptk.plot_scenarios(
+                scenario_managers=[scenario_manager],
+                scenarios=[scenario_1],
+                equations=[equation],
+                return_df=True,
+            )  # loop through the equations
             df_2.rename(columns={equation: scenario_1}, inplace=True)
             if scenario_no is len(scenarios) - 1:  # add a column which will contain the name of the indicator
                 df_2['indicator'] = [equation] * len(df_2.index)

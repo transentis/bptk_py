@@ -1,6 +1,11 @@
 # Front matter the .py format cannot carry; injected on export.
 # description: In-depth explanation of agent-based modeling.
 # keywords: agent-based modeling, abm, bptk, python
+#
+# A section overview: prose and nothing else - not one chart, and no cell that offers
+# a decision to take. Left reactive it booted Pyodide, some 8 MB, to display text, and
+# it is the page a reader arrives on first.
+# interactive: false
 import marimo
 
 __generated_with = "0.23.13"

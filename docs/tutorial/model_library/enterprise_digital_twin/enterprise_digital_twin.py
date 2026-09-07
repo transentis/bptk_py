@@ -865,7 +865,60 @@ def _(mo):
 
 @app.cell
 def _(bptk_1):
-    df = bptk_1.plot_scenarios(scenario_managers=['smEDT'], kind='area', scenarios=['interactive'], title='Capacity vs Demand', agents=['controlling'], agent_states=['active'], agent_properties=['consultant_demand', 'consultant_capacity_fte', 'avg_utilization', 'overall_avg_utilization', 'profit_margin', 'overall_profit_margin', 'avg_consulting_fee', 'overall_avg_consulting_fee', 'cash', 'cash_flow', 'earnings', 'revenue', 'expenses', 'revenue_risk', 'accumulated_earnings', 'accumulated_expenses', 'accumulated_revenue', 'overall_profit_margin', 'overall_avg_utilization', 'overall_avg_consulting_fee'], agent_property_types=['total'], series_names={'smEDT_interactive_controlling_active_consultant_demand_total': 'consultant_demand', 'smEDT_interactive_controlling_active_consultant_capacity_fte_total': 'consultant_capacity_fte', 'smEDT_interactive_controlling_active_avg_utilization_total': 'avg_utilization', 'smEDT_interactive_controlling_active_overall_avg_utilization_total': 'overall_avg_utilization', 'smEDT_interactive_controlling_active_profit_margin_total': 'profit_margin', 'smEDT_interactive_controlling_active_overall_profit_margin_total': 'overall_profit_margin', 'smEDT_interactive_controlling_active_avg_consulting_fee_total': 'avg_consulting_fee', 'smEDT_interactive_controlling_active_overall_avg_consulting_fee_total': 'overall_avg_consulting', 'smEDT_interactive_controlling_active_cash_total': 'cash', 'smEDT_interactive_controlling_active_cash_flow_total': 'cash_flow', 'smEDT_interactive_controlling_active_earnings_total': 'earnings', 'smEDT_interactive_controlling_active_revenue_total': 'revenue', 'smEDT_interactive_controlling_active_expenses_total': 'expenses', 'smEDT_interactive_controlling_active_revenue_risk_total': 'revenue_risk', 'smEDT_interactive_controlling_active_accumulated_earnings_total': 'accumulated_earnings', 'smEDT_interactive_controlling_active_accumulated_expenses_total': 'accumulated_expenses', 'smEDT_interactive_controlling_active_accumulated_revenue_total': 'accumulated_revenue', 'smEDT_interactive_controlling_active_overall_profit_margin_total': 'overall_profit_margin', 'smEDT_interactive_controlling_active_overall_avg_utilization_total': 'overall_avg_utilization', 'smEDT_interactive_controlling_active_overall_avg_consulting_fee_total': 'overall_avg_consulting_fee'}, return_df=True)
+    df = bptk_1.plot_scenarios(
+        scenario_managers=['smEDT'],
+        kind='area',
+        scenarios=['interactive'],
+        title='Capacity vs Demand',
+        agents=['controlling'],
+        agent_states=['active'],
+        agent_properties=[
+            'consultant_demand',
+            'consultant_capacity_fte',
+            'avg_utilization',
+            'overall_avg_utilization',
+            'profit_margin',
+            'overall_profit_margin',
+            'avg_consulting_fee',
+            'overall_avg_consulting_fee',
+            'cash',
+            'cash_flow',
+            'earnings',
+            'revenue',
+            'expenses',
+            'revenue_risk',
+            'accumulated_earnings',
+            'accumulated_expenses',
+            'accumulated_revenue',
+            'overall_profit_margin',
+            'overall_avg_utilization',
+            'overall_avg_consulting_fee',
+        ],
+        agent_property_types=['total'],
+        series_names={
+            'smEDT_interactive_controlling_active_consultant_demand_total': 'consultant_demand',
+            'smEDT_interactive_controlling_active_consultant_capacity_fte_total': 'consultant_capacity_fte',
+            'smEDT_interactive_controlling_active_avg_utilization_total': 'avg_utilization',
+            'smEDT_interactive_controlling_active_overall_avg_utilization_total': 'overall_avg_utilization',
+            'smEDT_interactive_controlling_active_profit_margin_total': 'profit_margin',
+            'smEDT_interactive_controlling_active_overall_profit_margin_total': 'overall_profit_margin',
+            'smEDT_interactive_controlling_active_avg_consulting_fee_total': 'avg_consulting_fee',
+            'smEDT_interactive_controlling_active_overall_avg_consulting_fee_total': 'overall_avg_consulting',
+            'smEDT_interactive_controlling_active_cash_total': 'cash',
+            'smEDT_interactive_controlling_active_cash_flow_total': 'cash_flow',
+            'smEDT_interactive_controlling_active_earnings_total': 'earnings',
+            'smEDT_interactive_controlling_active_revenue_total': 'revenue',
+            'smEDT_interactive_controlling_active_expenses_total': 'expenses',
+            'smEDT_interactive_controlling_active_revenue_risk_total': 'revenue_risk',
+            'smEDT_interactive_controlling_active_accumulated_earnings_total': 'accumulated_earnings',
+            'smEDT_interactive_controlling_active_accumulated_expenses_total': 'accumulated_expenses',
+            'smEDT_interactive_controlling_active_accumulated_revenue_total': 'accumulated_revenue',
+            'smEDT_interactive_controlling_active_overall_profit_margin_total': 'overall_profit_margin',
+            'smEDT_interactive_controlling_active_overall_avg_utilization_total': 'overall_avg_utilization',
+            'smEDT_interactive_controlling_active_overall_avg_consulting_fee_total': 'overall_avg_consulting_fee',
+        },
+        return_df=True,
+    )
     df
     return
 

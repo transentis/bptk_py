@@ -4,6 +4,7 @@ import numpy as np
 import BPTK_Py.logger.logger as logmod
 from unittest.mock import MagicMock
 from BPTK_Py.externalstateadapter.redis_adapter import RedisAdapter, InstanceState
+from BPTK_Py.util.statecompression import is_compressed
 
 encode = lambda obj: jsonpickle.encode(obj, make_refs=False)
 decode = jsonpickle.decode
@@ -258,6 +259,86 @@ class TestRedisAdapter(unittest.TestCase):
         with open(logmod.logfile, "r", encoding="UTF-8") as f:
             content = f.read()
         self.assertIn("RedisAdapter saving instance test_save123", content) 
+
+    def _session_state(self):
+        """The shape a stepped session persists: two logs keyed by step."""
+        return {
+            "settings_log": {
+                "0.0": {"sm": {"base": {"constants": {"rate": 1.0}}}},
+                "0.5": {"sm": {"base": {"constants": {"rate": 2.0}}}},
+            },
+            "results_log": {
+                "0.0": {"sm": {"base": {"stock": {"0.0": 10.0}}}},
+                "0.5": {"sm": {"base": {"stock": {"0.5": 11.0}}}},
+            },
+        }
+
+    def test_save_instance_actually_compresses(self):
+        """`compress=True` is the default and used to do nothing here.
+
+        The override skipped the base class's compression, so the one store where
+        session size matters most ignored the flag. What reaches Redis has to carry the
+        compressed format.
+        """
+        state = self._session_state()
+        inst = InstanceState(state=state, instance_id="compressed1",
+                             time=datetime.datetime(2024, 1, 1), timeout=None, step=2)
+
+        adapter = RedisAdapter(redis_client=self.mock_redis)
+        adapter.save_instance(inst)
+
+        stored = decode(self.mock_redis.set.call_args[0][1])
+        written = decode(stored["state"])
+        self.assertTrue(is_compressed(written["settings_log"]))
+        self.assertTrue(is_compressed(written["results_log"]))
+        self.assertEqual(written["settings_log"]["steps"], ["0.0", "0.5"])
+
+    def test_save_instance_leaves_the_live_session_alone(self):
+        """Compression must not reach back into the state the caller still holds."""
+        state = self._session_state()
+        inst = InstanceState(state=state, instance_id="compressed2",
+                             time=datetime.datetime(2024, 1, 1), timeout=None, step=2)
+
+        RedisAdapter(redis_client=self.mock_redis).save_instance(inst)
+
+        self.assertEqual(state, self._session_state())
+
+    def test_save_instance_without_compression_stores_the_logs_as_they_are(self):
+        state = self._session_state()
+        inst = InstanceState(state=state, instance_id="uncompressed",
+                             time=datetime.datetime(2024, 1, 1), timeout=None, step=2)
+
+        RedisAdapter(redis_client=self.mock_redis, compress=False).save_instance(inst)
+
+        written = decode(decode(self.mock_redis.set.call_args[0][1])["state"])
+        self.assertEqual(written["settings_log"], state["settings_log"])
+
+    def test_round_trip_through_redis_keeps_the_steps(self):
+        """Save and load back: the logs have to come out the way they went in."""
+        state = self._session_state()
+        adapter = RedisAdapter(redis_client=self.mock_redis)
+        adapter.save_instance(InstanceState(state=state, instance_id="roundtrip",
+                                            time=datetime.datetime(2024, 1, 1),
+                                            timeout=None, step=2))
+
+        self.mock_redis.get.return_value = self.mock_redis.set.call_args[0][1]
+        loaded = adapter.load_instance("roundtrip")
+
+        self.assertEqual(loaded.state["settings_log"], state["settings_log"])
+        self.assertEqual(loaded.state["results_log"], state["results_log"])
+
+    def test_load_instance_leaves_an_uncompressed_log_alone(self):
+        """An instance written while the flag was off must still read correctly."""
+        state = self._session_state()
+        adapter = RedisAdapter(redis_client=self.mock_redis, compress=False)
+        adapter.save_instance(InstanceState(state=state, instance_id="plain",
+                                            time=datetime.datetime(2024, 1, 1),
+                                            timeout=None, step=2))
+        self.mock_redis.get.return_value = self.mock_redis.set.call_args[0][1]
+
+        loaded = RedisAdapter(redis_client=self.mock_redis).load_instance("plain")
+
+        self.assertEqual(loaded.state["settings_log"], state["settings_log"])
 
     def test_delete_instance(self):
         #successful delete

@@ -16,7 +16,6 @@
 
 from ..dataCollector import DataCollector
 from copy import deepcopy
-import BPTK_Py.config as config
 import pandas as pd
 
 
@@ -70,11 +69,15 @@ class AgentDataCollector(DataCollector):
         for agent_id in agent_ids:
             for property in properties:
                 df_plot[str(agent_id) + "_" + agent_type + "_" + property] = agent_stats[agent_type][agent_id][property]
-        agent_plot = df_plot.plot(kind=config.configuration["kind"],
-                                  alpha=config.configuration["alpha"],
-                                  stacked=config.configuration["stacked"],
-                                  figsize=config.configuration["figsize"],
-                                  title=title,
-                                  color=config.configuration["colors"],
-                                  lw=config.configuration["linewidth"])
+        from BPTK_Py.visualizations import bptk_style, plotting_config
+
+        settings = plotting_config.resolved()
+        with bptk_style():
+            agent_plot = df_plot.plot(kind=settings["kind"],
+                                      alpha=settings["alpha"],
+                                      stacked=settings["stacked"],
+                                      figsize=settings["figsize"],
+                                      title=title,
+                                      color=settings["colors"],
+                                      lw=settings["linewidth"])
         return agent_plot
