@@ -52,7 +52,7 @@ xmile = [
     "parsimonious==0.10.0","xmltodict==1.0.4","jinja2==3.1.6"
 ]
 server = [
-    "flask==3.1.1","psycopg[binary,pool]==3.3.2","redis==6.4.0"
+    "flask==3.1.3","psycopg[binary,pool]==3.3.2","redis==6.4.0"
 ]
 observability = [
     "logfire==4.19.0"
@@ -72,7 +72,7 @@ dev = ["maturin>=1.7,<2.0"]
 # What renders the website. The same pin lives in docs/tutorial/requirements.txt,
 # which is what a *reader* installs to run the notebooks themselves; a test in
 # test_packaging.py keeps the two from drifting apart.
-docs = ["marimo==0.23.13"]
+docs = ["marimo==0.24.0"]
 # What CI adds on top: the linter and the coverage plugin. Here rather than in the
 # workflow so they are resolved from uv.lock like everything else - a version that
 # only exists in a `pip install` line is the one that changes without anyone noticing.

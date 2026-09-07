@@ -98,7 +98,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "bptk-py", extras = ["plotting", "xmile", "server", "observability"], marker = "extra == 'test'" },
-    { name = "flask", marker = "extra == 'server'", specifier = "==3.1.1" },
+    { name = "flask", marker = "extra == 'server'", specifier = "==3.1.3" },
     { name = "jinja2", marker = "extra == 'xmile'", specifier = "==3.1.6" },
     { name = "jsonpickle", specifier = "==4.1.1" },
     { name = "logfire", marker = "extra == 'observability'", specifier = "==4.19.0" },
@@ -128,7 +128,7 @@ ci = [
     { name = "pytest-cov" },
 ]
 dev = [{ name = "maturin", specifier = ">=1.7,<2.0" }]
-docs = [{ name = "marimo", specifier = "==0.23.13" }]
+docs = [{ name = "marimo", specifier = "==0.24.0" }]
 
 [[package]]
 name = "certifi"
@@ -649,7 +649,7 @@ wheels = [
 
 [[package]]
 name = "flask"
-version = "3.1.1"
+version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "blinker" },
@@ -659,9 +659,9 @@ dependencies = [
     { name = "markupsafe" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/de/e47735752347f4128bcf354e0da07ef311a78244eba9e3dc1d4a5ab21a98/flask-3.1.1.tar.gz", hash = "sha256:284c7b8f2f58cb737f0cf1c30fd7eaf0ccfcde196099d24ecede3fc2005aa59e", size = 753440, upload-time = "2025-05-13T15:01:17.447Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/00/35d85dcce6c57fdc871f3867d465d780f302a175ea360f62533f12b27e2b/flask-3.1.3.tar.gz", hash = "sha256:0ef0e52b8a9cd932855379197dd8f94047b359ca0a78695144304cb45f87c9eb", size = 759004, upload-time = "2026-02-19T05:00:57.678Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/68/9d4508e893976286d2ead7f8f571314af6c2037af34853a30fd769c02e9d/flask-3.1.1-py3-none-any.whl", hash = "sha256:07aae2bb5eaf77993ef57e357491839f5fd9f4dc281593a81a9e4d79a24f295c", size = 103305, upload-time = "2025-05-13T15:01:15.591Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl", hash = "sha256:f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c", size = 103424, upload-time = "2026-02-19T05:00:56.027Z" },
 ]
 
 [[package]]
@@ -1016,7 +1016,7 @@ wheels = [
 
 [[package]]
 name = "marimo"
-version = "0.23.13"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click", marker = "sys_platform != 'emscripten'" },
@@ -1036,12 +1036,13 @@ dependencies = [
     { name = "pyzmq", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
     { name = "starlette", marker = "sys_platform != 'emscripten'" },
     { name = "tomlkit" },
+    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
     { name = "uvicorn", marker = "sys_platform != 'emscripten'" },
     { name = "websockets", marker = "sys_platform != 'emscripten'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/8d/5527d7ddd38a3a495f38f86a41731437301f0d08d81353fb9ceedf167b3d/marimo-0.23.13.tar.gz", hash = "sha256:12dffd800b3f6beae15e0ee3983cc3e8a3fb03c8a87cb0d58973e560008ba3aa", size = 38641267, upload-time = "2026-07-01T17:36:40.151Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/e0/70c18b2862d9a439c811cf2e5bf0aef2b9d0cc7ac72beb2ba6eea9a9a055/marimo-0.24.0.tar.gz", hash = "sha256:30aaeae5a5936df524814fddd98f4b260d3068f97df2611d252fe4b253f3fb80", size = 39054161, upload-time = "2026-08-17T21:30:18.072Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/c0/8470e4e383b01d88fa9c80fba2b0b203d6e4a41e4fbcaedcac997b664b42/marimo-0.23.13-py3-none-any.whl", hash = "sha256:bc6e0f2c59d2086b0707fac56edeedf5f6edf8a390b4d59f4c417ce4c683adb9", size = 39091347, upload-time = "2026-07-01T17:36:36.151Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/8b/3899b23020f5e43c7357171712b14b774434cb6b1a285f5678cc1234013a/marimo-0.24.0-py3-none-any.whl", hash = "sha256:a5470207ac4c228ee7c2c16f820b0ca1cdf58ec4b51074aca1a5c997422ae90a", size = 39517936, upload-time = "2026-08-17T21:30:13.832Z" },
 ]
 
 [[package]]
@@ -1763,15 +1764,15 @@ wheels = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.21.3"
+version = "11.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9e/26/d1015444da4d952a1ca487a236b522eb979766f0295a0bd0c5fc089989a9/pymdown_extensions-10.21.3.tar.gz", hash = "sha256:72cfcf55f07aea0d4af2c4f11dd4e52466ddfb1bb819673146398e0bd3a77354", size = 854140, upload-time = "2026-05-13T12:57:32.267Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/17/2db4b414de89659144488e0d9c6c0bf0c8395841dc12d81d0532cc6ef310/pymdown_extensions-11.0.2.tar.gz", hash = "sha256:9506fcbe66fa355a775b768084334238dd6805020ac4b92bea0c0dda6f8f223d", size = 855419, upload-time = "2026-08-22T19:28:47.236Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/85/545a951eecc270fcd688288c600017e2050a1aacb56c711d208586d3e470/pymdown_extensions-10.21.3-py3-none-any.whl", hash = "sha256:d7a5d08014fc571e80ca21dd6f854e31f94c489800350564d55d15b3c41e76b6", size = 269002, upload-time = "2026-05-13T12:57:30.296Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/43/9f45ec4d14e596efc32c925a78104934790438b0c0628b70d741016734ad/pymdown_extensions-11.0.2-py3-none-any.whl", hash = "sha256:259910762019732caa1dfd76f3faa62c59f191d46573e80bcb1d13c0f675bbe5", size = 269929, upload-time = "2026-08-22T19:28:45.389Z" },
 ]
 
 [[package]]

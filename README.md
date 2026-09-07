@@ -89,6 +89,7 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 * Feature: `plot_scenarios`, `plot_lookup`, `Element.plot` and `visualizer.plot` take `matplotlib_rc_settings` to style a single plot - laid over the central configuration for that one call, which is left unchanged
 * Bugfix: `figure.figsize` and `lines.linewidth` set through `matplotlib_rc_settings` reach the chart - they name the same thing as the `figsize` and `linewidth` settings, and the explicit argument the plot call passed used to win, so setting the rc form did nothing
 * Removed: the configuration keys `interactive`, `bptk_Py_module_path` and `sd_py_compiler_root`, none of which was read by anything
+* Upgraded dependencies: PyO3 0.29.2 in the wheel, Flask 3.1.3 in the `server` extra - both for published advisories, neither changes an API
 
 ### 3.0.2
 
