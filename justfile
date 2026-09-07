@@ -43,10 +43,6 @@ publish:
 publish_without_test:
     cd scripts && ./publish_without_test.sh
 
-# Everything: the library suite and the website. The check to make before a merge to
-# main, because a push to main publishes the website.
-test-all: test test-docs
-
 # Count lines of code
 cloc:
     cloc . --exclude-dir .venv,__pycache__,_templates,docs,node_modules
