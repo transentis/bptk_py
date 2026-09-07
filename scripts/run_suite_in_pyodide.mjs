@@ -69,7 +69,36 @@ async def install():
                     if r.split("=")[0].split("[")[0].strip() not in provided]
 
     print("Installing from PyPI:", ", ".join(requirements), flush=True)
-    await micropip.install(requirements)
+
+    # Every requirement here is fetched over the network, and the runner's path to
+    # PyPI is not reliable: on 7 September one run died in the download with
+    # \`AbortError: fetch failed\` and the next in the metadata query. Neither was a
+    # defect in the package, and neither said so.
+    #
+    # The metadata failure is the one worth explaining. micropip's query_package
+    # swallows *any* fetch exception, logs it at debug level, tries the next index,
+    # and - with a single index configured - raises "Can't fetch metadata for 'X'.
+    # Please make sure you have entered a correct package name". That reads like a
+    # typo in a pin that has not changed for months. So on a retry we turn micropip's
+    # logger up: quiet while it works, and honest about the cause when it does not.
+    import asyncio, logging
+
+    for attempt in range(1, 4):
+        try:
+            await micropip.install(requirements)
+            break
+        except BaseException as error:
+            if attempt == 3:
+                raise
+            print(f"  attempt {attempt} failed ({type(error).__name__}: {error})",
+                  flush=True)
+            # Raising the level is enough - micropip brings its own handler, and
+            # adding a second one through basicConfig printed every line twice.
+            logging.getLogger("micropip").setLevel(logging.DEBUG)
+            delay = 2 ** attempt
+            print(f"  retrying in {delay}s with micropip logging at debug",
+                  flush=True)
+            await asyncio.sleep(delay)
 
     sys.path.insert(0, "/src")
     os.chdir("/src")
