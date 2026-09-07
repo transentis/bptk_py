@@ -125,7 +125,10 @@ fi
 
 echo ""
 echo "=== Changes in bptk-docs ==="
-git status --short | head -30
+# `sed -n` rather than `head`: head closes the pipe after 30 lines, git status keeps
+# writing, and under `set -o pipefail` the SIGPIPE fails the whole script with 141. Which
+# means this only ever worked for a publish of 30 paths or fewer - a normal one is 500.
+git status --short | sed -n '1,30p'
 TOTAL="$(git status --porcelain | wc -l | tr -d ' ')"
 echo "  ($TOTAL paths changed)"
 echo ""
