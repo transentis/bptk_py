@@ -1,5 +1,7 @@
+import importlib
 import os
 import pathlib
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -301,6 +303,77 @@ class TestSdCompilerGeneratorFunctions(unittest.TestCase):
             "e_tri": "TRIANGULAR(a, b, c, d, e)",
         })
         self.assertIn("import numpy as np", code)
+
+    def test_aggregations_over_several_arguments(self):
+        """MEAN, PROD and SIZE take a list of arguments, not only one array.
+
+        Each renders a different way from the single-argument form, and the values are
+        asserted rather than the code: PROD used to join its arguments with `+`, so
+        `PROD(2, 3)` was `np.prod([2 + 3])` and returned 5.
+        """
+        tmpdir = tempfile.mkdtemp()
+        src = os.path.join(tmpdir, "aggregations.stmx")
+        dest = os.path.join(tmpdir, "aggregations.py")
+        with open(src, "w", encoding="utf-8") as f:
+            f.write(_minimal_xmile({
+                "a": "2", "b": "3",
+                "meanOfTwo": "MEAN(a, b)",
+                "prodOfTwo": "PROD(a, b)",
+                "sizeOfTwo": "SIZE(a, b)",
+            }))
+        compile_xmile(src, dest, "py")
+
+        sys.path.insert(0, tmpdir)
+        try:
+            module = importlib.import_module("aggregations")
+            model = module.simulation_model()
+            self.assertEqual(model.equation("meanoftwo", 2.0), 2.5)
+            self.assertEqual(model.equation("prodoftwo", 2.0), 6.0)
+            self.assertEqual(model.equation("sizeoftwo", 2.0), 2)
+        finally:
+            sys.path.remove(tmpdir)
+            sys.modules.pop("aggregations", None)
+
+
+class TestGeneratorHelpers(unittest.TestCase):
+    """The renderer's helpers, on the argument shapes a model does not usually produce."""
+
+    def test_size_of_a_plain_number(self):
+        from BPTK_Py.sdcompiler.generator.py.py import size_
+
+        self.assertEqual(size_(3.0), 3.0)
+
+    def test_size_of_a_single_identifier(self):
+        from BPTK_Py.sdcompiler.generator.py.py import size_
+
+        self.assertEqual(size_({"name": "a", "type": "identifier"}),
+                         "(len(self.memoize('a', t)))")
+
+    def test_interpolate_without_a_named_first_argument(self):
+        """`INTERPOLATE` expects an identifier to interpolate over; a value renders as
+        the expression it is, rather than as a quoted name."""
+        from BPTK_Py.sdcompiler.generator.py.py import interpolate_
+
+        self.assertEqual(interpolate_(3.0, 1.0, 2.0),
+                         "( self.interpolate(3.0, t, 1.0, 2.0) )")
+
+    def test_an_array_reference_whose_index_is_a_single_node(self):
+        """One index may arrive as the node itself rather than a list of nodes."""
+        from BPTK_Py.sdcompiler.generator.py.py import parseExpression
+
+        rendered = parseExpression({"name": "a", "type": "array",
+                                    "args": {"name": "1", "type": "label"}})
+
+        self.assertEqual(rendered, "self.memoize('a[1]', t)")
+
+    def test_an_index_that_is_itself_an_equation(self):
+        """An index computed at runtime is spliced into the name as code."""
+        from BPTK_Py.sdcompiler.generator.py.py import parseExpression
+
+        rendered = parseExpression({"name": "a", "type": "array",
+                                    "args": ["self.memoize('idx', t)"]})
+
+        self.assertIn("self.memoize('idx', t)", rendered)
 
 
 if __name__ == '__main__':

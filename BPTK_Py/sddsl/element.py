@@ -58,17 +58,17 @@ class Element:
         self.named_arrayed = False
         self.generate_function()
 
-    @classmethod
     def add_arr_equation(self, name, value):
-        pass
+        raise ElementError(
+            "Element type {} does not support arrayed equations".format(self.type))
 
-    @classmethod
     def add_arr_empty(self, name):
-        pass
+        raise ElementError(
+            "Element type {} does not support arrayed equations".format(self.type))
 
-    @classmethod
     def get_arr_equation(self, name):
-        pass
+        raise ElementError(
+            "Element type {} does not support arrayed equations".format(self.type))
 
     def __getitem__(self, key):
         if(not self.arrayed):
@@ -107,7 +107,6 @@ class Element:
             Handles arrayed equations. Returns true if the equation is arrayed.
         """
         arrayed_equation = False
-        # TODO add tests and exceptions for this (all if statements)
         handled_by_stock = False
         if(self.type == "Stock") and self.arrayed:
             if isinstance(equation, Element) and equation.arrayed:
@@ -122,7 +121,7 @@ class Element:
                     else:
                         for i in range(self._elements.vector_size()):
                             self._elements[i].equation = equation._elements[i]
-            elif isinstance(equation, Operator) and equation.is_any_subelement_arrayed() and equation.index == None:
+            elif isinstance(equation, Operator) and equation.is_any_subelement_arrayed() and equation.index is None:
                 handled_by_stock = True
                 dims = equation.resolve_dimensions()
                 if(dims != -1):  # It is an arrayed equation
@@ -149,8 +148,17 @@ class Element:
                             for i in range(dims[0]):
                                 for j in range(dims[1]):
                                     self[i][j].equation = equation.clone_with_index([i, j])
+        if (not handled_by_stock and isinstance(equation, Element)
+                and equation._elements.vector_size() > 0):
+            # A bare arrayed element as the equation, rather than an expression built
+            # from one. Only a Stock handled this: for every other element type the
+            # target stayed scalar and its equation referenced the *parent*, which
+            # holds no value of its own - so the result was 0.0, with nothing raised.
+            arrayed_equation = True
+            self._mirror_arrayed(equation)
+
         if isinstance(equation, Operator) and not handled_by_stock:
-            if equation.is_any_subelement_arrayed() and equation.index == None:
+            if equation.is_any_subelement_arrayed() and equation.index is None:
                 # Resolve equations
                 dims = equation.resolve_dimensions()
                 if(dims != -1):  # It is an arrayed equation
@@ -188,6 +196,34 @@ class Element:
 
         return arrayed_equation
 
+
+    def _mirror_arrayed(self, source):
+        """
+            Gives this element the shape of `source`, sub-element by sub-element.
+
+            Used when a whole arrayed element is assigned as an equation: every leaf of
+            the source becomes the equation of the matching leaf here, which is what
+            makes the target arrayed in turn.
+        """
+        def leaves(element):
+            if element._elements.vector_size() == 0:
+                return element
+            keys = element._elements.equations
+            if element.named_arrayed:
+                return {key: leaves(element[key]) for key in keys}
+            return [leaves(element[key]) for key in keys]
+
+        shape = leaves(source)
+        if source.named_arrayed:
+            first = shape[next(iter(shape))]
+            if isinstance(first, dict):
+                self.setup_named_matrix(shape, True)
+            else:
+                self.setup_named_vector(shape, True)
+        elif isinstance(shape[0], list):
+            self.setup_matrix([len(shape), len(shape[0])], shape, True)
+        else:
+            self.setup_vector(len(shape), shape, True)
 
     @equation.setter
     def equation(self, equation):
@@ -352,6 +388,14 @@ class Element:
         """Standard deviation of vector/matrix."""
         return ArrayStandardDeviationOperator(self)
 
+    def arr_max(self):
+        """Largest element of vector/matrix."""
+        return ArrayMaxOperator(self)
+
+    def arr_min(self):
+        """Smallest element of vector/matrix."""
+        return ArrayMinOperator(self)
+
     def arr_size(self):
         """Vector size of array."""
         return ArraySizeOperator(self)
@@ -377,9 +421,16 @@ class Element:
         """Left Modulo with other operators"""
         return ModOperator(self, other)
 
+    def __rmod__(self, other):
+        """Be the divisor of another operator."""
+        return ModOperator(other, self)
+
     def __rmul__(self, other):
         """Right multiply with other operators."""
-        return NumericalMultiplicationOperator(other, self)
+        # The element first: NumericalMultiplicationOperator expects the number as its
+        # second operand, and with the arguments the other way round an arrayed element
+        # silently multiplied the *parent* - so `2.0 * v` was an array of zeros.
+        return NumericalMultiplicationOperator(self, other)
 
     def __add__(self, other):
         """Left add with other operators."""

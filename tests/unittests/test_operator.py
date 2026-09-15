@@ -5,7 +5,10 @@ from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator, DotOperator
 from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator, BinaryOperator, AdditionOperator
 from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
+from BPTK_Py.sddsl.operators import ArrayMaxOperator, ArrayMinOperator
 from BPTK_Py.sddsl.operators import Function, SubtractionOperator, MultiplicationOperator, Pulse, _get_element_dimensions
+from BPTK_Py.sddsl.operators import Delay
+from BPTK_Py.sddsl import functions as sd
 
 class TestArrayedEquation(unittest.TestCase):
     def setUp(self):
@@ -139,6 +142,16 @@ class TestOperator(unittest.TestCase):
         self.assertIsInstance(result_operator,ModOperator)
         self.assertIs(result_operator.element_1,operator1)
         self.assertIs(result_operator.element_2,operator2)               
+
+    def testOperator_rmod(self):
+        operator1 = Operator()
+        operator2 = Operator()
+
+        result_operator = operator1.__rmod__(other=operator2)
+
+        self.assertIsInstance(result_operator,ModOperator)
+        self.assertIs(result_operator.element_1,operator2)
+        self.assertIs(result_operator.element_2,operator1)
 
     def testOperator_pow(self):   
         operator = Operator()
@@ -788,6 +801,20 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
+    def testArrayMaxOperator_clone_with_index(self):
+        arrayMO = ArrayMaxOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
+    def testArrayMinOperator_clone_with_index(self):
+        arrayMO = ArrayMinOperator(element=[1,2,3])
+        copy = arrayMO.clone_with_index(index=2)
+
+        self.assertEqual(copy.element,[1,2,3])
+        self.assertEqual(copy.index,2)
+
     def testArrayMedianOperator_clone_with_index(self):
         arrayMO = ArrayMedianOperator(element=[1,2,3])
         copy = arrayMO.clone_with_index(index=2)
@@ -890,18 +917,27 @@ class TestOtherOperators(unittest.TestCase):
         self.assertEqual(operator.resolve_dimensions(),-1)
 
     def testArrayNumericalMultiplicationOperator_clone_with_index(self):
+        # A clone addresses the sub-elements, not the parents: it has to be a scalar
+        # expression in every rendering, because the JSON serializer has no parent
+        # entity to refer to.
+        #
+        # Note on the previous version of this test, which asserted
+        # `copy.element_1 == vector1` *and* `copy.element_1 == vector2`: both passed,
+        # because `Element.__eq__` builds a ComparisonOperator, and any object is
+        # truthy. assertEqual on two Elements asserts nothing - use assertIs.
         model = Model()
-        vector1 = model.converter("vector1")       
+        vector1 = model.converter("vector1")
         vector1.setup_vector(3, [1.0, 2.0, 3.0])
 
-        vector2 = model.converter("vector2")       
-        vector2.setup_vector(3, [4.0, 5.0, 6.0])        
+        vector2 = model.converter("vector2")
+        vector2.setup_vector(3, [4.0, 5.0, 6.0])
         operator = NumericalMultiplicationOperator(element_1=vector1, element_2=vector2)
         copy = operator.clone_with_index(index=2)
 
-        self.assertEqual(copy.element_1,vector1)
-        self.assertEqual(copy.element_1,vector2)
-        self.assertEqual(copy.index,2)
+        self.assertIs(copy.element_1, vector1[2])
+        self.assertIs(copy.element_2, vector2[2])
+        self.assertEqual(copy.index, 2)
+        self.assertFalse(copy.arrayed)
 
 class TestDotOperator(unittest.TestCase):
     def setUp(self):
@@ -1145,6 +1181,7 @@ class TestOperatorArrayedCoverage(unittest.TestCase):
         self.assertEqual((v3 / a).term(), "0.0")   # DivisionOperator
         self.assertEqual((-v3).term(), "0.0")      # NumericalMultiplicationOperator
         self.assertEqual((a * v3).term(), "0.0")   # MultiplicationOperator
+        self.assertEqual((v3 % a).term(), "0.0")   # ModOperator
 
     def test_arrayed_operator_else_branches(self):
         # arrayed + index set but neither operand is a vector Element -> else branch
@@ -1205,11 +1242,19 @@ class TestOperatorArrayedCoverage(unittest.TestCase):
         self.assertIn("memoize", vv.arr_sum().term())     # _array_resolve
         self.assertIn("mean", vv.arr_mean().term())       # _matrix_element_to_string
 
-    def test_array_resolve_dimension_equals_index(self):
-        # Passing an integer dimension equal to the recursion depth returns ""
+    def test_array_resolve_rejects_a_partial_dimension(self):
+        # A dimension short of the array's depth used to cut the recursion short and
+        # return "", which the generated lambda met as a SyntaxError. It is rejected
+        # instead - a partial aggregation is not supported.
         m = Model()
         mat = m.converter("m1"); mat.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
-        self.assertEqual(mat.arr_sum(dimension=1).term(), "")
+        with self.assertRaises(OperatorError) as ctx:
+            mat.arr_sum(dimension=1).term()
+        self.assertIn("every dimension", str(ctx.exception))
+        # The full depth still aggregates every leaf.
+        total = m.converter("total")
+        total.equation = mat.arr_sum(dimension=2)
+        self.assertEqual(total(1), 10.0)
 
     def test_pulse_term_without_interval(self):
         # Pulse with interval 0 uses the single-pulse formula
@@ -1221,3 +1266,178 @@ class TestOperatorArrayedCoverage(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestGenericArrayProtocol(unittest.TestCase):
+    """The array protocol that Operator implements once, over its recorded operands.
+
+    `clone_with_index`, `is_any_subelement_arrayed` and `resolve_dimensions` used to be
+    overridden by 14 of some 75 operator classes, and every other class inherited a
+    scalar default - so `sqrt(v)` on an arrayed `v` silently returned 0.0. The
+    behavioural consequences are pinned per operand combination in
+    `tests/test_multidimensional_sddsl.py`; this class pins the mechanism.
+    """
+
+    def _model(self):
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="protocol")
+        v = model.constant("v")
+        v.setup_named_vector({"junior": 4.0, "mid": 9.0})
+        u = model.constant("u")
+        u.setup_vector(3, [1.0, 2.0, 3.0])
+        mat = model.constant("mat")
+        mat.setup_named_matrix({"north": {"widget": 2.0, "gadget": 3.0}})
+        s = model.constant("s")
+        s.equation = 2.0
+        return model, v, u, mat, s
+
+    # --- recording the operands ------------------------------------------------
+
+    def test_operands_are_recorded_in_constructor_order(self):
+        model, v, u, mat, s = self._model()
+        self.assertEqual(ComparisonOperator(v, 10.0, ">").operands(), [v, 10.0, ">"])
+
+    def test_operands_are_recorded_for_an_operator_that_never_calls_super(self):
+        model, v, u, mat, s = self._model()
+        operator = sd.If(v > 10.0, v, s)
+        self.assertEqual(len(operator.operands()), 3)
+        self.assertIs(operator.operands()[1], v)
+        self.assertIs(operator.operands()[2], s)
+
+    def test_keyword_operands_are_recorded_too(self):
+        model, v, u, mat, s = self._model()
+        operator = Delay(model, u, 2.0, initial_value=1.0)
+        self.assertEqual(operator.operands(), [model, u, 2.0, 1.0])
+
+    def test_the_protocol_attributes_exist_without_a_super_call(self):
+        model, v, u, mat, s = self._model()
+        operator = sd.If(s > 1.0, s, 0.0)
+        self.assertFalse(operator.arrayed)
+        self.assertIsNone(operator.index)
+
+    # --- cloning ---------------------------------------------------------------
+
+    def test_a_scalar_operator_clones_to_itself(self):
+        model, v, u, mat, s = self._model()
+        operator = sd.sqrt(s)
+        self.assertIs(operator.clone_with_index([0]), operator)
+
+    def test_a_clone_replaces_the_arrayed_operand_by_its_sub_element(self):
+        model, v, u, mat, s = self._model()
+        clone = sd.sqrt(v).clone_with_index(["mid"])
+        self.assertEqual(clone.term(), sd.sqrt(v["mid"]).term())
+        self.assertEqual(clone.index, ["mid"])
+        self.assertIsInstance(clone, type(sd.sqrt(v)))
+
+    def test_a_clone_recurses_into_an_operator_operand(self):
+        model, v, u, mat, s = self._model()
+        clone = sd.sqrt(v * 2.0).clone_with_index(["junior"])
+        self.assertEqual(clone.term(), sd.sqrt(v["junior"] * 2.0).term())
+
+    def test_a_clone_reaches_a_matrix_leaf_through_both_indices(self):
+        model, v, u, mat, s = self._model()
+        clone = sd.sqrt(mat).clone_with_index(["north", "gadget"])
+        self.assertEqual(clone.term(), sd.sqrt(mat["north"]["gadget"]).term())
+
+    def test_numbers_and_the_model_pass_through_a_clone_unchanged(self):
+        model, v, u, mat, s = self._model()
+        clone = sd.smooth(model, v, 3.0, 1.0).clone_with_index(["mid"])
+        self.assertEqual(clone.averaging_time(1), 3.0)
+
+    def test_an_arrayed_stateful_function_is_only_a_template(self):
+        """`smooth` and `trend` build their averaging chain in their constructor.
+
+        With an arrayed input that chain would read the *parent* element, which
+        evaluates to nothing and cannot be serialized - so they build nothing at all
+        and have no term, like every other arrayed operator without an index. The
+        clone per index is what builds a real chain.
+        """
+        model, v, u, mat, s = self._model()
+
+        smoothed = sd.smooth(model, v, 3.0, 1.0)
+        trended = sd.trend(model, v, 3.0, 1.0)
+
+        self.assertEqual(smoothed.term(), "0.0")
+        self.assertEqual(trended.term(), "0.0")
+        self.assertEqual([name for name in model.stocks if name.startswith("bptk_")], [])
+
+        clone = smoothed.clone_with_index(["mid"])
+        self.assertNotEqual(clone.term(), "0.0")
+        self.assertTrue([name for name in model.stocks if name.startswith("bptk_")])
+        self.assertEqual(clone.averaging_time(1), 3.0)
+
+    # --- dimensions ------------------------------------------------------------
+
+    def test_dimensions_come_from_the_arrayed_operand(self):
+        model, v, u, mat, s = self._model()
+        self.assertEqual(sd.sqrt(v).resolve_dimensions(), [2, 0])
+        self.assertEqual(sd.sqrt(mat).resolve_dimensions(), [1, 2])
+        self.assertEqual(sd.sqrt(s).resolve_dimensions(), -1)
+
+    def test_operands_of_different_dimensions_are_rejected(self):
+        model, v, u, mat, s = self._model()
+        with self.assertRaises(OperatorError) as context:
+            sd.If(u > 1.0, u, v).resolve_dimensions()
+        self.assertIn("different dimensions", str(context.exception))
+
+    # --- names -----------------------------------------------------------------
+
+    def test_is_named_follows_the_arrayed_operand(self):
+        model, v, u, mat, s = self._model()
+        self.assertTrue(sd.sqrt(v).is_named())
+        self.assertFalse(sd.sqrt(u).is_named())
+        self.assertFalse(sd.sqrt(s).is_named())
+
+    def test_is_named_delegates_through_an_operator_operand(self):
+        model, v, u, mat, s = self._model()
+        self.assertTrue(sd.sqrt(v * 2.0).is_named())
+        self.assertFalse(sd.sqrt(u * 2.0).is_named())
+
+    def test_index_to_string_turns_a_position_into_a_label(self):
+        model, v, u, mat, s = self._model()
+        self.assertEqual(sd.sqrt(v).index_to_string(0), "junior")
+        self.assertEqual(sd.sqrt(v).index_to_string(1), "mid")
+        self.assertEqual(sd.sqrt(u).index_to_string(2), "2")
+        self.assertEqual(sd.sqrt(mat).index_to_string([0, 1]), "gadget")
+
+    def test_index_to_string_passes_a_label_through(self):
+        model, v, u, mat, s = self._model()
+        self.assertEqual(sd.sqrt(v).index_to_string(["junior"]), "junior")
+
+    def test_index_to_string_delegates_through_an_operator_operand(self):
+        model, v, u, mat, s = self._model()
+        self.assertEqual(sd.sqrt(v * 2.0).index_to_string(1), "mid")
+
+    def test_index_to_string_on_a_scalar_operator_raises(self):
+        model, v, u, mat, s = self._model()
+        with self.assertRaises(OperatorError) as context:
+            sd.sqrt(s).index_to_string(0)
+        self.assertIn("Index to string", str(context.exception))
+
+    # --- the aggregations are scalar, however arrayed their input ---------------
+
+    def test_every_aggregation_reports_itself_scalar(self):
+        model, v, u, mat, s = self._model()
+        for aggregation in (v.arr_sum(), v.arr_prod(), v.arr_mean(), v.arr_median(),
+                            v.arr_stddev(), v.arr_size(), v.arr_rank(1),
+                            v.arr_max(), v.arr_min()):
+            self.assertFalse(aggregation.is_any_subelement_arrayed(),
+                             msg=type(aggregation).__name__)
+            self.assertEqual(aggregation.resolve_dimensions(), -1,
+                             msg=type(aggregation).__name__)
+
+    def test_an_aggregation_inside_an_expression_stays_scalar(self):
+        model, v, u, mat, s = self._model()
+        total = model.converter("total")
+        total.equation = v.arr_sum() + 1.0
+        self.assertFalse(total.arrayed)
+        self.assertEqual(total(1), 14.0)
+
+        average = model.converter("average")
+        average.equation = v.arr_mean() * 2.0
+        self.assertFalse(average.arrayed)
+        self.assertEqual(average(1), 13.0)
+
+        largest = model.converter("largest")
+        largest.equation = sd.sqrt(v.arr_rank(1))
+        self.assertFalse(largest.arrayed)
+        self.assertEqual(largest(1), 3.0)

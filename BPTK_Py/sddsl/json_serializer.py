@@ -8,6 +8,12 @@ Usage:
     json_str = model.to_json()
 
 The JSON format matches the schema in engine/schema/sd_model_v1.json.
+
+Arrayed elements are supported: sub-elements flatten to bracket-named scalar entities
+(`name[label]`, nested `name[row][col]` for a matrix), the parent element is skipped, and
+the aggregations become variadic `arr_*` calls. The engine therefore needs to know
+nothing about dimensions. `dot` is expanded into a sum of products here rather than
+becoming a call.
 """
 
 import json
@@ -50,15 +56,151 @@ _COMPARISON_SIGN_MAP = {
 }
 
 
+# ── Arrayed elements ─────────────────────────────────────────────────────────
+
+def _leaf_refs(element):
+    """
+    JSON for every leaf of an arrayed element, in the parent's key order.
+
+    The order is part of the contract: `arr_rank` and `arr_median` sort, and the two
+    engines have to sort the same list. A matrix is walked depth-first, which is the
+    order `_matrix_element_to_string` uses on the Python side.
+    """
+    if element._elements.vector_size() == 0:
+        return [_expr_to_json(element)]
+
+    refs = []
+    for key in element._elements.equations:
+        refs.extend(_leaf_refs(element[key]))
+    return refs
+
+
+def _aggregation_to_json(function, element, extra_args=(), scalar_input="zero"):
+    """
+    An aggregation as a variadic call over the leaves of its arrayed operand.
+
+    An operand with no sub-elements follows the Python operators exactly: `arr_sum` and
+    `arr_prod` pass the scalar through, every other aggregation answers 0.0.
+    """
+    if element._elements.vector_size() == 0 and scalar_input == "zero":
+        return {"type": "literal", "value": 0.0}
+
+    return {"type": "call", "function": function,
+            "args": _leaf_refs(element) + list(extra_args)}
+
+
+def _product(left, right):
+    return {"type": "binary_op", "op": "mul", "left": left, "right": right}
+
+
+def _sum_of_products(pairs):
+    """`a1*b1 + a2*b2 + ...`, left-associative like the Python term."""
+    if not pairs:
+        raise ValueError("Cannot serialize an empty dot product.")
+
+    result = _product(*pairs[0])
+    for pair in pairs[1:]:
+        result = {"type": "binary_op", "op": "add",
+                  "left": result, "right": _product(*pair)}
+    return result
+
+
+def _dot_operand_at(operand, position):
+    """One leaf of a `dot` operand, addressed by a list of indices."""
+    if isinstance(operand, Element):
+        current = operand
+        for key in position:
+            current = current[key]
+        return _expr_to_json(current)
+    return _expr_to_json(operand.clone_with_index(position))
+
+
+def _dot_to_json(expr):
+    """
+    `dot` as the sum of products that `DotOperator.term()` writes as a string.
+
+    The engine gets no `dot` builtin: the expansion is decided here, by the same
+    dimension rules the Python operator applies, and what reaches Rust is ordinary
+    scalar arithmetic over flattened entities. Named arrays never arrive - `DotOperator`
+    rejects them in its constructor - so a shape this function cannot map raises, and
+    the runner falls back.
+    """
+    dimensions_1 = ops._get_element_dimensions(expr.element_1)
+    dimensions_2 = ops._get_element_dimensions(expr.element_2)
+    index = expr.index
+
+    def is_vector(dimensions):
+        return len(dimensions) == 1 or dimensions[1] == 0
+
+    if dimensions_1 == -1 or dimensions_2 == -1:
+        # A value on one side: one product with the leaf at this index.
+        if dimensions_1 == -1 and dimensions_2 == -1 or index is None:
+            raise ValueError(
+                "Cannot serialize a dot product of two values - use * instead."
+                if dimensions_1 == -1 and dimensions_2 == -1 else
+                "Cannot serialize a dot product of a value and an array without an index."
+            )
+        if dimensions_1 == -1:
+            return _product(_expr_to_json(expr.element_1),
+                            _dot_operand_at(expr.element_2, index))
+        return _product(_dot_operand_at(expr.element_1, index),
+                        _expr_to_json(expr.element_2))
+
+    if is_vector(dimensions_1) and is_vector(dimensions_2):
+        # vector . vector -> a scalar, so this one carries no index.
+        if dimensions_1[0] != dimensions_2[0]:
+            raise ValueError(
+                "Cannot serialize a dot product of vectors of sizes {} and {}.".format(
+                    dimensions_1[0], dimensions_2[0]))
+        return _sum_of_products([
+            (_dot_operand_at(expr.element_1, [i]),
+             _dot_operand_at(expr.element_2, [i]))
+            for i in range(dimensions_1[0])])
+
+    if index is None:
+        # Every remaining shape yields an array, so each sub-element holds a clone that
+        # knows its index. Without one there is nothing to serialize.
+        raise ValueError(
+            "Cannot serialize a dot product that yields an array without an index.")
+
+    if is_vector(dimensions_1):
+        # vector . matrix -> one column of the matrix per index.
+        position = index if isinstance(index, int) else index[0]
+        return _sum_of_products([
+            (_dot_operand_at(expr.element_1, [k]),
+             _dot_operand_at(expr.element_2, [k, position]))
+            for k in range(dimensions_2[0])])
+
+    if is_vector(dimensions_2):
+        # matrix . vector -> one row of the matrix per index.
+        position = index if isinstance(index, int) else index[0]
+        return _sum_of_products([
+            (_dot_operand_at(expr.element_1, [position, k]),
+             _dot_operand_at(expr.element_2, [k]))
+            for k in range(dimensions_1[1])])
+
+    # matrix . matrix -> a row of the left and a column of the right.
+    if isinstance(index, int) or len(index) != 2:
+        raise ValueError(
+            "Cannot serialize a matrix dot product with the index {}; "
+            "a two-element index is required.".format(index))
+    return _sum_of_products([
+        (_dot_operand_at(expr.element_1, [index[0], k]),
+         _dot_operand_at(expr.element_2, [k, index[1]]))
+        for k in range(dimensions_1[1])])
+
+
 # ── Expression serializer ────────────────────────────────────────────────────
 
 def _expr_to_json(expr):
     """
     Recursively convert an SD DSL expression tree to a JSON-compatible dict.
 
-    Handles: literals, element references, all operators and built-in functions
-    that the Rust engine supports.  Raises ValueError for unsupported nodes
-    (arrays, stochastic functions, custom functions).
+    Handles: literals, element references, the array aggregations, `dot`, and all
+    operators and built-in functions that the Rust engine supports. Raises ValueError
+    for nodes the engine cannot express - a custom function, or a reference to the
+    parent of an arrayed element - which makes the runner fall back to the Python
+    engine.
     """
 
     # ── Scalar literals ──────────────────────────────────────────────────
@@ -77,7 +219,56 @@ def _expr_to_json(expr):
 
     # ── Element references (Stock, Flow, Converter, Constant) ────────────
     if isinstance(expr, Element):
+        if expr.arrayed:
+            # The parent of an arrayed element is not an entity in the JSON - only its
+            # sub-elements are - so a reference to it would dangle. Nothing in the DSL
+            # produces one today (aggregations are expanded leaf by leaf below), so this
+            # is a guard: raising makes the runner fall back instead of loading a model
+            # with an unresolvable reference.
+            raise ValueError(
+                f"Cannot serialize a reference to the arrayed element '{expr.name}'. "
+                f"Only its sub-elements are entities in the JSON model."
+            )
         return {"type": "ref", "name": expr.name}
+
+    # ── Array aggregations: array in, one number out ─────────────────────
+    if isinstance(expr, ops.ArraySumOperator):
+        ops._check_aggregation_dimensions("arr_sum", expr.element, expr.dimensions)
+        return _aggregation_to_json("arr_sum", expr.element, scalar_input="pass_through")
+
+    if isinstance(expr, ops.ArrayProductOperator):
+        ops._check_aggregation_dimensions("arr_prod", expr.element, expr.dimensions)
+        return _aggregation_to_json("arr_prod", expr.element, scalar_input="pass_through")
+
+    if isinstance(expr, ops.ArrayMeanOperator):
+        return _aggregation_to_json("arr_mean", expr.element)
+
+    if isinstance(expr, ops.ArrayMedianOperator):
+        return _aggregation_to_json("arr_median", expr.element)
+
+    if isinstance(expr, ops.ArrayStandardDeviationOperator):
+        return _aggregation_to_json("arr_stddev", expr.element)
+
+    if isinstance(expr, ops.ArrayMaxOperator):
+        return _aggregation_to_json("arr_max", expr.element)
+
+    if isinstance(expr, ops.ArrayMinOperator):
+        return _aggregation_to_json("arr_min", expr.element)
+
+    if isinstance(expr, ops.ArrayRankOperator):
+        # The rank is the last argument, after the leaves.
+        return _aggregation_to_json("arr_rank", expr.element,
+                                    extra_args=[_expr_to_json(expr.rank)])
+
+    if isinstance(expr, ops.ArraySizeOperator):
+        # Folded here: the size is known at serialization time, and it is the vector
+        # size rather than the leaf count - 2 for a 2x2 matrix, as in Python.
+        return {"type": "literal",
+                "value": float(expr.element._elements.vector_size())}
+
+    # ── dot: expanded into a sum of products ─────────────────────────────
+    if isinstance(expr, ops.DotOperator):
+        return _dot_to_json(expr)
 
     # ── Binary arithmetic operators ──────────────────────────────────────
     if isinstance(expr, ops.AdditionOperator):
@@ -420,9 +611,12 @@ def model_to_json(model) -> str:
     """
     Serialize an SD DSL Model to the JSON format expected by the Rust engine.
 
-    Returns a JSON string. Raises ValueError if the model uses features
-    not yet supported by the Rust engine (arrayed elements,
-    custom functions, stochastic functions).
+    Arrayed elements are flattened: every sub-element is an entity of its own, named
+    with brackets, and the parent is skipped - it holds no equation, only its
+    sub-elements do.
+
+    Returns a JSON string. Raises ValueError if the model uses features the Rust engine
+    cannot express, such as a custom function.
     """
     _reset_inline_tables()
 
@@ -438,6 +632,11 @@ def model_to_json(model) -> str:
     if model.stocks:
         stocks_list = []
         for name, stock in model.stocks.items():
+            if stock.arrayed:
+                # The parent of an arrayed element carries no equation - its
+                # sub-elements are entities of their own, already in this dict. It used
+                # to be emitted with a bogus {"literal": 0.0} beside the real ones.
+                continue
             initial_value = stock.initial_value
             # initial_value can be a float, Constant, or Converter
             initial_value_json = _expr_to_json(initial_value)
@@ -453,6 +652,8 @@ def model_to_json(model) -> str:
     if model.flows:
         flows_list = []
         for name, flow in model.flows.items():
+            if flow.arrayed:
+                continue  # A parent arrayed element is not an entity - see stocks.
             flows_list.append({
                 "name": name,
                 "equation": _expr_to_json(flow.equation),
@@ -463,6 +664,8 @@ def model_to_json(model) -> str:
     if model.biflows:
         biflows_list = []
         for name, biflow in model.biflows.items():
+            if biflow.arrayed:
+                continue  # A parent arrayed element is not an entity - see stocks.
             biflows_list.append({
                 "name": name,
                 "equation": _expr_to_json(biflow.equation),
@@ -473,6 +676,8 @@ def model_to_json(model) -> str:
     if model.converters:
         converters_list = []
         for name, converter in model.converters.items():
+            if converter.arrayed:
+                continue  # A parent arrayed element is not an entity - see stocks.
             converters_list.append({
                 "name": name,
                 "equation": _expr_to_json(converter.equation),
@@ -483,6 +688,8 @@ def model_to_json(model) -> str:
     if model.constants:
         constants_list = []
         for name, constant in model.constants.items():
+            if constant.arrayed:
+                continue  # A parent arrayed element is not an entity - see stocks.
             constants_list.append({
                 "name": name,
                 "equation": _expr_to_json(constant.equation),

@@ -738,7 +738,7 @@ def test_begin_session_backend_field(app, client):
 
 def _rust_default_factory():
     """Same model as ``bptk_factory``, but the bptk instance is configured with
-    ``default_backend="rust"``. This is the Substep 4i opt-in mechanism: a server
+    ``default_backend="rust"``. That is the instance-wide opt-in: a server
     (e.g. the beergame server) can flip its whole instance to Rust with one config
     line, and ``/begin-session`` requests that omit the ``backend`` field pick it
     up automatically."""
@@ -761,7 +761,7 @@ def _rust_default_factory():
 
 
 def test_default_backend_propagates():
-    """Substep 4i: a bptk configured with ``default_backend="rust"`` runs
+    """A bptk configured with ``default_backend="rust"`` runs
     ``/begin-session`` sessions on Rust when the request omits the ``backend``
     field — no per-request override needed."""
     server = BptkServer(__name__, _rust_default_factory, None, token)
@@ -788,7 +788,7 @@ def test_default_backend_propagates():
 
 
 def test_request_backend_wins_over_default():
-    """Substep 4i: an explicit ``backend`` in the ``/begin-session`` body overrides
+    """An explicit ``backend`` in the ``/begin-session`` body overrides
     the instance ``default_backend``, keeping A/B comparison against Python
     possible even when the server defaults to Rust."""
     server = BptkServer(__name__, _rust_default_factory, None, token)
@@ -816,7 +816,7 @@ def test_request_backend_wins_over_default():
 
 
 def test_resume_rust_session_externalized(tmp_path):
-    """Substep 4g end-to-end: a Rust-backed session that externalises its state
+    """End-to-end: a Rust-backed session that externalises its state
     completely (instance saved + deleted after every request) must produce
     correct results across the implied process restarts.
 
@@ -1735,7 +1735,7 @@ def test_execute_resource(empty_app, empty_client):
     assert response_invalid_model.status_code == 400
     assert b'Rust engine error' in response_invalid_model.data
 
-    # ── 400: py_callback nodes are a Phase 6 feature; the endpoint must
+    # ── 400: py_callback nodes are not supported; the endpoint must
     #        reject any model containing them anywhere in the expression
     #        tree (here: nested inside a binary_op, proving the walker
     #        descends into every child).
@@ -2059,3 +2059,65 @@ def test_execute_rust_engine_unavailable(empty_client):
                                  headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 500
     assert b"Rust engine is not available" in resp.data
+
+
+def test_execute_runs_an_arrayed_model(empty_app, empty_client):
+    """/execute with a flattened arrayed model, aggregations included.
+
+    The endpoint takes model JSON rather than a Python model, so this is the layer
+    where `to_json()`'s flattening meets the wire: the equations requested are
+    bracketed sub-element names, and the values are compared against the Python
+    engine running the same model.
+    """
+    from _arrayed_fixtures import build_workforce_model, LEVELS
+
+    model = build_workforce_model(name="execute_workforce")
+    equations = ([f"headcount[{level}]" for level in LEVELS]
+                 + ["total_headcount", "total_cost", "average_salary"])
+
+    payload = {
+        "model": json.loads(model.to_json()),
+        "scenarios": {"base": {}},
+        "equations": equations,
+    }
+    response = empty_client.post(
+        '/execute',
+        data=json.dumps(payload),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200, response.data
+    data = json.loads(response.data)
+    assert set(data["base"].keys()) == set(equations)
+
+    for name in equations:
+        element = model.converters.get(name) or model.stocks.get(name)
+        for t in (0.0, 1.0, 5.0, 10.0):
+            assert data["base"][name][f"{t:.1f}"] == pytest.approx(element(t)), name
+
+
+def test_execute_applies_a_constant_override_to_a_bracketed_name(empty_app, empty_client):
+    """A scenario constant naming a sub-element must reach that sub-element."""
+    from _arrayed_fixtures import build_workforce_model
+
+    model = build_workforce_model(name="execute_override")
+    payload = {
+        "model": json.loads(model.to_json()),
+        "scenarios": {
+            "base": {},
+            "freeze": {"constants": {"hiring_rate[junior]": 0.0}},
+        },
+        "equations": ["headcount[junior]"],
+    }
+    response = empty_client.post(
+        '/execute',
+        data=json.dumps(payload),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200, response.data
+    data = json.loads(response.data)
+
+    base = data["base"]["headcount[junior]"]["10.0"]
+    frozen = data["freeze"]["headcount[junior]"]["10.0"]
+    assert frozen < base

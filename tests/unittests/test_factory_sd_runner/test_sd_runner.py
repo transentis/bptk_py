@@ -163,7 +163,7 @@ class TestSdRunner(unittest.TestCase):
         self.assertIn("[ERROR] No scenarios found for scenario managers \"testManager\" and scenarios \"testScenario\"", content)  
 
     # ------------------------------------------------------------------
-    # Phase 4 Substep 4d: backend dispatch + step-by-step Rust execution
+    # Backend dispatch + step-by-step Rust execution
     # ------------------------------------------------------------------
 
     def _build_runner_and_scenario(self):
@@ -196,6 +196,7 @@ class TestSdRunner(unittest.TestCase):
             py_mock.assert_called_once()
             rust_mock.assert_not_called()
 
+    @pytest.mark.allow_rust_unused
     def test_run_scenario_step_rust_dispatch_called(self):
         """With backend='rust', the runner must invoke _run_scenario_step_rust."""
         runner, _ = self._build_runner_and_scenario()
@@ -213,6 +214,7 @@ class TestSdRunner(unittest.TestCase):
             rust_mock.assert_called_once()
             py_mock.assert_not_called()
 
+    @pytest.mark.allow_rust_unused
     def test_run_scenario_step_sticky_failed_skips_rust(self):
         """A scenario flagged _rust_failed must skip the Rust path even when
         backend='rust' is requested (no retry within the same session)."""

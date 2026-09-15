@@ -50,32 +50,45 @@ class TestElement(unittest.TestCase):
         self.assertFalse(element.arrayed)
         self.assertFalse(element.named_arrayed)                
 
-    def testElement_add_arr_equation(self):
+    def testElement_add_arr_equation_raises(self):
+        # The base hooks used to be no-op `pass`, so an element type that forgot to
+        # override them swallowed arrayed setup without a word - which is how the
+        # arrayed Biflow reported success while registering nothing.
         model = Model()
 
-        element = Element(model=model,name="testElement",function_string=None)    
+        element = Element(model=model,name="testElement",function_string=None)
 
-        result = element.add_arr_equation(name="testName",value=1)
+        with self.assertRaises(ElementError) as context:
+            element.add_arr_equation(name="testName",value=1)
+        self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-        self.assertIsNone(result)
-
-    def testElement_add_arr_empty(self):
+    def testElement_add_arr_empty_raises(self):
         model = Model()
 
-        element = Element(model=model,name="testElement",function_string=None)    
+        element = Element(model=model,name="testElement",function_string=None)
 
-        result = element.add_arr_empty(name="testName")
+        with self.assertRaises(ElementError) as context:
+            element.add_arr_empty(name="testName")
+        self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-        self.assertIsNone(result)
-
-    def testElement_get_arr_equation(self):
+    def testElement_get_arr_equation_raises(self):
         model = Model()
 
-        element = Element(model=model,name="testElement",function_string=None)    
+        element = Element(model=model,name="testElement",function_string=None)
 
-        result = element.get_arr_equation(name="testName")
+        with self.assertRaises(ElementError) as context:
+            element.get_arr_equation(name="testName")
+        self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-        self.assertIsNone(result)
+    def testElement_setup_vector_on_the_base_element_raises(self):
+        # The loud failure the three tests above buy: arrayed setup on an element type
+        # without the hooks stops instead of reporting success.
+        model = Model()
+
+        element = Element(model=model,name="testElement",function_string=None)
+
+        with self.assertRaises(ElementError):
+            element.setup_vector(size=2,default_value=1.0)
 
     def testElement_get_item_unarrayed(self):
         model = Model()

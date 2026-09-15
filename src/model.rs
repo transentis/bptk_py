@@ -137,6 +137,15 @@ pub enum BuiltinFn {
     Pareto,
     Invnorm,
     NormalCDF,
+    // Array aggregations - variadic over the leaves of a flattened arrayed element
+    ArrSum,
+    ArrProd,
+    ArrMean,
+    ArrMedian,
+    ArrStddev,
+    ArrRank, // the rank is the last argument
+    ArrMax,
+    ArrMin,
     // Lookup
     Lookup(String), // graphical function table name
 }

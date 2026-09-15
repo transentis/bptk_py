@@ -994,3 +994,129 @@ fn test_normalcdf_valid() {
     let val = model.eval_expr(&expr, &state, 0);
     assert!((val - 0.6826894921370859).abs() < 1e-6);
 }
+
+// ── Array aggregations ──────────────────────────────────────────────────
+//
+// An arrayed element is flattened into scalar entities before it reaches the
+// engine, so each aggregation is one variadic call over its leaves. The values
+// below are the ones the Python side pins, so a divergence shows up here rather
+// than in a parity run.
+
+fn aggregate(function: BuiltinFn, values: &[f64]) -> f64 {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 1, None);
+    let expr = Expr::Call {
+        function,
+        args: values.iter().map(|v| Expr::Literal(*v)).collect(),
+    };
+    model.eval_expr(&expr, &state, 0)
+}
+
+#[test]
+fn test_arr_sum() {
+    assert_eq!(aggregate(BuiltinFn::ArrSum, &[4.0, 9.0, 2.0]), 15.0);
+    assert_eq!(aggregate(BuiltinFn::ArrSum, &[7.0]), 7.0);
+    assert_eq!(aggregate(BuiltinFn::ArrSum, &[]), 0.0);
+    // Negative values are not a special case.
+    assert_eq!(aggregate(BuiltinFn::ArrSum, &[5.0, -2.0]), 3.0);
+}
+
+#[test]
+fn test_arr_prod() {
+    assert_eq!(aggregate(BuiltinFn::ArrProd, &[2.0, 3.0, 4.0]), 24.0);
+    assert_eq!(aggregate(BuiltinFn::ArrProd, &[7.0]), 7.0);
+    // The empty product is one, so nesting a product of products stays correct.
+    assert_eq!(aggregate(BuiltinFn::ArrProd, &[]), 1.0);
+}
+
+#[test]
+fn test_arr_mean() {
+    assert_eq!(aggregate(BuiltinFn::ArrMean, &[4.0, 9.0, 2.0]), 5.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMean, &[7.0]), 7.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMean, &[]), 0.0);
+}
+
+#[test]
+fn test_arr_median_odd_and_even() {
+    // Odd: the middle value of the sorted list, whatever order it arrives in.
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[1.0, 2.0, 3.0]), 2.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[3.0, 1.0, 2.0]), 2.0);
+    // Even: the average of the two middle values, as numpy does it.
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[1.0, 2.0, 3.0, 10.0]), 2.5);
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[10.0, 1.0, 3.0, 2.0]), 2.5);
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[7.0]), 7.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMedian, &[]), 0.0);
+}
+
+#[test]
+fn test_arr_stddev_is_the_population_deviation() {
+    // numpy's default is ddof=0, so this is the population deviation. The sample
+    // deviation of the same values is 2.138, which is what a wrong ddof would give.
+    let values = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+    assert!((aggregate(BuiltinFn::ArrStddev, &values) - 2.0).abs() < 1e-12);
+    // A single value has no spread, and neither has none.
+    assert_eq!(aggregate(BuiltinFn::ArrStddev, &[7.0]), 0.0);
+    assert_eq!(aggregate(BuiltinFn::ArrStddev, &[]), 0.0);
+}
+
+#[test]
+fn test_arr_max_and_arr_min() {
+    assert_eq!(aggregate(BuiltinFn::ArrMax, &[4.0, 9.0, 2.0]), 9.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMin, &[4.0, 9.0, 2.0]), 2.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMax, &[-4.0, -9.0]), -4.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMin, &[-4.0, -9.0]), -9.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMax, &[7.0]), 7.0);
+    assert_eq!(aggregate(BuiltinFn::ArrMin, &[7.0]), 7.0);
+    // No leaves: NaN, which is what folding an empty list yields.
+    assert!(aggregate(BuiltinFn::ArrMax, &[]).is_nan());
+    assert!(aggregate(BuiltinFn::ArrMin, &[]).is_nan());
+}
+
+fn rank_of(values: &[f64], rank: f64) -> f64 {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 1, None);
+    let mut args: Vec<Expr> = values.iter().map(|v| Expr::Literal(*v)).collect();
+    args.push(Expr::Literal(rank));
+    let expr = Expr::Call {
+        function: BuiltinFn::ArrRank,
+        args,
+    };
+    model.eval_expr(&expr, &state, 0)
+}
+
+#[test]
+fn test_arr_rank_counts_from_the_largest() {
+    let values = [3.0, 6.0, 2.0, 4.0, 1.0];
+    assert_eq!(rank_of(&values, 1.0), 6.0);
+    assert_eq!(rank_of(&values, 2.0), 4.0);
+    assert_eq!(rank_of(&values, 3.0), 3.0);
+    assert_eq!(rank_of(&values, 4.0), 2.0);
+    assert_eq!(rank_of(&values, 5.0), 1.0);
+}
+
+#[test]
+fn test_arr_rank_clamps_to_the_minimum_instead_of_returning_nan() {
+    // Out of range, zero and negative all give the smallest value - not NaN. The
+    // Python operator indexes the descending sort with count-1 when the rank is out
+    // of range, and a rank of zero becomes the Python index -1: the last element.
+    let values = [3.0, 6.0, 2.0, 4.0, 1.0];
+    assert_eq!(rank_of(&values, 6.0), 1.0);
+    assert_eq!(rank_of(&values, 99.0), 1.0);
+    assert_eq!(rank_of(&values, 0.0), 1.0);
+    assert_eq!(rank_of(&values, -1.0), 1.0);
+}
+
+#[test]
+fn test_arr_rank_edge_cases() {
+    assert_eq!(rank_of(&[7.0], 1.0), 7.0);
+    assert_eq!(rank_of(&[7.0], 2.0), 7.0);
+    // No leaves, or no rank at all.
+    assert_eq!(rank_of(&[], 1.0), 0.0);
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 1, None);
+    let expr = Expr::Call {
+        function: BuiltinFn::ArrRank,
+        args: vec![Expr::Literal(1.0)],
+    };
+    assert_eq!(model.eval_expr(&expr, &state, 0), 0.0);
+}

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_arrays="1"/>
+		<name>array_edges</name>
+		<vendor>transentis labs GmbH</vendor>
+		<product version="1.0" lang="en">handwritten</product>
+	</header>
+	<sim_specs method="Euler" time_units="months">
+		<start>1</start>
+		<stop>5</stop>
+		<dt reciprocal="true">1</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="Pair" size="2"/>
+		<dim name="Single" size="1"/>
+	</dimensions>
+	<model>
+		<variables>
+			<stock name="Draining">
+				<dimensions>
+					<dim name="Pair"/>
+				</dimensions>
+				<eqn>100</eqn>
+				<outflow>Leaving</outflow>
+			</stock>
+			<flow name="Leaving">
+				<dimensions>
+					<dim name="Pair"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>2</eqn>
+				</element>
+				<non_negative/>
+			</flow>
+			<aux name="SumOfRange">
+				<eqn>SUM(Leaving[1:2])</eqn>
+			</aux>
+			<aux name="Lonely">
+				<dimensions>
+					<dim name="Single"/>
+				</dimensions>
+				<eqn>7</eqn>
+			</aux>
+		</variables>
+	</model>
+</xmile>

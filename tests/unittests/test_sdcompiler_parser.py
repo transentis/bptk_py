@@ -147,6 +147,48 @@ class TestStandaloneImports(unittest.TestCase):
         self.assertTrue(hasattr(mod, "parse_xmile"))
         self.assertTrue(hasattr(mod, "sanitizeName"))
 
+    def test_an_array_reference_inside_a_function_argument(self):
+        """`SUM(a[1] + b)` - an array reference on one side of an operator, inside the
+        argument of a call. The argument visitor has to unpack the three parts itself,
+        and the index visitor gets a shape it cannot unpack in two.
+        """
+        parsed = _parse("SUM(a[1] + b)")
+
+        self.assertEqual(parsed["name"], "sum")
+        argument = parsed["args"][0]
+        self.assertEqual(argument["type"], "operator")
+        self.assertEqual(argument["name"], "+")
+        left, right = argument["args"]
+        self.assertEqual(left["type"], "array")
+        self.assertEqual(left["name"], "a")
+        self.assertEqual(right["name"], "b")
+
+    def test_an_array_reference_with_two_indices_inside_an_expression(self):
+        """The same for a two-index reference: `MEAN(a[1,2] * b)`."""
+        parsed = _parse("MEAN(a[1,2] * b)")
+
+        argument = parsed["args"][0]
+        self.assertEqual(argument["name"], "*")
+        self.assertEqual([arg["name"] for arg in argument["args"][0]["args"]], ["1", "2"])
+
+    def test_make_name_absolute(self):
+        """A name without a dot is qualified with its model; one with a dot is already
+        absolute and comes back untouched."""
+        from BPTK_Py.sdcompiler.parsers.xmile.xmile import make_name_absolute
+
+        self.assertEqual(make_name_absolute("model", "stock"), "model.stock")
+        self.assertEqual(make_name_absolute("model", "other.stock"), "other.stock")
+
+    def test_connects_are_qualified_with_their_model(self):
+        """A connection between two elements of a named model carries that name."""
+        from BPTK_Py.sdcompiler.parsers.xmile.xmile import extract_connects
+
+        self.assertEqual(extract_connects("sub", {"@to": "b", "@from": "a"}),
+                         {"sub.b": "sub.a"})
+        # A name that is already qualified keeps its own model, and a leading dot goes
+        self.assertEqual(extract_connects("sub", {"@to": ".b", "@from": "other.a"}),
+                         {"b": "other.a"})
+
 
 if __name__ == '__main__':
     unittest.main()

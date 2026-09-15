@@ -543,16 +543,25 @@ class simulation_model():
         labels = []
         for index, elem in enumerate(group.split(",")):
             if len(elem.split(":")) > 1: # List operator
+                ends = elem.split(":")
+                if len(ends) > 2:
+                    logging.error("Too many arguments for list operator. Expecting 2, got {}".format(len(ends)))
                 try:
-                    bounds = [int(x) for x in elem.split(":")]
-                except ValueError as e:
-                    logging.error(e)
-                    continue
-                bounds = sorted(bounds)
-                if len(bounds) > 2:
-                    logging.error("Too many arguments for list operator. Expecting 2, got {}".format(len(bounds)))
-
-                labels += [list(range(bounds[0], bounds[1]+1))]
+                    bounds = sorted(int(x) for x in ends[:2])
+                    labels += [list(range(bounds[0], bounds[1]+1))]
+                except ValueError:
+                    # Named endpoints: the range is a slice of the dimension's own labels,
+                    # which is where their order comes from. Skipping it, as this used to,
+                    # dropped the dimension and the whole read came back as 0.0.
+                    dim = self.dimensions_order[equation_basic][index]
+                    all_labels = self.dimensions[dim]["labels"]
+                    try:
+                        positions = sorted(all_labels.index(x) for x in ends[:2])
+                    except ValueError:
+                        logging.error("Range {} names a label that dimension {} does not have: {}".format(
+                            elem, dim, all_labels))
+                        return np.array([])
+                    labels += [all_labels[positions[0]:positions[1] + 1]]
 
             elif elem == "*": # Star operator
                 dim = self.dimensions_order[equation_basic][index]

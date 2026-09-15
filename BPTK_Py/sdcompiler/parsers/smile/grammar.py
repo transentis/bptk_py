@@ -137,10 +137,12 @@ class SMILEVisitor(NodeVisitor):
         if len(visited_children[0]) < 3: return visited_children[0]
         if type(visited_children[0]) is dict: return visited_children[0]
 
-        # ((ArrayExpression or Expression) Operator Term)
-        Expression, Operator, Term = visited_children[0]
+        # ((ArrayExpression or Expression) Operator Term). Defensive: the returns above
+        # cover every shape the grammar has been seen to produce.
+        Expression, Operator, Term = visited_children[0]  # pragma: no cover
 
-        return {"name": Operator[0].replace(" ","").lower(), "type": "operator", "args": [Expression, Term]}
+        return {"name": Operator[0].replace(" ","").lower(), "type": "operator",  # pragma: no cover
+                "args": [Expression, Term]}
 
 
     def visit_SpecialFunction(self, node, visited_children):
@@ -162,7 +164,7 @@ class SMILEVisitor(NodeVisitor):
         result = []
         try:
             ArrayIndex , ArgGroups = visited_children[0]
-        except:
+        except:  # pragma: no cover - defensive, no subscript shape has reached it
             return visited_children
 
         result += [ArrayIndex]

@@ -40,12 +40,15 @@ class Constant(Element):
             self._equation = equation
             if isinstance(equation, (float, int)):
                 self._function_string = "lambda model, t: {}".format(equation)
-            elif equation == None:
+            elif equation is None:
                 self._equation = None
             else:
                 raise ElementError(
                     "Constants can only contain floating point values")
-        else:
+        else:  # pragma: no cover - unreachable for a constant
+            # Kept for symmetry with the other element types, whose arrayed parent holds
+            # no equation of its own. A constant cannot get here: building its
+            # sub-elements assigns an element to a constant, which raises above.
             self._equation = None
 
         self.model.reset_cache()

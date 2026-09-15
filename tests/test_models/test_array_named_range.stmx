@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_arrays="1"/>
+		<name>array_named_range</name>
+		<vendor>transentis labs GmbH</vendor>
+		<product version="1.0" lang="en">handwritten</product>
+	</header>
+	<sim_specs method="Euler" time_units="months">
+		<start>1</start>
+		<stop>5</stop>
+		<dt reciprocal="true">1</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="Pair">
+			<elem name="north"/>
+			<elem name="middle"/>
+			<elem name="south"/>
+		</dim>
+		<dim name="Single" size="1"/>
+	</dimensions>
+	<model>
+		<variables>
+			<stock name="Draining">
+				<dimensions>
+					<dim name="Pair"/>
+				</dimensions>
+				<eqn>100</eqn>
+				<outflow>Leaving</outflow>
+			</stock>
+			<flow name="Leaving">
+				<dimensions>
+					<dim name="Pair"/>
+				</dimensions>
+				<element subscript="north">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="middle">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="south">
+					<eqn>3</eqn>
+				</element>
+				<non_negative/>
+			</flow>
+			<aux name="SumOfNamedRange">
+				<eqn>SUM(Leaving[north:middle])</eqn>
+			</aux>
+			<aux name="Lonely">
+				<dimensions>
+					<dim name="Single"/>
+				</dimensions>
+				<eqn>7</eqn>
+			</aux>
+		</variables>
+	</model>
+</xmile>

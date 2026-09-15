@@ -468,7 +468,7 @@ class TestBptk(unittest.TestCase):
         testBptk.end_session()
 
     def testBptk_default_backend_rust_used_when_backend_omitted(self):
-        """Substep 4i: a bptk configured with default_backend='rust' runs sessions
+        """A bptk configured with default_backend='rust' runs sessions
         on Rust when begin_session omits the backend argument; an explicit backend
         still overrides the instance default."""
         testBptk = self._build_simple_step_bptk(

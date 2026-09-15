@@ -74,6 +74,20 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 3.1.0
+
+* Feature: arrayed (multidimensional) models run on the Rust backend - `backend="rust"`, a Rust-backed session and `/execute` all accept them, with results identical to the Python engine
+* Feature: every operator carries arrayedness through, not only `+ - * /`: math functions, comparisons, `If`, `And`, `Or`, `Not`, `**`, `%`, `max`, `min`, `lookup`, `step`, `pulse` and `smooth`/`trend`/`delay` apply element-wise to a vector or a matrix, in either operand order, each index of a stateful function keeping its own history
+* Feature: `Element.arr_max()` and `Element.arr_min()`, matching the other aggregations and the XMILE standard
+* Feature: a range subscript in an XMILE model compiles and resolves - `SUM(leaving[1:2])`, and `SUM(leaving[north:middle])` for a named dimension, where the range is the slice between the two labels in the order the dimension declares them. The generator used to raise `Cannot parse expression` on the range, and a named range dropped its dimension and read as `0.0`
+* Feature: arrayed biflows - `setup_vector` and friends work on a `Biflow`, so a level that both rises and falls can be one element per index instead of a pair of flows
+* Bugfix: an arrayed expression no longer yields zeros in silence. A math function, a comparison, an `If`, `**` or `%` over an array collapsed to the scalar `0.0`, `2.0 * v` gave an array of zeros because the operands reached the operator the wrong way round, and `3.0 + v` on a named array raised `AttributeError: 'UnaryOperator' object has no attribute 'named_arrayed'`
+* Bugfix: assigning a bare arrayed element as an equation works for every element type, where only a `Stock` used to mirror it - a flow stayed scalar and read the parent, hence `0.0`. Arrayed setup on an element type that does not support it now raises instead of reporting success and registering nothing
+* Bugfix: assigning an element to a `Constant` raises the documented error instead of silently setting its equation to `None` - the check compared `equation == None`, and a comparison against an element builds a truthy operator
+* Bugfix: `Model.to_json()` serializes an arrayed model instead of raising on its aggregations, and no longer emits the parent of an arrayed element as a `0.0` literal beside its sub-elements
+* Bugfix: `%` (modulo) groups a compound operand and accepts a number on its left - `(a + b) % b` was rendered as `a+b%b` and read as `a + (b % b)`, and `10.0 % a` raised `TypeError`, the only arithmetic operator without a reflected form
+* Bugfix: `arr_sum` and `arr_prod` reject a `dimensions` argument short of the array's depth with a clear error, where a partial dimension used to build an empty equation and raise `SyntaxError: invalid syntax`. Aggregating over a single dimension of a matrix is not supported
+
 ### 3.0.3
 
 * Bugfix: `run_scenarios` with `agents` but without the `agent_states` argument now counts every state the agent has, instead of raising `AttributeError`

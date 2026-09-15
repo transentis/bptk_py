@@ -360,7 +360,7 @@ fn test_nonzero_starttime() {
 }
 
 // ---------------------------------------------------------------------------
-// Substep 4a: tests targeting the new init / step / run_to_end / extract_results
+// Tests targeting the init / step / run_to_end / extract_results
 // decomposition. simulate() composes all of these — these tests pin down each
 // piece independently so a regression in any one surfaces with a clear cause.
 // ---------------------------------------------------------------------------

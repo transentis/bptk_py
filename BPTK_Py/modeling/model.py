@@ -121,8 +121,14 @@ class Model:
         """Serialize this SD model to the JSON format used by the Rust engine.
 
         Returns a JSON string that can be loaded by ``RustSdEngine.load_model()``.
-        Raises ``ValueError`` if the model uses features not yet supported by the
-        Rust engine (biflows, arrays, custom functions).
+
+        Arrayed elements are supported: every sub-element becomes an entity of its own,
+        named with brackets (``headcount[junior]``, ``allocation[0][1]``), the parent is
+        skipped because it holds no equation, and the aggregations become ``arr_*``
+        calls. ``dot`` is expanded into a sum of products.
+
+        Raises ``ValueError`` if the model uses a feature the Rust engine cannot
+        express, such as a custom function.
         """
         from ..sddsl.json_serializer import model_to_json
         return model_to_json(self)

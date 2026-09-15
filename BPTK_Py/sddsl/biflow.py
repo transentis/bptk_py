@@ -17,3 +17,13 @@ class Biflow(Element):
     Biflow in a SD DSL model
     """
     type = "Biflow"
+
+    def add_arr_equation(self, name, value):
+        b = self.model.biflow(self.name + "[" + name + "]")
+        b.equation = value
+
+    def add_arr_empty(self, name):
+        return self.model.biflow(self.name + "[" + name + "]")
+
+    def get_arr_equation(self, name):
+        return self.model.biflows[self.name + "[" + name + "]"]

@@ -227,6 +227,22 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertEqual(set(plt.get_fignums()), before)
 
+    def test_plotting_config_update_of_nothing_keeps_the_settings(self):
+        """`update(None)` and `update({})` are no-ops rather than resets.
+
+        The scenario runners hand their configuration straight through, and most of them
+        have none.
+        """
+        from BPTK_Py.visualizations import PlottingConfig
+
+        config = PlottingConfig()
+        before = dict(config.settings), dict(config.matplotlib_rc_settings)
+
+        config.update(None)
+        config.update({})
+
+        self.assertEqual((dict(config.settings), dict(config.matplotlib_rc_settings)), before)
+
     def test_series_names_warns_about_a_key_that_matches_nothing(self):
         """A key that renames nothing used to do so in silence.
 

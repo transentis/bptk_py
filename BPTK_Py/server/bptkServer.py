@@ -199,11 +199,11 @@ def _check_for_py_callbacks(model_def):
     Walk the JSON expression trees of an ``/execute`` model definition and
     refuse it if any ``py_callback`` node is present.
 
-    ``py_callback`` is the future (Phase 6) node type that lets a Rust model
-    invoke a Python function during evaluation. Phase 4 has no mechanism to
-    register such functions on the server, so requests containing them
-    cannot succeed — we reject them up-front with a clear error rather than
-    let the Rust engine fail mid-load with a less obvious message.
+    ``py_callback`` is a planned node type that would let a Rust model invoke a
+    Python function during evaluation. The server has no mechanism to register
+    such functions, so requests containing them cannot succeed — we reject them
+    up-front with a clear error rather than let the Rust engine fail mid-load
+    with a less obvious message.
 
     Returns ``None`` if the model is clean, or a human-readable error
     message describing why it was rejected.
@@ -217,7 +217,7 @@ def _check_for_py_callbacks(model_def):
         if not isinstance(node, dict):
             return None
         if node.get("type") == "py_callback":
-            return "py_callback nodes are not supported by /execute (Phase 6)"
+            return "py_callback nodes are not supported by /execute"
         for v in node.values():
             if isinstance(v, dict):
                 err = walk(v)
@@ -536,8 +536,7 @@ class BptkServer(Flask):
         fully self-contained.
 
         Primary consumer: the visual modeler, where a user designs a model in a
-        browser UI and POSTs it to the server for execution. See design doc
-        §6.1 and the Phase 4 implementation plan, Substep 4e.
+        browser UI and POSTs it to the server for execution. See design doc §6.1.
 
         Request body (Content-Type: application/json)::
 
@@ -564,10 +563,9 @@ class BptkServer(Flask):
 
         Errors:
             * HTTP 400 — malformed request body, missing/empty ``model`` or
-              ``equations``, ``py_callback`` node present (rejected as a Phase
-              4 non-goal — see Phase 6), or engine load/runtime error from
-              user-supplied JSON (unknown function name, bad expression
-              shape, etc.).
+              ``equations``, ``py_callback`` node present (not supported), or
+              engine load/runtime error from user-supplied JSON (unknown
+              function name, bad expression shape, etc.).
             * HTTP 500 — Rust engine extension not built on this server.
 
         Notes:
@@ -575,9 +573,9 @@ class BptkServer(Flask):
               JSON because Python execution requires the Element-graph object
               tree, not the engine's flat node format.
             * Floating-point time keys (e.g. ``"0.30000000000000004"`` for
-              ``dt=0.1``) carry through verbatim from the engine. See the
-              Phase 3 known issue on ``format_time``; the fix lives at the
-              engine level and is independent of this endpoint.
+              ``dt=0.1``) carry through verbatim from the engine. That is a
+              known issue in the engine's ``format_time``; the fix lives at
+              the engine level and is independent of this endpoint.
         """
         if not request.is_json:
             return self._error_response(
@@ -610,8 +608,8 @@ class BptkServer(Flask):
         except ImportError:
             return self._error_response("Rust engine is not available on this server", 500)
 
-        # Phase 4 hard-rejects py_callback nodes anywhere in the model. Phase 6
-        # will lift this once a server-side function registry exists.
+        # py_callback nodes are rejected anywhere in the model. That can be lifted
+        # once a server-side function registry exists.
         rejection = _check_for_py_callbacks(model_def)
         if rejection:
             return self._error_response(rejection, 400)
@@ -979,8 +977,8 @@ class BptkServer(Flask):
             # itself "python" unless overridden). An explicit value here always
             # wins over the instance default. Invalid values are rejected up
             # front rather than silently falling back, to make configuration
-            # errors visible. See Phase 4 design doc §6, Substep 4d for the
-            # bptk.begin_session plumbing and Substep 4i for default_backend.
+            # errors visible. See design doc §6 for the bptk.begin_session
+            # plumbing and for default_backend.
             backend = content.get("backend")
             if backend is not None and backend not in ("python", "rust"):
                 # Cleanup instance if needed (for stateless operation)

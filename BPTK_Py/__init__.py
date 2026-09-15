@@ -14,7 +14,7 @@ from .logger import log
 # uses for psycopg and redis, the name stays importable and explains itself on use.
 try:
     from .server import BptkServer
-except ImportError as _server_import_error:
+except ImportError as _server_import_error:  # pragma: no cover - see the note below
     # Chained deliberately: this catches every ImportError raised while loading the
     # server, not just a missing Flask. Without the cause, a genuine failure inside
     # bptkServer.py would be reported as a missing extra - advice that would be wrong

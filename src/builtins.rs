@@ -418,11 +418,106 @@ impl SdModel {
                 }
             }
 
+            // ── Array aggregations ──────────────────────────────────────────
+            //
+            // An arrayed element is flattened into scalar entities, so an aggregation
+            // arrives as one variadic call over its leaves, in the order the array
+            // declares them. The semantics follow numpy, which is what the Python
+            // operators evaluate: the mean is sum/len, the median averages the two
+            // middle values on an even count, and the deviation is the population one
+            // (numpy's ddof=0 default), not the sample one.
+            BuiltinFn::ArrSum => self.eval_args(args, state, step).iter().sum(),
+
+            BuiltinFn::ArrProd => self
+                .eval_args(args, state, step)
+                .iter()
+                .product(),
+
+            BuiltinFn::ArrMean => {
+                let values = self.eval_args(args, state, step);
+                if values.is_empty() {
+                    0.0
+                } else {
+                    values.iter().sum::<f64>() / values.len() as f64
+                }
+            }
+
+            BuiltinFn::ArrMedian => {
+                let mut values = self.eval_args(args, state, step);
+                if values.is_empty() {
+                    return 0.0;
+                }
+                values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let middle = values.len() / 2;
+                if values.len() % 2 == 0 {
+                    (values[middle - 1] + values[middle]) / 2.0
+                } else {
+                    values[middle]
+                }
+            }
+
+            BuiltinFn::ArrStddev => {
+                let values = self.eval_args(args, state, step);
+                if values.is_empty() {
+                    return 0.0;
+                }
+                let count = values.len() as f64;
+                let mean = values.iter().sum::<f64>() / count;
+                let variance =
+                    values.iter().map(|v| (v - mean) * (v - mean)).sum::<f64>() / count;
+                variance.sqrt()
+            }
+
+            BuiltinFn::ArrMax => self
+                .eval_args(args, state, step)
+                .iter()
+                .copied()
+                .fold(f64::NAN, f64::max),
+
+            BuiltinFn::ArrMin => self
+                .eval_args(args, state, step)
+                .iter()
+                .copied()
+                .fold(f64::NAN, f64::min),
+
+            // arr_rank sorts descending and returns the rank-th value, counting from
+            // one. A rank outside 1..=count - including zero and negative ranks -
+            // gives the *minimum*, which is what the Python operator does: it indexes
+            // with `count - 1` when the rank is out of range, and a rank of zero
+            // becomes the Python index -1, the last element of the descending sort.
+            BuiltinFn::ArrRank => {
+                if args.len() < 2 {
+                    return 0.0;
+                }
+                let (rank_arg, value_args) = args.split_last().unwrap();
+                let mut values = self.eval_args(value_args, state, step);
+                if values.is_empty() {
+                    return 0.0;
+                }
+                values.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+
+                let count = values.len();
+                let rank = self.eval_expr(rank_arg, state, step);
+                let position = if rank < 1.0 || rank > count as f64 {
+                    count - 1
+                } else {
+                    rank as usize - 1
+                };
+                values[position]
+            }
+
             // Lookup — linear interpolation from graphical function
             BuiltinFn::Lookup(table_name) => {
                 let x = self.eval_expr(&args[0], state, step);
                 self.lookup_interpolate(table_name, x)
             }
         }
+    }
+
+    /// Evaluate every argument of a variadic call.
+    fn eval_args(&self, args: &[Expr], state: &SimulationState, step: usize) -> Vec<f64> {
+        args.iter()
+            .map(|arg| self.eval_expr(arg, state, step))
+            .collect()
     }
 }

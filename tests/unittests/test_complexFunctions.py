@@ -35,5 +35,13 @@ class TestFindComplexFunctions(unittest.TestCase):
         self.assertEqual(entities[1]["equation_parsed"], [5.0])
 
 
+class TestCartesianProduct(unittest.TestCase):
+    def test_one_combination_is_returned_as_itself(self):
+        """One label per dimension gives a single tuple rather than a list of one."""
+        from BPTK_Py.sdcompiler.plugins.complexFunctions import cartesian_product
+
+        self.assertEqual(cartesian_product([["A"], ["X"]]), ("A", "X"))
+
+
 if __name__ == '__main__':
     unittest.main()

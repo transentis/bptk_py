@@ -98,7 +98,7 @@ def build_context(IR, parseExpression):
                     try:
                         labels = ",".join(entity["labels"])
                         ent["labels"] = labels
-                    except:
+                    except:  # pragma: no cover - labels are strings by the time they get here
                         pass
 
 

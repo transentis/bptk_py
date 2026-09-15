@@ -8,6 +8,8 @@
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
+import functools
+
 import BPTK_Py.sddsl.element
 
 
@@ -67,27 +69,93 @@ class Operator:
 
     def arrayed_term(self, index, time="t"):
         """
-            Temporarily changes index to passed index and returns result of term function.
+            Returns the term of this operator resolved for one index.
 
             Used in dot operator for vector-vector, matrix-vector, vector-matrix and matrix-matrix multiplications.
+
+            The clone is what resolves the index: it addresses sub-elements, so the
+            result is an ordinary scalar term. Resolving an index used to happen twice -
+            once in the clone, and once in every operator's `term()`, which walked the
+            index itself when `self.index` was set from outside.
         """
-        temp = self.index
-        self.index = index
-        result = self.term(time)
-        self.index = temp
-        return result
+        return self.clone_with_index(index).term(time)
+
+    # The array protocol - clone_with_index, is_any_subelement_arrayed,
+    # resolve_dimensions, is_named and index_to_string - is implemented once here, over
+    # the operands the constructor was called with. __init_subclass__ records those, so
+    # every operator inherits array propagation instead of reimplementing it. Before
+    # this, 14 of some 75 classes overrode the protocol and every other class declared
+    # itself scalar by inheriting the defaults - which is why sqrt(v) on an arrayed v
+    # silently returned 0.0.
+
+    _ctor_args = ()
+    _ctor_kwargs = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        init = cls.__dict__.get("__init__")
+        if init is None or getattr(init, "_records_operands", False):
+            # No constructor of its own, so the inherited - already recording - one runs.
+            return
+
+        @functools.wraps(init)
+        def recording_init(self, *args, **kwargs):
+            # Several operators never call super().__init__(), so the two attributes the
+            # protocol reads have to exist before their constructor runs.
+            if not hasattr(self, "arrayed"):
+                self.arrayed = False
+            if not hasattr(self, "index"):
+                self.index = None
+            init(self, *args, **kwargs)
+            # Recorded after the call, so that with a chain of constructors the outermost
+            # one - the class actually instantiated - has the last word.
+            self._ctor_args = args
+            self._ctor_kwargs = kwargs
+
+        recording_init._records_operands = True
+        cls.__init__ = recording_init
+
+    def operands(self):
+        """
+            The arguments this operator was constructed from, in order.
+        """
+        return list(self._ctor_args) + list(self._ctor_kwargs.values())
+
+    def arrayed_operand(self):
+        """
+            The first operand that is arrayed, or None if this operator is scalar.
+        """
+        for operand in self.operands():
+            if _is_arrayed_element(operand):
+                return operand
+            if isinstance(operand, Operator) and operand.is_any_subelement_arrayed():
+                return operand
+        return None
 
     def clone_with_index(self, index):
         """
             Clones a given operator with the passed index.
+
+            Arrayed operands are replaced by their sub-element at the index and operator
+            operands are cloned recursively, so the clone is an ordinary scalar
+            expression which term() renders without knowing about arrays.
         """
-        return self
+        if self.arrayed_operand() is None:
+            return self
+
+        clone = type(self)(
+            *(_operand_with_index(operand, index) for operand in self._ctor_args),
+            **{name: _operand_with_index(operand, index)
+               for name, operand in self._ctor_kwargs.items()})
+        clone.index = index
+        return clone
 
     def is_any_subelement_arrayed(self) -> bool:
         """
             Returns true if any of the sub-elements contain an arrayed element or resolve to arrayed dimensions.
         """
-        return False
+        return self.arrayed_operand() is not None
 
     def resolve_dimensions(self):
         """
@@ -97,13 +165,28 @@ class Operator:
 
             This function is used to create the necessary sub-elements and to follow dot product rules in the dot operator.
         """
-        return -1
+        dimensions = -1
+        for operand in self.operands():
+            operand_dimensions = _get_element_dimensions(operand)
+            if operand_dimensions == -1:
+                continue
+            if dimensions != -1 and operand_dimensions != dimensions:
+                raise OperatorError(
+                    "Cannot combine arrays with different dimensions ({} and {})".format(
+                        dimensions, operand_dimensions))
+            dimensions = operand_dimensions
+        return dimensions
 
     def is_named(self) -> bool:
         """
             This function returns true if the arrayed equation is named.
         """
-        return False
+        operand = self.arrayed_operand()
+        if operand is None:
+            return False
+        if _is_arrayed_element(operand):
+            return operand.named_arrayed
+        return operand.is_named()
 
     def index_to_string(self, index):
         """
@@ -113,7 +196,18 @@ class Operator:
             Element with subelements [1,2,3,4] with index 2 will return "2"
             Element with subelements [One,Two,Three,Four] with index 2 will return "Three"
         """
-        raise Exception("Index to string not implemented for this operator!")
+        operand = self.arrayed_operand()
+        if operand is None:
+            raise OperatorError("Index to string not implemented for this operator!")
+        if not _is_arrayed_element(operand):
+            return operand.index_to_string(index)
+
+        positions = index if isinstance(index, (list, tuple)) else [index]
+        current = operand
+        for position in positions[:-1]:
+            current = current[current._elements.equations[position]]
+        last = positions[-1]
+        return last if isinstance(last, str) else current._elements.equations[last]
 
     def __str__(self):
         """
@@ -130,6 +224,9 @@ class Operator:
 
     def __mod__(self, other):
         return ModOperator(self, other)
+
+    def __rmod__(self, other):
+        return ModOperator(other, self)
 
     def __rmul__(self, other):
         return MultiplicationOperator(other, self)
@@ -183,6 +280,40 @@ class Function(Operator):
         super().__init__()
 
 
+def _is_arrayed_element(operand):
+    """
+        Helper function returns true if the operand is an arrayed sddsl.Element.
+    """
+    return (isinstance(operand, BPTK_Py.sddsl.element.Element)
+            and operand._elements.vector_size() > 0)
+
+
+def _is_arrayed_operand(operand):
+    """
+        Helper function returns true if the operand is arrayed, element or operator.
+    """
+    return (_is_arrayed_element(operand)
+            or (isinstance(operand, Operator) and operand.is_any_subelement_arrayed()))
+
+
+def _operand_with_index(operand, index):
+    """
+        Helper function resolves one operand of an arrayed expression for one index.
+
+        An arrayed element becomes its sub-element at the index, an operator is cloned
+        with the index, and anything else - a number, a model, a scalar element - is
+        passed through unchanged.
+    """
+    if _is_arrayed_element(operand):
+        current = operand
+        for key in (index if isinstance(index, (list, tuple)) else [index]):
+            current = current[key]
+        return current
+    if isinstance(operand, Operator):
+        return operand.clone_with_index(index)
+    return operand
+
+
 def _get_element_dimensions(element):
     """
         Helper function returns the dimensions of an sddsl.Element.
@@ -211,8 +342,9 @@ def _array_resolve(operator, element, time, dimensions):
             if isinstance(element.equation, (float, int)):
                 return str(element)
             return "{}".format(extractTerm(element, time))
-        if dimensions == index:
-            return ""
+        # No cut-off by dimension here: `_check_aggregation_dimensions` has already
+        # rejected anything short of the full depth, which is what used to cut the
+        # recursion short and leave an empty term behind.
         string_term = ""
         for a in element._elements.equations:
             string_term_cur = rec_resolve(element[a], index + 1)
@@ -220,6 +352,29 @@ def _array_resolve(operator, element, time, dimensions):
                 string_term += string_term_cur + operator
         return string_term[:-len(operator)]
     return rec_resolve(element, 0)
+
+
+def _check_aggregation_dimensions(name, element, dimensions):
+    """
+    Rejects a `dimensions` argument that would aggregate over part of an array.
+
+    `arr_sum` and `arr_prod` aggregate over every dimension: `"*"`, or an integer equal
+    to the array's depth. A partial dimension used to cut the recursion short, build an
+    empty term and raise `SyntaxError: invalid syntax` when the equation was evaluated.
+
+    Rejected rather than given a meaning: aggregating over one dimension of a matrix
+    would have to return a vector, which is a new result shape for the whole operator
+    layer rather than a bug fix.
+    """
+    if dimensions == "*":
+        return
+
+    depth = 1 if element._elements.matrix_size()[1] <= 0 else 2
+    if dimensions != depth:
+        raise OperatorError(
+            "{} aggregates over every dimension of an array. Pass \"*\" (the default) "
+            "or {} for this {}-dimensional array - aggregating over a single dimension "
+            "is not supported.".format(name, depth, depth))
 
 
 def _matrix_element_to_string(element, time, flat=False):
@@ -250,7 +405,23 @@ def _matrix_element_to_string(element, time, flat=False):
     return "[" + rec_resolve(element, 0) + "]"
 
 
-class ArrayProductOperator(Operator):
+class ScalarResultOperator:
+    """
+    Mixin for operators that take a whole array and return one number.
+
+    Without it the generic protocol on Operator would see their arrayed operand and
+    report them as arrayed, so a converter set to `v.arr_sum()` would be expanded into
+    an array of sums instead of holding the single sum.
+    """
+
+    def is_any_subelement_arrayed(self) -> bool:
+        return False
+
+    def resolve_dimensions(self):
+        return -1
+
+
+class ArrayProductOperator(ScalarResultOperator, Operator):
     """
     Returns the product of an array (element-wise). 
     Example: [2,3,4] => "2*3*4"
@@ -262,6 +433,7 @@ class ArrayProductOperator(Operator):
         self.dimensions = dimensions
 
     def term(self, time="t"):
+        _check_aggregation_dimensions("arr_prod", self.element, self.dimensions)
         return _array_resolve("*", self.element, time, self.dimensions)
 
     def clone_with_index(self, index):
@@ -271,7 +443,7 @@ class ArrayProductOperator(Operator):
         return a
 
 
-class ArraySumOperator(Operator):
+class ArraySumOperator(ScalarResultOperator, Operator):
     """
     Returns the sum of an array (element-wise). 
     Example: [2,3,4] => "2+3+4"
@@ -283,6 +455,7 @@ class ArraySumOperator(Operator):
         self.dimensions = dimensions
 
     def term(self, time="t"):
+        _check_aggregation_dimensions("arr_sum", self.element, self.dimensions)
         return _array_resolve("+", self.element, time, self.dimensions)
 
     def clone_with_index(self, index):
@@ -291,7 +464,7 @@ class ArraySumOperator(Operator):
         return a
 
 
-class ArraySizeOperator(Operator):
+class ArraySizeOperator(ScalarResultOperator, Operator):
     """
     Returns the size of an array vector. For example: [2,3] => 2
     """
@@ -312,7 +485,7 @@ class ArraySizeOperator(Operator):
         return a
 
 
-class ArrayRankOperator(Operator):
+class ArrayRankOperator(ScalarResultOperator, Operator):
     """
     Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
     Example: array_rank([3,6,2,4,1], 2) -> 4
@@ -341,7 +514,7 @@ class ArrayRankOperator(Operator):
         return a
 
 
-class ArrayMeanOperator(Operator):
+class ArrayMeanOperator(ScalarResultOperator, Operator):
     """
     Returns the mean of an array.
     """
@@ -364,7 +537,53 @@ class ArrayMeanOperator(Operator):
         return a
 
 
-class ArrayMedianOperator(Operator):
+class ArrayMaxOperator(ScalarResultOperator, Operator):
+    """
+    Returns the largest element of an array.
+    """
+
+    def __init__(self, element):
+        super().__init__()
+        self.element = element
+
+    def term(self, time="t"):
+        if self.element._elements.vector_size() == 0:
+            return "0.0"
+
+        string_term = _matrix_element_to_string(self.element, time)
+
+        return "np.max({arr})".format(arr=string_term)
+
+    def clone_with_index(self, index):
+        a = ArrayMaxOperator(self.element)
+        a.index = index
+        return a
+
+
+class ArrayMinOperator(ScalarResultOperator, Operator):
+    """
+    Returns the smallest element of an array.
+    """
+
+    def __init__(self, element):
+        super().__init__()
+        self.element = element
+
+    def term(self, time="t"):
+        if self.element._elements.vector_size() == 0:
+            return "0.0"
+
+        string_term = _matrix_element_to_string(self.element, time)
+
+        return "np.min({arr})".format(arr=string_term)
+
+    def clone_with_index(self, index):
+        a = ArrayMinOperator(self.element)
+        a.index = index
+        return a
+
+
+class ArrayMedianOperator(ScalarResultOperator, Operator):
     """
     Returns the median of an array.
     """
@@ -387,7 +606,7 @@ class ArrayMedianOperator(Operator):
         return a
 
 
-class ArrayStandardDeviationOperator(Operator):
+class ArrayStandardDeviationOperator(ScalarResultOperator, Operator):
     """
     Returns the standard deviation of an array.
     """
@@ -491,9 +710,6 @@ class ComparisonOperator(BinaryOperator):
         element_2 = extractTerm(self.element_2, time)
         return str(element_1) + "{}".format(self.sign) + str(element_2)
 
-    def resolve_dimensions(self):
-        return -1
-
 
 class NaryOperator(Operator):
 
@@ -524,40 +740,25 @@ class NaryOperator(Operator):
 
 class ModOperator(BinaryOperator):
     def term(self, time="t"):
-        return self.element_1.term(time) + "%" + self.element_2.term(time)
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        # Both operands are parenthesised: without them a compound operand binds
+        # by Python's precedence rather than by the expression the modeller wrote,
+        # and `(a + b) % b` rendered as `a+b%b`.
+        return "(" + self.element_1.term(time) + ") % (" + self.element_2.term(time) + ")"
 
 
 class AdditionOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "{} + {}".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "{} + {}".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "{} + {}".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return self.element_1.term(time) + "+" + self.element_2.term(time)
-        else:
-            return self.element_1.term(time) + "+" + self.element_2.term(time)
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        return self.element_1.term(time) + "+" + self.element_2.term(time)
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -572,65 +773,14 @@ class AdditionOperator(BinaryOperator):
             return dim1
         return dim2
 
-    def index_to_string(self, index):
-        if isinstance(index, int):
-            if self.element_1.named_arrayed:
-                return self.element_1._elements.equations[index]
-            elif self.element_2.named_arrayed:
-                return self.element_2._elements.equations[index]
-        if isinstance(index,list):
-            if self.element_1.named_arrayed:   
-                name = self.element_1._elements.equations[index[0]]
-                return self.element_1._elements._element[name]._elements.equations[index[1]]
-            if self.element_2.named_arrayed:   
-                name = self.element_2._elements.equations[index[0]]
-                return self.element_2._elements._element[name]._elements.equations[index[1]]
-
-    def is_named(self):
-        e1_named = getattr(self.element_1, 'named_arrayed', False)
-        e2_named = getattr(self.element_2, 'named_arrayed', False)
-        return (e1_named or e2_named)
-    
-    def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return AdditionOperator(element_1, element_2, index)
-
-
 class SubtractionOperator(BinaryOperator):
-    #TODO implement for named arrays - float and float - named arrays 
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "{} - {}".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "{} - {}".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "{} - {}".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return self.element_1.term(time) + "-" + self.element_2.term(time)
-        else:
-            return self.element_1.term(time) + "-" + self.element_2.term(time)
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        return self.element_1.term(time) + "-" + self.element_2.term(time)
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -645,63 +795,14 @@ class SubtractionOperator(BinaryOperator):
             return dim1
         return dim2
 
-    def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return SubtractionOperator(element_1, element_2, index)
-
-    def index_to_string(self, index):
-        if isinstance(index, int):
-            if self.element_1.named_arrayed:
-                return self.element_1._elements.equations[index]
-            elif self.element_2.named_arrayed:
-                return self.element_2._elements.equations[index]
-        if isinstance(index,list):
-            if self.element_1.named_arrayed:   
-                name = self.element_1._elements.equations[index[0]]
-                return self.element_1._elements._element[name]._elements.equations[index[1]]
-            if self.element_2.named_arrayed:   
-                name = self.element_2._elements.equations[index[0]]
-                return self.element_2._elements._element[name]._elements.equations[index[1]]
-
-    def is_named(self):
-        e1_named = getattr(self.element_1, 'named_arrayed', False)
-        e2_named = getattr(self.element_2, 'named_arrayed', False)
-        return (e1_named or e2_named)
-
 class DivisionOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "({}) / ({})".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "({}) / ({})".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "({}) / ({})".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
-        else:
-            return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -716,51 +817,14 @@ class DivisionOperator(BinaryOperator):
             return dim1
         return dim2
 
-    def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return DivisionOperator(element_1, element_2, index)
-
-    def index_to_string(self, index):
-        if isinstance(index, int):
-            if self.element_1.named_arrayed:
-                return self.element_1._elements.equations[index]
-            elif self.element_2.named_arrayed:
-                return self.element_2._elements.equations[index]
-        if isinstance(index,list):
-            if self.element_1.named_arrayed:   
-                name = self.element_1._elements.equations[index[0]]
-                return self.element_1._elements._element[name]._elements.equations[index[1]]
-            if self.element_2.named_arrayed:   
-                name = self.element_2._elements.equations[index[0]]
-                return self.element_2._elements._element[name]._elements.equations[index[1]]
-
-    def is_named(self):
-        e1_named = getattr(self.element_1, 'named_arrayed', False)
-        e2_named = getattr(self.element_2, 'named_arrayed', False)
-        return (e1_named or e2_named)
-    
 class NumericalMultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            self.el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-
-            if(self.el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                return "({}) * ({})".format(str(self.element_2), cur_el1.term(time))
-
-            else:
-                return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
-        else:
-            return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -774,87 +838,15 @@ class NumericalMultiplicationOperator(BinaryOperator):
         if dim1 != -1:
             return dim1
         return dim2
-
-    def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return NumericalMultiplicationOperator(element_1, element_2, index)
-
-    def index_to_string(self, index):
-        if isinstance(index, int):
-            if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
-                return self.element_1._elements.equations[index]
-            elif isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size():
-                return self.element_2._elements.equations[index]
-        if isinstance(index,list):
-            if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
-                name = self.element_1._elements.equations[index[0]]
-                return self.element_1._elements._element[name]._elements.equations[index[1]]
-            if self.element_2.named_arrayed:   
-                name = self.element_2._elements.equations[index[0]]
-                return self.element_2._elements._element[name]._elements.equations[index[1]]                                
-
-    def is_named(self):
-        if isinstance(self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size():
-            return self.element_1.named_arrayed
-        elif isinstance(self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size():
-            return self.element_2.named_arrayed
-        else:
-            return False
 
 class MultiplicationOperator(BinaryOperator):
     def term(self, time="t"):
-        if self.arrayed:
-            if self.index == None:  # Can not resolve arrayed equations without index
-                return "0.0"
-
-            el1_arrayed = isinstance(
-                self.element_1, BPTK_Py.sddsl.element.Element) and self.element_1._elements.vector_size()
-            el2_arrayed = isinstance(
-                self.element_2, BPTK_Py.sddsl.element.Element) and self.element_2._elements.vector_size()
-
-            if(el1_arrayed):
-                cur_el1 = self.element_1
-                for i in self.index:
-                    cur_el1 = cur_el1[i]
-                if(el2_arrayed):
-                    cur_el2 = self.element_2
-                    for i in self.index:
-                        cur_el2 = cur_el2[i]
-                    return "({}) * ({})".format(cur_el1.term(time), cur_el2.term(time))
-                else:
-                    return "({}) * ({})".format(cur_el1.term(time), self.element_2.term(time))
-            elif(el2_arrayed):
-                cur_el2 = self.element_2
-                for i in self.index:
-                    cur_el2 = cur_el2[i]
-                return "({}) * ({})".format(self.element_1.term(time), cur_el2.term(time))
-            else:
-                return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
-        else:
-            return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
-
-
-    def index_to_string(self, index):
-        if isinstance(index, int):
-            if self.element_1.named_arrayed:
-                return self.element_1._elements.equations[index]
-            elif self.element_2.named_arrayed:
-                return self.element_2._elements.equations[index]
-        if isinstance(index,list):
-            if self.element_1.named_arrayed:   
-                name = self.element_1._elements.equations[index[0]]
-                return self.element_1._elements._element[name]._elements.equations[index[1]]
-            if self.element_2.named_arrayed:   
-                name = self.element_2._elements.equations[index[0]]
-                return self.element_2._elements._element[name]._elements.equations[index[1]]
-
-    def is_named(self):
-        e1_named = getattr(self.element_1, 'named_arrayed', False)
-        e2_named = getattr(self.element_2, 'named_arrayed', False)
-        return (e1_named or e2_named)
+        if self.arrayed and self.index is None:
+            # An arrayed expression has no scalar rendering. The equation setter
+            # expands it index by index instead, and each of those clones addresses
+            # sub-elements, so it renders through the line below.
+            return "0.0"
+        return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -868,14 +860,6 @@ class MultiplicationOperator(BinaryOperator):
         if dim1 != -1:
             return dim1
         return dim2
-
-    def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return MultiplicationOperator(element_1, element_2, index)
-
 
 class DotOperator(BinaryOperator):
     """
@@ -936,7 +920,7 @@ class DotOperator(BinaryOperator):
         dim1 = _get_element_dimensions(self.element_1)
         dim2 = _get_element_dimensions(self.element_2)
 
-        if self.index == None:
+        if self.index is None:
             # Only equation without index is vector * vector
 
             if len(dim1) == 1 or dim1[1] == 0:
@@ -1102,11 +1086,10 @@ class DotOperator(BinaryOperator):
         return [dim1[0], dim2[1]]
 
     def clone_with_index(self, index):
-        element_1 = self.element_1 if isinstance(
-            self.element_1, BPTK_Py.sddsl.element.Element) else self.element_1.clone_with_index(index)
-        element_2 = self.element_2 if isinstance(
-            self.element_2, BPTK_Py.sddsl.element.Element) else self.element_2.clone_with_index(index)
-        return DotOperator(element_1, element_2, index)
+        # The operands stay whole - unlike every other operator, whose clone addresses
+        # one sub-element. `term()` picks the rows and columns the index calls for, so
+        # an operand resolved to a leaf would leave a value times a parent element.
+        return DotOperator(self.element_1, self.element_2, index)
 
 
 class AbsOperator(UnaryOperator):
@@ -1239,10 +1222,26 @@ class Pulse(Function):
 class Trend(Function):
     """
     Trend class, which represents the trend function as a SD DSL operator.
+
+    An arrayed operand makes this a template rather than a working trend: each
+    sub-element needs a history of its own, so the equation setter clones the operator
+    per index and every clone builds its own averaging chain. Building a chain for the
+    template as well would leave model elements that read the *parent* arrayed element,
+    which evaluates to nothing and cannot be serialized.
     """
 
     def __init__(self, model, input_function, averaging_time, initial_value):
         self.id = model.equation_prefix
+        self.trend = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(averaging_time)
+                or _is_arrayed_operand(initial_value)):
+            self.model = model
+            self.input_function = input_function
+            self.averaging_time = averaging_time
+            self.initial_value = initial_value
+            return
+
         self.averaging_time = model.converter(self.id + "averaging_time")
         self.averaging_time.equation = averaging_time
         self.exponential_average = model.stock(self.id + "exponential_average")
@@ -1258,16 +1257,34 @@ class Trend(Function):
             self.exponential_average * self.averaging_time)
 
     def term(self, time="t"):
+        if self.trend is None:
+            # A template, so there is nothing to read yet - like every other arrayed
+            # operator without an index.
+            return "0.0"
         return self.trend.term(time)
 
 
 class Smooth(Function):
     """
     Smooth class, which represents the smooth function as a SD DSL operator.
+
+    As with `Trend`, an arrayed operand makes this a template: the equation setter
+    clones it per index and each clone builds its own smoothing chain, so that every
+    sub-element carries its own history.
     """
 
     def __init__(self, model, input_function, averaging_time, initial_value):
         self.id = model.equation_prefix
+        self.smooth = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(averaging_time)
+                or _is_arrayed_operand(initial_value)):
+            self.model = model
+            self.input_function = input_function
+            self.averaging_time = averaging_time
+            self.initial_value = initial_value
+            return
+
         self.averaging_time = model.converter(self.id + "averaging_time")
         self.averaging_time.equation = averaging_time
         self.smooth = model.stock(self.id + "smooth")
@@ -1280,6 +1297,8 @@ class Smooth(Function):
         self.smooth.equation = self.change_in_smooth
 
     def term(self, time="t"):
+        if self.smooth is None:
+            return "0.0"
         return self.smooth.term(time)
 
 

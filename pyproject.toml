@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.0.3"
+version = "3.1.0"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
@@ -110,6 +110,7 @@ filterwarnings = [
 ]
 markers = [
     "allow_rust_fallback: test deliberately triggers the Rust-to-Python fallback",
+    "allow_rust_unused: test asks for the Rust backend but stubs the engine out, so no model is ever loaded",
     "requires_extra(name): test needs an optional dependency group and is skipped without it",
     "requires_rust: test needs the compiled Rust engine",
     "requires_threads: test needs to be able to start a thread",

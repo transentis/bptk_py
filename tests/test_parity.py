@@ -133,6 +133,25 @@ class TestParityArithmetic:
         c.equation = a % b
         run_parity(model, ['a', 'b', 'c'])
 
+    def test_modulo_of_a_compound_operand(self):
+        """(a + b) % b - the grouping has to survive into the term."""
+        model = Model(starttime=1, stoptime=1, dt=1, name='mod_compound')
+        a = model.constant('a')
+        b = model.constant('b')
+        c = model.converter('c')
+        a.equation = 7.0
+        b.equation = 3.0
+        c.equation = (a + b) % b
+        run_parity(model, ['a', 'b', 'c'])
+
+    def test_modulo_with_a_literal_on_the_left(self):
+        model = Model(starttime=1, stoptime=1, dt=1, name='mod_reflected')
+        a = model.constant('a')
+        c = model.converter('c')
+        a.equation = 7.0
+        c.equation = 10.0 % a
+        run_parity(model, ['a', 'c'])
+
     def test_mixed_arithmetic(self):
         """a * b where a = 0.1 and b = 1/a = 10 → c = 1.0."""
         model = Model(starttime=1, stoptime=1, dt=1, name='mixed')
@@ -1673,7 +1692,7 @@ class TestParityFeedbackLoops:
         run_parity(model, ['a', 'd', 'duration'], atol=1e-10)
 
     def test_beergame_shaped_ordering_loop(self):
-        """The shape that blocked Substep 4i: an ordering policy whose only time
+        """The shape that blocked the beergame integration: an ordering policy whose only time
         offset is the order delay, with floor() and a lookup-driven duration."""
         model = Model(starttime=1, stoptime=8, dt=1, name='ordering_loop_par')
 

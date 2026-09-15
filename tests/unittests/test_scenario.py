@@ -288,7 +288,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario.constants["constant2"],202.0)
 
     def testScenario_rust_field_defaults(self):
-        """The four fields added in Phase 4 Substep 4d must default to safe
+        """The four step-by-step fields must default to safe
         values so step-by-step Rust dispatch sees a clean slate on first call."""
         scenario_empty = SimulationScenario(dictionary={}, name="rustFieldsEmpty",
                                             model=None, scenario_manager_name="mgr")

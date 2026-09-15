@@ -28,6 +28,7 @@ _OPTIONAL_TEST_MODULES = {
     # The py3-none-any wheel carries no compiled engine. These import it at
     # module level, so they belong in the same mechanism.
     "BPTK_Py._rust_engine": ["test_parity.py",
+                             "test_parity_multidimensional.py",
                              "test_rust_backend.py",
                              "test_rust_engine.py"],
 }
@@ -158,6 +159,96 @@ _RUST_FALLBACK_MARKERS = (
 )
 
 
+# --- Did the engine actually run? ------------------------------------------
+#
+# The fallback guard below is negative evidence: it fails a test when bptk said
+# it gave up. That leaves one hole. A backend argument that is neither "python"
+# nor "rust" - a typo, a renamed constant - takes the Python branch at every
+# decision site without logging anything at all, because nothing failed. A
+# comparison test written that way compares Python with Python and passes.
+#
+# So this records both halves and pairs them: every request for a non-Python
+# backend, and every model the engine actually loaded. A test that asked for one
+# and never got one is a test whose Rust assertions are empty.
+#
+# Both probes wrap rather than replace, so behaviour is unchanged. `load_model`
+# is patched on the class itself, not on the module attribute, because the test
+# modules import `RustSdEngine` directly and a module-level patch would miss them.
+
+class _RustUse:
+    """Per-test record of what was asked for and what the engine did."""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.requested = []      # backend values asked for, other than "python"
+        self.loaded = 0          # models the engine loaded successfully
+
+
+RUST_USE = _RustUse()
+
+
+def _backend_index(func):
+    """Position of the `backend` parameter, so the wrapper need not bind a signature."""
+    import inspect
+    params = list(inspect.signature(func).parameters)
+    return params.index("backend") if "backend" in params else None
+
+
+def _wrap_backend_arg(owner, name):
+    """Record every non-Python backend this entry point is asked for."""
+    func = getattr(owner, name)
+    index = _backend_index(func)
+    if index is None:  # pragma: no cover - the caller picked the name from the signature
+        return
+
+    def wrapper(*args, **kwargs):
+        if "backend" in kwargs:
+            value = kwargs["backend"]
+        elif len(args) > index:
+            value = args[index]
+        else:
+            value = None
+        if value is not None and value != "python":
+            RUST_USE.requested.append("{}.{}({!r})".format(owner.__name__, name, value))
+        return func(*args, **kwargs)
+
+    wrapper.__name__ = name
+    setattr(owner, name, wrapper)
+
+
+def _install_rust_probes():
+    from BPTK_Py._rust_engine import RustSdEngine
+    from BPTK_Py.bptk import bptk as bptk_class
+    from BPTK_Py.modeling.model import Model
+    from BPTK_Py.scenariorunners.sd_runner import SdRunner
+
+    load_model = RustSdEngine.load_model
+
+    def counting_load_model(self, *args, **kwargs):
+        model = load_model(self, *args, **kwargs)
+        RUST_USE.loaded += 1
+        return model
+
+    RustSdEngine.load_model = counting_load_model
+
+    # Deliberately not `begin_session`: it records an intention in the session
+    # state and runs nothing, so a test that only asserts that state would be
+    # flagged for an engine run it never asked to happen. `run_scenario_step`
+    # is where a session's steps arrive, carrying the backend the session was
+    # started with - so the session path is covered where it is actually run.
+    for owner, name in ((bptk_class, "run_scenarios"),
+                        (bptk_class, "plot_scenarios"),
+                        (SdRunner, "run_scenario_step"),
+                        (Model, "simulate")):
+        _wrap_backend_arg(owner, name)
+
+
+if RUST_ENGINE_AVAILABLE:
+    _install_rust_probes()
+
+
 def _logfile_size():
     logfile = Path(logmod.logfile)
     return logfile.stat().st_size if logfile.exists() else 0
@@ -193,6 +284,11 @@ def pytest_runtest_call(item):
     Tests that exercise the fallback on purpose opt out with
     ``@pytest.mark.allow_rust_fallback``.
 
+    Separately, a test asking for a non-Python backend that the engine never
+    serves also fails - see RUST_USE above. A test that stubs the engine call
+    out, so it is never meant to be reached, opts out of that second check with
+    ``@pytest.mark.allow_rust_unused``.
+
     Limitation: detection is log-based, so a test that sets ``loglevel="ERROR"``
     suppresses the [WARN] line and can hide a fallback.
     """
@@ -209,6 +305,7 @@ def pytest_runtest_call(item):
         return
 
     offset = _logfile_size()
+    RUST_USE.reset()
     outcome = yield
 
     # Do not mask a genuine failure with our own.
@@ -222,4 +319,15 @@ def pytest_runtest_call(item):
             "it asserts about Rust is meaningless:\n  " + "\n  ".join(hits)
             + "\n(if the fallback is the point of the test, mark it with "
               "@pytest.mark.allow_rust_fallback)"
+        ))
+        return
+
+    if (RUST_USE.requested and RUST_USE.loaded == 0
+            and not item.get_closest_marker("allow_rust_unused")):
+        outcome.force_exception(AssertionError(
+            "a non-Python backend was requested but the engine never loaded a "
+            "model, so this test ran entirely in Python:\n  "
+            + "\n  ".join(RUST_USE.requested)
+            + "\n(a backend value that is neither \"python\" nor \"rust\" takes the "
+              "Python branch without logging anything)"
         ))

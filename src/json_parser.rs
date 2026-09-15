@@ -408,6 +408,15 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
         "pareto" => Ok(BuiltinFn::Pareto),
         "invnorm" => Ok(BuiltinFn::Invnorm),
         "normalcdf" => Ok(BuiltinFn::NormalCDF),
+        // Array aggregations
+        "arr_sum" => Ok(BuiltinFn::ArrSum),
+        "arr_prod" => Ok(BuiltinFn::ArrProd),
+        "arr_mean" => Ok(BuiltinFn::ArrMean),
+        "arr_median" => Ok(BuiltinFn::ArrMedian),
+        "arr_stddev" => Ok(BuiltinFn::ArrStddev),
+        "arr_rank" => Ok(BuiltinFn::ArrRank),
+        "arr_max" => Ok(BuiltinFn::ArrMax),
+        "arr_min" => Ok(BuiltinFn::ArrMin),
         _ => Err(ParseError::UnknownFunction(name.to_string())),
     }
 }

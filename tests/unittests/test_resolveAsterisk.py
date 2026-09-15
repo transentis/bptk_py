@@ -92,5 +92,43 @@ class TestRemoveAserisk(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_an_asterisk_beside_a_fixed_label(self):
+        """`SalesData[*, Car]` spreads one dimension and keeps the other."""
+        expression = {"name": "SalesData", "type": "array",
+                      "args": ["*", [{"name": "Car", "type": "label"}]]}
+
+        result = resolve(expression, "SalesData", self.IR)
+
+        self.assertEqual([[arg["name"] for arg in ref["args"]] for ref in result],
+                         [["EU", "Car"], ["US", "Car"]])
+
+    def test_a_fixed_label_beside_an_asterisk(self):
+        """`SalesData[EU, *]`, the same the other way round."""
+        expression = {"name": "SalesData", "type": "array",
+                      "args": [[{"name": "EU", "type": "label"}], "*"]}
+
+        result = resolve(expression, "SalesData", self.IR)
+
+        self.assertEqual([[arg["name"] for arg in ref["args"]] for ref in result],
+                         [["EU", "Car"], ["EU", "Bike"]])
+
+    def test_two_fixed_labels_are_left_alone(self):
+        """With no asterisk there is nothing to spread, so the reference stays one."""
+        expression = {"name": "SalesData", "type": "array",
+                      "args": [[{"name": "EU", "type": "label"}],
+                               [{"name": "Car", "type": "label"}]]}
+
+        result = resolve(expression, "SalesData", self.IR)
+
+        self.assertEqual(result["type"], "array")
+        # Each index keeps the one-element list the parser produced; only the asterisk
+        # path rebuilds the reference.
+        self.assertEqual(result["args"], [[{"name": "EU", "type": "label"}],
+                                          [{"name": "Car", "type": "label"}]])
+
+    def test_an_expression_that_is_neither_a_dict_nor_a_list_comes_back_unchanged(self):
+        self.assertEqual(resolve(7, "SalesData", self.IR), 7)
+
+
 if __name__ == '__main__':
     unittest.main()    

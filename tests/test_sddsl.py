@@ -201,6 +201,20 @@ def test_equations():
     c.equation = a%b
     assert c(1) == 2.0
 
+    # A compound operand has to keep its own grouping: rendered without brackets
+    # this read as a+(b%b) and gave 7.0.
+    a.equation = 7.0
+    b.equation = 3.0
+    c.equation = (a+b)%b
+    assert c(1) == 1.0
+
+    c.equation = a%(b+1.0)
+    assert c(1) == 3.0
+
+    # A number on the left of an element.
+    c.equation = 10.0%a
+    assert c(1) == 3.0
+
 def test_small_dt():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
@@ -1101,6 +1115,20 @@ def test_matrix_constant():
                 assert(get_element_data(test_element3)
                     != np.std(elements1) + 1)
 
+                test_element3 = model.converter("test_element_max" + index)
+                test_element3.equation = test_element1.arr_max()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.max(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.max(elements1) + 1)
+
+                test_element3 = model.converter("test_element_min" + index)
+                test_element3.equation = test_element1.arr_min()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.min(elements1)))
+                assert(get_element_data(test_element3)
+                    != np.min(elements1) + 1)
+
                 test_element3 = model.converter("test_element_size" + index)
                 test_element3.equation = test_element1.arr_size()
                 assert(get_element_data(test_element3) == i)
@@ -1133,7 +1161,12 @@ def test_matrix_constant():
                             "test_element4_exc_" + str(j) + "_" + str(x) + index)
                         setup_matrix(test_element4, [j, x], 2.0, n)
                         try:
-                            test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                            # A converter, not a constant: a constant may only hold a
+                            # floating point value, and says so. The target used to be a
+                            # constant here and the error was swallowed, because
+                            # `equation == None` on an operator builds a comparison -
+                            # which is truthy - so the equation silently became None.
+                            test_element3 = model.converter("test_element_exc_dot" + str(j) + "_" + str(x) + index)
                             test_element3.equation = test_element4.dot(
                                 test_element2)
                             assert(x == i)
@@ -1316,6 +1349,18 @@ def test_vector():
                 assert(get_element_data(test_element3) ==
                     pytest.approx(np.std(elements1)))
                 assert(get_element_data(test_element3) != np.std(elements1) + 1)
+
+                test_element3 = get_element(t, model, "test_element_max")
+                test_element3.equation = test_element1.arr_max()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.max(elements1)))
+                assert(get_element_data(test_element3) != np.max(elements1) + 1)
+
+                test_element3 = get_element(t, model, "test_element_min")
+                test_element3.equation = test_element1.arr_min()
+                assert(get_element_data(test_element3) ==
+                    pytest.approx(np.min(elements1)))
+                assert(get_element_data(test_element3) != np.min(elements1) + 1)
 
                 test_element3 = get_element(t, model, "test_element_size")
                 test_element3.equation = test_element1.arr_size()
@@ -1506,6 +1551,18 @@ def test_vector_constants():
             assert(get_element_data(test_constant3) ==
                 pytest.approx(np.std(elements1)))
             assert(get_element_data(test_constant3) != np.std(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_max" + index)
+            test_constant3.equation = test_constant1.arr_max()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.max(elements1)))
+            assert(get_element_data(test_constant3) != np.max(elements1) + 1)
+
+            test_constant3 = model.converter("test_constant_min" + index)
+            test_constant3.equation = test_constant1.arr_min()
+            assert(get_element_data(test_constant3) ==
+                pytest.approx(np.min(elements1)))
+            assert(get_element_data(test_constant3) != np.min(elements1) + 1)
 
             test_constant3 = model.converter("test_constant_size" + index)
             test_constant3.equation = test_constant1.arr_size()
@@ -1737,6 +1794,20 @@ def test_matrix():
                     assert(get_element_data(test_element3)
                         != np.std(elements1) + 1)
 
+                    test_element3 = get_element(t, model, "test_element_max")
+                    test_element3.equation = test_element1.arr_max()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.max(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.max(elements1) + 1)
+
+                    test_element3 = get_element(t, model, "test_element_min")
+                    test_element3.equation = test_element1.arr_min()
+                    assert(get_element_data(test_element3) ==
+                        pytest.approx(np.min(elements1)))
+                    assert(get_element_data(test_element3)
+                        != np.min(elements1) + 1)
+
                     test_element3 = get_element(t, model, "test_element_size")
                     test_element3.equation = test_element1.arr_size()
                     assert(get_element_data(test_element3) == i)
@@ -1785,17 +1856,11 @@ def test_matrix():
                             except:
                                 assert(not (j == i and x == k))
 
-"""
-# def test_vector_stock_flow():
-#     from BPTK_Py import Model
-#     from BPTK_Py import sd_functions as sd
-#     from BPTK_Py.bptk import bptk
-#     import pytest
-#     import numpy as np
-
-#     bptk = bptk()
-
-"""
+# `test_vector_stock_flow` used to sit here as an empty shell inside a triple-quoted
+# string - never implemented. What it was meant to do, integrating an arrayed stock from
+# an arrayed flow over time, is `TestArrayedStockFlow` in
+# tests/test_multidimensional_sddsl.py, which also covers the per-index initial values,
+# the max(0, ...) clamp and the arrayed biflow.
 
 
 def test_stochastic_guards_python_backend():

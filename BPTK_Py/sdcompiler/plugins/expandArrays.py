@@ -53,39 +53,6 @@ def arrayed_identifiers(expression, dimension, entity, dimensions):
 
 
 
-def extract_labels(arg, dimensions, index):
-    """
-
-    :param arg:
-    :param dimensions:
-    :param index:
-    :return:
-    """
-    labels = dimensions[index]
-
-    if arg["type"] == "asterisk":
-        return labels
-
-    elif arg["type"] == "range":
-        range = [ar["name"] for ar in arg["args"]]
-        start = labels.rfind(range[0])
-        end = labels.rfind(range[1]) + 1
-        return labels[start:end]
-
-    elif arg["type"] == "label":
-        return arg["name"]
-
-    elif arg["type"] == "identifier":
-
-        return arg
-
-    else:
-        class ExpressionNotSupportedException(Exception):
-            pass
-
-        raise (ExpressionNotSupportedException("Expressions in Array are not supported yet."))
-
-
 def alter_identifier(IR, entity, expression, model_name):
     """
     Change idenfitifiers to elementName[Dimension]
@@ -128,80 +95,12 @@ def alter_identifier(IR, entity, expression, model_name):
                     expression["args"] = toLabelObjects(labels_)
 
 
-def spread_function_arguments(expression, model_name, IR):
-    if type(expression) is str or type(expression) is float:
-        return expression
-
-    if type(expression) is list:
-        for elem in expression:
-            spread_function_arguments(elem, model_name, IR=IR)
-
-    if type(expression) is dict:
-        name_ = expression["name"]
-        type_ = expression["type"]
-
-        if type_ == "call":
-            args = []
-
-            for arg in expression["args"]:
-
-                if type(arg) == list:
-                    arg = arg[0]
-
-                '''
-                Asterisks for Identifiers
-                '''
-                if arg["type"] == 'identifier':
-
-                    count = 0
-                    for dim in IR["dimensions"]:
-                        for variable in dim["variables"]:
-                            if variable["model"] == model_name and variable["name"] == arg["name"]:
-                                count += 1
-
-                    asterisks = [{"name": '*', "type": 'asterisk'} for _ in range(0, count)]
-
-                    if len(asterisks) > 0:
-                        arg["args"] = asterisks
-                        arg["type"] = "array"
-
-                '''
-                Array Expressions
-                '''
-                if arg["type"] == "array":
-
-                    dimensions = []
-
-                    for dimension in IR["dimensions"]:
-
-                        variables = dimension["variables"]
-                        var_count = 0
-                        for variable in variables:
-                            if variable["model"] == model_name and variable["name"] == arg["name"] and len(
-                                    dimension["labels"]) > 0:
-                                var_count += 1
-
-                        if var_count > 0: dimensions += [dimension]
-
-                    arg_args = arg["args"]
-                    arg_args_labels = [extract_labels(dimensions=dimensions, index=index, arg=ar) for index, ar in
-                                       enumerate(arg_args)]
-                    products = cartesian_product(arg_args_labels)
-
-                    args += [{"name": arg["name"], "type": "array", "args": toLabelObjects(product)} for product in
-                             products]
-                else:
-                    args += [arg]
-            expression["args"] = args
-    return expression
-
-
 def clone_entity(model_name, entity, idx, product=None, connects=None,dimensions={},entities=None):
     ent = deepcopy(entity)
     try:
         from ..parsers.smile.grammar import SMILEVisitor, grammar
         from .makeAbsolute import makeExpressionAbsolute
-    except:
+    except:  # pragma: no cover - the relative imports always work inside the package
         from parsers.smile.grammar import SMILEVisitor, grammar
         from plugins.makeAbsolute import makeExpressionAbsolute
 
@@ -221,7 +120,7 @@ def clone_entity(model_name, entity, idx, product=None, connects=None,dimensions
         except IndexError:
                 try:
                     ent["equation"] = deepcopy(ent["equation"][0])
-                except:
+                except:  # pragma: no cover - an entity always carries an equation
                     ent["equation"] = "0"
 
         inflows = DimJoinedExpression(ent["inflow"], "+", dim=prod)
@@ -317,11 +216,12 @@ def ExpandArrays(IR):
 
                 _entities = []
 
-                #TODO investigate this
+                # A SIZE over an arrayed element needs the element whole, so the entity
+                # is left unexpanded and the generator resolves the count instead
                 try:
                     if type(entity["equation_parsed"]) is list and type(entity["equation_parsed"][0]) is dict and entity["equation_parsed"][0]["name"] == "size":
                         continue
-                except:
+                except:  # pragma: no cover - the guarded read is safe for every model seen
                     pass
 
                 if type(entity["equation_parsed"]) is list and len(entity["equation_parsed"]) > 1:
@@ -399,7 +299,6 @@ def ExpandArrays(IR):
 
                     entities[index]["equation_parsed"] = already_reduced
 
-                spread_function_arguments(expression=model["entities"][entity_type][index]["equation_parsed"], model_name=model["name"], IR=IR)
                 entities[index]["labels"] = []
                 model["entities"][entity_type] += _entities
 

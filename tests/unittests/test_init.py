@@ -23,5 +23,22 @@ class TestPackageInit(unittest.TestCase):
             importlib.reload(BPTK_Py)
 
 
+    def test_plotting_config_is_reachable_as_a_package_attribute(self):
+        """`BPTK_Py.plotting_config` imports the visualization module on first use.
+
+        The attribute is served by the module's own `__getattr__` rather than an import
+        at the top, so that a headless install without the plotting extra can still
+        `import BPTK_Py` - it only fails if someone asks for this.
+        """
+        from BPTK_Py.visualizations import plotting_config, PlottingConfig
+
+        self.assertIs(BPTK_Py.plotting_config, plotting_config)
+        self.assertIs(BPTK_Py.PlottingConfig, PlottingConfig)
+
+    def test_an_attribute_the_package_does_not_have_raises(self):
+        with self.assertRaises(AttributeError):
+            BPTK_Py.no_such_attribute
+
+
 if __name__ == '__main__':
     unittest.main()

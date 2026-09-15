@@ -2300,7 +2300,7 @@ class TestParityStatisticalDeterministic:
 
 
 # ---------------------------------------------------------------------------
-# Setup Rust Engine Phase 4 Substep 4b: PyO3 init / step / current_time / steps_remaining / reset
+# Step-by-step PyO3 API: init / step / current_time / steps_remaining / reset
 # ---------------------------------------------------------------------------
 
 LINEAR_GROWTH_JSON = json.dumps({
@@ -2322,7 +2322,7 @@ LINEAR_GROWTH_JSON = json.dumps({
 
 
 class TestStepByStep:
-    """Tests for the new step-by-step PyO3 API on RustSdModel (Substep 4b).
+    """Tests for the step-by-step PyO3 API on RustSdModel.
 
     Validates that init/step/current_time/steps_remaining/reset behave as
     documented and that walking the simulation by hand yields the same memo
@@ -2747,3 +2747,146 @@ class TestExportImportState:
         model.set_runspecs(1, 20, 1)
         with pytest.raises(ValueError):
             model.import_state(0, {"does_not_exist": [1.0]}, ["orders"])
+
+
+# ---------------------------------------------------------------------------
+# Array aggregations, engine-direct
+#
+# The parity suite runs these through the Python serializer, which means a
+# serializer and an engine that agree on the wrong thing would still look green.
+# These build the JSON by hand instead, so the contract is pinned on its own:
+# bracket-named scalar entities plus one variadic call over them.
+# ---------------------------------------------------------------------------
+
+class TestArrayAggregations:
+    """The nine aggregations over a flattened arrayed element."""
+
+    LEAVES = {"v[a]": 3.0, "v[b]": 6.0, "v[c]": 2.0, "v[d]": 4.0, "v[e]": 1.0}
+
+    def _model(self, converters):
+        engine = make_engine()
+        entities = {
+            "constants": [{"name": name, "equation": lit(value)}
+                          for name, value in self.LEAVES.items()],
+            "converters": converters,
+        }
+        return engine.load_model(build_json(
+            "aggregations", {"starttime": 0.0, "stoptime": 2.0, "dt": 1.0}, entities))
+
+    def _leaf_refs(self):
+        return [ref(name) for name in self.LEAVES]
+
+    def _aggregate(self, function, extra_args=()):
+        model = self._model([{
+            "name": "result",
+            "equation": call(function, self._leaf_refs() + list(extra_args)),
+        }])
+        return model.simulate(["result"])["result"]["1.0"]
+
+    def test_arr_sum(self):
+        assert self._aggregate("arr_sum") == pytest.approx(16.0)
+
+    def test_arr_prod(self):
+        assert self._aggregate("arr_prod") == pytest.approx(144.0)
+
+    def test_arr_mean(self):
+        assert self._aggregate("arr_mean") == pytest.approx(3.2)
+
+    def test_arr_median(self):
+        # Sorted: 1, 2, 3, 4, 6 - an odd count, so the middle value.
+        assert self._aggregate("arr_median") == pytest.approx(3.0)
+
+    def test_arr_stddev_is_the_population_deviation(self):
+        # ddof=0, numpy's default. The sample deviation would be 1.9235.
+        mean = 3.2
+        expected = (sum((v - mean) ** 2 for v in self.LEAVES.values()) / 5) ** 0.5
+        assert self._aggregate("arr_stddev") == pytest.approx(expected)
+        assert expected == pytest.approx(1.7204650534)
+
+    def test_arr_max_and_arr_min(self):
+        assert self._aggregate("arr_max") == pytest.approx(6.0)
+        assert self._aggregate("arr_min") == pytest.approx(1.0)
+
+    @pytest.mark.parametrize("rank, expected", [
+        (1.0, 6.0), (2.0, 4.0), (3.0, 3.0), (4.0, 2.0), (5.0, 1.0),
+        (6.0, 1.0), (99.0, 1.0), (0.0, 1.0), (-1.0, 1.0),
+    ])
+    def test_arr_rank_takes_the_rank_as_its_last_argument(self, rank, expected):
+        assert self._aggregate("arr_rank", [lit(rank)]) == pytest.approx(expected)
+
+    def test_an_aggregation_over_computed_entities(self):
+        """The arguments are refs, so they can be anything - not just constants."""
+        model = self._model([
+            {"name": "doubled_a", "equation": binop("mul", ref("v[a]"), lit(2.0))},
+            {"name": "doubled_b", "equation": binop("mul", ref("v[b]"), lit(2.0))},
+            {"name": "result",
+             "equation": call("arr_sum", [ref("doubled_a"), ref("doubled_b")])},
+        ])
+        assert model.simulate(["result"])["result"]["1.0"] == pytest.approx(18.0)
+
+    def test_an_aggregation_inside_an_expression(self):
+        model = self._model([{
+            "name": "result",
+            "equation": binop("div",
+                              call("arr_sum", self._leaf_refs()),
+                              call("arr_mean", self._leaf_refs())),
+        }])
+        assert model.simulate(["result"])["result"]["1.0"] == pytest.approx(5.0)
+
+    def test_a_single_argument_aggregation(self):
+        model = self._model([{
+            "name": "result",
+            "equation": call("arr_mean", [ref("v[a]")]),
+        }])
+        assert model.simulate(["result"])["result"]["1.0"] == pytest.approx(3.0)
+
+    def test_a_stock_integrating_an_aggregation(self):
+        """The aggregation is an ordinary expression, so a stock can integrate it."""
+        engine = make_engine()
+        model = engine.load_model(build_json(
+            "aggregating_stock", {"starttime": 0.0, "stoptime": 3.0, "dt": 1.0},
+            {
+                "constants": [{"name": name, "equation": lit(value)}
+                              for name, value in self.LEAVES.items()],
+                "stocks": [{"name": "total", "initial_value": lit(0.0),
+                            "equation": ref("inflow")}],
+                "flows": [{"name": "inflow",
+                           "equation": call("arr_sum", self._leaf_refs())}],
+            }))
+        results = model.simulate(["total"])
+        for t in range(4):
+            assert results["total"][f"{t:.1f}"] == pytest.approx(16.0 * t)
+
+    def test_an_unknown_aggregation_is_still_an_error(self):
+        engine = make_engine()
+        with pytest.raises(Exception, match="arr_average"):
+            engine.load_model(build_json(
+                "unknown", {"starttime": 0.0, "stoptime": 1.0, "dt": 1.0},
+                {"converters": [{"name": "result",
+                                 "equation": call("arr_average", [lit(1.0)])}]}))
+
+    def test_bracketed_entity_names_resolve_like_any_other(self):
+        """Nothing in the engine knows about brackets - they are just names.
+
+        A matrix leaf is named with nested brackets, and referring to one has to work
+        the same way, because that is the whole basis for keeping the engine
+        array-agnostic.
+        """
+        engine = make_engine()
+        model = engine.load_model(build_json(
+            "brackets", {"starttime": 0.0, "stoptime": 1.0, "dt": 1.0},
+            {
+                "constants": [
+                    {"name": "m[0][0]", "equation": lit(2.0)},
+                    {"name": "m[0][1]", "equation": lit(3.0)},
+                ],
+                "converters": [
+                    {"name": "sum", "equation": call(
+                        "arr_sum", [ref("m[0][0]"), ref("m[0][1]")])},
+                    {"name": "product", "equation": binop(
+                        "mul", ref("m[0][0]"), ref("m[0][1]"))},
+                ],
+            }))
+        results = model.simulate(["sum", "product"])
+        assert results["sum"]["0.0"] == pytest.approx(5.0)
+        assert results["product"]["0.0"] == pytest.approx(6.0)

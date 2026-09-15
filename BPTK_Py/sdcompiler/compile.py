@@ -24,7 +24,7 @@ except ImportError as package_import_error:
         from parsers.xmile.xmile import parse_xmile
         from plugins import StockExpressions,ExpandArrays, sortEntities, FindComplexFunctions, resolveSelf, resolveAsterisk, fixLabels, filterGhosts, replaceDimensionNames
         standalone = True
-    except ImportError:
+    except ImportError:  # pragma: no cover - the package is always importable here
         raise package_import_error from None
 
 import importlib

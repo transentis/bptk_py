@@ -309,6 +309,20 @@ def test_compilation(test_models_path):
     compile_xmile(src, dest, target)
     assert dest.is_file()
 
+    src = test_models_path / "test_array_edges.stmx"
+    dest = test_models_path / "test_array_edges.py"
+    target = "py"
+
+    compile_xmile(src, dest, target)
+    assert dest.is_file()
+
+    src = test_models_path / "test_array_named_range.stmx"
+    dest = test_models_path / "test_array_named_range.py"
+    target = "py"
+
+    compile_xmile(src, dest, target)
+    assert dest.is_file()
+
     src = test_models_path / "test_permutation.stmx"
     dest = test_models_path / "test_permutation.py"
     target = "py"
@@ -724,6 +738,52 @@ def test_array():
         #assert mod.equation("inflow[1:3,2,1]", t) == 9
 
     assert result == expected_result
+
+def test_array_edges():
+    """Two array shapes the rest of the corpus does not have.
+
+    A dimension of **two** labels and a dimension of **one**, because the expansion
+    builds the parent's equation differently for one, two and more sub-elements. And an
+    arrayed stock with an **outflow and no inflow**, where the expansion has to negate
+    the flow rather than add it - every other arrayed stock in the corpus is fed.
+    """
+    from test_models.test_array_edges import simulation_model
+    mod = simulation_model()
+
+    # 100 at t=1, draining by 1 and by 2 per month
+    assert mod.equation("draining[1]", 1.0) == 100.0
+    assert mod.equation("draining[2]", 1.0) == 100.0
+    assert mod.equation("draining[1]", 5.0) == 96.0
+    assert mod.equation("draining[2]", 5.0) == 92.0
+
+    # The bare name of an arrayed element is the sum of its cells
+    assert mod.equation("draining", 5.0) == 188.0
+
+    # A dimension of one: the parent is the single cell, not a sum of one
+    assert mod.equation("lonely[1]", 3.0) == 7.0
+    assert mod.equation("lonely", 3.0) == 7.0
+
+    # A range subscript, resolved to the cells between its bounds
+    assert mod.memoize("leaving[1:2]", 2.0).tolist() == [1.0, 2.0]
+    assert mod.equation("sumofrange", 2.0) == 3.0
+
+
+def test_array_named_range():
+    """A range over **named** labels is the slice of the dimension's own label list.
+
+    Its order is the order the dimension declares, so `north:middle` is the first two of
+    north, middle, south. A bound that names no label of that dimension logs which labels
+    it does have and yields nothing, rather than dropping the dimension in silence - which
+    used to make the whole read `0.0`.
+    """
+    from test_models.test_array_named_range import simulation_model
+    mod = simulation_model()
+
+    assert mod.memoize("leaving[north:middle]", 2.0).tolist() == [1.0, 2.0]
+    assert mod.equation("sumofnamedrange", 2.0) == 3.0
+    assert mod.memoize("leaving[north:south]", 2.0).tolist() == [1.0, 2.0, 3.0]
+    assert mod.memoize("leaving[north:west]", 2.0).tolist() == []
+
 
 def test_array_extended():
     from test_models.test_array_extended import simulation_model

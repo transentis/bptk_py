@@ -143,6 +143,14 @@ def parseExpression(expression):
         return expression["name"]
 
     '''
+    Ranges inside a subscript - `a[1:3]`. The generated model's own `get_dimensions`
+    resolves the bounds at runtime, the way it resolves an asterisk, so the range only
+    has to survive into the equation name.
+    '''
+    if expression["type"] == 'range':
+        return ":".join([str(parseExpression(arg)) for arg in expression["args"]])
+
+    '''
     Nothing
     '''
     if expression["type"].replace(" ", "") == '()':
@@ -296,13 +304,8 @@ def max_(*args):
         return 'max( ' + " , ".join([str(parseExpression(x)) for x in remove_nesting(args) if x != "," or x != ", "]) + ')'
 
 def size_(*args):
+    # Always a list: that is what remove_nesting returns, whatever it is given
     args = remove_nesting(args)
-
-    if type(args) is float or type(args) is int:
-        return args
-
-    if type(args) is dict:
-        args = [args]
 
     if type(args) is list:
         if len(args) == 1:
@@ -333,7 +336,9 @@ def mean_(*args):
 def prod_(*args):
     args = remove_nesting(args)
     if len(args) > 1:
-        return 'np.prod([' + "+".join([str(parseExpression(x)) for x in args]) + '])'
+        # Joined with a comma: "+" made PROD(a, b) compute a + b, and np.prod of that
+        # one-element list returned the sum
+        return 'np.prod([' + " , ".join([str(parseExpression(x)) for x in args]) + '])'
     return 'np.prod(' + " , ".join([str(parseExpression(x)) for x in args]) + ')'
 
 

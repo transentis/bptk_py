@@ -125,8 +125,8 @@ def _build_dotted_module_bptk():
     """Beergame-style Module-namespaced element names (`Retailer.inventory`).
 
     Two Module instances cross-reference each other (Wholesaler.outgoing reads
-    Retailer.order) so the test exercises the dotted-name resolution path that
-    Phase 4 Substep 4i's beergame integration depends on."""
+    Retailer.order) so the test exercises the dotted-name resolution path the
+    beergame server integration depends on."""
     from BPTK_Py import Module
     model = Model(starttime=0, stoptime=5, dt=1, name="dotted_module")
 
@@ -1714,7 +1714,7 @@ class TestStochasticGuards:
 
 
 # ---------------------------------------------------------------------------
-# Step-by-step parity (Phase 4 Substep 4d): the same fixtures as the
+# Step-by-step parity: the same fixtures as the
 # run_scenarios parity tests above, exercised through bptk.begin_session +
 # run_step instead. Two flavours:
 #
@@ -1839,8 +1839,8 @@ class TestRunStepParity:
             _assert_step_dicts_equal(p, r, i)
 
     def test_dotted_module_step_parity(self):
-        """Module-namespaced element names (`Retailer.inventory`) — beergame
-        Substep 4i risk pre-empted at the step-by-step layer."""
+        """Module-namespaced element names (`Retailer.inventory`) — the beergame
+        risk, pre-empted at the step-by-step layer."""
         eqs = ["Retailer.inventory", "Wholesaler.inventory", "Retailer.order"]
         py = _run_session_history(_build_dotted_module_bptk(), ["chain"], ["base"],
                                   eqs, steps=6, backend="python")
@@ -2175,7 +2175,7 @@ class TestRunStepLifecycle:
 
 
 # ---------------------------------------------------------------------------
-#  Substep 4g — resume after a Rust-backed session is reloaded from external
+#  Resume after a Rust-backed session is reloaded from external
 #  state. The live RustSdModel handle is not part of session_state, so on
 #  resume the runner must replay settings_log to drive the cursor back to the
 #  current step. These tests simulate the server's reconstruct_instance path
@@ -3162,3 +3162,157 @@ class TestMidSessionFallbackIsLoud:
         assert "[ERROR] Rust step failed" in content, content[-500:]
         assert "may be wrong" in content
         assert "at step 3.0" in content
+
+
+# ---------------------------------------------------------------------------
+#  Arrayed models across the layers above the engine
+#
+#  The parity of the arrayed *expressions* is in tests/test_parity_multidimensional.py,
+#  which loads the engine directly. What is left, and what this section covers, is
+#  everything the layers add on top: scenario constants addressing a bracketed
+#  sub-element name, the result frames, and the step-by-step cursor.
+# ---------------------------------------------------------------------------
+
+from _arrayed_fixtures import (  # noqa: E402
+    LEVELS,
+    _build_biflow_bptk,
+    _build_matrix_bptk,
+    _build_stateful_bptk,
+    _build_workforce_bptk,
+)
+
+WORKFORCE_EQUATIONS = (
+    [f"headcount[{level}]" for level in LEVELS]
+    + [f"cost[{level}]" for level in LEVELS]
+    + ["total_headcount", "total_cost", "average_salary"]
+)
+
+
+class TestArrayedRunScenarios:
+    """The flagship and the matrix companion through `run_scenarios` on both backends."""
+
+    def test_workforce_df_parity(self):
+        bptk = _build_workforce_bptk(manager_name="arr_df_mgr")
+        py, rust = _run_both(bptk, "arr_df_mgr", ["base"], WORKFORCE_EQUATIONS)
+        assert_frame_equal(py, rust)
+
+    def test_workforce_json_parity(self):
+        bptk = _build_workforce_bptk(manager_name="arr_json_mgr")
+        py, rust = _run_both(bptk, "arr_json_mgr", ["base"], WORKFORCE_EQUATIONS,
+                             return_format="json")
+        assert py == rust
+
+    def test_a_constant_override_on_a_bracketed_name(self):
+        """`hiring_rate[junior]` is a scenario constant addressing a sub-element.
+
+        Both backends have to apply it to the sub-element rather than to the parent,
+        and the second scenario must actually differ from the first - otherwise this
+        would pass while the override was silently ignored.
+        """
+        bptk = _build_workforce_bptk(manager_name="arr_override_mgr")
+        py, rust = _run_both(bptk, "arr_override_mgr", ["base", "hiring_freeze"],
+                             ["headcount[junior]"])
+        assert_frame_equal(py, rust)
+
+        columns = list(py.columns)
+        assert len(columns) == 2, columns
+        base = py[[c for c in columns if c.endswith("base_headcount[junior]")][0]]
+        frozen = py[[c for c in columns if c.endswith("freeze_headcount[junior]")][0]]
+        assert frozen.iloc[-1] < base.iloc[-1]
+
+    def test_matrix_companion_parity(self):
+        bptk = _build_matrix_bptk()
+        py, rust = _run_both(bptk, "matrix_mgr", ["base"], ["weighted[0]", "weighted[1]"])
+        assert_frame_equal(py, rust)
+
+
+class TestArrayedRunStepParity:
+    """The same models stepped in lockstep, including a per-step arrayed constant."""
+
+    def test_workforce_step_parity(self):
+        _interleave_step(lambda: _build_workforce_bptk(manager_name="arr_step_mgr"),
+                         ["arr_step_mgr"], ["base"], WORKFORCE_EQUATIONS, steps=6)
+
+    def test_matrix_companion_step_parity(self):
+        _interleave_step(_build_matrix_bptk, ["matrix_mgr"], ["base"],
+                         ["weighted[0]", "weighted[1]"], steps=3)
+
+    def test_a_per_step_constant_on_a_bracketed_name(self):
+        """`set_constant` mid-session on a sub-element name, on both backends.
+
+        The bracketed name is the part that used to be doubtful: the settings dict
+        addresses `salary[junior]`, which is a flattened entity on the Rust side and a
+        sub-element on the Python side.
+        """
+        settings = [
+            None,
+            None,
+            {"arr_setting_mgr": {"base": {"constants": {"salary[junior]": 80000.0}}}},
+            None,
+        ]
+        _interleave_step(lambda: _build_workforce_bptk(manager_name="arr_setting_mgr"),
+                         ["arr_setting_mgr"], ["base"],
+                         ["cost[junior]", "total_cost"], steps=4,
+                         settings_per_step=settings)
+
+    def test_the_per_step_constant_actually_changes_the_result(self):
+        """Guards the test above: a silently ignored setting would keep it green."""
+        settings = [
+            None,
+            None,
+            {"arr_effect_mgr": {"base": {"constants": {"salary[junior]": 1.0}}}},
+        ]
+        history = _run_session_history(
+            _build_workforce_bptk(manager_name="arr_effect_mgr"),
+            ["arr_effect_mgr"], ["base"], ["cost[junior]"], steps=3,
+            settings_per_step=settings, backend="rust")
+
+        def cost(step):
+            values = history[step]["arr_effect_mgr"]["base"]["cost[junior]"]
+            return values[max(values)]
+
+        assert cost(2) < cost(1) / 100.0
+
+
+BIFLOW_EQUATIONS = ["level[shrinking]", "level[growing]",
+                    "net[shrinking]", "net[growing]", "total"]
+
+STATEFUL_EQUATIONS = [f"{name}[{index}]"
+                      for name in ("smoothed", "trended", "delayed")
+                      for index in ("low", "high")]
+
+
+class TestArrayedElementKindsAboveTheEngine:
+    """Two model shapes the two flagship fixtures cannot reach.
+
+    The flagship has no biflow - every one of its flows is a flow - and no stateful
+    function, so the layers above the engine never saw either over an array. Both are
+    element kinds rather than expressions, which is exactly what these layers handle:
+    the result frame, the scenario cursor and the session's own state.
+    """
+
+    def test_an_arrayed_biflow_through_run_scenarios(self):
+        bptk = _build_biflow_bptk(manager_name="arr_bf_df_mgr")
+        py, rust = _run_both(bptk, "arr_bf_df_mgr", ["base"], BIFLOW_EQUATIONS)
+        assert_frame_equal(py, rust)
+        # The point of a biflow: one index runs negative, which a flow could not.
+        assert py[[c for c in py.columns if "shrinking" in c and "level" in c][0]].iloc[-1] < 0.0
+
+    def test_an_arrayed_biflow_stepped_in_lockstep(self):
+        _interleave_step(lambda: _build_biflow_bptk(manager_name="arr_bf_step_mgr"),
+                         ["arr_bf_step_mgr"], ["base"], BIFLOW_EQUATIONS, steps=5)
+
+    def test_arrayed_stateful_functions_through_run_scenarios(self):
+        bptk = _build_stateful_bptk(manager_name="arr_sf_df_mgr")
+        py, rust = _run_both(bptk, "arr_sf_df_mgr", ["base"], STATEFUL_EQUATIONS)
+        assert_frame_equal(py, rust)
+
+    def test_arrayed_stateful_functions_stepped_in_lockstep(self):
+        """The session carries one history per sub-element, not one per element.
+
+        Step mode is where that could go wrong without any expression being wrong: the
+        engine keeps its stateful values in the session, and a key that forgot the index
+        would let two indices share one smoothed value.
+        """
+        _interleave_step(lambda: _build_stateful_bptk(manager_name="arr_sf_step_mgr"),
+                         ["arr_sf_step_mgr"], ["base"], STATEFUL_EQUATIONS, steps=5)

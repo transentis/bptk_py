@@ -890,9 +890,9 @@ def _(mo):
 
     * **Raises**
 
-        `ValueError` if the model uses user-defined functions or arrayed aggregations. In
-        a normal run that exception is caught and the scenario continues on the Python
-        engine; see [Execution Backends](../concepts/execution_backends/execution_backends.md).
+        `ValueError` if the model uses user-defined functions. In a normal run that
+        exception is caught and the scenario continues on the Python engine; see
+        [Execution Backends](../concepts/execution_backends/execution_backends.md).
     """)
     return
 

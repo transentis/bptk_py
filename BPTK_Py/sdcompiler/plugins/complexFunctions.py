@@ -343,14 +343,15 @@ def arrayFunction(model, entity_type, entity, dimensions, expression):
             pass
     for elem in deepcopy(expression["args"]):
 
-        if (type(elem)) is list:
+        # Both branches are defensive: after remove_nesting the arguments are dicts
+        if (type(elem)) is list:  # pragma: no cover
             try:
                 elem.remove(", ")
             except:
                 pass
             elem = elem[0]
 
-        if type(elem) is float or type(elem) is str:
+        if type(elem) is float or type(elem) is str:  # pragma: no cover
             continue
 
         type_ = elem["type"]

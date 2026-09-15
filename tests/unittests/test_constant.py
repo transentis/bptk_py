@@ -24,5 +24,20 @@ class TestConstant(unittest.TestCase):
         with self.assertRaises(ElementError) as context:
             constant.equation = "string"
 
+    def testConstant_rejects_an_arrayed_equation(self):
+        """A constant holds numbers, so neither an arrayed element nor an arrayed
+        expression can be its equation - each would make a sub-constant hold an
+        expression. Use `setup_vector` and its siblings for an arrayed constant, or a
+        converter when the values follow from other elements.
+        """
+        model = Model()
+        source = model.constant("source")
+        source.setup_vector(2, [1.0, 2.0])
+
+        for equation in (source, source * 2.0):
+            with self.assertRaises(ElementError):
+                model.constant("target").equation = equation
+
+
 if __name__ == '__main__':
     unittest.main()    

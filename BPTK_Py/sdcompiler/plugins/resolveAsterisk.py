@@ -30,21 +30,7 @@ def resolve(expression, entity,IR):
         name_ = expression["name"]
         type_ = expression["type"]
 
-        import itertools
-        def cartesian_product(listoflists):
-            """
-            Helper for Cartesian product
-            :param listoflists:
-            :return:
-            """
-            if len(listoflists) == 1:
-                return listoflists[0]
-            res = list(itertools.product(*listoflists))
-
-            if len(res) == 1:
-                return res[0]
-
-            return res
+        from .expandArrays import cartesian_product
 
         if type_ == "array":
 

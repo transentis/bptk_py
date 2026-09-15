@@ -34,6 +34,7 @@ def _(mo):
     - [Customer Acquisition](./customer_acquisition/customer_acquisition.md). A model that analyses the effects of referral marketing on customer acquisition.
     - [Enterprise Digital Twin](./enterprise_digital_twin/enterprise_digital_twin.md). A simulation of a professional service firm that forms part of the transentis Enterprise Digital Twin. This is work in progress; we report on it at our [events](https://academy.transentis.com/en/events)
     - [Make Your Professional Service Firm Grow](./make_your_psf_grow/make_your_psf_grow.md). A model that analyses growth strategies in professional service firms.
+    - Multidimensional SD DSL. Two models built on arrays, where one set of equations covers a whole set of indices: a [Workforce Aging Chain](./multidimensional/workforce_aging_chain.md) over seniority levels, and a [Regional Product Portfolio](./multidimensional/regional_product_portfolio.md) as a matrix of products across regions.
     - [System Archetypes](./system_archetypes/system_archetypes.md). Models and interactive dashboards that illustrate system archetypes. System archetypes are patterns of behavior of systems.
     """)
     return

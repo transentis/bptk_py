@@ -14,8 +14,6 @@ def _():
     return (mo,)
 
 
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -27,7 +25,16 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This document illustrates how vector- or matrix-valued SD Models can be defined.
+    This document is the **reference** for arrays in the SD DSL: how to give an element
+    a shape, which operators work on it, what each one returns, and what is deliberately
+    not supported. Every section runs its own small example, so you can read it as a
+    catalogue and copy from it.
+
+    For arrays in a model that does something, the Model Library has two worked examples:
+    a [workforce aging chain](../../model_library/multidimensional/workforce_aging_chain.html)
+    over a vector of seniority levels, and a
+    [regional product portfolio](../../model_library/multidimensional/regional_product_portfolio.html)
+    built on a matrix of products across regions.
 
     We start with some boilerplate to get a BPTK project up and running:
     """)
@@ -37,11 +44,12 @@ def _(mo):
 @app.cell
 def _():
     from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
 
-    testbptk = bptk()
-    model = Model(starttime=0.0, stoptime=15.0, dt=1.0, name="TestModel")
-    return model, testbptk
+    arrays_bptk = bptk()
+    model = Model(starttime=0.0, stoptime=15.0, dt=1.0, name="Arrays")
+    return model, arrays_bptk, sd
 
 
 @app.cell(hide_code=True)
@@ -82,21 +90,21 @@ def _(mo):
 def _(model):
     ## Defining a Vector (with numerical indices)
     # Define an sd dsl element
-    vector1 = model.converter('vector1')
-    vector1.setup_vector(2, [2.0, 3.0])
+    plain_vector = model.converter('plain_vector')
     # Create a vector of length 2 with different values
+    plain_vector.setup_vector(2, [2.0, 3.0])
     # Create a vector of length 2 with identical values
-    vector1.setup_vector(2, 3.0)
+    plain_vector.setup_vector(2, 3.0)
     return
 
 
 @app.cell
 def _(model):
     ## Defining a named Vector (with string-valued indices)
-    # Define a sd dsl element
-    vector2 = model.converter('vector2')
+    # Define an sd dsl element
+    labelled_vector = model.converter('labelled_vector')
     # Create a named vector of length 2 using string-valued indices
-    vector2.setup_named_vector({'value1': 4.0, 'value2': 5.0})
+    labelled_vector.setup_named_vector({'value1': 4.0, 'value2': 5.0})
     return
 
 
@@ -119,6 +127,10 @@ def _(mo):
     | values | Dictionary | Defines the string-values indices and their values |
     | set_stack_equation | Boolean | (optional) If the element is a stock, the initial value is set (False) or the equation is set (True). Default is False. |
 
+    `values` is either one value per index, or a **single** value that every index gets -
+    `setup_vector(2, 3.0)` above is the short form of `setup_vector(2, [3.0, 3.0])`.
+    `set_stack_equation` has a section of its own below.
+
     For matrices, we can proceed completely similar.
     """)
     return
@@ -127,20 +139,22 @@ def _(mo):
 @app.cell
 def _(model):
     ## Defining a Matrix (with numerical indices)
-    # Define a sd dsl element
-    matrix1 = model.converter('matrix1')
+    # Define an sd dsl element
+    plain_matrix = model.converter('plain_matrix')
     # Create a matrix of size 2x2 with different values
-    matrix1.setup_matrix([2, 2], [[2.0, 3.0], [4.0, 5.0]])
+    plain_matrix.setup_matrix([2, 2], [[2.0, 3.0], [4.0, 5.0]])
+    # Create a matrix of size 2x2 whose four cells all hold 3.0
+    plain_matrix.setup_matrix([2, 2], 3.0)
     return
 
 
 @app.cell
 def _(model):
     ## Defining a named Matrix (with string-valued indices)
-    # Define a sd dsl element
-    matrix2 = model.converter('matrix2')
+    # Define an sd dsl element
+    labelled_matrix = model.converter('labelled_matrix')
     # Create a named vector of lenght 2 using string-valued indices
-    matrix2.setup_named_matrix({
+    labelled_matrix.setup_named_matrix({
         'value1': {'value11': 2.0, 'value12': 3.0},
         'value2': {'value21': 4.0, 'value22': 5.0},
     })
@@ -164,7 +178,72 @@ def _(mo):
     |-|-|-|
     | values | Dictionary | Defines the string-values indices and their values |
     | set_stack_equation | Boolean | (optional) If the element is a stock, the initial value is set (False) or the equation is set (True). Default is False. |
+
+    A matrix takes a single value as well: `setup_matrix([2, 2], 3.0)` gives a
+    2x2 matrix whose four cells all hold 3.0.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### What `set_stack_equation` does
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    For every element except a stock, the values handed to `setup_vector` and its three
+    siblings are simply the sub-elements' values, and `set_stack_equation` changes
+    nothing.
+
+    A **stock** is the one case where those values could mean two different things, and
+    this is the flag that decides which:
+
+    - `False`, the default: each value is the **initial value** of its sub-stock. The
+      sub-stock starts there and then accumulates whatever flows you give it.
+    - `True`: each value becomes the sub-stock's **equation**, that is its net change per
+      unit of time. The sub-stock starts at 0.0 and adds that value at every step.
+
+    So the same call means "start at 10 and 20" or "grow by 10 and 20 per period":
+    """)
+    return
+
+
+@app.cell
+def _(model):
+    ## The values as initial values - the default
+    balance = model.stock('balance')
+    balance.setup_vector(2, [10.0, 20.0])
+    deposits = model.flow('deposits')
+    deposits.setup_vector(2, [1.0, 2.0])
+    balance[0].equation = deposits[0]
+    balance[1].equation = deposits[1]
+    return (balance,)
+
+
+@app.cell
+def _(model):
+    ## The same values as the stock's own equation
+    growth = model.stock('growth')
+    growth.setup_vector(2, [10.0, 20.0], set_stack_equation=True)
+    return (growth,)
+
+
+@app.cell
+def _(balance, growth, mo):
+    with mo.capture_stdout() as captured_stack:
+        print("set_stack_equation=False (initial values, plus a flow of 1.0 and 2.0):")
+        print("  index 0: " + str([balance[0](_t) for _t in range(4)]))
+        print("  index 1: " + str([balance[1](_t) for _t in range(4)]))
+        print("set_stack_equation=True (the values are the stock's equation):")
+        print("  index 0: " + str([growth[0](_t) for _t in range(4)]))
+        print("  index 1: " + str([growth[1](_t) for _t in range(4)]))
+
+    mo.plain_text(captured_stack.getvalue())
     return
 
 
@@ -179,8 +258,15 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The standard Operations (+, -, *, %) can be used for arrayed Components.
-    Moreover some array-specific Operations are provided.
+    Arrays are not a special case in the SD DSL: **every operator and function that
+    takes an operand works on an arrayed element**, element by element. That covers the
+    four arithmetic operations, powers and modulo, the math functions, comparisons and
+    conditionals, `max` and `min`, the table and time functions, and the stateful
+    `smooth`, `trend` and `delay`.
+
+    On top of that there are the **array-specific** operations, which are the ones that
+    do something an element-wise operator cannot: they aggregate a whole array into a
+    single value, or multiply arrays in the linear-algebra sense.
     """)
     return
 
@@ -196,24 +282,41 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    It is possible to use the standard Operations (+, -, *, %) for:
+    The arithmetic operations $+$, $-$, $*$, $/$ as well as $**$ (power) and $\%$
+    (modulo) accept any of these operand pairings:
 
     | Operand 1 | Operand 2 |
     |-|-|
     | Arrayed Element | Arrayed Element |
+    | Arrayed Element | Scalar Element |
+    | Scalar Element | Arrayed Element |
     | Arrayed Element | Float/Integer |
     | Float/Integer | Arrayed Element |
 
-    ⚠️ If both operands are arrayed elements, they must have the same numerical/string-valued indices.
+    **Scalar Element** and **Float/Integer** are not the same thing. A scalar element is
+    a model element without a shape - a constant, converter, stock or flow - so it has an
+    equation of its own and its value can change over the course of a simulation, and
+    changing it changes every index that reads it. A Float or Integer is a plain Python
+    number written into the equation, fixed for the whole run. Both are allowed on either
+    side of the operator; `v * 2.0` and `v * some_constant` differ only in whether the
+    factor can still move.
 
-    That means it is **not** possible to have operand 1 = vector with numerical indices and operand 2 = vector with string-valued indicies, even if they have the same size.
+    ⚠️ If both operands are arrayed elements, they must have the same numerical or
+    string-valued indices.
 
-    It is also **not** possible to have operand 1 = vector and operand 2 = matrix or vice versa.
+    That means it is **not** possible to have operand 1 = vector with numerical indices
+    and operand 2 = vector with string-valued indices, even if they have the same size.
 
-    Other standard Operations (\*\*, //, %, ...) are **not** supported yet.
+    It is also **not** possible to have operand 1 = vector and operand 2 = matrix or
+    vice versa - there is no broadcasting. A mismatch raises an exception when the
+    equation is assigned rather than guessing what was meant: mixing a vector and a
+    matrix gives *Attempted invalid array addition*, two vectors of different length
+    *Cannot perform binary operation on arrays with different sizes*, and a numerical
+    against a named vector *Cannot perform binary operation on arrays with different
+    indices*.
 
-    Standard Operations are always performed element-wise.
-    Lets have a look at some examples:
+    Every one of these operations is performed element-wise: index by index, never
+    across indices. Let's have a look at some examples:
     """)
     return
 
@@ -229,13 +332,13 @@ def _(mo):
 @app.cell
 def _(model):
     #Add not-named vectors
-    vectorAdd1 = model.converter('vectorAdd1')
-    vectorAdd1.setup_vector(2, [1.1, 2.2])
-    vectorAdd2 = model.converter('vectorAdd2')
-    vectorAdd2.setup_vector(2, [3.1, 4.2])
-    addResult = model.converter('addResult')
-    addResult.equation = vectorAdd1 + vectorAdd2
-    return addResult, vectorAdd2
+    add_left = model.converter('add_left')
+    add_left.setup_vector(2, [1.1, 2.2])
+    add_right = model.converter('add_right')
+    add_right.setup_vector(2, [3.1, 4.2])
+    add_result = model.converter('add_result')
+    add_result.equation = add_left + add_right
+    return add_result, add_right
 
 
 @app.cell(hide_code=True)
@@ -262,15 +365,20 @@ def _(mo):
 
 
 @app.cell
-def _(addResult, mo, vectorAdd1, vectorAdd2):
-    addResult.equation = vectorAdd1 + vectorAdd2
+def _(add_result, mo):
     with mo.capture_stdout() as captured:
-        print("[ " + str(addResult[0](0)) + " , " + str(addResult[1](0)) + " ]")
+        print("[ " + str(add_result[0](0)) + " , " + str(add_result[1](0)) + " ]")
 
     mo.plain_text(captured.getvalue())
     return
 
 
+@app.cell
+def _(add_right, model):
+    #Add a number to every index
+    add_result_scalar = model.converter('add_result_scalar')
+    add_result_scalar.equation = add_right + 1.0
+    return (add_result_scalar,)
 
 
 @app.cell(hide_code=True)
@@ -293,10 +401,9 @@ def _(mo):
 
 
 @app.cell
-def _(addResult, mo, vectorAdd2):
-    addResult.equation = vectorAdd2 + 1.0
+def _(add_result_scalar, mo):
     with mo.capture_stdout() as captured_1:
-        print("[ " + str(addResult[0](0)) + " , " + str(addResult[1](0)) + " ]")
+        print("[ " + str(add_result_scalar[0](0)) + " , " + str(add_result_scalar[1](0)) + " ]")
 
     mo.plain_text(captured_1.getvalue())
     return
@@ -313,13 +420,13 @@ def _(mo):
 @app.cell
 def _(model):
     #Subtract not-named matrices
-    matrixMinus1 = model.converter('matrixMinus1')
-    matrixMinus1.setup_matrix([2, 2], [[1.1, 2.2], [3.3, 4.4]])
-    matrixMinus2 = model.converter('matrixMinus2')
-    matrixMinus2.setup_matrix([2, 2], [[5.5, 7.7], [3.3, 14.4]])
-    minusResult = model.converter('minusResult')
-    minusResult.equation = matrixMinus1 - matrixMinus2
-    return matrixMinus2, minusResult
+    minus_left = model.converter('minus_left')
+    minus_left.setup_matrix([2, 2], [[1.1, 2.2], [3.3, 4.4]])
+    minus_right = model.converter('minus_right')
+    minus_right.setup_matrix([2, 2], [[5.5, 7.7], [3.3, 14.4]])
+    minus_result = model.converter('minus_result')
+    minus_result.equation = minus_left - minus_right
+    return minus_right, minus_result
 
 
 @app.cell(hide_code=True)
@@ -346,16 +453,21 @@ def _(mo):
 
 
 @app.cell
-def _(matrixMinus1, matrixMinus2, minusResult, mo):
-    minusResult.equation = matrixMinus1 - matrixMinus2
+def _(minus_result, mo):
     with mo.capture_stdout() as captured_2:
-        print("[ " + "[" + str(minusResult[0][0](1)) + " , " + str(minusResult[0][1](1)) + "]")
-        print("  " + "[" + str(minusResult[1][0](1)) + " , " + str(minusResult[1][1](1)) + "]" + " ]")
+        print("[ " + "[" + str(minus_result[0][0](1)) + " , " + str(minus_result[0][1](1)) + "]")
+        print("  " + "[" + str(minus_result[1][0](1)) + " , " + str(minus_result[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_2.getvalue())
     return
 
 
+@app.cell
+def _(minus_right, model):
+    #Subtract a number from every cell
+    minus_result_scalar = model.converter('minus_result_scalar')
+    minus_result_scalar.equation = minus_right - 1.0
+    return (minus_result_scalar,)
 
 
 @app.cell(hide_code=True)
@@ -378,11 +490,10 @@ def _(mo):
 
 
 @app.cell
-def _(matrixMinus2, minusResult, mo):
-    minusResult.equation = matrixMinus2 - 1.0
+def _(minus_result_scalar, mo):
     with mo.capture_stdout() as captured_3:
-        print("[ " + "[" + str(minusResult[0][0](1)) + " , " + str(minusResult[0][1](1)) + "]")
-        print("  " + "[" + str(minusResult[1][0](1)) + " , " + str(minusResult[1][1](1)) + "]" + " ]")
+        print("[ " + "[" + str(minus_result_scalar[0][0](1)) + " , " + str(minus_result_scalar[0][1](1)) + "]")
+        print("  " + "[" + str(minus_result_scalar[1][0](1)) + " , " + str(minus_result_scalar[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_3.getvalue())
     return
@@ -399,13 +510,13 @@ def _(mo):
 @app.cell
 def _(model):
     #Multiply named vectors
-    vectorTimes1 = model.converter('vectorTimes1')
-    vectorTimes1.setup_named_vector({'value1': 4.0, 'value2': 5.0})
-    vectorTimes2 = model.converter('vectorTimes2')
-    vectorTimes2.setup_named_vector({'value1': 6.0, 'value2': 7.0})
-    timesResult = model.converter('timesResult')
-    timesResult.equation = vectorTimes1 * vectorTimes2
-    return timesResult, vectorTimes2
+    times_left = model.converter('times_left')
+    times_left.setup_named_vector({'value1': 4.0, 'value2': 5.0})
+    times_right = model.converter('times_right')
+    times_right.setup_named_vector({'value1': 6.0, 'value2': 7.0})
+    times_result = model.converter('times_result')
+    times_result.equation = times_left * times_right
+    return times_result, times_right
 
 
 @app.cell(hide_code=True)
@@ -432,15 +543,20 @@ def _(mo):
 
 
 @app.cell
-def _(mo, timesResult, vectorTimes1, vectorTimes2):
-    timesResult.equation = vectorTimes1 * vectorTimes2
+def _(mo, times_result):
     with mo.capture_stdout() as captured_4:
-        print("[ " + str(timesResult["value1"](0)) + " , " + str(timesResult["value2"](0)) + " ]")
+        print("[ " + str(times_result["value1"](0)) + " , " + str(times_result["value2"](0)) + " ]")
 
     mo.plain_text(captured_4.getvalue())
     return
 
 
+@app.cell
+def _(times_right, model):
+    #Multiply every index by a number
+    times_result_scalar = model.converter('times_result_scalar')
+    times_result_scalar.equation = times_right * 3.0
+    return (times_result_scalar,)
 
 
 @app.cell(hide_code=True)
@@ -464,10 +580,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo, timesResult, vectorTimes2):
-    timesResult.equation = vectorTimes2 * 3.0
+def _(mo, times_result_scalar):
     with mo.capture_stdout() as captured_5:
-        print("[ " + str(timesResult["value1"](0)) + " , " + str(timesResult["value2"](0)) + " ]")
+        print("[ " + str(times_result_scalar["value1"](0)) + " , " + str(times_result_scalar["value2"](0)) + " ]")
 
     mo.plain_text(captured_5.getvalue())
     return
@@ -482,11 +597,11 @@ def _(mo):
 
 
 @app.cell
-def _(model, vectorTimes2):
-    #Multiplay named vector and numerical element
-    timesResult_1 = model.converter('timesResult')
-    timesResult_1.equation = -vectorTimes2
-    return (timesResult_1,)
+def _(model, times_right):
+    #Negate a named vector
+    times_result_negated = model.converter('times_result_negated')
+    times_result_negated.equation = -times_right
+    return (times_result_negated,)
 
 
 @app.cell(hide_code=True)
@@ -508,10 +623,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo, timesResult_1, vectorTimes2):
-    timesResult_1.equation = -vectorTimes2
+def _(mo, times_result_negated):
     with mo.capture_stdout() as captured_6:
-        print('[ ' + str(timesResult_1['value1'](0)) + ' , ' + str(timesResult_1['value2'](0)) + ' ]')
+        print('[ ' + str(times_result_negated['value1'](0)) + ' , ' + str(times_result_negated['value2'](0)) + ' ]')
 
     mo.plain_text(captured_6.getvalue())
     return
@@ -528,13 +642,13 @@ def _(mo):
 @app.cell
 def _(model):
     #Divide not-named matrices
-    matrixDivide1 = model.converter('matrixDivide1')
-    matrixDivide1.setup_matrix([2, 2], [[2.0, 4.0], [8.0, 16.0]])
-    matrixDivide2 = model.converter('matrixDivide2')
-    matrixDivide2.setup_matrix([2, 2], [[2.0, 1.0], [0.5, 0.25]])
-    divideResult = model.converter('divideResult')
-    divideResult.equation = matrixDivide1 / matrixDivide2
-    return divideResult, matrixDivide2
+    divide_left = model.converter('divide_left')
+    divide_left.setup_matrix([2, 2], [[2.0, 4.0], [8.0, 16.0]])
+    divide_right = model.converter('divide_right')
+    divide_right.setup_matrix([2, 2], [[2.0, 1.0], [0.5, 0.25]])
+    divide_result = model.converter('divide_result')
+    divide_result.equation = divide_left / divide_right
+    return divide_result, divide_right
 
 
 @app.cell(hide_code=True)
@@ -561,16 +675,21 @@ def _(mo):
 
 
 @app.cell
-def _(divideResult, matrixDivide1, matrixDivide2, mo):
-    divideResult.equation = matrixDivide1 / matrixDivide2
+def _(divide_result, mo):
     with mo.capture_stdout() as captured_7:
-        print("[ " + "[" + str(divideResult[0][0](1)) + " , " + str(divideResult[0][1](1)) + "]")
-        print("  " + "[" + str(divideResult[1][0](1)) + " , " + str(divideResult[1][1](1)) + "]" + " ]")
+        print("[ " + "[" + str(divide_result[0][0](1)) + " , " + str(divide_result[0][1](1)) + "]")
+        print("  " + "[" + str(divide_result[1][0](1)) + " , " + str(divide_result[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_7.getvalue())
     return
 
 
+@app.cell
+def _(divide_right, model):
+    #Divide every cell by a number
+    divide_result_scalar = model.converter('divide_result_scalar')
+    divide_result_scalar.equation = divide_right / 5.0
+    return (divide_result_scalar,)
 
 
 @app.cell(hide_code=True)
@@ -594,13 +713,315 @@ def _(mo):
 
 
 @app.cell
-def _(divideResult, matrixDivide2, mo):
-    divideResult.equation = matrixDivide2 / 5.0
+def _(divide_result_scalar, mo):
     with mo.capture_stdout() as captured_8:
-        print("[ " + "[" + str(divideResult[0][0](1)) + " , " + str(divideResult[0][1](1)) + "]")
-        print("  " + "[" + str(divideResult[1][0](1)) + " , " + str(divideResult[1][1](1)) + "]" + " ]")
+        print("[ " + "[" + str(divide_result_scalar[0][0](1)) + " , " + str(divide_result_scalar[0][1](1)) + "]")
+        print("  " + "[" + str(divide_result_scalar[1][0](1)) + " , " + str(divide_result_scalar[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_8.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### Power ($**$) and Modulo ($\%$)
+
+    This section and the ones that follow all use the same little named vector, so the
+    results are easy to compare.
+    """)
+    return
+
+
+@app.cell
+def _(model):
+    demo_vector = model.converter('demo_vector')
+    demo_vector.setup_named_vector({'small': 4.0, 'large': 9.0})
+    return (demo_vector,)
+
+
+@app.cell
+def _(demo_vector, model):
+    squared = model.converter('squared')
+    squared.equation = demo_vector ** 2.0
+
+    remainder = model.converter('remainder')
+    remainder.equation = demo_vector % 5.0
+    return remainder, squared
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    ^{2}
+    =
+    \begin{pmatrix}
+    16.0 \\
+    81.0
+    \end{pmatrix}
+    \end{equation*}
+
+    \begin{equation*}
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    \bmod 5
+    =
+    \begin{pmatrix}
+    4.0 \\
+    4.0
+    \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(mo, remainder, squared):
+    with mo.capture_stdout() as captured_power:
+        print("v ** 2: [ " + str(squared['small'](0)) + " , " + str(squared['large'](0)) + " ]")
+        print("v % 5:   [ " + str(remainder['small'](0)) + " , " + str(remainder['large'](0)) + " ]")
+
+    mo.plain_text(captured_power.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### Math Functions
+
+    Every function in `sd_functions` that takes a value works on an array and returns an
+    array of the same shape: `sqrt`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `arcsin`,
+    `arccos`, `arctan`, `floor`, `ceil`, `round`, `abs`, `sinwave`, `coswave`.
+    """)
+    return
+
+
+@app.cell
+def _(demo_vector, model, sd):
+    roots = model.converter('roots')
+    roots.equation = sd.sqrt(demo_vector)
+
+    scaled_logarithm = model.converter('scaled_logarithm')
+    scaled_logarithm.equation = sd.ln(demo_vector) * 2.0
+    return roots, scaled_logarithm
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \sqrt{
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    }
+    =
+    \begin{pmatrix}
+    2.0 \\
+    3.0
+    \end{pmatrix}
+    \end{equation*}
+
+    \begin{equation*}
+    2 \cdot \ln
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    =
+    \begin{pmatrix}
+    2.7726 \\
+    4.3944
+    \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(mo, roots, scaled_logarithm):
+    with mo.capture_stdout() as captured_functions:
+        print("sqrt(v):   [ " + str(roots['small'](0)) + " , " + str(roots['large'](0)) + " ]")
+        print("2 * ln(v): [ " + str(round(scaled_logarithm['small'](0), 4)) + " , "
+              + str(round(scaled_logarithm['large'](0), 4)) + " ]")
+
+    mo.plain_text(captured_functions.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### Comparisons, `If`, `And`, `Or`, `Not`
+
+    A comparison over an array gives one boolean **per index**, and `If` then chooses per
+    index as well. The condition, the `then` branch and the `else` branch may each be
+    arrayed or scalar in any combination, as long as the arrayed ones agree on shape.
+    """)
+    return
+
+
+@app.cell
+def _(demo_vector, model, sd):
+    threshold = model.constant('threshold')
+    threshold.equation = 6.0
+
+    large_enough = model.converter('large_enough')
+    large_enough.equation = sd.If(demo_vector > threshold, demo_vector, 0.0)
+
+    within_range = model.converter('within_range')
+    within_range.equation = sd.And(demo_vector > 3.0, demo_vector < 6.0)
+    return large_enough, threshold, within_range
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \mathrm{If}\left(
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    > 6,
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    , 0
+    \right)
+    =
+    \begin{pmatrix}
+    0.0 \\
+    9.0
+    \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(large_enough, mo, within_range):
+    with mo.capture_stdout() as captured_conditional:
+        print("If(v > 6, v, 0):     [ " + str(large_enough['small'](0)) + " , "
+              + str(large_enough['large'](0)) + " ]")
+        print("And(v > 3, v < 6):   [ " + str(within_range['small'](0)) + " , "
+              + str(within_range['large'](0)) + " ]")
+
+    mo.plain_text(captured_conditional.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### `max` and `min`
+
+    `sd.max` and `sd.min` compare **two** operands, element by element. Not to be
+    confused with `arr_max` and `arr_min` further down, which take the largest or the
+    smallest value *within one array*.
+    """)
+    return
+
+
+@app.cell
+def _(demo_vector, model, sd):
+    floored = model.converter('floored')
+    floored.equation = sd.max(demo_vector, 6.0)
+    return (floored,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \max\left(
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    , 6
+    \right)
+    =
+    \begin{pmatrix}
+    6.0 \\
+    9.0
+    \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(floored, mo):
+    with mo.capture_stdout() as captured_minmax:
+        print("max(v, 6): [ " + str(floored['small'](0)) + " , " + str(floored['large'](0)) + " ]")
+
+    mo.plain_text(captured_minmax.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### `smooth`, `trend` and `delay`
+
+    The stateful functions work over arrays as well, and **each index carries its own
+    history**: smoothing a vector is not one smoothed value copied across the indices,
+    it is one smoothing chain per index. Below, both indices start at the initial value
+    1.0 and each converges towards its own input - the recurrence
+    $s_{t+1} = s_t + \frac{dt}{\tau}(x - s_t)$ runs once per index:
+    """)
+    return
+
+
+@app.cell
+def _(demo_vector, model, sd):
+    smoothed = model.converter('smoothed')
+    smoothed.equation = sd.smooth(model, demo_vector, 3.0, 1.0)
+    return (smoothed,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \mathrm{smooth}\left(
+    \begin{pmatrix}
+    4.0 \\
+    9.0
+    \end{pmatrix}
+    , \tau = 3, s_0 = 1
+    \right)
+    \Bigr|_{t=4}
+    =
+    \begin{pmatrix}
+    3.4074 \\
+    7.4198
+    \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(mo, smoothed):
+    with mo.capture_stdout() as captured_stateful:
+        for _t in (0, 1, 4, 10):
+            print("t=" + str(_t).rjust(2) + ": [ "
+                  + str(round(smoothed['small'](_t), 4)) + " , "
+                  + str(round(smoothed['large'](_t), 4)) + " ]")
+
+    mo.plain_text(captured_stateful.getvalue())
     return
 
 
@@ -631,11 +1052,11 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the element-wise sum of a named-vector
-    vectorSum = model.converter('vectorSum')
-    vectorSum.setup_named_vector({'value1': 1.0, 'value2': 2.0, 'value3': 3.0})
-    sumResult = model.converter('sumResult')
-    sumResult.equation = vectorSum.arr_sum()
-    return (sumResult,)
+    sum_vector = model.converter('sum_vector')
+    sum_vector.setup_named_vector({'value1': 1.0, 'value2': 2.0, 'value3': 3.0})
+    sum_result = model.converter('sum_result')
+    sum_result.equation = sum_vector.arr_sum()
+    return (sum_result,)
 
 
 @app.cell(hide_code=True)
@@ -656,10 +1077,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo, sumResult, vectorSum):
-    sumResult.equation = vectorSum.arr_sum()
+def _(mo, sum_result):
     with mo.capture_stdout() as captured_9:
-        print(sumResult(1))
+        print(sum_result(1))
 
     mo.plain_text(captured_9.getvalue())
     return
@@ -684,11 +1104,11 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the element-wise product of a not-named-matrix
-    matrixProd = model.converter('matrixProd')
-    matrixProd.setup_matrix([2, 3], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
-    prodResult = model.converter('prodResult')
-    prodResult.equation = matrixProd.arr_prod()
-    return (prodResult,)
+    prod_matrix = model.converter('prod_matrix')
+    prod_matrix.setup_matrix([2, 3], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
+    prod_result = model.converter('prod_result')
+    prod_result.equation = prod_matrix.arr_prod()
+    return (prod_result,)
 
 
 @app.cell(hide_code=True)
@@ -708,10 +1128,9 @@ def _(mo):
 
 
 @app.cell
-def _(matrixProd, mo, prodResult):
-    prodResult.equation = matrixProd.arr_prod()
+def _(mo, prod_result):
     with mo.capture_stdout() as captured_10:
-        print(prodResult(1))
+        print(prod_result(1))
 
     mo.plain_text(captured_10.getvalue())
     return
@@ -738,11 +1157,11 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the highest elements of a not-named vector
-    vectorRank = model.converter('vectorRank')
-    vectorRank.setup_vector(5, [-2.0, -0.1, 3.1, 5.2, 11.1])
-    rankResult = model.converter('rankResult')
-    rankResult.equation = vectorRank.arr_rank(1)
-    return rankResult, vectorRank
+    rank_vector = model.converter('rank_vector')
+    rank_vector.setup_vector(5, [-2.0, -0.1, 3.1, 5.2, 11.1])
+    rank_result = model.converter('rank_result')
+    rank_result.equation = rank_vector.arr_rank(1)
+    return rank_result, rank_vector
 
 
 @app.cell(hide_code=True)
@@ -769,15 +1188,20 @@ def _(mo):
 
 
 @app.cell
-def _(mo, rankResult, vectorRank):
-    rankResult.equation = vectorRank.arr_rank(1)
+def _(mo, rank_result):
     with mo.capture_stdout() as captured_11:
-        print(rankResult(1))
+        print(rank_result(1))
 
     mo.plain_text(captured_11.getvalue())
     return
 
 
+@app.cell
+def _(model, rank_vector):
+    #The fourth-highest element
+    rank_result_fourth = model.converter('rank_result_fourth')
+    rank_result_fourth.equation = rank_vector.arr_rank(4)
+    return (rank_result_fourth,)
 
 
 @app.cell(hide_code=True)
@@ -804,15 +1228,20 @@ def _(mo):
 
 
 @app.cell
-def _(mo, rankResult, vectorRank):
-    rankResult.equation = vectorRank.arr_rank(4)
+def _(mo, rank_result_fourth):
     with mo.capture_stdout() as captured_12:
-        print(rankResult(1))
+        print(rank_result_fourth(1))
 
     mo.plain_text(captured_12.getvalue())
     return
 
 
+@app.cell
+def _(model, rank_vector):
+    #The lowest element
+    rank_result_lowest = model.converter('rank_result_lowest')
+    rank_result_lowest.equation = rank_vector.arr_rank(-1)
+    return (rank_result_lowest,)
 
 
 @app.cell(hide_code=True)
@@ -839,10 +1268,9 @@ def _(mo):
 
 
 @app.cell
-def _(mo, rankResult, vectorRank):
-    rankResult.equation = vectorRank.arr_rank(-1)
+def _(mo, rank_result_lowest):
     with mo.capture_stdout() as captured_13:
-        print(rankResult(1))
+        print(rank_result_lowest(1))
 
     mo.plain_text(captured_13.getvalue())
     return
@@ -867,15 +1295,15 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the element-wise mean of a named matrix
-    matrixMean = model.converter('matrixMean')
-    matrixMean.setup_named_matrix({
+    mean_matrix = model.converter('mean_matrix')
+    mean_matrix.setup_named_matrix({
         'value1': {'value11': 2.0, 'value12': 4.0},
         'value2': {'value21': 6.0, 'value22': 8.0},
         'value3': {'value31': 10.0, 'value32': 12.0},
     })
-    meanResult = model.converter('meanResult')
-    meanResult.equation = matrixMean.arr_mean()
-    return (meanResult,)
+    mean_result = model.converter('mean_result')
+    mean_result.equation = mean_matrix.arr_mean()
+    return (mean_result,)
 
 
 @app.cell(hide_code=True)
@@ -896,10 +1324,9 @@ def _(mo):
 
 
 @app.cell
-def _(matrixMean, meanResult, mo):
-    meanResult.equation = matrixMean.arr_mean()
+def _(mean_result, mo):
     with mo.capture_stdout() as captured_14:
-        print(meanResult(1))
+        print(mean_result(1))
 
     mo.plain_text(captured_14.getvalue())
     return
@@ -924,13 +1351,13 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the median of a not-named vector
-    vectorMedian1 = model.converter('vectorMedian1')
-    vectorMedian1.setup_vector(5, [-2.0, -0.1, 3.1, 5.2, 11.1])
-    vectorMedian2 = model.converter('vectorMedian2')
-    vectorMedian2.setup_vector(4, [-2.0, -0.1, 3.1, 5.2])
-    medianResult = model.converter('medianResult')
-    medianResult.equation = vectorMedian1.arr_median()
-    return medianResult, vectorMedian2
+    median_odd = model.converter('median_odd')
+    median_odd.setup_vector(5, [-2.0, -0.1, 3.1, 5.2, 11.1])
+    median_even = model.converter('median_even')
+    median_even.setup_vector(4, [-2.0, -0.1, 3.1, 5.2])
+    median_result = model.converter('median_result')
+    median_result.equation = median_odd.arr_median()
+    return median_result, median_even
 
 
 @app.cell(hide_code=True)
@@ -953,15 +1380,20 @@ def _(mo):
 
 
 @app.cell
-def _(medianResult, mo, vectorMedian1):
-    medianResult.equation = vectorMedian1.arr_median()
+def _(median_result, mo):
     with mo.capture_stdout() as captured_15:
-        print(medianResult(1))
+        print(median_result(1))
 
     mo.plain_text(captured_15.getvalue())
     return
 
 
+@app.cell
+def _(median_even, model):
+    #The median of an even number of elements
+    median_result_even = model.converter('median_result_even')
+    median_result_even.equation = median_even.arr_median()
+    return (median_result_even,)
 
 
 @app.cell(hide_code=True)
@@ -983,10 +1415,9 @@ def _(mo):
 
 
 @app.cell
-def _(medianResult, mo, vectorMedian2):
-    medianResult.equation = vectorMedian2.arr_median()
+def _(median_result_even, mo):
     with mo.capture_stdout() as captured_16:
-        print(medianResult(1))
+        print(median_result_even(1))
 
     mo.plain_text(captured_16.getvalue())
     return
@@ -995,7 +1426,7 @@ def _(medianResult, mo, vectorMedian2):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### Array Standdarddeviation
+    #### Array Standard Deviation
     """)
     return
 
@@ -1011,11 +1442,11 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the standard deviation of a not-named matrix
-    matrixStddev = model.converter('matrixStddev')
-    matrixStddev.setup_matrix([2, 2], [[1.0, 3.0], [3.0, 1.0]])
-    stddevResult = model.converter('stddevResult')
-    stddevResult.equation = matrixStddev.arr_stddev()
-    return (stddevResult,)
+    stddev_matrix = model.converter('stddev_matrix')
+    stddev_matrix.setup_matrix([2, 2], [[1.0, 3.0], [3.0, 1.0]])
+    stddev_result = model.converter('stddev_result')
+    stddev_result.equation = stddev_matrix.arr_stddev()
+    return (stddev_result,)
 
 
 @app.cell(hide_code=True)
@@ -1048,12 +1479,76 @@ def _(mo):
 
 
 @app.cell
-def _(matrixStddev, mo, stddevResult):
-    stddevResult.equation = matrixStddev.arr_stddev()
+def _(mo, stddev_result):
     with mo.capture_stdout() as captured_17:
-        print(stddevResult(1))
+        print(stddev_result(1))
 
     mo.plain_text(captured_17.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### Array Maximum and Minimum
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `arr_max` returns the largest value of an array, `arr_min` the smallest - over every
+    element of a vector or every cell of a matrix.
+
+    Both take no arguments, and both return a single value however arrayed the input is.
+    On an element with no sub-elements they return 0.0, as the other aggregations do.
+    """)
+    return
+
+
+@app.cell
+def _(model):
+    extremes_matrix = model.converter('extremes_matrix')
+    extremes_matrix.setup_matrix([2, 2], [[3.0, 8.0], [1.0, 5.0]])
+
+    largest = model.converter('largest')
+    largest.equation = extremes_matrix.arr_max()
+
+    smallest = model.converter('smallest')
+    smallest.equation = extremes_matrix.arr_min()
+    return extremes_matrix, largest, smallest
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \mathrm{arr\_max}
+    \begin{pmatrix}
+    3.0 & 8.0 \\
+    1.0 & 5.0
+    \end{pmatrix}
+    = 8.0
+    \qquad
+    \mathrm{arr\_min}
+    \begin{pmatrix}
+    3.0 & 8.0 \\
+    1.0 & 5.0
+    \end{pmatrix}
+    = 1.0
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(largest, mo, smallest):
+    with mo.capture_stdout() as captured_extremes:
+        print("arr_max: " + str(largest(1)))
+        print("arr_min: " + str(smallest(1)))
+
+    mo.plain_text(captured_extremes.getvalue())
     return
 
 
@@ -1079,16 +1574,16 @@ def _(mo):
 @app.cell
 def _(model):
     #Calculate the size of a not-named vector
-    vectorSize = model.converter('vectorSize')
-    vectorSize.setup_vector(6, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    matrixSize1 = model.converter('matrixSize2')
+    size_vector = model.converter('size_vector')
+    size_vector.setup_vector(6, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     #Calculate the size of a not-named matrix
-    matrixSize1.setup_matrix([2, 3], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-    matrixSize2 = model.converter('matrixSize3')
-    matrixSize2.setup_matrix([4, 3], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-    sizeResult = model.converter('sizeResult')
-    sizeResult.equation = vectorSize.arr_size()
-    return matrixSize1, matrixSize2, sizeResult
+    size_matrix_one = model.converter('size_matrix_one')
+    size_matrix_one.setup_matrix([2, 3], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+    size_matrix_two = model.converter('size_matrix_two')
+    size_matrix_two.setup_matrix([4, 3], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+    size_result = model.converter('size_result')
+    size_result.equation = size_vector.arr_size()
+    return size_matrix_one, size_matrix_two, size_result
 
 
 @app.cell(hide_code=True)
@@ -1112,15 +1607,20 @@ def _(mo):
 
 
 @app.cell
-def _(mo, sizeResult, vectorSize):
-    sizeResult.equation = vectorSize.arr_size()
+def _(mo, size_result):
     with mo.capture_stdout() as captured_18:
-        print(sizeResult(1))
+        print(size_result(1))
 
     mo.plain_text(captured_18.getvalue())
     return
 
 
+@app.cell
+def _(model, size_matrix_one):
+    #Calculate the size of a not-named matrix
+    size_result_matrix_one = model.converter('size_result_matrix_one')
+    size_result_matrix_one.equation = size_matrix_one.arr_size()
+    return (size_result_matrix_one,)
 
 
 @app.cell(hide_code=True)
@@ -1140,15 +1640,20 @@ def _(mo):
 
 
 @app.cell
-def _(matrixSize1, mo, sizeResult):
-    sizeResult.equation = matrixSize1.arr_size()
+def _(mo, size_result_matrix_one):
     with mo.capture_stdout() as captured_19:
-        print(sizeResult(1))
+        print(size_result_matrix_one(1))
 
     mo.plain_text(captured_19.getvalue())
     return
 
 
+@app.cell
+def _(model, size_matrix_two):
+    #Calculate the size of a larger not-named matrix
+    size_result_matrix_two = model.converter('size_result_matrix_two')
+    size_result_matrix_two.equation = size_matrix_two.arr_size()
+    return (size_result_matrix_two,)
 
 
 @app.cell(hide_code=True)
@@ -1170,10 +1675,9 @@ def _(mo):
 
 
 @app.cell
-def _(matrixSize2, mo, sizeResult):
-    sizeResult.equation = matrixSize2.arr_size()
+def _(mo, size_result_matrix_two):
     with mo.capture_stdout() as captured_20:
-        print(sizeResult(1))
+        print(size_result_matrix_two(1))
 
     mo.plain_text(captured_20.getvalue())
     return
@@ -1219,13 +1723,13 @@ def _(model):
     #Calculate vector * constant & constant * vector
     constant = model.converter('constant')
     constant.equation = 2.0
-    vectorDot1 = model.converter('vectorDot1')
-    vectorDot1.setup_vector(3, [1.0, 2.0, 3.0])
-    vectorDot2 = model.converter('vectorDot2')
-    vectorDot2.setup_vector(3, [4.0, 5.0, 6.0])
-    dotResult1 = model.converter('dotResult1')
-    dotResult1.equation = vectorDot1.dot(constant)
-    return constant, dotResult1, vectorDot1, vectorDot2
+    dot_vector_left = model.converter('dot_vector_left')
+    dot_vector_left.setup_vector(3, [1.0, 2.0, 3.0])
+    dot_vector_right = model.converter('dot_vector_right')
+    dot_vector_right.setup_vector(3, [4.0, 5.0, 6.0])
+    dot_result_one = model.converter('dot_result_one')
+    dot_result_one.equation = dot_vector_left.dot(constant)
+    return constant, dot_result_one, dot_vector_left, dot_vector_right
 
 
 @app.cell(hide_code=True)
@@ -1240,15 +1744,20 @@ def _(mo):
 
 
 @app.cell
-def _(constant, dotResult1, mo, vectorDot1):
-    dotResult1.equation = vectorDot1.dot(constant)
+def _(dot_result_one, mo):
     with mo.capture_stdout() as captured_21:
-        print("[" + str(dotResult1[0](1)) + " , " + str(dotResult1[1](1)) + " , " + str(dotResult1[2](1)) + "]")
+        print("[" + str(dot_result_one[0](1)) + " , " + str(dot_result_one[1](1)) + " , " + str(dot_result_one[2](1)) + "]")
 
     mo.plain_text(captured_21.getvalue())
     return
 
 
+@app.cell
+def _(constant, dot_vector_right, model):
+    #Calculate constant * vector
+    dot_result_constant_vector = model.converter('dot_result_constant_vector')
+    dot_result_constant_vector.equation = constant.dot(dot_vector_right)
+    return (dot_result_constant_vector,)
 
 
 @app.cell(hide_code=True)
@@ -1263,10 +1772,9 @@ def _(mo):
 
 
 @app.cell
-def _(constant, dotResult1, mo, vectorDot2):
-    dotResult1.equation = constant.dot(vectorDot2)
+def _(dot_result_constant_vector, mo):
     with mo.capture_stdout() as captured_22:
-        print("[" + str(dotResult1[0](1)) + " , " + str(dotResult1[1](1)) + " , " + str(dotResult1[2](1)) + "]")
+        print("[" + str(dot_result_constant_vector[0](1)) + " , " + str(dot_result_constant_vector[1](1)) + " , " + str(dot_result_constant_vector[2](1)) + "]")
 
     mo.plain_text(captured_22.getvalue())
     return
@@ -1275,15 +1783,15 @@ def _(constant, dotResult1, mo, vectorDot2):
 @app.cell
 def _(model):
     #Calculate matrix * constant & constant * matrix
-    constant_1 = model.converter('constant')
+    constant_1 = model.converter('constant_matrix_factor')
     constant_1.equation = 2.0
-    matrixDot1 = model.converter('matrixDot1')
-    matrixDot1.setup_matrix([3, 2], [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    matrixDot2 = model.converter('matrixDot2')
-    matrixDot2.setup_matrix([2, 3], [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
-    dotResult2 = model.converter('dotResult2')
-    dotResult2.equation = matrixDot1.dot(constant_1)
-    return constant_1, dotResult2, matrixDot1, matrixDot2
+    dot_matrix_one = model.converter('dot_matrix_one')
+    dot_matrix_one.setup_matrix([3, 2], [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    dot_matrix_two = model.converter('dot_matrix_two')
+    dot_matrix_two.setup_matrix([2, 3], [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
+    dot_result_two = model.converter('dot_result_two')
+    dot_result_two.equation = dot_matrix_one.dot(constant_1)
+    return constant_1, dot_result_two, dot_matrix_one, dot_matrix_two
 
 
 @app.cell(hide_code=True)
@@ -1306,17 +1814,22 @@ def _(mo):
 
 
 @app.cell
-def _(constant_1, dotResult2, matrixDot1, mo):
-    dotResult2.equation = matrixDot1.dot(constant_1)
+def _(dot_result_two, mo):
     with mo.capture_stdout() as captured_23:
-        print("[ " + "[" + str(dotResult2[0][0](1)) + " , " + str(dotResult2[0][1](1)) + "]")
-        print("  " + "[" + str(dotResult2[1][0](1)) + " , " + str(dotResult2[1][1](1)) + "]")
-        print("  " + "[" + str(dotResult2[2][0](1)) + " , " + str(dotResult2[2][1](1)) + "]" + " ]")
+        print("[ " + "[" + str(dot_result_two[0][0](1)) + " , " + str(dot_result_two[0][1](1)) + "]")
+        print("  " + "[" + str(dot_result_two[1][0](1)) + " , " + str(dot_result_two[1][1](1)) + "]")
+        print("  " + "[" + str(dot_result_two[2][0](1)) + " , " + str(dot_result_two[2][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_23.getvalue())
     return
 
 
+@app.cell
+def _(constant_1, dot_matrix_two, model):
+    #Calculate constant * matrix
+    dot_result_constant_matrix = model.converter('dot_result_constant_matrix')
+    dot_result_constant_matrix.equation = constant_1.dot(dot_matrix_two)
+    return (dot_result_constant_matrix,)
 
 
 @app.cell(hide_code=True)
@@ -1338,24 +1851,23 @@ def _(mo):
 
 
 @app.cell
-def _(constant_1, dotResult2, matrixDot2, mo):
-    dotResult2.equation = constant_1.dot(matrixDot2)
+def _(dot_result_constant_matrix, mo):
     with mo.capture_stdout() as captured_24:
-        print("[ " + "["    + str(dotResult2[0][0](1)) + " , " + str(dotResult2[0][1](1)) + " , " 
-                            + str(dotResult2[0][2](1)) + "]")
-        print("  " + "["    + str(dotResult2[1][0](1)) + " , " + str(dotResult2[1][1](1)) + " , " 
-                            + str(dotResult2[1][2](1)) + "]" + " ]")
+        print("[ " + "["    + str(dot_result_constant_matrix[0][0](1)) + " , " + str(dot_result_constant_matrix[0][1](1)) + " , " 
+                            + str(dot_result_constant_matrix[0][2](1)) + "]")
+        print("  " + "["    + str(dot_result_constant_matrix[1][0](1)) + " , " + str(dot_result_constant_matrix[1][1](1)) + " , " 
+                            + str(dot_result_constant_matrix[1][2](1)) + "]" + " ]")
 
     mo.plain_text(captured_24.getvalue())
     return
 
 
 @app.cell
-def _(model, vectorDot1, vectorDot2):
+def _(model, dot_vector_left, dot_vector_right):
     #Calculate vector * vector
-    dotResult3 = model.converter('dotResult3')
-    dotResult3.equation = vectorDot1.dot(vectorDot2)
-    return (dotResult3,)
+    dot_result_three = model.converter('dot_result_three')
+    dot_result_three.equation = dot_vector_left.dot(dot_vector_right)
+    return (dot_result_three,)
 
 
 @app.cell(hide_code=True)
@@ -1376,21 +1888,20 @@ def _(mo):
 
 
 @app.cell
-def _(dotResult3, mo, vectorDot1, vectorDot2):
-    dotResult3.equation = vectorDot1.dot(vectorDot2)
+def _(dot_result_three, mo):
     with mo.capture_stdout() as captured_25:
-        print(dotResult3(1)) #1*4 + 2*5 + 3*6 = 32
+        print(dot_result_three(1)) #1*4 + 2*5 + 3*6 = 32
 
     mo.plain_text(captured_25.getvalue())
     return
 
 
 @app.cell
-def _(matrixDot1, model, vectorDot1):
+def _(dot_matrix_one, model, dot_vector_left):
     #Calculate vector * matrix & matrix * vector
-    dotResult4 = model.converter('dotResult4')
-    dotResult4.equation = vectorDot1.dot(matrixDot1)
-    return (dotResult4,)
+    dot_result_four = model.converter('dot_result_four')
+    dot_result_four.equation = dot_vector_left.dot(dot_matrix_one)
+    return (dot_result_four,)
 
 
 @app.cell(hide_code=True)
@@ -1421,15 +1932,20 @@ def _(mo):
 
 
 @app.cell
-def _(dotResult4, matrixDot1, mo, vectorDot1):
-    dotResult4.equation = vectorDot1.dot(matrixDot1)
+def _(dot_result_four, mo):
     with mo.capture_stdout() as captured_26:
-        print("[" + str(dotResult4[0](1)) + " , " + str(dotResult4[1](1))  + "]")
+        print("[" + str(dot_result_four[0](1)) + " , " + str(dot_result_four[1](1))  + "]")
 
     mo.plain_text(captured_26.getvalue())
     return
 
 
+@app.cell
+def _(dot_matrix_two, dot_vector_right, model):
+    #Calculate matrix * vector
+    dot_result_matrix_vector = model.converter('dot_result_matrix_vector')
+    dot_result_matrix_vector.equation = dot_matrix_two.dot(dot_vector_right)
+    return (dot_result_matrix_vector,)
 
 
 @app.cell(hide_code=True)
@@ -1462,10 +1978,9 @@ def _(mo):
 
 
 @app.cell
-def _(dotResult4, matrixDot2, mo, vectorDot2):
-    dotResult4.equation = matrixDot2.dot(vectorDot2)
+def _(dot_result_matrix_vector, mo):
     with mo.capture_stdout() as captured_27:
-        print("[" + str(dotResult4[0](1)) + " , " + str(dotResult4[1](1)) + "]")
+        print("[" + str(dot_result_matrix_vector[0](1)) + " , " + str(dot_result_matrix_vector[1](1)) + "]")
 
     mo.plain_text(captured_27.getvalue())
     return
@@ -1474,13 +1989,13 @@ def _(dotResult4, matrixDot2, mo, vectorDot2):
 @app.cell
 def _(model):
     #Calculate matrix * matrix
-    matrixDot3 = model.converter('matrixDot3')
-    matrixDot3.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
-    matrixDot4 = model.converter('matrixDot4')
-    matrixDot4.setup_matrix([2, 2], [[-1.0, -2.0], [-4.0, -5.0]])
-    dotResult5 = model.converter('dotResult5')
-    dotResult5.equation = matrixDot3.dot(matrixDot4)
-    return (dotResult5,)
+    dot_matrix_three = model.converter('dot_matrix_three')
+    dot_matrix_three.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
+    dot_matrix_four = model.converter('dot_matrix_four')
+    dot_matrix_four.setup_matrix([2, 2], [[-1.0, -2.0], [-4.0, -5.0]])
+    dot_result_five = model.converter('dot_result_five')
+    dot_result_five.equation = dot_matrix_three.dot(dot_matrix_four)
+    return (dot_result_five,)
 
 
 @app.cell(hide_code=True)
@@ -1501,7 +2016,6 @@ def _(mo):
     \begin{pmatrix}
     1.0 \cdot (-1.0) + 2.0 \cdot (-4.0) & 1.0 \cdot (-2.0) + 2.0 \cdot (-5.0) \\
     3.0 \cdot (-1.0) + 4.0 \cdot (-4.0) & 3.0 \cdot (-2.0) + 4.0 \cdot (-5.0) \\
-    5.0 \cdot (-1.0) + 6.0 \cdot (-4.0) & 5.0 \cdot (-2.0) + 6.0 \cdot (-5.0) \\
     \end{pmatrix}\\
     &=
     \begin{pmatrix}
@@ -1515,11 +2029,10 @@ def _(mo):
 
 
 @app.cell
-def _(dotResult5, matrixDot3, matrixDot4, mo):
-    dotResult5.equation = matrixDot3.dot(matrixDot4)
+def _(dot_result_five, mo):
     with mo.capture_stdout() as captured_28:
-        print("[ " + "["    + str(dotResult5[0][0](1)) + " , " + str(dotResult5[0][1](1)) + "]")
-        print("  " + "["    + str(dotResult5[1][0](1)) + " , " + str(dotResult5[1][1](1)) + "]" + " ]")
+        print("[ " + "["    + str(dot_result_five[0][0](1)) + " , " + str(dot_result_five[0][1](1)) + "]")
+        print("  " + "["    + str(dot_result_five[1][0](1)) + " , " + str(dot_result_five[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_28.getvalue())
     return
@@ -1544,9 +2057,9 @@ def _(mo):
 
 @app.cell
 def _(model):
-    vector3 = model.converter('vector3')
-    vector3.setup_named_vector({'value1': 6.0, 'value2': 7.0})
-    vector3.plot(format="axes")
+    plotted_vector = model.converter('plotted_vector')
+    plotted_vector.setup_named_vector({'value1': 6.0, 'value2': 7.0})
+    plotted_vector.plot(format="axes")
     return
 
 
@@ -1562,12 +2075,12 @@ def _(mo):
 
 @app.cell
 def _(model):
-    matrix3 = model.converter('matrix3')
-    matrix3.setup_named_matrix({
+    plotted_matrix = model.converter('plotted_matrix')
+    plotted_matrix.setup_named_matrix({
         'value1': {'value11': 6.0, 'value12': 7.0},
         'value2': {'value21': 8.0, 'value22': 9.0},
     })
-    matrix3['value1'].plot(format="axes")
+    plotted_matrix['value1'].plot(format="axes")
     return
 
 
@@ -1634,8 +2147,8 @@ def _(mo):
 
 
 @app.cell
-def _(model, testbptk):
-    testbptk.register_model(model)
+def _(model, arrays_bptk):
+    arrays_bptk.register_model(model)
     scenario_manager = {'sm': {
         'model': model,
         'base_constants': {
@@ -1647,8 +2160,8 @@ def _(model, testbptk):
             'accountInitialValues[depot]': 500.0,
         },
     }}
-    testbptk.register_scenario_manager(scenario_manager)
-    testbptk.register_scenarios(
+    arrays_bptk.register_scenario_manager(scenario_manager)
+    arrays_bptk.register_scenarios(
         scenario_manager='sm',
         scenarios={
             'base': {},
@@ -1669,8 +2182,8 @@ def _(mo):
 
 
 @app.cell
-def _(testbptk):
-    testbptk.plot_scenarios(
+def _(arrays_bptk):
+    arrays_bptk.plot_scenarios(
         scenarios=['base'],
         scenario_managers='sm',
         equations=['account[bank]', 'account[depot]', 'totalValue'],
@@ -1689,8 +2202,8 @@ def _(mo):
 
 
 @app.cell
-def _(testbptk):
-    testbptk.plot_scenarios(
+def _(arrays_bptk):
+    arrays_bptk.plot_scenarios(
         scenarios=[
             'base',
             'scenarioHighDepotInterestRate',
@@ -1702,6 +2215,43 @@ def _(testbptk):
         series_names={},
         format="axes",
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## What Is Not Supported
+
+    Worth knowing before you build on arrays. None of these fails silently - each one
+    raises with a message that says what happened.
+
+    * **Two dimensions is the limit.** `setup_matrix` takes exactly two sizes, and there
+      is no three-dimensional array.
+    * **`dot` works on unnamed arrays only.** A named operand raises rather than guessing
+      how to line up the labels.
+    * **There is no aggregation over a single dimension.** `arr_sum` and `arr_prod` take
+      a `dimensions` argument, but the only values it accepts are `"*"` (the default) and
+      an integer equal to the array's depth - both of which aggregate every cell.
+      Aggregating along the rows of a matrix would have to return a vector, which is not
+      supported; where you need it, address the rows yourself. A row of a named matrix is
+      a named vector in its own right, so `matrix['north'].arr_sum()` is the total of
+      that row.
+    * **`arr_size` counts the first dimension**, not the number of cells: 2 for a
+      $2 \times 3$ matrix.
+    * **There is no broadcasting.** Both operands of an element-wise operation must have
+      the same shape and the same indices; a vector and a matrix is an error.
+    * **No transpose, and no dimension-position operator.** The XMILE standard has both -
+      a transpose, and `@` to name a position within a dimension - and the SD DSL has
+      never implemented either, because nothing in the model library or the test corpus
+      has needed one. Where you would reach for a transpose, address the cells the other
+      way round when you set the matrix up; a row of a named matrix is a named vector, so
+      `matrix['north']` is that row and there is no need to turn the matrix around to get
+      at it.
+    * **A flow never goes negative**, arrayed or not: every flow equation is wrapped in
+      `max(0, ...)`. A quantity that has to move both ways belongs in a **biflow**, which
+      takes the same `setup_vector` and `setup_named_vector` as any other element.
+    """)
     return
 
 

@@ -81,6 +81,32 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Select a range of a dimension
+
+    Besides the asterisk, a subscript takes a **range**: two bounds separated by a colon,
+    and the reference means every cell between them, the bounds included.
+
+    ```
+    SUM(inventory[1:2,germany])        # the first two products, in Germany
+    SUM(inventory[1,germany:austria])  # one product, across three countries
+    ```
+
+    A range over **named** labels is a slice of the dimension's own label list, so its
+    order is the order the dimension declares: with `germany, england, austria, greece`,
+    `germany:austria` is the first three. A bound that names no label of that dimension
+    logs which labels it does have, and the reference yields nothing rather than dropping
+    the dimension in silence.
+
+    ⚠️ **A range works inside an equation**, which is where a model uses it. Whether
+    `plot_scenarios` accepts a range in its `equations` list has not been established -
+    plot a cell, or an aggregation over the range, instead.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## Analyse a single product inventory in all countries
 
     Now that we saw a rising inventory for all products in all countries, we want to get to the bottom of it and understand which product drives the inventory
