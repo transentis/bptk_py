@@ -119,75 +119,68 @@ def _dot_to_json(expr):
     """
     `dot` as the sum of products that `DotOperator.term()` writes as a string.
 
-    The engine gets no `dot` builtin: the expansion is decided here, by the same
-    dimension rules the Python operator applies, and what reaches Rust is ordinary
-    scalar arithmetic over flattened entities. Named arrays never arrive - `DotOperator`
-    rejects them in its constructor - so a shape this function cannot map raises, and
-    the runner falls back.
+    The engine gets no `dot` builtin: the operator itself decides the shape and the keys
+    to sum over, and this function renders the same expansion as JSON, so that what
+    reaches Rust is ordinary scalar arithmetic over flattened entities. Named arrays take
+    exactly this path - a label addresses a bracket-named entity the way a position does.
     """
-    dimensions_1 = ops._get_element_dimensions(expr.element_1)
-    dimensions_2 = ops._get_element_dimensions(expr.element_2)
-    index = expr.index
+    try:
+        kind, contracted, free = expr._shape()
+    except Exception as error:
+        # Everything this function raises has to be a ValueError, because that is what
+        # the runner catches to fall back to the Python engine. The operator itself
+        # raises plain exceptions, and an invalid product reaches this point only when
+        # an operator is serialized without ever having been assigned as an equation.
+        raise ValueError("Cannot serialize this dot product: {}".format(error))
 
-    def is_vector(dimensions):
-        return len(dimensions) == 1 or dimensions[1] == 0
+    if expr.index is None:
+        index = []
+    elif isinstance(expr.index, (list, tuple)):
+        index = list(expr.index)
+    else:
+        index = [expr.index]
 
-    if dimensions_1 == -1 or dimensions_2 == -1:
-        # A value on one side: one product with the leaf at this index.
-        if dimensions_1 == -1 and dimensions_2 == -1 or index is None:
-            raise ValueError(
-                "Cannot serialize a dot product of two values - use * instead."
-                if dimensions_1 == -1 and dimensions_2 == -1 else
-                "Cannot serialize a dot product of a value and an array without an index."
-            )
-        if dimensions_1 == -1:
-            return _product(_expr_to_json(expr.element_1),
-                            _dot_operand_at(expr.element_2, index))
-        return _product(_dot_operand_at(expr.element_1, index),
-                        _expr_to_json(expr.element_2))
+    def operands(keys_1, keys_2):
+        return (_dot_operand_at(expr.element_1, keys_1),
+                _dot_operand_at(expr.element_2, keys_2))
 
-    if is_vector(dimensions_1) and is_vector(dimensions_2):
-        # vector . vector -> a scalar, so this one carries no index.
-        if dimensions_1[0] != dimensions_2[0]:
-            raise ValueError(
-                "Cannot serialize a dot product of vectors of sizes {} and {}.".format(
-                    dimensions_1[0], dimensions_2[0]))
-        return _sum_of_products([
-            (_dot_operand_at(expr.element_1, [i]),
-             _dot_operand_at(expr.element_2, [i]))
-            for i in range(dimensions_1[0])])
+    if kind == "vector_vector":
+        # A scalar result, so this one carries no index.
+        return _sum_of_products([operands([key], [key]) for key in contracted])
 
-    if index is None:
+    if not index:
         # Every remaining shape yields an array, so each sub-element holds a clone that
         # knows its index. Without one there is nothing to serialize.
+        if kind in ("value_array", "array_value"):
+            raise ValueError(
+                "Cannot serialize a dot product of a value and an array without an index.")
         raise ValueError(
             "Cannot serialize a dot product that yields an array without an index.")
 
-    if is_vector(dimensions_1):
-        # vector . matrix -> one column of the matrix per index.
-        position = index if isinstance(index, int) else index[0]
-        return _sum_of_products([
-            (_dot_operand_at(expr.element_1, [k]),
-             _dot_operand_at(expr.element_2, [k, position]))
-            for k in range(dimensions_2[0])])
+    if kind == "value_array":
+        return _product(_expr_to_json(expr.element_1),
+                        _dot_operand_at(expr.element_2, index))
+    if kind == "array_value":
+        return _product(_dot_operand_at(expr.element_1, index),
+                        _expr_to_json(expr.element_2))
 
-    if is_vector(dimensions_2):
+    if kind == "vector_matrix":
+        # vector . matrix -> one column of the matrix per index.
+        return _sum_of_products(
+            [operands([key], [key, index[0]]) for key in contracted])
+
+    if kind == "matrix_vector":
         # matrix . vector -> one row of the matrix per index.
-        position = index if isinstance(index, int) else index[0]
-        return _sum_of_products([
-            (_dot_operand_at(expr.element_1, [position, k]),
-             _dot_operand_at(expr.element_2, [k]))
-            for k in range(dimensions_1[1])])
+        return _sum_of_products(
+            [operands([index[0], key], [key]) for key in contracted])
 
     # matrix . matrix -> a row of the left and a column of the right.
-    if isinstance(index, int) or len(index) != 2:
+    if len(index) != 2:
         raise ValueError(
             "Cannot serialize a matrix dot product with the index {}; "
-            "a two-element index is required.".format(index))
-    return _sum_of_products([
-        (_dot_operand_at(expr.element_1, [index[0], k]),
-         _dot_operand_at(expr.element_2, [k, index[1]]))
-        for k in range(dimensions_1[1])])
+            "a two-element index is required.".format(expr.index))
+    return _sum_of_products(
+        [operands([index[0], key], [key, index[1]]) for key in contracted])
 
 
 # ── Expression serializer ────────────────────────────────────────────────────

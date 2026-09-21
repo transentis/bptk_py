@@ -81,7 +81,8 @@ class SdRunner(ScenarioRunner):
         return simulation_results
 
 
-    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations, backend="python", seed=None):
+    def run_scenario_step(self, step, settings, scenario_manager, scenarios, equations, backend="python", seed=None,
+                          settings_history=None):
         """
         Run a step of the given scenarios and return data for the given equations and agents.
 
@@ -95,6 +96,11 @@ class SdRunner(ScenarioRunner):
             what lets a Rust-backed session be replayed identically after the process
             restarts (see `bptk._restore_rust_session`). `None` lets the engine seed
             from entropy (non-reproducible). Ignored by the Python backend.
+        :param settings_history: Optional[dict] — the per-step overrides of the steps
+            already played, keyed by step. Only read when the Python backend has to
+            create a simulation that missed those steps: a session restored into a
+            fresh process, or one the Rust engine handed over mid-run. Ignored by the
+            Rust engine, which rebuilds its own state from the same log.
         """
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
@@ -135,15 +141,23 @@ class SdRunner(ScenarioRunner):
                     sc.rust_model = None
                     sc._rust_initial = None
                     sc._rust_initial_returned = False
-                    self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations)
+                    self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations, settings_history)
             else:
-                self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations)
+                self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations, settings_history)
 
         return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
 
-    def _run_scenario_step_python(self, sc, step, settings, scenario_manager, scenario, equations):
+    def _run_scenario_step_python(self, sc, step, settings, scenario_manager, scenario, equations,
+                                  settings_history=None):
         """Single-step Python execution via SdSimulation. Lazily creates sc.sd_simulation
-        on first call; reuses it for subsequent steps so the model memo persists."""
+        on first call; reuses it for subsequent steps so the model memo persists.
+
+        ``settings_history`` holds the per-step overrides of the steps already played,
+        keyed by step. A simulation created now has none of that history: the session
+        was restored into a fresh process, or the Rust engine played those steps and
+        handed over mid-run. Replaying the overrides into the constants gives a delay
+        looking back the value that was in effect at the step it asks about.
+        """
         if sc.sd_simulation is None:
             # need to set up the sd simulation
             # TODO: the following should really be part of SdSimulation
@@ -155,6 +169,16 @@ class SdRunner(ScenarioRunner):
                 sc.sd_simulation.change_points(name=name, value=points)
             sc.sd_simulation.change_runspecs(starttime=sc.starttime, stoptime=sc.stoptime, dt=sc.dt)
 
+            # then the overrides of the steps already played, oldest first. The keys
+            # survive a JSON round trip as strings, so they are read back as numbers.
+            for past_step, past_settings in sorted(
+                    ((float(k), v) for k, v in (settings_history or {}).items())):
+                if not past_settings or float(past_step) >= float(step):
+                    continue
+                past_constants = past_settings.get(scenario_manager, {}).get(scenario, {}).get("constants", {})
+                for name, value in past_constants.items():
+                    sc.sd_simulation.change_equation(name=name, value=value, valid_from=past_step)
+
         # now the settings relevant for this step
         if settings:
             if scenario_manager in settings:
@@ -162,7 +186,10 @@ class SdRunner(ScenarioRunner):
                     if "constants" in settings[scenario_manager][scenario]:
                         constants = settings[scenario_manager][scenario]["constants"]
                         for name, value in constants.items():
-                            sc.sd_simulation.change_equation(name=name, value=value)
+                            # The step this value was set at travels with it: a delay
+                            # reaching back asks the constant for a past time, and
+                            # without the step it would answer with the latest value
+                            sc.sd_simulation.change_equation(name=name, value=value, valid_from=step)
                     if "points" in settings[scenario_manager][scenario]:
                         points = settings[scenario_manager][scenario]["points"]
                         for name, points in points.items():

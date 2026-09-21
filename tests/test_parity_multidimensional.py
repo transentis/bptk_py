@@ -402,6 +402,32 @@ class TestStatefulFunctions:
     def test_delay(self, shape):
         check(shape, lambda v, s, w: sd.delay(v.model, v, 2.0, 1.0))
 
+    @pytest.mark.parametrize("per_index", [False, True])
+    def test_delay_with_a_duration_that_varies(self, per_index):
+        """The engines described different systems here until the duration moved off
+        `starttime`: Python froze it, Rust read it at every step. Built by hand rather
+        than through `check`, because the input has to vary over time for a change in
+        the duration to show at all."""
+        model = Model(starttime=1.0, stoptime=10.0, dt=1.0,
+                      name="varying_delay_par_{}".format(per_index))
+        v = model.constant("v")
+        v.setup_named_vector({"a": 4.0, "b": 9.0})
+        orders = model.converter("orders")
+        orders.equation = v * sd.time()
+
+        duration = model.converter("duration")
+        if per_index:
+            duration.setup_named_vector({"a": 0.0, "b": 0.0})
+            duration["a"].equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+            duration["b"].equation = sd.If(sd.time() < 6.0, 2.0, 1.0)
+        else:
+            duration.equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+
+        incoming = model.converter("incoming")
+        incoming.equation = sd.delay(model, orders, duration, 0.0)
+
+        run_parity(model, ["incoming[a]", "incoming[b]"], atol=1e-10)
+
     @pytest.mark.parametrize("shape", VECTORS)
     def test_smooth_of_an_expression(self, shape):
         check(shape, lambda v, s, w: sd.smooth(v.model, v * s + w, 2.0, 0.0),
@@ -511,6 +537,88 @@ class TestDot:
         run_parity(model, leaf_names(weighted) + leaf_names(scaled))
 
 
+class TestNamedDot:
+    """`dot` over labels, on both engines.
+
+    A label addresses a bracket-named entity the way a position does, so the expansion
+    reaches Rust unchanged - what is compared is that the labelled shapes map onto the
+    same flattened arithmetic.
+    """
+
+    def _model(self):
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="named_dot_parity")
+        factor = model.constant("factor")
+        factor.equation = 2.0
+        regions = model.constant("regions")
+        regions.setup_named_vector({"north": 0.5, "south": 1.5})
+        products = model.constant("products")
+        products.setup_named_vector({"a": 3.0, "b": 4.0})
+        by_product = model.constant("by_product")
+        by_product.setup_named_matrix({"north": {"a": 2.0, "b": 3.0},
+                                       "south": {"a": 4.0, "b": 5.0}})
+        by_channel = model.constant("by_channel")
+        by_channel.setup_named_matrix({"a": {"online": 5.0, "retail": 6.0},
+                                       "b": {"online": 7.0, "retail": 8.0}})
+        return model, factor, regions, products, by_product, by_channel
+
+    def test_value_dot_named_array(self):
+        model, factor, regions, _products, by_product, _by_channel = self._model()
+        vector = model.converter("vector")
+        vector.equation = factor.dot(regions)
+        matrix = model.converter("matrix")
+        matrix.equation = by_product.dot(factor)
+
+        run_parity(model, leaf_names(vector) + leaf_names(matrix))
+
+    def test_named_vector_dot_named_vector(self):
+        model, _factor, regions, _products, _by_product, _by_channel = self._model()
+        other = model.constant("other")
+        other.setup_named_vector({"south": 4.0, "north": 3.0})
+        target = model.converter("target")
+        target.equation = regions.dot(other)
+
+        run_parity(model, ["target"])
+
+    def test_named_vector_dot_named_matrix(self):
+        model, _factor, regions, _products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = regions.dot(by_product)
+
+        run_parity(model, leaf_names(target))
+
+    def test_named_matrix_dot_named_vector(self):
+        model, _factor, _regions, products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = by_product.dot(products)
+
+        run_parity(model, leaf_names(target))
+
+    def test_named_matrix_dot_named_matrix(self):
+        model, _factor, _regions, _products, by_product, by_channel = self._model()
+        target = model.converter("target")
+        target.equation = by_product.dot(by_channel)
+
+        run_parity(model, leaf_names(target))
+
+    def test_a_named_dot_result_used_in_further_arithmetic(self):
+        model, _factor, _regions, products, by_product, _by_channel = self._model()
+        weighted = model.converter("weighted")
+        weighted.equation = by_product.dot(products)
+        scaled = model.converter("scaled")
+        scaled.equation = weighted * 2.0 + 1.0
+
+        run_parity(model, leaf_names(weighted) + leaf_names(scaled))
+
+    def test_an_expression_as_a_named_dot_operand(self):
+        model, _factor, regions, _products, by_product, _by_channel = self._model()
+        other = model.constant("other")
+        other.setup_named_vector({"north": 1.0, "south": 2.0})
+        target = model.converter("target")
+        target.equation = DotOperator(regions + other, by_product)
+
+        run_parity(model, leaf_names(target))
+
+
 # ---------------------------------------------------------------------------
 # Arrayed stocks, flows and biflows over time
 # ---------------------------------------------------------------------------
@@ -618,16 +726,21 @@ class TestMixedAndRejected:
 
         run_parity(model, leaf_names(scaled) + ["total", "share", "headroom"])
 
-    def test_a_named_dot_is_rejected_before_either_engine_sees_it(self):
-        """The rejection is in the operator, so both paths agree by construction."""
+    def test_labels_that_do_not_line_up_are_rejected_before_either_engine_sees_it(self):
+        """The rejection is in the operator, so both paths agree by construction.
+
+        It lands when the equation is built rather than when the operator is
+        constructed, which is where the size mismatches have always landed too.
+        """
         model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="named_dot")
         left = model.constant("left")
         left.setup_named_vector({"p": 1.0, "q": 2.0})
         right = model.constant("right")
-        right.setup_named_vector({"p": 3.0, "q": 4.0})
+        right.setup_named_vector({"x": 3.0, "y": 4.0})
+        target = model.converter("target")
 
-        with pytest.raises(Exception, match="not supported for named arrayed"):
-            left.dot(right)
+        with pytest.raises(Exception, match="have to carry the same labels"):
+            target.equation = left.dot(right)
 
     def test_mixing_shapes_is_rejected_before_either_engine_sees_it(self):
         model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="mixed_shapes")

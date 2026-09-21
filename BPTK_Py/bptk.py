@@ -199,16 +199,19 @@ class bptk():
             except Exception as e:
                 log(f"[WARN] Failed to configure Logfire: {e}")
 
-        # Plot settings go to the one place every plot method reads. They are NOT written
-        # into the global plt.rcParams any more: that restyled every chart in the process,
-        # including ones that have nothing to do with us, and made element.plot() depend
-        # on whether a bptk() happened to exist - in a marimo notebook the same cell then
-        # looked different depending on what the reader had clicked before.
+        # Plot settings belong to this instance. They are neither written into the global
+        # plt.rcParams - that restyled every chart in the process, ours or not - nor into
+        # the package-wide configuration, which made two cells of a notebook restyle each
+        # other: whichever was run last decided how both looked.
+        #
+        # The package-wide `plotting_config` stays the default and the look of the two
+        # paths with no bptk() in reach, Element.plot() and plot_agent_stats().
         #
         # visualizations imports matplotlib lazily, so this is safe on a headless install.
+        from BPTK_Py.visualizations import plotting_config as package_plotting_config
+        self.plotting_config = package_plotting_config.copy()
         if configuration and isinstance(configuration, dict):
-            from BPTK_Py.visualizations import plotting_config
-            plotting_config.update(configuration)
+            self.plotting_config.update(configuration)
 
         self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
 
@@ -220,7 +223,7 @@ class bptk():
             sys.path.append(str(base_path))
         self.scenario_manager_factory.get_scenario_managers(path=self.config.configuration["scenario_storage"]) 
 
-        self.visualizer = visualizer(config=self.config)
+        self.visualizer = visualizer(config=self.config, plot_config=self.plotting_config)
         self.session_state = None
 
     def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
@@ -708,6 +711,7 @@ class bptk():
                     settings = settings,
                     backend=self.session_state.get("backend", "python"),
                     seed=self.session_state.get("backend_seed"),
+                    settings_history=self.session_state.get("settings_log"),
                 )
 
                 if(flat):
@@ -922,7 +926,7 @@ class bptk():
             return results
 
     def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[], series_names={},
+                       agent_property_types=[], equations=[], series_names=None,
                        progress_bar=False,
                        return_format = "df",
                        backend = "python"
@@ -975,6 +979,11 @@ class bptk():
         if len(agents) == len(equations) == 0:
             log("[ERROR] Neither any agents nor equations to simulate given! Aborting!")
             return None
+
+        # Avoid a shared mutable default: a dict default belongs to the function,
+        # not to the call, so a renaming rule written into it outlives the call and
+        # every bptk() instance in the process.
+        series_names = series_names if series_names is not None else {}
 
         # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
         if len(scenario_managers) == 1 and len(scenarios) == 1:
@@ -1119,7 +1128,7 @@ class bptk():
                        alpha=None, stacked=None,
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
                        y_label="",
-                       series_names={},
+                       series_names=None,
                        progress_bar=False,
                        return_df=False,
                        format="plot",
@@ -1187,6 +1196,12 @@ class bptk():
             Dataframe with simulation results if return_df=True.
          """
 
+        # A dict of its own, because `run_scenarios` writes the renaming rule into
+        # whatever it is handed and the visualizer below reads it back out. Sharing one
+        # dict across calls is what used to carry a rule from an earlier call into a
+        # later one; sharing none at all would lose the rule between these two lines.
+        series_names = series_names if series_names is not None else {}
+
         df = self.run_scenarios(scenarios=scenarios,
                                   scenario_managers=scenario_managers,
                                   agents=agents,
@@ -1228,7 +1243,7 @@ class bptk():
 
     def plot_lookup(self, scenarios, scenario_managers, lookup_names, return_df=False, visualize_from_period=0,
                     visualize_to_period=0, stacked=None, title="", alpha=None, x_label="", y_label="", start_date="",
-                    freq="D", series_names={}, kind=None, format="plot",
+                    freq="D", series_names=None, kind=None, format="plot",
                     matplotlib_rc_settings=None):
         """Plot lookup functions.
 

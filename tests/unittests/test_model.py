@@ -562,5 +562,90 @@ class Test_Model(unittest.TestCase):
         self.assertIn("[WARN] Hybrid Model : Overwriting equation flow", content)  
         self.assertNotIn("[WARN] Hybrid Model : Overwriting equation converter", content)  
 
+    def test_a_cold_evaluation_far_into_the_run_answers_instead_of_raising(self):
+        """A stock asks for the step before it, so a cold late step is a long chain.
+
+        Python's stack runs out at about 330 steps of it - counted in steps, so a fine
+        `dt` reaches that early in model time. Computing forward keeps each step shallow.
+        """
+        model = Model(starttime=0.0, stoptime=2000.0, dt=1.0, name="deep")
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        inflow = model.flow("inflow")
+        inflow.equation = 1.0
+        stock.equation = inflow
+
+        # Well past the ~330 steps a chain of calls fits into
+        self.assertEqual(stock(1500.0), 1500.0)
+
+    def test_a_fine_dt_reaches_the_same_depth_early_in_model_time(self):
+        """The limit counts steps, not time: at dt=0.125 it used to arrive at t=41.5."""
+        model = Model(starttime=0.0, stoptime=200.0, dt=0.125, name="fine")
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        inflow = model.flow("inflow")
+        inflow.equation = 8.0
+        stock.equation = inflow
+
+        self.assertEqual(stock(100.0), 800.0)
+
+    def test_computing_forward_keeps_what_was_already_worked_out(self):
+        """Ask for an early step, then jump far ahead: the gap is what gets filled.
+
+        The jump is longer than a chain of calls can be, so it computes forward - and
+        the steps from the first question are still there to be found rather than
+        worked out a second time.
+        """
+        model = Model(starttime=0.0, stoptime=2000.0, dt=1.0, name="partly_known")
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        inflow = model.flow("inflow")
+        inflow.equation = 1.0
+        stock.equation = inflow
+
+        self.assertEqual(stock(100.0), 100.0)
+        before = dict(model.memo["stock"])
+
+        self.assertEqual(stock(1500.0), 1500.0)
+
+        # every step of the first answer survived the second, unchanged
+        for t, value in before.items():
+            self.assertEqual(model.memo["stock"][t], value)
+
+    def test_an_element_without_a_past_is_still_evaluated_once(self):
+        """Computing forward is the answer to a chain, not the way everything is run.
+
+        An element that does not look back has no chain to shorten, and computing it
+        from starttime would turn one evaluation into thousands.
+        """
+        model = Model(starttime=0.0, stoptime=10000.0, dt=1.0, name="flat")
+        calls = []
+
+        def counting(t):
+            calls.append(t)
+            return t * 2.0
+
+        model.add_equation("flat", counting)
+
+        self.assertEqual(model.memoize("flat", 5000.0), 10000.0)
+        self.assertEqual(len(calls), 1)
+
+    def test_one_timestep_too_deep_says_what_happened(self):
+        """Not the timestep chain but a chain of elements, which computing forward
+        cannot shorten. The bare RecursionError said nothing about which it was."""
+        model = Model(starttime=0.0, stoptime=10.0, dt=1.0, name="chain")
+        previous = None
+        for index in range(600):
+            element = model.converter("c{}".format(index))
+            element.equation = 1.0 if previous is None else previous + 1.0
+            previous = element
+
+        with self.assertRaises(RecursionError) as caught:
+            previous(5.0)
+
+        self.assertIn("a chain of elements referring to one another",
+                      str(caught.exception))
+
+
 if __name__ == '__main__':
     unittest.main()

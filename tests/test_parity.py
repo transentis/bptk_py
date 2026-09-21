@@ -1534,6 +1534,21 @@ class TestParityDelay:
         b.equation = sd.delay(model, a, 2.0, -1.0)
         run_parity(model, ['a', 'b'], atol=1e-10)
 
+    def test_delay_with_a_duration_that_varies(self):
+        """The two engines described different systems here.
+
+        Python rendered the duration with `starttime`, so its variation had no effect at
+        all, while the Rust engine read it at every step.
+        """
+        model = Model(starttime=1, stoptime=10, dt=1, name='delay_varying_par')
+        duration = model.converter('duration')
+        duration.equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+        a = model.converter('a')
+        a.equation = sd.time() * 10.0
+        b = model.converter('b')
+        b.equation = sd.delay(model, a, duration, 0.0)
+        run_parity(model, ['a', 'b', 'duration'], atol=1e-10)
+
     def test_delay_with_stock(self):
         """Delay reading from an integrated stock — interaction with Euler."""
         model = Model(starttime=0, stoptime=10, dt=1, name='delay_stock_par')

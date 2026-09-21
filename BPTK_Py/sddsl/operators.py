@@ -327,6 +327,78 @@ def _get_element_dimensions(element):
     return -1
 
 
+def _is_named_operand(operand):
+    """
+        True if this operand addresses its sub-elements by label rather than by position.
+    """
+    if _is_arrayed_element(operand):
+        return operand.named_arrayed
+    return (isinstance(operand, Operator) and operand.is_any_subelement_arrayed()
+            and operand.is_named())
+
+
+def _axis_keys(operand, axis):
+    """
+        The keys addressing one axis of an operand: positions when it is unnamed,
+        labels when it is named. Axis 0 is the rows, axis 1 the columns.
+
+        This is where the two renderings of an index - `element[0][1]` and
+        `element["north"]["a"]` - meet, so that a product over an axis can be written
+        once, over keys.
+    """
+    dimensions = _get_element_dimensions(operand)
+    size = dimensions[axis] if len(dimensions) > axis else 0
+
+    if not _is_named_operand(operand):
+        return list(range(size))
+
+    if not _is_arrayed_element(operand):
+        # An expression rather than an element: its labels are reachable only through
+        # the index protocol, which names a matrix's columns per row.
+        if axis == 0:
+            return [operand.index_to_string(i) for i in range(size)]
+        return [operand.index_to_string([0, j]) for j in range(size)]
+
+    rows = list(operand._elements.equations)
+    if axis == 0:
+        return rows
+
+    # A named matrix is a dict of dicts and may carry different labels in every row.
+    # Summing over an axis needs one label set, so this is the one place that insists
+    # on a rectangular matrix - at the product, not at setup, where it would reject
+    # models that never multiply.
+    columns = list(operand[rows[0]]._elements.equations)
+    for row in rows[1:]:
+        if set(operand[row]._elements.equations) != set(columns):
+            # A plain Exception, like every other error the dot product raises:
+            # OperatorError renders its message through repr().
+            raise Exception(
+                "A named matrix in a dot product needs the same column labels in every row: "
+                "row '{}' has {} where row '{}' has {}.".format(
+                    row, sorted(operand[row]._elements.equations),
+                    rows[0], sorted(columns)))
+    return columns
+
+
+def _are_labels(keys):
+    """
+        True if an axis is addressed by labels rather than by positions.
+    """
+    return bool(keys) and isinstance(keys[0], str)
+
+
+def _leaf_term(operand, keys, time):
+    """
+        The term of one leaf of a `dot` operand, addressed by a list of keys.
+    """
+    if isinstance(operand, BPTK_Py.sddsl.element.Element):
+        current = operand
+        for key in keys:
+            current = current[key]
+        return current.term(time)
+    return operand.arrayed_term(list(keys), time)
+
+
 def _array_resolve(operator, element, time, dimensions):
     """
     Converts an array element to a string.
@@ -868,13 +940,110 @@ class DotOperator(BinaryOperator):
 
     def __init__(self, element_1, element_2, index=None):
         super().__init__(element_1, element_2, index, True)
-        arrayed1 = isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size() > 0
-        arrayed2 = isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0
-        if arrayed1 and element_1.named_arrayed:
-            raise Exception("The Dot operator is currently not supported for named arrayed elements!.")
-        if arrayed2 and element_2.named_arrayed:
-            raise Exception("The Dot operator is currently not supported for named arrayed elements!.")
 
+    def _check_named_operands(self):
+        """
+            Both operands have to speak the same language: labels or positions.
+        """
+        named_1 = _is_named_operand(self.element_1)
+        named_2 = _is_named_operand(self.element_2)
+        if named_1 != named_2:
+            raise Exception(
+                "Cannot multiply a named array with an unnamed one: the {} operand is "
+                "named and the {} one is not. A dot product sums over one axis, and a "
+                "label cannot be paired with a position.".format(
+                    *("left", "right") if named_1 else ("right", "left")))
+
+    def _contracted_keys(self, axis_1, axis_2, shape, left, right):
+        """
+            The keys of the axis the sum runs over, valid for both operands.
+
+            Unnamed arrays contract over positions, named ones over the labels they
+            share - which is why the two operands may list those labels in a different
+            order and still pair up correctly. `left` and `right` name the two axes for
+            the error message; nothing else uses them.
+        """
+        keys_1 = _axis_keys(self.element_1, axis_1)
+        keys_2 = _axis_keys(self.element_2, axis_2)
+
+        if not _is_named_operand(self.element_1):
+            return keys_1
+
+        if set(keys_1) != set(keys_2):
+            raise Exception(
+                "Attempted invalid {} multiplication: {} are {} and {} are {}. A dot "
+                "product sums over that axis, so the two have to carry the same "
+                "labels.".format(shape, left, keys_1, right, keys_2))
+        return keys_1
+
+    def _shape(self):
+        """
+            Classifies the product and validates the operands against each other.
+
+            Returns (kind, contracted, free): the shape as a string, the keys the sum
+            runs over, and one key list per axis of the result - none for a scalar
+            result. Both `term()` and `resolve_dimensions()` are written on this, so
+            the dimension rules exist once.
+        """
+        dimensions_1 = _get_element_dimensions(self.element_1)
+        dimensions_2 = _get_element_dimensions(self.element_2)
+
+        def is_vector(dimensions):
+            return len(dimensions) == 1 or dimensions[1] == 0
+
+        if dimensions_1 == -1 and dimensions_2 == -1:
+            raise Exception(
+                "Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
+
+        # A value on one side multiplies every leaf of the other, so nothing is
+        # contracted and the result keeps that operand's own axes.
+        if dimensions_1 == -1:
+            return ("value_array", [], [])
+        if dimensions_2 == -1:
+            return ("array_value", [], [])
+
+        self._check_named_operands()
+
+        if is_vector(dimensions_1):
+            if is_vector(dimensions_2):
+                if dimensions_1[0] != dimensions_2[0]:
+                    raise Exception(
+                        "Attempted invalid vector vector multiplication (sizes {} and {})".format(
+                            dimensions_1[0], dimensions_2[0]))
+                return ("vector_vector",
+                        self._contracted_keys(0, 0, "vector vector",
+                                              "the labels of the left operand",
+                                              "the labels of the right operand"), [])
+
+            if dimensions_1[0] != dimensions_2[0]:
+                raise Exception("Attempted invalid vector matrix multiplication (sizes {} and [{}, {}]). Required: m and mxn.".format(
+                    dimensions_1[0], dimensions_2[0], dimensions_2[1]))
+            # The rows are what the sum consumes, so the result is labelled by the
+            # matrix's columns - the one shape whose labels come from the right operand.
+            return ("vector_matrix",
+                    self._contracted_keys(0, 0, "vector matrix",
+                                          "the labels of the left operand",
+                                          "the rows of the right operand"),
+                    [_axis_keys(self.element_2, 1)])
+
+        if is_vector(dimensions_2):
+            if dimensions_1[1] != dimensions_2[0]:
+                raise Exception("Attempted invalid matrix vector multiplication (sizes [{}, {}] and {}). Required: mxn and n.".format(
+                    dimensions_1[0], dimensions_1[1], dimensions_2[0]))
+            return ("matrix_vector",
+                    self._contracted_keys(1, 0, "matrix vector",
+                                          "the columns of the left operand",
+                                          "the labels of the right operand"),
+                    [_axis_keys(self.element_1, 0)])
+
+        if dimensions_1[1] != dimensions_2[0]:
+            raise Exception("Attempted invalid matrix matrix multiplication (sizes [{}, {}] and [{}, {}]). Required: mxn and nxp.".format(
+                dimensions_1[0], dimensions_1[1], dimensions_2[0], dimensions_2[1]))
+        return ("matrix_matrix",
+                self._contracted_keys(1, 0, "matrix matrix",
+                                      "the columns of the left operand",
+                                      "the rows of the right operand"),
+                [_axis_keys(self.element_1, 0), _axis_keys(self.element_2, 1)])
 
     def term(self, time="t"):
         """
@@ -899,123 +1068,106 @@ class DotOperator(BinaryOperator):
                 Example: [1,2] * [3,4] => 11
                 Dimension Rule: Vectors must have same dimensions
 
-            Vector * Matrix => 
+            Vector * Matrix =>
                 Example: [2,3,4] * [[1,2,3],[4,5,6],[7,8,9]] => [42, 51, 60]
                 Dimension Rule: Matrix must have dimensions mxn if length of vector=m
 
-            Matrix * Vector => 
+            Matrix * Vector =>
                 Example: [[1,2,3],[4,5,6]] * [2,3,4] => [20, 47]
                 Dimension Rule: Matrix must have dimensions mxn if length of vector=n
+
+            Named arrays follow the same rules with labels in place of positions: the
+            contracted axis has to carry the same labels on both sides, and the axes
+            that survive keep their own - rows from the left operand, columns from the
+            right.
         """
-        def _get_sub_element_term(element, index, time):
-            if isinstance(element, BPTK_Py.sddsl.element.Element):
-                cur = element
-                for i in index:
-                    cur = cur[i]
-                return cur.term(time)
+        kind, contracted, free = self._shape()
 
-            if isinstance(element, Operator):
-                return element.arrayed_term(index, time)
+        def product(keys_1, keys_2):
+            return "({}) * ({})".format(_leaf_term(self.element_1, keys_1, time),
+                                        _leaf_term(self.element_2, keys_2, time))
 
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
+        if kind == "vector_vector":
+            return " + ".join(product([key], [key]) for key in contracted)
 
         if self.index is None:
-            # Only equation without index is vector * vector
-
-            if len(dim1) == 1 or dim1[1] == 0:
-                if len(dim2) == 1 or dim2[1] == 0:
-                    if dim1[0] != dim2[0]:
-                        raise Exception(
-                            "Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
-                    result = ""
-                    for i in range(dim1[0]):
-                        result += "({}) * ({}) + ".format(
-                            self.element_1[i].term(time), self.element_2[i].term(time))
-                    return result[:-3]
+            # Every remaining shape yields an array, and the parent element of an array
+            # holds no value of its own.
             return "0.0"
 
-        # Value
+        index = self.index if isinstance(self.index, (list, tuple)) else [self.index]
 
-        if dim1 == -1:  # Value
-            if dim2 == -1:
-                raise Exception(
-                    "Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
-            # Value * Vector or Value * Matrix
-            cur_el2 = self.element_2
-            for i in self.index:
-                cur_el2 = cur_el2[i]
-            return "({}) * ({})".format(self.element_1.term(time), cur_el2.term(time))
+        if kind == "value_array":
+            return "({}) * ({})".format(self.element_1.term(time),
+                                        _leaf_term(self.element_2, index, time))
+        if kind == "array_value":
+            return "({}) * ({})".format(_leaf_term(self.element_1, index, time),
+                                        self.element_2.term(time))
 
-        if dim2 == -1:  # Value
-            # Vector * Value or Matrix * Value
-            cur_el1 = self.element_1
-            for i in self.index:
-                cur_el1 = cur_el1[i]
-            return "({}) * ({})".format(cur_el1.term(time), self.element_2.term(time))
+        if kind == "vector_matrix":
+            column = index[0]
+            self._check_index(column, free[0], "vector matrix")
+            return " + ".join(product([key], [key, column]) for key in contracted)
 
-        # Vector
-        if len(dim1) == 1 or dim1[1] == 0:  # Vector
-            if len(dim2) == 1 or dim2[1] == 0:  # Vector * Vector
-                if dim1[0] != dim2[0]:
-                    raise Exception(
-                        "Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
-                result = ""
-                for i in range(dim1[0]):
-                    result += "({}) * ({}) + ".format(
-                        self.element_1[i].term(time), self.element_2[i].term(time))
-                return result[:-3]
-
-            # Vector * Matrix
-            if dim1[0] != dim2[0]:  # Vector matrix
-                raise Exception("Attempted invalid vector matrix multiplication (sizes {} and [{}, {}]). Required: m and mxn.".format(
-                    dim1[0], dim2[0], dim2[1]))
-
-            index = self.index if isinstance(
-                self.index, int) else self.index[0]
-
-            if(index >= dim2[1]):
-                raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    index, dim2[1]))
-            res = ""
-            for k in range(dim2[0]):
-                res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1,
-                                                                     [k], time), _get_sub_element_term(self.element_2, [k, index], time))
-            return res[:-3]
-
-        if len(dim2) == 1 or dim2[1] == 0:  # Matrix * Vector
-            if dim1[1] != dim2[0]:
-                raise Exception("Attempted invalid matrix vector multiplication (sizes [{}, {}] and {}). Required: mxn and n.".format(
-                    dim1[0], dim1[1], dim2[0]))
-
-            index = self.index if isinstance(
-                self.index, int) else self.index[0]
-
-            if(index >= dim1[0]):
-                raise Exception("Invalid index was passed to vector matrix multiplication. Index is {}, resulting vector length is {}!".format(
-                    index, dim2[1]))
-
-            res = ""
-            for k in range(dim1[1]):
-                res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1,
-                                                                     [index, k], time), _get_sub_element_term(self.element_2, [k], time))
-            return res[:-3]
+        if kind == "matrix_vector":
+            row = index[0]
+            self._check_index(row, free[0], "matrix vector")
+            return " + ".join(product([row, key], [key]) for key in contracted)
 
         # Matrix * Matrix
-        if isinstance(self.index, int) or len(self.index) != 2:
+        if isinstance(self.index, int) or len(index) != 2:
             raise Exception(
-                "Invalid index was passed to vector matrix multiplication. Index is {}. Expected two-element index for matrix multiplication!".format(self.index))
+                "Invalid index for a matrix matrix product: the index is {}, but a matrix "
+                "result needs a two-element index.".format(self.index))
 
-        if self.index[0] >= dim1[0] or self.index[1] >= dim2[1]:
-            raise Exception("Invalid index was passed to vector matrix multiplication. Index is [{}, {}], output matrix size is [{}, {}]!".format(
-                self.index[0], self.index[1], dim1[0], dim2[1]))
-        res = ""
-        for k in range(dim1[1]):
-            res += "({}) * ({}) + ".format(_get_sub_element_term(self.element_1,
-                                                                 [self.index[0], k], time), _get_sub_element_term(self.element_2, [k, self.index[1]], time))
-        return res[:-3]
+        row, column = index
+        self._check_matrix_index(row, column, free)
+        return " + ".join(product([row, key], [key, column]) for key in contracted)
 
-        return super().term(time)
+    def _check_index(self, key, available, shape):
+        """
+            One axis of the result addressed by the index, positional or labelled.
+        """
+        if key in available:
+            return
+        if _are_labels(available):
+            raise Exception(
+                "Invalid index for a {} product: '{}' is not one of the labels of the "
+                "result, which are {}.".format(shape, key, available))
+        raise Exception(
+            "Invalid index for a {} product: the index is {}, but the result is a vector "
+            "of length {}.".format(shape, key, len(available)))
+
+    def _check_matrix_index(self, row, column, free):
+        """
+            Both axes of a matrix result addressed by a two-element index.
+        """
+        if row in free[0] and column in free[1]:
+            return
+        if _are_labels(free[0]) or _are_labels(free[1]):
+            raise Exception(
+                "Invalid index for a matrix matrix product: [{}, {}] does not address the "
+                "result, whose rows are {} and whose columns are {}.".format(
+                    row, column, free[0], free[1]))
+        raise Exception(
+            "Invalid index for a matrix matrix product: the index is [{}, {}], but the "
+            "result has size [{}, {}].".format(row, column, len(free[0]), len(free[1])))
+
+    def index_to_string(self, index):
+        """
+            The label of one axis of the *result*, which no single operand can answer.
+
+            Rows come from the left operand and columns from the right, and a vector
+            times a matrix is labelled by the matrix's columns - so the generic
+            implementation, which asks the first arrayed operand, would name the wrong
+            axis.
+        """
+        kind, contracted, free = self._shape()
+        if kind in ("value_array", "array_value"):
+            return super().index_to_string(index)
+
+        positions = index if isinstance(index, (list, tuple)) else [index]
+        return free[len(positions) - 1][positions[-1]]
 
     def resolve_dimensions(self):
         """
@@ -1040,50 +1192,25 @@ class DotOperator(BinaryOperator):
                 Example: [1,2] * [3,4] => 11 => -1
                 Dimension Rule: Vectors must have same dimensions
 
-            Vector * Matrix => 
+            Vector * Matrix =>
                 Example: [2,3,4] * [[1,2,3],[4,5,6],[7,8,9]] => [42, 51, 60] => [3]
                 Dimension Rule: Matrix must have dimensions mxn if length of vector=m
 
-            Matrix * Vector => 
+            Matrix * Vector =>
                 Example: [[1,2,3],[4,5,6]] * [2,3,4] => [20, 47] => [2] (mxn=m)
                 Dimension Rule: Matrix must have dimensions mxn if length of vector=n
         """
-        dim1 = _get_element_dimensions(self.element_1)
-        dim2 = _get_element_dimensions(self.element_2)
+        kind, contracted, free = self._shape()
 
-        # Values
-        if dim1 == -1:
-            if dim2 == -1:
-                raise Exception(
-                    "Dot product is used to multiply vectors or matrices. Use the * operator to multiply values!")
-            return dim2
-
-        if dim2 == -1:
-            return dim1
-
-        # Vectors
-        if len(dim1) == 1 or dim1[1] == 0:
-            if len(dim2) == 1 or dim2[1] == 0:  # Vector vector
-                if dim1[0] != dim2[0]:
-                    raise Exception(
-                        "Attempted invalid vector vector multiplication (sizes {} and {})".format(dim1[0], dim2[0]))
-                return -1
-            if dim2[0] != dim1[0]:  # Vector matrix
-                raise Exception("Attempted invalid vector matrix multiplication (sizes {} and [{}, {}]). Required: m and mxn.".format(
-                    dim1[0], dim2[0], dim2[1]))
-            return [dim2[1]]
-        if len(dim2) == 1 or dim2[1] == 0:  # Matrix vector
-            if dim1[1] != dim2[0]:
-                raise Exception("Attempted invalid matrix vector multiplication (sizes [{}, {}] and {}). Required: mxn and n.".format(
-                    dim1[0], dim1[1], dim2[0]))
-            return [dim1[0]]
-
-        # Matrix matrix
-        if dim1[1] != dim2[0]:
-            raise Exception("Attempted invalid matrix matrix multiplication (sizes [{}, {}] and [{}, {}]). Required: mxn and nxp.".format(
-                dim1[0], dim1[1], dim2[0], dim2[1]))
-
-        return [dim1[0], dim2[1]]
+        if kind == "value_array":
+            return _get_element_dimensions(self.element_2)
+        if kind == "array_value":
+            return _get_element_dimensions(self.element_1)
+        if kind == "vector_vector":
+            return -1
+        if kind == "matrix_matrix":
+            return [len(free[0]), len(free[1])]
+        return [len(free[0])]
 
     def clone_with_index(self, index):
         # The operands stay whole - unlike every other operator, whose clone addresses
@@ -1311,8 +1438,13 @@ class Delay(Function):
             initial_value) if initial_value is not None else initial_value
 
     def term(self, time="t"):
+        # The duration is read at the time asked about, not at `starttime`: a delay whose
+        # duration varies is asking how long the delay is *now*. Reading it once at the
+        # start made a variable duration have no effect at all, and described a different
+        # system from the Rust engine and from a compiled XMILE model, which both read it
+        # every step.
         delayed_time = "{} - {}".format(str(time),
-                                        self.delay_duration.term(str(self.model.starttime)))
+                                        self.delay_duration.term(str(time)))
         return "({} if {}>={} else {})".format(
             self.input_function.term(delayed_time),
             delayed_time,

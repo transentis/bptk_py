@@ -47,11 +47,17 @@ class PlottingConfig:
     constructor wrote them into the global `plt.rcParams`, which restyled unrelated
     charts as a side effect.
 
-    Process-wide by design: `bptk(configuration=...)` writes here, so a configuration
-    given to one instance applies to every plot in the process, whichever object draws
-    it. Where a single chart should differ, pass `matplotlib_rc_settings` to that plot
-    call instead - it is laid over this configuration for the one draw and leaves it
-    alone. `reset()` gets back to the package defaults.
+    One of these per `bptk()`: `bptk(configuration=...)` configures that instance and
+    nothing else, so two instances in one process - two cells of a notebook - do not
+    restyle each other. The module-level `plotting_config` is what a new instance starts
+    from, and the look of the two paths with no `bptk()` in reach: `Element.plot()` and
+    `AgentDataCollector.plot_agent_stats()`. Writing to it therefore sets the look of
+    those, and of every instance built afterwards - but not of one that already exists,
+    which is what keeps a notebook's cells from depending on one another.
+
+    Where a single chart should differ, pass `matplotlib_rc_settings` to that plot call
+    instead - it is laid over the configuration for the one draw and leaves it alone.
+    `reset()` gets back to the package defaults.
 
     What stays out of it: charts drawn outside BPTK. The settings are applied through
     `plt.rc_context` around our own drawing calls, never written into the global
@@ -68,6 +74,22 @@ class PlottingConfig:
 
         self.matplotlib_rc_settings = deepcopy(default_config.matplotlib_rc_settings)
         self.settings = {key: deepcopy(default_config.configuration[key]) for key in PLOT_SETTING_KEYS}
+
+    def copy(self):
+        """An independent configuration starting from this one.
+
+        What a `bptk()` takes at construction: the package-wide look as it stands right
+        then, which the instance is free to configure further without anything else
+        noticing. A later change to the package-wide configuration does not reach an
+        instance that already exists - which is the point, because a notebook otherwise
+        has cells whose look depends on which cell ran last.
+        """
+        from copy import deepcopy
+
+        other = PlottingConfig()
+        other.settings = deepcopy(self.settings)
+        other.matplotlib_rc_settings = deepcopy(self.matplotlib_rc_settings)
+        return other
 
     def update(self, configuration):
         """Take over the plot-relevant entries of a `configuration` dictionary.
@@ -117,8 +139,8 @@ plotting_config = PlottingConfig()
 
 
 @contextmanager
-def bptk_style(matplotlib_rc_settings=None):
-    """Apply the matplotlib settings from `plotting_config` for one drawing call.
+def bptk_style(matplotlib_rc_settings=None, config=None):
+    """Apply the matplotlib settings of a plotting configuration for one drawing call.
 
     Scoped to the draw rather than to the process, which is what keeps charts drawn
     outside BPTK untouched: constructing a `bptk()` no longer restyles them, and our own
@@ -127,12 +149,16 @@ def bptk_style(matplotlib_rc_settings=None):
     Args:
         matplotlib_rc_settings: Dict (Default None).
             Settings for this one call, laid over the central configuration rather than
-            replacing it - pass only the keys that should differ. `plotting_config` stays
-            as it is, so the next plot is styled centrally again.
+            replacing it - pass only the keys that should differ. The configuration
+            stays as it is, so the next plot is styled from it again.
+        config: PlottingConfig (Default None).
+            Whose settings to apply. Defaults to the module-level `plotting_config`,
+            which is what the paths with no `bptk()` in reach use.
     """
     import matplotlib.pyplot as plt
 
-    settings = plotting_config.matplotlib_rc_settings
+    config = config if config is not None else plotting_config
+    settings = config.matplotlib_rc_settings
     if matplotlib_rc_settings:
         settings = {**settings, **matplotlib_rc_settings}
 
@@ -162,11 +188,15 @@ class visualizer():
     Can also only modify dataframes to generate time series and return the modified dataframe
     """
 
-    def __init__(self,config=None):
+    def __init__(self, config=None, plot_config=None):
         self.config = config
+        #: Whose look this visualizer draws in. A `bptk()` hands over its own, so that
+        #: configuring one instance leaves every other one alone; a visualizer built
+        #: without one draws in the package-wide look.
+        self.plotting_config = plot_config if plot_config is not None else plotting_config
 
     def plot(self, df, return_df, visualize_from_period, visualize_to_period, stacked, kind, title, alpha, x_label,
-             y_label, start_date="1/1/2018", freq="D", series_names={},format="plot",
+             y_label, start_date="1/1/2018", freq="D", series_names=None,format="plot",
              matplotlib_rc_settings=None):
         """
         Plot method. Creates plots from dataframes
@@ -189,16 +219,21 @@ class visualizer():
         """
 
         if not kind:
-            kind=plotting_config["kind"]
+            kind=self.plotting_config["kind"]
 
         if not stacked:
-            stacked = plotting_config["stacked"]
+            stacked = self.plotting_config["stacked"]
 
         if not alpha:
-            alpha = plotting_config["alpha"]
+            alpha = self.plotting_config["alpha"]
 
         if not start_date == "":
             df.index = pd.date_range(start_date, periods=len(df), freq=freq)
+
+        # The default is None rather than a dict: a dict default belongs to the function
+        # and not to the call, and the renaming rules written into it upstream would
+        # otherwise outlive every call in the process.
+        series_names = series_names if series_names is not None else {}
 
         series_names_keys = series_names.keys()
 
@@ -252,8 +287,8 @@ class visualizer():
             # One style block around both draw branches. It has to be active while the
             # axes are built: figure size, line width and the tick label sizes are read
             # at creation, so update_plot_formats() below could not put them right.
-            settings = plotting_config.resolved(matplotlib_rc_settings)
-            with bptk_style(matplotlib_rc_settings):
+            settings = self.plotting_config.resolved(matplotlib_rc_settings)
+            with bptk_style(matplotlib_rc_settings, config=self.plotting_config):
                 if format == "axes":
                     from matplotlib.figure import Figure
 

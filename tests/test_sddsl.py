@@ -159,6 +159,36 @@ def test_delay():
             assert(df_b["b"][index] == index-3)
 
 
+def test_delay_with_a_duration_that_varies():
+    """The duration is read at the step asked about, not once at starttime.
+
+    Reading it once made a duration that varies over time have no effect whatsoever,
+    and described a different system from the Rust engine and from a compiled XMILE
+    model, both of which read it every step.
+    """
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+
+    model = Model(starttime=1, stoptime=10, dt=1, name='varying_delay')
+
+    duration = model.converter('duration')
+    duration.equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+
+    orders = model.converter('orders')
+    orders.equation = sd.time() * 10.0
+
+    incoming = model.converter('incoming')
+    incoming.equation = sd.delay(model, orders, duration, 0.0)
+
+    df = incoming.plot(return_df=True)["incoming"]
+
+    # One step of lag up to t=5, three from t=6 on
+    for t in range(2, 6):
+        assert df[t] == (t - 1) * 10.0
+    for t in range(6, 11):
+        assert df[t] == (t - 3) * 10.0
+
+
 def test_equations():
     from BPTK_Py import Model
 

@@ -21,6 +21,7 @@ import pandas as pd
 from ..logger import log
 
 from ..util import start_or_run, timerange
+from ..util import floating_point as fp
 
 class SdSimulation():
     """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
@@ -52,6 +53,12 @@ class SdSimulation():
         self.result_frame = None
         self.finished_simulations_count = 0
         self.name = name
+
+        # A constant that is overridden per step needs a history. A delay looking back
+        # asks the equation for a past time, and a plain `lambda t: value` answers with
+        # the value set last rather than the one in effect then, which collapses the
+        # delay to no lag at all. Maps a name to the [(time, value)] it was given.
+        self._timed_constants = {}
 
     #rename this to run or to simulate?
     def start(self, start=None, until=None, dt=None, output=["csv", "frame"], equations=[]):
@@ -177,11 +184,15 @@ class SdSimulation():
         df.to_csv(filename)
 
     # Method that changes an equation. It can change constants by just receiving int/float values and creates lambda functions or it can replace lambda functions with lambda functions
-    def change_equation(self, name, value):
+    def change_equation(self, name, value, valid_from=None):
         """
         Modify an equation
         :param name: name of the equation to modify
         :param value: either a lambda method or a numerical value (int/float)
+        :param valid_from: the time from which a numerical value applies. Without it the
+            value applies at every time - what a whole run and a scenario's constants
+            want. Step-by-step execution passes the current step, so that a delay
+            looking back reads the value that was in effect at the step it asks about.
         :return: None
         """
 
@@ -204,13 +215,57 @@ class SdSimulation():
 
         # Store numeric values
         if not callable(value):
-            self.mod.equations[name] = lambda t: eval(str(value))
+            # A name the model does not have has no equation to keep, so there is no
+            # history to build on: it takes the time-blind form either way.
+            if valid_from is None or name not in self.mod.equations.keys():
+                self.mod.equations[name] = lambda t: eval(str(value))
+            else:
+                self._add_timed_constant(name, value, valid_from)
             log("[INFO] {}: Changed constant {} to {}".format(self.name, name, str(value)))
 
         ## Store new lambda methods
         elif name in self.mod.equations.keys():
             self.mod.equations[name] = value
             log("[INFO] Changed equation {}".format(name))
+
+    def _add_timed_constant(self, name, value, valid_from):
+        """Let `name` answer by the time it is asked for rather than by the value set last.
+
+        The first timed override replaces the equation with one that reads the history;
+        the equation the model had keeps answering for times before that override, so a
+        delay reaching back past the first step still gets the model's own value.
+        """
+        # The same normalization `Model.memoize` applies to the time it is asked for, so
+        # that an override made at a step compares equal to a lookback to that step.
+        time = fp.normalize(
+            valid_from,
+            self.mod.dt,
+            self.mod.starttime,
+            max(fp.scale(self.mod.starttime), fp.scale(self.mod.dt)),
+        )
+
+        if name not in self._timed_constants:
+            history = []
+            self._timed_constants[name] = history
+            before = self.mod.equations[name]
+
+            def equation(t, history=history, before=before):
+                current = None
+                for override_time, override_value in history:
+                    if override_time > t:
+                        break
+                    current = override_value
+                if current is None:
+                    return before(t)
+                return eval(str(current))
+
+            self.mod.equations[name] = equation
+
+        history = self._timed_constants[name]
+        # Setting the same step twice is a correction, not a second entry
+        history[:] = [entry for entry in history if entry[0] != time]
+        history.append((time, value))
+        history.sort(key=lambda entry: entry[0])
 
     def change_points(self, name, value):
         """

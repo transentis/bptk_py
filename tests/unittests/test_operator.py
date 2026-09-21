@@ -960,11 +960,11 @@ class TestDotOperator(unittest.TestCase):
 
         with self.assertRaises(Exception) as context:
             converter.equation = vector1.dot(vector2)
-        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+        self.assertEqual(str(context.exception), "Cannot multiply a named array with an unnamed one: the left operand is named and the right one is not. A dot product sums over one axis, and a label cannot be paired with a position.")
 
         with self.assertRaises(Exception) as context:
             converter.equation = vector2.dot(vector1)
-        self.assertEqual(str(context.exception), "The Dot operator is currently not supported for named arrayed elements!.")
+        self.assertEqual(str(context.exception), "Cannot multiply a named array with an unnamed one: the right operand is named and the left one is not. A dot product sums over one axis, and a label cannot be paired with a position.")
 
         with self.assertRaises(Exception) as context:
             converter.equation = vector2.dot(vector3)
@@ -1002,7 +1002,7 @@ class TestDotOperator(unittest.TestCase):
         operator = DotOperator(element_1=vector2, element_2=matrix2, index=10)
         with self.assertRaises(Exception) as context:
             print(operator)
-        self.assertEqual(str(context.exception), "Invalid index was passed to vector matrix multiplication. Index is 10, resulting vector length is 3!")
+        self.assertEqual(str(context.exception), "Invalid index for a vector matrix product: the index is 10, but the result is a vector of length 3.")
 
         operator = DotOperator(element_1=matrix, element_2=vector3, index=1)
         with self.assertRaises(Exception) as context:
@@ -1012,17 +1012,17 @@ class TestDotOperator(unittest.TestCase):
         operator = DotOperator(element_1=matrix2, element_2=vector2, index=10)
         with self.assertRaises(Exception) as context:
             print(operator)
-        self.assertEqual(str(context.exception), "Invalid index was passed to vector matrix multiplication. Index is 10, resulting vector length is 0!")
+        self.assertEqual(str(context.exception), "Invalid index for a matrix vector product: the index is 10, but the result is a vector of length 3.")
 
         operator = DotOperator(element_1=matrix2, element_2=matrix2, index=10)
         with self.assertRaises(Exception) as context:
             print(operator)
-        self.assertEqual(str(context.exception), "Invalid index was passed to vector matrix multiplication. Index is 10. Expected two-element index for matrix multiplication!")
+        self.assertEqual(str(context.exception), "Invalid index for a matrix matrix product: the index is 10, but a matrix result needs a two-element index.")
 
         operator = DotOperator(element_1=matrix2, element_2=matrix2, index=[4,4])
         with self.assertRaises(Exception) as context:
             print(operator)
-        self.assertEqual(str(context.exception), "Invalid index was passed to vector matrix multiplication. Index is [4, 4], output matrix size is [3, 3]!")
+        self.assertEqual(str(context.exception), "Invalid index for a matrix matrix product: the index is [4, 4], but the result has size [3, 3].")
 
     def test_init_valid_not_named(self):
         from BPTK_Py import Model

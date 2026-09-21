@@ -647,9 +647,9 @@ class TestStatefulFunctions:
     Evaluated at t=4, where a shared history and a per-index history genuinely
     differ, and pinned to the recurrences in `py_smooth` / `py_trend` / `py_delay`.
 
-    Built to behave as the scalar Python path does, **including** its known
-    step-mode `delay` defect: the arrayed variant inherits whatever the scalar one
-    does, so correcting the scalar corrects both.
+    Built to behave as the scalar Python path does, which is why correcting the scalar
+    `delay` - the step-mode collapse and the duration frozen at `starttime` - corrected
+    the arrayed variant with it.
     """
 
     @pytest.mark.parametrize("shape", _shape_params(VECTORS))
@@ -739,6 +739,55 @@ class TestCompositionAndOtherFunctions:
         target.equation = sd.smooth(model, sd.sqrt(v), 3.0, 1.0)
         assert target["a"](2) == pytest.approx(py_smooth(math.sqrt(4.0), t=2))
         assert target["b"](2) == pytest.approx(py_smooth(math.sqrt(9.0), t=2))
+
+    def test_delay_reads_a_varying_duration_at_every_step(self):
+        """Per index, and whether the duration itself is one number or one per index.
+
+        The scalar path rendered the duration with `starttime`, so a duration that
+        varies had no effect at all; the arrayed path inherited that by construction.
+        """
+        model = Model(starttime=1.0, stoptime=10.0, dt=1.0, name="varying_arrayed_delay")
+        v = model.constant("v")
+        v.setup_named_vector({"a": 4.0, "b": 9.0})
+        orders = model.converter("orders")
+        orders.equation = v * sd.time()
+
+        duration = model.converter("duration")
+        duration.equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+
+        incoming = model.converter("incoming")
+        incoming.equation = sd.delay(model, orders, duration, 0.0)
+
+        # One step of lag up to t=5, three from t=6 on, for every index
+        for t in range(2, 6):
+            assert incoming["a"](t) == pytest.approx(4.0 * (t - 1))
+            assert incoming["b"](t) == pytest.approx(9.0 * (t - 1))
+        for t in range(6, 11):
+            assert incoming["a"](t) == pytest.approx(4.0 * (t - 3))
+            assert incoming["b"](t) == pytest.approx(9.0 * (t - 3))
+
+    def test_delay_takes_a_duration_that_differs_per_index(self):
+        model = Model(starttime=1.0, stoptime=10.0, dt=1.0, name="per_index_duration")
+        v = model.constant("v")
+        v.setup_named_vector({"a": 4.0, "b": 9.0})
+        orders = model.converter("orders")
+        orders.equation = v * sd.time()
+
+        duration = model.converter("duration")
+        duration.setup_named_vector({"a": 0.0, "b": 0.0})
+        duration["a"].equation = sd.If(sd.time() < 6.0, 1.0, 3.0)
+        duration["b"].equation = sd.If(sd.time() < 6.0, 2.0, 1.0)
+
+        incoming = model.converter("incoming")
+        incoming.equation = sd.delay(model, orders, duration, 0.0)
+
+        for t in range(2, 6):
+            assert incoming["a"](t) == pytest.approx(4.0 * (t - 1))
+            # Two steps of lag reaches before starttime at t=2, where the initial holds
+            assert incoming["b"](t) == pytest.approx(9.0 * (t - 2) if t > 2 else 0.0)
+        for t in range(6, 11):
+            assert incoming["a"](t) == pytest.approx(4.0 * (t - 3))
+            assert incoming["b"](t) == pytest.approx(9.0 * (t - 1))
 
     def test_delay_still_insists_on_a_model_element(self):
         """A restriction of `sd.delay` itself, not of arrays - and it says so."""
@@ -846,7 +895,7 @@ class TestAggregations:
 
 
 class TestDot:
-    """`dot` shapes `test_sddsl.py` omits, and the named rejection."""
+    """`dot` shapes `test_sddsl.py` omits, and the whole of the named product."""
 
     def test_matrix_dot_matrix(self):
         model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="matmat")
@@ -889,17 +938,165 @@ class TestDot:
         assert target[0](1) == pytest.approx(604.0)
         assert target[1](1) == pytest.approx(6040.0)
 
-    def test_named_arrays_are_rejected(self):
-        """Documented limitation, pinned so both engines can agree on it."""
-        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="nameddot")
-        a = model.constant("a")
-        a.setup_named_vector({"p": 1.0, "q": 2.0})
-        b = model.constant("b")
-        b.setup_named_vector({"p": 3.0, "q": 4.0})
+
+class TestNamedDot:
+    """`dot` over labels.
+
+    The contracted axis has to carry the same labels on both sides; the axes that
+    survive keep their own - rows from the left operand, columns from the right. The
+    numbers here are the worked examples: regions, products and channels.
+    """
+
+    def _model(self):
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="named_dot")
+        factor = model.constant("factor")
+        factor.equation = 2.0
+        regions = model.constant("regions")
+        regions.setup_named_vector({"north": 3.0, "south": 5.0})
+        products = model.constant("products")
+        products.setup_named_vector({"a": 10.0, "b": 20.0})
+        by_product = model.constant("by_product")
+        by_product.setup_named_matrix({"north": {"a": 1.0, "b": 2.0},
+                                       "south": {"a": 3.0, "b": 4.0}})
+        by_channel = model.constant("by_channel")
+        by_channel.setup_named_matrix({"a": {"online": 1.0, "retail": 0.0},
+                                       "b": {"online": 0.5, "retail": 0.5}})
+        return model, factor, regions, products, by_product, by_channel
+
+    def test_value_times_named_vector_keeps_the_labels(self):
+        model, factor, regions, _products, _by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = factor.dot(regions)
+
+        assert target["north"](1) == pytest.approx(6.0)
+        assert target["south"](1) == pytest.approx(10.0)
+
+    def test_named_matrix_times_value_keeps_the_labels(self):
+        model, factor, _regions, _products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = by_product.dot(factor)
+
+        assert target["north"]["a"](1) == pytest.approx(2.0)
+        assert target["south"]["b"](1) == pytest.approx(8.0)
+
+    def test_named_vector_times_named_vector_is_a_scalar(self):
+        model, _factor, regions, _products, _by_product, _by_channel = self._model()
+        other = model.constant("other")
+        other.setup_named_vector({"south": 2.0, "north": 4.0})
+        target = model.converter("target")
+        target.equation = regions.dot(other)
+
+        # Paired by label, not by position: north meets north although the two
+        # vectors list their labels in opposite order.
+        assert target(1) == pytest.approx(3.0 * 4.0 + 5.0 * 2.0)
+
+    def test_named_matrix_times_named_vector_is_labelled_by_the_rows(self):
+        model, _factor, _regions, products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = by_product.dot(products)
+
+        assert target["north"](1) == pytest.approx(1.0 * 10.0 + 2.0 * 20.0)
+        assert target["south"](1) == pytest.approx(3.0 * 10.0 + 4.0 * 20.0)
+
+    def test_named_vector_times_named_matrix_is_labelled_by_the_columns(self):
+        """The one shape whose labels come from the right operand.
+
+        The rows are what the sum consumes, so a product over regions answers per
+        product - and can only carry the matrix's column labels.
+        """
+        model, _factor, regions, _products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = regions.dot(by_product)
+
+        assert target["a"](1) == pytest.approx(3.0 * 1.0 + 5.0 * 3.0)
+        assert target["b"](1) == pytest.approx(3.0 * 2.0 + 5.0 * 4.0)
+
+    def test_named_matrix_times_named_matrix(self):
+        model, _factor, _regions, _products, by_product, by_channel = self._model()
+        target = model.converter("target")
+        target.equation = by_product.dot(by_channel)
+
+        expected = {"north": {"online": 2.0, "retail": 1.0},
+                    "south": {"online": 5.0, "retail": 2.0}}
+        for row in expected:
+            for column in expected[row]:
+                assert target[row][column](1) == pytest.approx(expected[row][column])
+
+    def test_a_square_matrix_carries_its_labels_through(self):
+        """The transition matrix, where both axes hold the same labels."""
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="transition")
+        stock = model.constant("stock")
+        stock.setup_named_vector({"north": 100.0, "south": 200.0})
+        migration = model.constant("migration")
+        migration.setup_named_matrix({"north": {"north": 0.9, "south": 0.1},
+                                      "south": {"north": 0.2, "south": 0.8}})
+        target = model.converter("target")
+        target.equation = stock.dot(migration)
+
+        assert target["north"](1) == pytest.approx(130.0)
+        assert target["south"](1) == pytest.approx(170.0)
+
+    def test_a_named_dot_result_takes_part_in_further_arithmetic(self):
+        model, _factor, _regions, products, by_product, _by_channel = self._model()
+        revenue = model.converter("revenue")
+        revenue.equation = by_product.dot(products)
+        scaled = model.converter("scaled")
+        scaled.equation = revenue * 2.0 + 1.0
+
+        assert scaled["north"](1) == pytest.approx(101.0)
+        assert scaled["south"](1) == pytest.approx(221.0)
+
+    def test_an_expression_can_be_a_named_dot_operand(self):
+        """An operator operand knows its labels only through the index protocol."""
+        model, _factor, _regions, products, by_product, _by_channel = self._model()
+        target = model.converter("target")
+        target.equation = DotOperator(by_product + by_product, products)
+
+        assert target["north"](1) == pytest.approx(2 * (1.0 * 10.0 + 2.0 * 20.0))
+        assert target["south"](1) == pytest.approx(2 * (3.0 * 10.0 + 4.0 * 20.0))
+
+    def test_an_index_that_is_not_a_label_of_the_result_raises(self):
+        model, _factor, regions, _products, by_product, _by_channel = self._model()
+        operator = DotOperator(regions, by_product, ["nonsense"])
+
+        with pytest.raises(Exception, match="'nonsense' is not one of the labels"):
+            operator.term()
+
+    def test_labels_that_do_not_line_up_raise(self):
+        model, _factor, regions, products, _by_product, _by_channel = self._model()
         target = model.converter("target")
 
-        with pytest.raises(Exception, match="not supported for named arrayed"):
-            target.equation = a.dot(b)
+        with pytest.raises(Exception, match="have to carry the same labels"):
+            target.equation = regions.dot(products)
+
+    def test_mixing_named_and_unnamed_raises(self):
+        model, _factor, regions, _products, _by_product, _by_channel = self._model()
+        unnamed = model.constant("unnamed")
+        unnamed.setup_vector(2, [1.0, 2.0])
+        target = model.converter("target")
+
+        with pytest.raises(Exception, match="named array with an unnamed one"):
+            target.equation = regions.dot(unnamed)
+
+    def test_a_matrix_with_row_specific_column_labels_raises(self):
+        """A contraction sums over one label set, so the matrix has to be rectangular.
+
+        The rule holds at the product and nowhere else: the same matrix multiplied by
+        a value stays legal, which is what keeps models that never multiply working.
+        """
+        model, factor, _regions, products, _by_product, _by_channel = self._model()
+        ragged = model.constant("ragged")
+        ragged.setup_named_matrix({"a": {"a1": 1.0, "a2": 2.0},
+                                   "b": {"b1": 3.0, "b2": 4.0}})
+        target = model.converter("target")
+
+        with pytest.raises(Exception, match="same column labels in every row"):
+            target.equation = ragged.dot(products)
+
+        scaled = model.converter("scaled")
+        scaled.equation = factor.dot(ragged)
+        assert scaled["a"]["a1"](1) == pytest.approx(2.0)
+        assert scaled["b"]["b2"](1) == pytest.approx(8.0)
 
 
 class TestDimensionSelector:

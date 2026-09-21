@@ -388,6 +388,149 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk2.run_step(flat=False),{'testManager': {'testScenario': {'stock': {0.0: 0.0}, 'flow': {0.0: 2.0}}}})
         self.assertEqual(testBptk2.run_step(flat=True),{'testManager': {'testScenario': {'stock': 1.0, 'flow': 2.0}}})
 
+    def testBptk_run_step_delay_looks_back_at_the_value_set_at_that_step(self):
+        """A constant overridden per step used to lose its history and collapse the delay.
+
+        `delay` at step t asks its input for step t-2. A constant set per step used to be
+        a `lambda t: value` that ignores t, so the lookback read the value set last and
+        the order arrived the moment it was placed. Only `incoming` is requested, which
+        is what keeps the input from being evaluated - and memoised - at its own step.
+        """
+        from BPTK_Py.sddsl import functions as sd
+
+        model = Model(starttime=1.0, stoptime=6.0, dt=1.0, name="delay")
+        orders = model.constant("orders")
+        orders.equation = 8.0
+        incoming = model.flow("incoming")
+        incoming.equation = sd.delay(model, orders, 2.0, 8.0)
+
+        testBptk = bptk()
+        testBptk.register_scenario_manager({"mgr": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        testBptk.begin_session(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["incoming"], backend="python")
+
+        placed = [8.0, 8.0, 8.0, 20.0, 20.0, 20.0]
+        arrived = {}
+        try:
+            for value in placed:
+                step = testBptk.run_step(
+                    settings={"mgr": {"base": {"constants": {"orders": value}}}})
+                for t, v in step["mgr"]["base"]["incoming"].items():
+                    arrived[float(t)] = v
+        finally:
+            testBptk.end_session()
+
+        # Two steps of lag: the jump to 20 is placed at t=4 and arrives at t=6
+        self.assertEqual(
+            arrived,
+            {1.0: 8.0, 2.0: 8.0, 3.0: 8.0, 4.0: 8.0, 5.0: 8.0, 6.0: 20.0})
+
+    def testBptk_run_step_delay_looks_back_past_a_lost_simulation(self):
+        """A simulation created mid-session gets the overrides of the steps it missed.
+
+        That is a session restored into a fresh process, and a session the Rust engine
+        handed over after a mid-run failure. Both arrive with no history at all, so a
+        delay reaching back across the handover used to read the model's own constant
+        instead of what was set at that step. The overrides are in the session's
+        settings log; the runner replays them into the new simulation.
+        """
+        from BPTK_Py.sddsl import functions as sd
+
+        model = Model(starttime=1.0, stoptime=6.0, dt=1.0, name="delay_resume")
+        orders = model.constant("orders")
+        orders.equation = 8.0
+        incoming = model.flow("incoming")
+        incoming.equation = sd.delay(model, orders, 2.0, 8.0)
+
+        testBptk = bptk()
+        testBptk.register_scenario_manager({"mgr": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        testBptk.begin_session(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["incoming"], backend="python")
+
+        # The last order differs from the one that is due to arrive, so a delay that
+        # reads the value set last is caught as surely as one that lost the history
+        placed = [8.0, 8.0, 8.0, 20.0, 20.0, 12.0]
+        arrived = {}
+        try:
+            for index, value in enumerate(placed):
+                if index == 5:
+                    # Everything the process was holding is gone: the simulation object
+                    # and the memo with it. The last step has to look back to step 4,
+                    # which is on the far side of the loss.
+                    scenario = testBptk.scenario_manager_factory.scenario_managers["mgr"].scenarios["base"]
+                    scenario.sd_simulation = None
+                    testBptk.reset_scenario_cache(scenario_manager="mgr", scenario="base")
+                step = testBptk.run_step(
+                    settings={"mgr": {"base": {"constants": {"orders": value}}}})
+                for t, v in step["mgr"]["base"]["incoming"].items():
+                    arrived[float(t)] = v
+        finally:
+            testBptk.end_session()
+
+        # Placed at step 4, arrives at step 6 - across the loss
+        self.assertEqual(arrived[6.0], 20.0)
+
+    @staticmethod
+    def _column_name_bptk(manager):
+        model = Model(starttime=1.0, stoptime=3.0, dt=1.0, name="columns")
+        headcount = model.stock("headcount")
+        headcount.initial_value = 10.0
+        hiring = model.flow("hiring")
+        hiring.equation = 1.0
+        headcount.equation = hiring
+
+        testBptk = bptk()
+        testBptk.register_scenario_manager({manager: {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}, "freeze": {}},
+                                    scenario_manager=manager)
+        return testBptk
+
+    def testBptk_run_scenarios_column_names_do_not_depend_on_earlier_runs(self):
+        """A run for one scenario used to rename a later run's column.
+
+        With a single manager and a single scenario the columns are handed back under
+        their bare equation name, which is a convenience - and the rule that does it was
+        written into `series_names`, a dict default. A dict default belongs to the
+        function rather than to the call, so the rule outlived the call and every
+        `bptk()` in the process: a later run for two scenarios came back with one column
+        bare and the other prefixed.
+        """
+        first = self._column_name_bptk("shared_manager")
+        one = first.run_scenarios(scenario_managers=["shared_manager"],
+                                  scenarios=["base"], equations=["headcount"],
+                                  return_format="df")
+        # The convenience itself, which the fix must not remove
+        assert list(one.columns) == ["headcount"]
+
+        second = self._column_name_bptk("shared_manager")
+        both = second.run_scenarios(scenario_managers=["shared_manager"],
+                                    scenarios=["base", "freeze"],
+                                    equations=["headcount"], return_format="df")
+
+        assert sorted(both.columns) == ["shared_manager_base_headcount",
+                                        "shared_manager_freeze_headcount"]
+
+    def testBptk_plot_scenarios_column_names_do_not_depend_on_earlier_plots(self):
+        """The same leak through the other door: `plot_scenarios` carried its own dict."""
+        import matplotlib
+        matplotlib.use("Agg")
+
+        first = self._column_name_bptk("plotted_manager")
+        one = first.plot_scenarios(scenario_managers=["plotted_manager"],
+                                   scenarios=["base"], equations=["headcount"],
+                                   return_df=True)
+        assert list(one.columns) == ["headcount"]
+
+        second = self._column_name_bptk("plotted_manager")
+        both = second.plot_scenarios(scenario_managers=["plotted_manager"],
+                                     scenarios=["base", "freeze"],
+                                     equations=["headcount"], return_df=True)
+
+        assert sorted(both.columns) == ["plotted_manager_base_headcount",
+                                        "plotted_manager_freeze_headcount"]
+
     def _build_simple_step_bptk(self, configuration=None):
         """Helper: builds a minimal stock/flow bptk for backend-handling tests.
 
@@ -1569,10 +1712,12 @@ class TestBptk(unittest.TestCase):
 
 
 class TestMatplotlibStyling(unittest.TestCase):
-    """One central plotting configuration, read by every plot method.
+    """Who decides how a chart looks.
 
-    `plotting_config` is process-wide by design, so each test starts from the package
-    defaults - otherwise the order the tests happen to run in decides the outcome.
+    A `bptk()` carries its own plotting configuration, and the package-wide
+    `plotting_config` is the look of the two paths that have no `bptk()` in reach -
+    `Element.plot()` and `plot_agent_stats()`. Each test starts from the package
+    defaults, because that object outlives a test.
     """
 
     DEFAULT_TITLESIZE = default_config.matplotlib_rc_settings["axes.titlesize"]
@@ -1627,17 +1772,31 @@ class TestMatplotlibStyling(unittest.TestCase):
         # outside BPTK keeps matplotlib's own defaults.
         self.assertEqual(plt.rcParams["axes.titlesize"], "large")
 
-    def test_instance_configuration_applies_to_every_plot_method(self):
-        """Configuring one bptk() styles all of them, and Element.plot() too."""
+    def test_instance_configuration_stays_with_that_instance(self):
+        """It used to style every plot in the process, which is what a notebook noticed:
+        the same cell looked different depending on which cell had run before."""
         testBptk = bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
 
         self.assertEqual(self._titlesize_of_a_scenario_plot(testBptk), 7.0)
-        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(), 7.0)
-        # A second instance, built without any configuration, draws in the same style.
-        self.assertEqual(self._titlesize_of_a_scenario_plot(bptk()), 7.0)
+        # Neither the path with no bptk() in reach ...
+        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(),
+                         self.DEFAULT_TITLESIZE)
+        # ... nor a second instance built without a configuration of its own
+        self.assertEqual(self._titlesize_of_a_scenario_plot(bptk()),
+                         self.DEFAULT_TITLESIZE)
 
-    def test_per_call_settings_win_and_leave_the_central_config_alone(self):
-        """The override is for one draw; the next plot is central again."""
+    def test_the_package_wide_configuration_is_what_element_plot_reads(self):
+        """Writing there is how the paths without a `bptk()` are styled."""
+        from BPTK_Py.visualizations import plotting_config
+
+        plotting_config.update({"matplotlib_rc_settings": {"axes.titlesize": 9}})
+
+        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(), 9.0)
+        # and an instance built afterwards starts from it
+        self.assertEqual(self._titlesize_of_a_scenario_plot(bptk()), 9.0)
+
+    def test_per_call_settings_win_and_leave_the_configuration_alone(self):
+        """The override is for one draw; the next plot reads its configuration again."""
         testBptk = bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
         override = {"axes.titlesize": 21}
 
@@ -1649,7 +1808,11 @@ class TestMatplotlibStyling(unittest.TestCase):
             self._titlesize_of_a_scenario_plot(testBptk, matplotlib_rc_settings=override),
             21.0,
         )
-        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(), 7.0)
+        # Each back to its own baseline: the instance to what it was given, the
+        # element to the package-wide look
+        self.assertEqual(self._titlesize_of_a_scenario_plot(testBptk), 7.0)
+        self.assertEqual(self._element().plot(format="axes").title.get_fontsize(),
+                         self.DEFAULT_TITLESIZE)
 
     def test_figsize_and_linewidth_are_mirrored_between_both_forms(self):
         """`figsize` and `figure.figsize` name the same thing, in either direction.
@@ -1663,14 +1826,22 @@ class TestMatplotlibStyling(unittest.TestCase):
                 axes.get_lines()[0].get_linewidth() if axes.get_lines() else None,
             )
 
-        # the rc form, centrally
-        bptk(configuration={"matplotlib_rc_settings": {"figure.figsize": (4, 3), "lines.linewidth": 1}})
+        from BPTK_Py.visualizations import plotting_config
+
+        # the rc form, package-wide - which is what Element.plot() reads
+        plotting_config.update({"matplotlib_rc_settings": {"figure.figsize": (4, 3),
+                                                           "lines.linewidth": 1}})
         self.assertEqual(measure(self._element().plot(format="axes")), ((4.0, 3.0), 1.0))
 
-        # the convenience form, centrally
+        # the convenience form, package-wide
         self.setUp()
-        bptk(configuration={"figsize": (6, 5), "linewidth": 7})
+        plotting_config.update({"figsize": (6, 5), "linewidth": 7})
         self.assertEqual(measure(self._element().plot(format="axes")), ((6.0, 5.0), 7.0))
+
+        # and the same mirror on an instance of its own
+        self.setUp()
+        instance = bptk(configuration={"matplotlib_rc_settings": {"figure.figsize": (3, 9)}})
+        self.assertEqual(instance.plotting_config["figsize"], (3, 9))
 
         # the rc form on a single call, and gone again afterwards
         self.setUp()
@@ -1684,7 +1855,7 @@ class TestMatplotlibStyling(unittest.TestCase):
     def test_reset_returns_to_the_package_defaults(self):
         from BPTK_Py.visualizations import plotting_config
 
-        bptk(configuration={"matplotlib_rc_settings": {"axes.titlesize": 7}})
+        plotting_config.update({"matplotlib_rc_settings": {"axes.titlesize": 7}})
         plotting_config.reset()
 
         self.assertEqual(

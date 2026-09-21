@@ -227,6 +227,114 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertEqual(set(plt.get_fignums()), before)
 
+    def _configured_bptk(self, manager, configuration=None):
+        model = Model(starttime=1, stoptime=4, dt=1, name="colours")
+        stock = model.stock("headcount")
+        stock.initial_value = 10.0
+        flow = model.flow("hiring")
+        flow.equation = 1.0
+        stock.equation = flow
+
+        instance = bptk(configuration=configuration) if configuration else bptk()
+        instance.register_scenario_manager({manager: {"model": model}})
+        instance.register_scenarios(scenarios={"base": {}}, scenario_manager=manager)
+        return instance
+
+    @staticmethod
+    def _first_series_colour(instance, manager):
+        axes = instance.plot_scenarios(scenario_managers=[manager], scenarios=["base"],
+                                       equations=["headcount"], format="axes")
+        return axes.get_lines()[0].get_color()
+
+    def test_a_configuration_reaches_the_instance_it_was_given_to(self):
+        instance = self._configured_bptk("own_look",
+                                         {"colors": ["#ff0000"], "kind": "line"})
+
+        self.assertEqual(self._first_series_colour(instance, "own_look"), "#ff0000")
+
+    def test_a_configuration_does_not_reach_the_next_instance(self):
+        """Two cells of a notebook used to restyle each other.
+
+        `bptk(configuration=...)` wrote into the package-wide configuration, so whichever
+        instance was built last decided how all of them looked - the symptom the move off
+        `plt.rcParams` was meant to remove, arriving through `colors` and `kind` instead.
+        """
+        from BPTK_Py.visualizations import plotting_config
+
+        self._configured_bptk("loud_look", {"colors": ["#ff0000"], "kind": "line"})
+        plain = self._configured_bptk("plain_look")
+
+        drawn = self._first_series_colour(plain, "plain_look")
+        self.assertNotEqual(drawn, "#ff0000")
+        self.assertEqual(drawn, plotting_config["colors"][0])
+
+    def test_an_instance_starts_from_the_package_wide_look(self):
+        """Set the look once for the process and everything built after it follows."""
+        from BPTK_Py.visualizations import plotting_config
+
+        plotting_config.reset()
+        try:
+            plotting_config.update({"colors": ["#00ff00"], "kind": "line"})
+            instance = self._configured_bptk("inherited_look")
+
+            self.assertEqual(self._first_series_colour(instance, "inherited_look"),
+                             "#00ff00")
+        finally:
+            plotting_config.reset()
+
+    def test_a_later_package_wide_change_leaves_a_built_instance_alone(self):
+        """The notebook guarantee: a cell's look does not change under it.
+
+        An instance takes the package-wide look when it is built and keeps it. Reading
+        the object at drawing time instead is what made the same cell look different
+        depending on which cell had been run before it.
+        """
+        from BPTK_Py.visualizations import plotting_config
+
+        plotting_config.reset()
+        try:
+            instance = self._configured_bptk("built_early")
+            before = self._first_series_colour(instance, "built_early")
+
+            plotting_config.update({"colors": ["#00ff00"], "kind": "line"})
+
+            self.assertEqual(self._first_series_colour(instance, "built_early"), before)
+        finally:
+            plotting_config.reset()
+
+    def test_a_configuration_leaves_the_package_wide_one_alone(self):
+        from BPTK_Py.visualizations import plotting_config
+
+        # From the package defaults, so that what is compared is not a colour an
+        # earlier test already wrote into the same object
+        plotting_config.reset()
+        before = dict(plotting_config.settings)
+
+        try:
+            self._configured_bptk("quiet_look",
+                                  {"colors": ["#123456"], "kind": "line"})
+            self.assertEqual(dict(plotting_config.settings), before)
+        finally:
+            plotting_config.reset()
+
+    def test_element_plot_still_follows_the_package_wide_configuration(self):
+        """It has no `bptk()` in reach, so the package-wide one is what it can read."""
+        from BPTK_Py.visualizations import plotting_config
+
+        model = Model(starttime=1, stoptime=4, dt=1, name="element_look")
+        stock = model.stock("headcount")
+        stock.initial_value = 10.0
+        flow = model.flow("hiring")
+        flow.equation = 1.0
+        stock.equation = flow
+
+        try:
+            plotting_config.update({"colors": ["#0000ff"], "kind": "line"})
+            axes = stock.plot(format="axes")
+            self.assertEqual(axes.get_lines()[0].get_color(), "#0000ff")
+        finally:
+            plotting_config.reset()
+
     def test_plotting_config_update_of_nothing_keeps_the_settings(self):
         """`update(None)` and `update({})` are no-ops rather than resets.
 

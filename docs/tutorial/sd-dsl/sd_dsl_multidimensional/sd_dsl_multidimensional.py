@@ -524,18 +524,18 @@ def _(mo):
     mo.md(r"""
     \begin{equation*}
     \begin{pmatrix}
-    4.0\\
-    5.0
+    \text{'value1'}: & 4.0 \\
+    \text{'value2'}: & 5.0
     \end{pmatrix}
     \odot
     \begin{pmatrix}
-    6.0\\
-    7.0
+    \text{'value1'}: & 6.0 \\
+    \text{'value2'}: & 7.0
     \end{pmatrix}
     =
     \begin{pmatrix}
-    24.0\\
-    35.0
+    \text{'value1'}: & 24.0 \\
+    \text{'value2'}: & 35.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -564,15 +564,15 @@ def _(mo):
     mo.md(r"""
     \begin{equation*}
     \begin{pmatrix}
-    6.0\\
-    7.0
+    \text{'value1'}: & 6.0 \\
+    \text{'value2'}: & 7.0
     \end{pmatrix}
     \cdot
     3.0
     =
     \begin{pmatrix}
-    18.0\\
-    21.0
+    \text{'value1'}: & 18.0 \\
+    \text{'value2'}: & 21.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -609,13 +609,13 @@ def _(mo):
     mo.md(r"""
     \begin{equation*}
     - \begin{pmatrix}
-    6.0\\
-    7.0
+    \text{'value1'}: & 6.0 \\
+    \text{'value2'}: & 7.0
     \end{pmatrix}
     =
     \begin{pmatrix}
-    -6.0\\
-    -7.0
+    \text{'value1'}: & -6.0 \\
+    \text{'value2'}: & -7.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -755,27 +755,27 @@ def _(mo):
     mo.md(r"""
     \begin{equation*}
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     ^{2}
     =
     \begin{pmatrix}
-    16.0 \\
-    81.0
+    \text{'small'}: & 16.0 \\
+    \text{'large'}: & 81.0
     \end{pmatrix}
     \end{equation*}
 
     \begin{equation*}
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     \bmod 5
     =
     \begin{pmatrix}
-    4.0 \\
-    4.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 4.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -820,27 +820,27 @@ def _(mo):
     \begin{equation*}
     \sqrt{
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     }
     =
     \begin{pmatrix}
-    2.0 \\
-    3.0
+    \text{'small'}: & 2.0 \\
+    \text{'large'}: & 3.0
     \end{pmatrix}
     \end{equation*}
 
     \begin{equation*}
     2 \cdot \ln
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     =
     \begin{pmatrix}
-    2.7726 \\
-    4.3944
+    \text{'small'}: & 2.7726 \\
+    \text{'large'}: & 4.3944
     \end{pmatrix}
     \end{equation*}
     """)
@@ -889,20 +889,20 @@ def _(mo):
     \begin{equation*}
     \mathrm{If}\left(
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     > 6,
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     , 0
     \right)
     =
     \begin{pmatrix}
-    0.0 \\
-    9.0
+    \text{'small'}: & 0.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -946,15 +946,15 @@ def _(mo):
     \begin{equation*}
     \max\left(
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     , 6
     \right)
     =
     \begin{pmatrix}
-    6.0 \\
-    9.0
+    \text{'small'}: & 6.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     \end{equation*}
     """)
@@ -997,16 +997,16 @@ def _(mo):
     \begin{equation*}
     \mathrm{smooth}\left(
     \begin{pmatrix}
-    4.0 \\
-    9.0
+    \text{'small'}: & 4.0 \\
+    \text{'large'}: & 9.0
     \end{pmatrix}
     , \tau = 3, s_0 = 1
     \right)
     \Bigr|_{t=4}
     =
     \begin{pmatrix}
-    3.4074 \\
-    7.4198
+    \text{'small'}: & 3.4074 \\
+    \text{'large'}: & 7.4198
     \end{pmatrix}
     \end{equation*}
     """)
@@ -1065,9 +1065,9 @@ def _(mo):
     \begin{equation*}
     \text{sum}
     \begin{pmatrix}
-    1.0 \\
-    2.0\\
-    3.0
+    \text{'value1'}: & 1.0 \\
+    \text{'value2'}: & 2.0 \\
+    \text{'value3'}: & 3.0
     \end{pmatrix}
     =
     1.0 + 2.0 + 3.0 = 6.0
@@ -1310,14 +1310,16 @@ def _(model):
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \text{mean}
+    \begin{aligned}
+    &\text{mean}
     \begin{pmatrix}
-    2.0 & 4.0\\
-    6.0 & 8.0\\
-    10.0 & 12.0
-    \end{pmatrix}
-    =
-    \frac{2.0 + 4.0 + 6.0 + 8.0 + 10.0 +12.0}{6} = 7.0
+    \text{'value1'}: & \{\text{'value11'}: 2.0,\; \text{'value12'}: 4.0\} \\
+    \text{'value2'}: & \{\text{'value21'}: 6.0,\; \text{'value22'}: 8.0\} \\
+    \text{'value3'}: & \{\text{'value31'}: 10.0,\; \text{'value32'}: 12.0\}
+    \end{pmatrix} \\[2pt]
+    &=
+    \frac{2.0 + 4.0 + 6.0 + 8.0 + 10.0 + 12.0}{6} = 7.0
+    \end{aligned}
     \end{equation*}
     """)
     return
@@ -1711,9 +1713,25 @@ def _(mo):
 
     If the dimensions of the arrays to which the dot function is applied do not allow for a valid array multiplication, an exception is thrown.
 
-    ⚠️ **The Dot function is currently supported for not-named arrays only!**
+    **Named arrays follow the same table, with labels in place of sizes.** The axis that is
+    summed over has to carry the same labels on both sides - the labels of a vector against
+    the rows of a matrix, the columns of the left matrix against the rows of the right one.
+    The axes that survive keep their own labels: rows come from the left operand, columns
+    from the right. A vector times a matrix is therefore labelled by the matrix's columns,
+    because its rows are exactly what the sum consumed.
 
-    Lets have a look at some examples:
+    Three things follow from that:
+
+    * The operands are paired **by label, not by position**, so the two may list their
+      labels in a different order.
+    * A named matrix has to carry **the same column labels in every row**. A matrix whose
+      rows carry different labels is legal everywhere else, but here there would be no
+      single axis to sum over.
+    * A named array **cannot be multiplied with an unnamed one** - there is nothing for the
+      labels to line up against.
+
+    The examples below show each shape once. Where a product has two directions, one of
+    them is named and the other is not.
     """)
     return
 
@@ -1736,7 +1754,7 @@ def _(model):
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    2.0 \cdot \begin{pmatrix} 1.0 \\ 2.0 \\ 3.0 \end{pmatrix}
+    \begin{pmatrix} 1.0 \\ 2.0 \\ 3.0 \end{pmatrix} \cdot 2.0
     =
     \begin{pmatrix} 2.0 \\ 4.0 \\ 6.0 \end{pmatrix}\end{equation*}
     """)
@@ -1753,20 +1771,34 @@ def _(dot_result_one, mo):
 
 
 @app.cell
-def _(constant, dot_vector_right, model):
-    #Calculate constant * vector
+def _(constant, model):
+    #Calculate constant * vector, this time with a named vector
+    dot_named_vector = model.converter('dot_named_vector')
+    dot_named_vector.setup_named_vector({'a': 4.0, 'b': 5.0, 'c': 6.0})
     dot_result_constant_vector = model.converter('dot_result_constant_vector')
-    dot_result_constant_vector.equation = constant.dot(dot_vector_right)
-    return (dot_result_constant_vector,)
+    dot_result_constant_vector.equation = constant.dot(dot_named_vector)
+    return dot_named_vector, dot_result_constant_vector
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    The other direction, and with a **named** vector. A constant multiplies every cell, so
+    there is no axis to line up and the labels come through untouched:
+
     \begin{equation*}
-    \begin{pmatrix} 4.0 \\ 5.0 \\ 6.0 \end{pmatrix} \cdot 2.0
+    2.0 \cdot
+    \begin{pmatrix}
+    \text{'a'}: & 4.0 \\
+    \text{'b'}: & 5.0 \\
+    \text{'c'}: & 6.0
+    \end{pmatrix}
     =
-    \begin{pmatrix} 8.0 \\ 10.0 \\ 12.0 \end{pmatrix}\end{equation*}
+    \begin{pmatrix}
+    \text{'a'}: & 8.0 \\
+    \text{'b'}: & 10.0 \\
+    \text{'c'}: & 12.0
+    \end{pmatrix}\end{equation*}
     """)
     return
 
@@ -1774,7 +1806,9 @@ def _(mo):
 @app.cell
 def _(dot_result_constant_vector, mo):
     with mo.capture_stdout() as captured_22:
-        print("[" + str(dot_result_constant_vector[0](1)) + " , " + str(dot_result_constant_vector[1](1)) + " , " + str(dot_result_constant_vector[2](1)) + "]")
+        print("{a: " + str(dot_result_constant_vector['a'](1))
+              + " , b: " + str(dot_result_constant_vector['b'](1))
+              + " , c: " + str(dot_result_constant_vector['c'](1)) + "}")
 
     mo.plain_text(captured_22.getvalue())
     return
@@ -1825,27 +1859,38 @@ def _(dot_result_two, mo):
 
 
 @app.cell
-def _(constant_1, dot_matrix_two, model):
-    #Calculate constant * matrix
+def _(constant_1, model):
+    #Calculate constant * matrix, this time with a named matrix
+    dot_named_costs = model.converter('dot_named_costs')
+    dot_named_costs.setup_named_matrix({
+        'north': {'a': -1.0, 'b': -2.0, 'c': -3.0},
+        'south': {'a': -4.0, 'b': -5.0, 'c': -6.0},
+    })
     dot_result_constant_matrix = model.converter('dot_result_constant_matrix')
-    dot_result_constant_matrix.equation = constant_1.dot(dot_matrix_two)
-    return (dot_result_constant_matrix,)
+    dot_result_constant_matrix.equation = constant_1.dot(dot_named_costs)
+    return dot_named_costs, dot_result_constant_matrix
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    A **named** matrix this time, with rows `north` and `south` and columns `a`, `b` and
+    `c`. As with the vector, a constant leaves the labels alone:
+
     \begin{equation*}
-    2.0 \cdot
+    \begin{aligned}
+    &2.0 \cdot
     \begin{pmatrix}
-    -1.0 & -2.0 & -3.0 \\
-    -4.0 & -5.0 & -6.0 \\
+    \text{'north'}: & \{\text{'a'}: -1.0,\; \text{'b'}: -2.0,\; \text{'c'}: -3.0\} \\
+    \text{'south'}: & \{\text{'a'}: -4.0,\; \text{'b'}: -5.0,\; \text{'c'}: -6.0\}
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'north'}: & \{\text{'a'}: -2.0,\; \text{'b'}: -4.0,\; \text{'c'}: -6.0\} \\
+    \text{'south'}: & \{\text{'a'}: -8.0,\; \text{'b'}: -10.0,\; \text{'c'}: -12.0\}
     \end{pmatrix}
-    =
-    \begin{pmatrix}
-    -2.0 & -4.0 & -6.0 \\
-    -8.0 & -10.0 & -12.0 \\
-    \end{pmatrix}\end{equation*}
+    \end{aligned}
+    \end{equation*}
     """)
     return
 
@@ -1853,10 +1898,10 @@ def _(mo):
 @app.cell
 def _(dot_result_constant_matrix, mo):
     with mo.capture_stdout() as captured_24:
-        print("[ " + "["    + str(dot_result_constant_matrix[0][0](1)) + " , " + str(dot_result_constant_matrix[0][1](1)) + " , " 
-                            + str(dot_result_constant_matrix[0][2](1)) + "]")
-        print("  " + "["    + str(dot_result_constant_matrix[1][0](1)) + " , " + str(dot_result_constant_matrix[1][1](1)) + " , " 
-                            + str(dot_result_constant_matrix[1][2](1)) + "]" + " ]")
+        for _row in ('north', 'south'):
+            print(_row + ": {a: " + str(dot_result_constant_matrix[_row]['a'](1))
+                  + " , b: " + str(dot_result_constant_matrix[_row]['b'](1))
+                  + " , c: " + str(dot_result_constant_matrix[_row]['c'](1)) + "}")
 
     mo.plain_text(captured_24.getvalue())
     return
@@ -1893,6 +1938,55 @@ def _(dot_result_three, mo):
         print(dot_result_three(1)) #1*4 + 2*5 + 3*6 = 32
 
     mo.plain_text(captured_25.getvalue())
+    return
+
+
+@app.cell
+def _(dot_named_vector, model):
+    #Calculate vector * vector with labels
+    dot_named_scrambled = model.converter('dot_named_scrambled')
+    dot_named_scrambled.setup_named_vector({'c': 3.0, 'b': 2.0, 'a': 1.0})
+    dot_result_named_vectors = model.converter('dot_result_named_vectors')
+    dot_result_named_vectors.equation = dot_named_vector.dot(dot_named_scrambled)
+    return dot_named_scrambled, dot_result_named_vectors
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The same scalar product with **named** vectors. The right operand lists its labels in
+    the opposite order, which changes nothing: `a` meets `a`, `b` meets `b`, `c` meets `c`.
+
+    \begin{equation*}
+    \begin{aligned}
+    \left\langle
+    \begin{pmatrix}
+    \text{'a'}: & 4.0 \\
+    \text{'b'}: & 5.0 \\
+    \text{'c'}: & 6.0
+    \end{pmatrix},
+    \begin{pmatrix}
+    \text{'c'}: & 3.0 \\
+    \text{'b'}: & 2.0 \\
+    \text{'a'}: & 1.0
+    \end{pmatrix}
+    \right\rangle
+    &=
+    4.0 \cdot 1.0 + 5.0 \cdot 2.0 + 6.0 \cdot 3.0 \\[2pt]
+    &=
+    32.0
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(dot_result_named_vectors, mo):
+    with mo.capture_stdout() as captured_named_vectors:
+        print(dot_result_named_vectors(1)) #4*1 + 5*2 + 6*3 = 32
+
+    mo.plain_text(captured_named_vectors.getvalue())
     return
 
 
@@ -1941,6 +2035,66 @@ def _(dot_result_four, mo):
 
 
 @app.cell
+def _(dot_named_scrambled, model):
+    #Calculate vector * matrix with labels
+    dot_named_price = model.converter('dot_named_price')
+    dot_named_price.setup_named_matrix({
+        'a': {'online': 1.0, 'retail': 2.0},
+        'b': {'online': 3.0, 'retail': 4.0},
+        'c': {'online': 5.0, 'retail': 6.0},
+    })
+    dot_result_named_vector_matrix = model.converter('dot_result_named_vector_matrix')
+    dot_result_named_vector_matrix.equation = dot_named_scrambled.dot(dot_named_price)
+    return dot_named_price, dot_result_named_vector_matrix
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The same product with labels. The vector is labelled by product and so are the rows of
+    the matrix - that is the axis the sum runs over, and it disappears. What is left are the
+    matrix's columns, so the result is labelled `online` and `retail`:
+
+    \begin{equation*}
+    \begin{aligned}
+    &\begin{pmatrix}
+    \text{'a'}: & 1.0 \\
+    \text{'b'}: & 2.0 \\
+    \text{'c'}: & 3.0
+    \end{pmatrix}
+    \cdot
+    \begin{pmatrix}
+    \text{'a'}: & \{\text{'online'}: 1.0,\; \text{'retail'}: 2.0\} \\
+    \text{'b'}: & \{\text{'online'}: 3.0,\; \text{'retail'}: 4.0\} \\
+    \text{'c'}: & \{\text{'online'}: 5.0,\; \text{'retail'}: 6.0\}
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'online'}: & 1.0 \cdot 1.0 + 2.0 \cdot 3.0 + 3.0 \cdot 5.0 \\
+    \text{'retail'}: & 1.0 \cdot 2.0 + 2.0 \cdot 4.0 + 3.0 \cdot 6.0
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'online'}: & 22.0 \\
+    \text{'retail'}: & 28.0
+    \end{pmatrix}
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(dot_result_named_vector_matrix, mo):
+    with mo.capture_stdout() as captured_named_vector_matrix:
+        print("{online: " + str(dot_result_named_vector_matrix['online'](1))
+              + " , retail: " + str(dot_result_named_vector_matrix['retail'](1)) + "}")
+
+    mo.plain_text(captured_named_vector_matrix.getvalue())
+    return
+
+
+@app.cell
 def _(dot_matrix_two, dot_vector_right, model):
     #Calculate matrix * vector
     dot_result_matrix_vector = model.converter('dot_result_matrix_vector')
@@ -1952,7 +2106,8 @@ def _(dot_matrix_two, dot_vector_right, model):
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \begin{pmatrix}
+    \begin{aligned}
+    &\begin{pmatrix}
     -1.0 & -2.0 & -3.0 \\
     -4.0 & -5.0 & -6.0 \\
     \end{pmatrix}
@@ -1961,17 +2116,18 @@ def _(mo):
     4.0 \\
     5.0 \\
     6.0 \\
-    \end{pmatrix}
-    =
+    \end{pmatrix} \\[2pt]
+    &=
     \begin{pmatrix}
     -1.0 \cdot 4.0 + (-2.0) \cdot 5.0 + (-3.0) \cdot 6.0 \\
     -4.0 \cdot 4.0 + (-5.0) \cdot 5.0 + (-6.0) \cdot 6.0 \\
-    \end{pmatrix}
-    =
+    \end{pmatrix} \\[2pt]
+    &=
     \begin{pmatrix}
     -32.0 \\
     -77.0
     \end{pmatrix}
+    \end{aligned}
     \end{equation*}
     """)
     return
@@ -1983,6 +2139,59 @@ def _(dot_result_matrix_vector, mo):
         print("[" + str(dot_result_matrix_vector[0](1)) + " , " + str(dot_result_matrix_vector[1](1)) + "]")
 
     mo.plain_text(captured_27.getvalue())
+    return
+
+
+@app.cell
+def _(dot_named_costs, dot_named_vector, model):
+    #Calculate matrix * vector with labels
+    dot_result_named_matrix_vector = model.converter('dot_result_named_matrix_vector')
+    dot_result_named_matrix_vector.equation = dot_named_costs.dot(dot_named_vector)
+    return (dot_result_named_matrix_vector,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    And with labels - the same numbers, reusing the named matrix and the named vector from
+    further up. Here the sum runs over the *columns* of the matrix, which carry the product
+    labels, so what survives are its rows:
+
+    \begin{equation*}
+    \begin{aligned}
+    &\begin{pmatrix}
+    \text{'north'}: & \{\text{'a'}: -1.0,\; \text{'b'}: -2.0,\; \text{'c'}: -3.0\} \\
+    \text{'south'}: & \{\text{'a'}: -4.0,\; \text{'b'}: -5.0,\; \text{'c'}: -6.0\}
+    \end{pmatrix}
+    \cdot
+    \begin{pmatrix}
+    \text{'a'}: & 4.0 \\
+    \text{'b'}: & 5.0 \\
+    \text{'c'}: & 6.0
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'north'}: & -1.0 \cdot 4.0 + (-2.0) \cdot 5.0 + (-3.0) \cdot 6.0 \\
+    \text{'south'}: & -4.0 \cdot 4.0 + (-5.0) \cdot 5.0 + (-6.0) \cdot 6.0
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'north'}: & -32.0 \\
+    \text{'south'}: & -77.0
+    \end{pmatrix}
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(dot_result_named_matrix_vector, mo):
+    with mo.capture_stdout() as captured_named_matrix_vector:
+        print("{north: " + str(dot_result_named_matrix_vector['north'](1))
+              + " , south: " + str(dot_result_named_matrix_vector['south'](1)) + "}")
+
+    mo.plain_text(captured_named_matrix_vector.getvalue())
     return
 
 
@@ -2003,7 +2212,7 @@ def _(mo):
     mo.md(r"""
     \begin{equation*}
     \begin{aligned}
-    \begin{pmatrix}
+    &\begin{pmatrix}
     1.0 & 2.0 \\
     3.0 & 4.0 \\
     \end{pmatrix}
@@ -2011,12 +2220,12 @@ def _(mo):
     \begin{pmatrix}
     -1.0 & -2.0 \\
     -4.0 & -5.0 \\
-    \end{pmatrix}
+    \end{pmatrix} \\[2pt]
     &=
     \begin{pmatrix}
     1.0 \cdot (-1.0) + 2.0 \cdot (-4.0) & 1.0 \cdot (-2.0) + 2.0 \cdot (-5.0) \\
     3.0 \cdot (-1.0) + 4.0 \cdot (-4.0) & 3.0 \cdot (-2.0) + 4.0 \cdot (-5.0) \\
-    \end{pmatrix}\\
+    \end{pmatrix} \\[2pt]
     &=
     \begin{pmatrix}
     -9 & -12 \\
@@ -2035,6 +2244,72 @@ def _(dot_result_five, mo):
         print("  " + "["    + str(dot_result_five[1][0](1)) + " , " + str(dot_result_five[1][1](1)) + "]" + " ]")
 
     mo.plain_text(captured_28.getvalue())
+    return
+
+
+@app.cell
+def _(model):
+    #Calculate matrix * matrix with labels
+    dot_named_shipments = model.converter('dot_named_shipments')
+    dot_named_shipments.setup_named_matrix({
+        'north': {'a': 1.0, 'b': 2.0},
+        'south': {'a': 3.0, 'b': 4.0},
+    })
+    dot_named_margin = model.converter('dot_named_margin')
+    dot_named_margin.setup_named_matrix({
+        'a': {'online': -1.0, 'retail': -2.0},
+        'b': {'online': -4.0, 'retail': -5.0},
+    })
+    dot_result_named_matrices = model.converter('dot_result_named_matrices')
+    dot_result_named_matrices.equation = dot_named_shipments.dot(dot_named_margin)
+    return dot_named_margin, dot_named_shipments, dot_result_named_matrices
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The same matrix product with labels. The left matrix runs from regions to products, the
+    right one from products to channels - the products are what the two have in common and
+    what the sum consumes. The result runs from regions to channels: its rows come from the
+    left operand, its columns from the right.
+
+    \begin{equation*}
+    \begin{aligned}
+    &\begin{pmatrix}
+    \text{'north'}: & \{\text{'a'}: 1.0,\; \text{'b'}: 2.0\} \\
+    \text{'south'}: & \{\text{'a'}: 3.0,\; \text{'b'}: 4.0\}
+    \end{pmatrix}
+    \cdot
+    \begin{pmatrix}
+    \text{'a'}: & \{\text{'online'}: -1.0,\; \text{'retail'}: -2.0\} \\
+    \text{'b'}: & \{\text{'online'}: -4.0,\; \text{'retail'}: -5.0\}
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'north'}: & \{\text{'online'}: 1.0 \cdot (-1.0) + 2.0 \cdot (-4.0), \\
+    & \phantom{\{} \text{'retail'}: 1.0 \cdot (-2.0) + 2.0 \cdot (-5.0)\} \\[2pt]
+    \text{'south'}: & \{\text{'online'}: 3.0 \cdot (-1.0) + 4.0 \cdot (-4.0), \\
+    & \phantom{\{} \text{'retail'}: 3.0 \cdot (-2.0) + 4.0 \cdot (-5.0)\}
+    \end{pmatrix} \\[2pt]
+    &=
+    \begin{pmatrix}
+    \text{'north'}: & \{\text{'online'}: -9.0,\; \text{'retail'}: -12.0\} \\
+    \text{'south'}: & \{\text{'online'}: -19.0,\; \text{'retail'}: -26.0\}
+    \end{pmatrix}
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(dot_result_named_matrices, mo):
+    with mo.capture_stdout() as captured_named_matrices:
+        for _row in ('north', 'south'):
+            print(_row + ": {online: " + str(dot_result_named_matrices[_row]['online'](1))
+                  + " , retail: " + str(dot_result_named_matrices[_row]['retail'](1)) + "}")
+
+    mo.plain_text(captured_named_matrices.getvalue())
     return
 
 
@@ -2228,8 +2503,11 @@ def _(mo):
 
     * **Two dimensions is the limit.** `setup_matrix` takes exactly two sizes, and there
       is no three-dimensional array.
-    * **`dot` works on unnamed arrays only.** A named operand raises rather than guessing
-      how to line up the labels.
+    * **A named matrix in a `dot` needs the same column labels in every row.** Such a
+      matrix is legal everywhere else - a `dot` is the one operation that sums over an
+      axis and therefore needs a single set of column labels to sum over.
+    * **A `dot` cannot mix a named array with an unnamed one.** There is nothing for the
+      labels to line up against, so it raises.
     * **There is no aggregation over a single dimension.** `arr_sum` and `arr_prod` take
       a `dimensions` argument, but the only values it accepts are `"*"` (the default) and
       an integer equal to the array's depth - both of which aggregate every cell.

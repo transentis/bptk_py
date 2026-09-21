@@ -211,11 +211,19 @@ jobs:
 
   publish:
     needs: [test, linux, macos, windows, sdist, anywheel]
-    # Only a tag publishes. Without this, running the workflow by hand from the
+    # Two conditions, each closing a different way to publish by accident.
+    #
+    # Only a tag publishes. Without that, running the workflow by hand from the
     # Actions tab would upload to PyPI - which makes it unusable as the release
     # rehearsal it should be: build every wheel, run the base-install checks,
     # keep the artefacts, publish nothing.
-    if: startsWith(github.ref, 'refs/tags/')
+    #
+    # And only from the public repository. The internal repository carries this
+    # same file, so a `release-*` tag pushed there would otherwise run this job
+    # and try to upload. Whether PyPI would accept it depends on a trusted
+    # publisher setting that nobody can read from the repository - so the rule
+    # lives here, where it can be read.
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'transentis/bptk_py'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

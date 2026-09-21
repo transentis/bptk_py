@@ -11,12 +11,21 @@
 
 
 import random
+import threading
 
 import numpy as np
 import math
 from scipy.interpolate import interp1d
 
 from ..util import floating_point as fp
+
+# Which thread is already inside an evaluation. A cold evaluation deep into a run
+# recurses once per timestep and can exhaust the stack; the outermost call answers that
+# by computing forward instead, and the calls it makes itself must not each try the same.
+# Module level rather than an attribute, so that nothing about a Model has to be copied
+# or serialized for it, and thread-local because the schedulers evaluate in parallel.
+_evaluation = threading.local()
+
 
 from .agent import Agent
 from .event import Event
@@ -824,7 +833,7 @@ class Model:
                                     y_label="",
                                     start_date="",
                                     freq="",
-                                    series_names={},
+                                    series_names=None,
                                     matplotlib_rc_settings=matplotlib_rc_settings)
 
 
@@ -868,9 +877,59 @@ class Model:
             mymemo = self.memo[equation]
         if normalized_arg in mymemo.keys():
             return mymemo[normalized_arg]
-        else:
+
+        # Already inside an evaluation: this call is one link of the chain the outermost
+        # one started, and it is that one which retries if the chain grows too long.
+        if getattr(_evaluation, "active", False):
             result = self.equations[equation](normalized_arg)
             mymemo[normalized_arg] = result
+            return result
+
+        _evaluation.active = True
+        try:
+            result = self.equations[equation](normalized_arg)
+        except RecursionError:
+            # A stock asks for the step before it, which asks for the step before that:
+            # a cold evaluation at a late step is a chain as long as the run, and Python
+            # runs out of stack at about 330 steps - counted in steps, so a fine `dt`
+            # reaches it early in model time. Computing forward keeps every step shallow,
+            # because each one finds its predecessor already here.
+            result = self._evaluate_forward(equation, normalized_arg)
+        finally:
+            _evaluation.active = False
+
+        mymemo[normalized_arg] = result
+        return result
+
+    def _evaluate_forward(self, equation, target):
+        """Evaluate `equation` from `starttime` up to `target`, keeping each step shallow.
+
+        Whatever is in the memo already is kept: only the gaps are filled.
+        """
+        mymemo = self.memo[equation]
+        precision = max(fp.scale(self.starttime), fp.scale(self.dt))
+        t = self.starttime
+        result = None
+
+        try:
+            while t <= target:
+                if t in mymemo:
+                    result = mymemo[t]
+                else:
+                    result = self.equations[equation](t)
+                    mymemo[t] = result
+                t = fp.normalize(t + self.dt, self.dt, self.starttime, precision)
+        except RecursionError:
+            # Not the timestep chain then, but one evaluation that is itself too deep -
+            # a long chain of elements referring to one another. Nothing here can help
+            # with that, so say what happened instead of repeating the bare error.
+            raise RecursionError(
+                "'{}' cannot be evaluated at t={}: even computing from {} upwards, a "
+                "single timestep goes deeper than Python's recursion limit. This is a "
+                "chain of elements referring to one another rather than a long run - "
+                "shorten it, or raise sys.setrecursionlimit().".format(
+                    equation, target, self.starttime)
+            ) from None
 
         return result
 

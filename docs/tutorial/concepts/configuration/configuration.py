@@ -245,12 +245,11 @@ def _(savings):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### One configuration for every plot
+    ### Who decides how a plot looks
 
-    The plot settings live in one place that every plot method reads — `plot_scenarios`,
-    `plot_lookup`, `Element.plot` and the agent data collector alike. Passing
-    `configuration` to the constructor writes into it, so the settings apply to **every**
-    plot in the process, not only to the plots of the instance you configured:
+    Passing `configuration` to the constructor sets the look of **that instance**:
+    `plot_scenarios` and `plot_lookup` on it draw the way you asked, and nothing else in
+    your session changes.
 
     ```python
     BPTK_Py.bptk(
@@ -268,9 +267,18 @@ def _(mo):
     )
     ```
 
-    That is deliberate — you configure the look of your plots once — but it is worth
-    knowing before you build a second instance and wonder why it draws in the first
-    instance's style. `BPTK_Py.plotting_config.reset()` gets back to the defaults.
+    Two plot methods have no `BPTK_Py.bptk()` in reach and cannot read an instance's
+    look: `Element.plot()` and the agent data collector's `plot_agent_stats()`. Those
+    follow `BPTK_Py.plotting_config`, which is also what every instance **starts** from:
+
+    ```python
+    BPTK_Py.plotting_config.update({"kind": "bar", "colors": ["Red", "Blue"]})
+    ```
+
+    Set that before you build your `bptk()` objects and they all draw that way, the two
+    methods above included. An instance that already exists keeps the look it was built
+    with, so a cell you ran earlier does not change under you. `BPTK_Py.plotting_config.reset()`
+    gets back to the defaults.
 
     Charts you draw yourself are not affected. The settings are applied around our own
     drawing calls, never written into matplotlib's global `rcParams`, so a figure you
@@ -279,8 +287,8 @@ def _(mo):
     ### Styling a single plot
 
     Where one chart should differ, hand the settings to that call instead. They are laid
-    over the central configuration for this one draw and leave it as it is, so the plot
-    above keeps its own look. Change a value and press play:
+    over the configuration for this one draw and leave it as it is, so the plot above
+    keeps its own look. Change a value and press play:
     """)
     return
 

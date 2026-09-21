@@ -19,6 +19,8 @@ import pytest
 
 
 PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
+PUBLISH_WORKFLOW = (Path(__file__).resolve().parent.parent
+                    / ".github" / "workflows" / "publish.yml")
 
 EXPECTED_BASE = {"pandas", "scipy", "numpy", "tqdm", "xlsxwriter", "jsonpickle"}
 
@@ -298,3 +300,41 @@ class TestMissingExtrasExplainThemselves:
         """)
         assert result.returncode == 0, result.stderr
         assert result.stdout.strip() == "259.3742"
+
+
+class TestPublishWorkflow:
+    """What stops a release from happening by accident.
+
+    Both are conditions on one job, so both are invisible until the day they are
+    needed - and one of them has never fired in anger: that a failing test stops the
+    upload is the passing direction proven three times over and the failing direction
+    never. These read the file instead, so removing a condition fails here rather than
+    on a release.
+    """
+
+    @staticmethod
+    def _publish_job():
+        if not PUBLISH_WORKFLOW.is_file():
+            pytest.skip("publish.yml not available - running against an install")
+        parts = PUBLISH_WORKFLOW.read_text().split("\n  publish:\n", 1)
+        assert len(parts) == 2, "publish.yml no longer has a `publish:` job"
+        return parts[1]
+
+    def test_only_the_public_repository_publishes(self):
+        """The internal repository carries the same file, and the same tag names."""
+        assert "github.repository == 'transentis/bptk_py'" in self._publish_job(), (
+            "the publish job is no longer confined to the public repository - a "
+            "`release-*` tag in the internal repository would try to upload to PyPI")
+
+    def test_only_a_tag_publishes(self):
+        assert "startsWith(github.ref, 'refs/tags/')" in self._publish_job(), (
+            "the publish job no longer requires a tag - running the workflow by hand "
+            "from the Actions tab would upload to PyPI")
+
+    def test_the_test_job_gates_the_upload(self):
+        job = self._publish_job()
+        needs = [line for line in job.splitlines() if line.strip().startswith("needs:")]
+        assert needs, "the publish job has no `needs:` at all - nothing gates the upload"
+        assert "test" in needs[0], (
+            "the publish job no longer depends on the test job, so a red suite would "
+            "not stop the upload: {}".format(needs[0].strip()))

@@ -277,7 +277,6 @@ class TestArrayedSerialization(unittest.TestCase):
                 mul(ref("m[1][1]"), ref("n[1][0]"))))
 
     def test_a_value_on_either_side_of_a_dot_is_one_product(self):
-        # An unnamed vector: `dot` rejects named arrays in its constructor.
         unnamed = self.model.constant("u")
         unnamed.setup_vector(2, [1.0, 2.0])
 
@@ -301,6 +300,33 @@ class TestArrayedSerialization(unittest.TestCase):
             add(mul(add(ref("u[0]"), ref("w[0]")), ref("m[0][0]")),
                 mul(add(ref("u[1]"), ref("w[1]")), ref("m[1][0]"))))
 
+    def test_a_named_dot_addresses_the_leaves_by_label(self):
+        """Nothing about the expansion changes: a label names an entity like a position."""
+        regions = self.model.constant("r")
+        regions.setup_named_vector({"north": 3.0, "south": 5.0})
+        by_product = self.model.constant("p")
+        by_product.setup_named_matrix({"north": {"a": 1.0, "b": 2.0},
+                                       "south": {"a": 3.0, "b": 4.0}})
+        target = self.model.converter("per_product")
+        target.equation = regions.dot(by_product)
+
+        self.assertEqual(
+            _expr_to_json(target["b"].equation),
+            add(mul(ref("r[north]"), ref("p[north][b]")),
+                mul(ref("r[south]"), ref("p[south][b]"))))
+
+    def test_a_named_dot_pairs_the_operands_by_label(self):
+        """The two vectors list their labels in opposite order and still pair up."""
+        left = self.model.constant("l")
+        left.setup_named_vector({"north": 3.0, "south": 5.0})
+        right = self.model.constant("r")
+        right.setup_named_vector({"south": 2.0, "north": 4.0})
+
+        self.assertEqual(
+            _expr_to_json(left.dot(right)),
+            add(mul(ref("l[north]"), ref("r[north]")),
+                mul(ref("l[south]"), ref("r[south]"))))
+
     def test_the_dot_shapes_that_cannot_be_serialized_raise(self):
         other = self.model.constant("n")
         other.setup_matrix([2, 2], [[5.0, 6.0], [7.0, 8.0]])
@@ -312,7 +338,7 @@ class TestArrayedSerialization(unittest.TestCase):
         long_vector.setup_vector(3, [1.0, 2.0, 3.0])
 
         cases = {
-            "two values": ops.DotOperator(self.scalar, second_scalar),
+            "Use the * operator": ops.DotOperator(self.scalar, second_scalar),
             "value and an array without an index":
                 ops.DotOperator(self.scalar, short),
             "array without an index":
@@ -320,7 +346,7 @@ class TestArrayedSerialization(unittest.TestCase):
             "two-element index":
                 ops.DotOperator(self.matrix, other, 0),
             # `dot` allows different sizes at construction and checks them per shape.
-            "vectors of sizes": ops.DotOperator(short, long_vector),
+            "vector vector multiplication": ops.DotOperator(short, long_vector),
         }
         for expected, expression in cases.items():
             with self.subTest(expected):

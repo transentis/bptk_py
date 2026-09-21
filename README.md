@@ -74,6 +74,15 @@ For any questions our suggestions you have regarding BPTK, please contact us at:
 
 ## Changelog
 
+### 3.1.1
+
+* Feature: the `dot` operation is now supported for named arrays as well - see [Array Dot](https://bptk.transentis.com/sd-dsl/sd_dsl_multidimensional/sd_dsl_multidimensional.html#array-dot) for the rules and examples
+* Breaking: a `bptk()` carries its own plotting configuration. `bptk(configuration=...)` used to write into the package-wide one and restyle every plot in the process; an instance now starts from `BPTK_Py.plotting_config` and keeps what it was built with. `Element.plot()` and `plot_agent_stats()` have no instance in reach and still read the package-wide one
+* Bugfix: a cold evaluation at a late timestep answers instead of raising `RecursionError` - a stock recursed once per step, and the stack ran out after 332 of them regardless of `dt`, so `dt=0.125` reached that at t=41.5
+* Bugfix: the column names of `run_scenarios` and `plot_scenarios` no longer depend on earlier calls - the single-scenario renaming rule was written into a `series_names` dict default, which belongs to the function rather than to the call
+* Bugfix: a `delay` reads a duration that is itself a model element at every step instead of once at `starttime`, so a duration that varies has an effect at all - the Rust engine and a compiled XMILE model always read it every step
+* Bugfix: a `delay` whose input is a constant overridden per step lags again - the override carried no history, so the lookback read the value set last. A session resumed in a fresh process, or handed over by the Rust backend mid-run, rebuilds that history from its settings log
+
 ### 3.1.0
 
 * Feature: arrayed (multidimensional) models run on the Rust backend - `backend="rust"`, a Rust-backed session and `/execute` all accept them, with results identical to the Python engine

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.1.0"
+version = "3.1.1"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
@@ -94,6 +94,18 @@ python-packages = ["BPTK_Py"]
 module-name = "BPTK_Py._rust_engine"
 features = ["pyo3/extension-module"]
 bindings = "pyo3"
+# The sdist is built from the checkout it runs in, and this one is the *internal*
+# repository: without this list a build here would publish the internal documentation,
+# every progress report and the site's visitor-counting snippet to PyPI. `publish.yml`
+# is gated on the public repository, `publish.sh` on a laptop is not, so the guard has
+# to sit where both paths pass.
+exclude = [
+    "docs/internal/**/*",
+    "docs/progress/**/*",
+    "docs/container/**/*",
+    "docs/tutorial/*.html",
+    "CLAUDE.md",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["tests"]
