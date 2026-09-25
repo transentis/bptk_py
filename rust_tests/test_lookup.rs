@@ -18,6 +18,9 @@ fn model_with_lookup(table_name: &str, points: Vec<(f64, f64)>) -> SdModel {
         entity_index: HashMap::new(),
         graphical_functions,
         eval_order: Vec::new(),
+        callback_names: Vec::new(),
+        #[cfg(feature = "python")]
+        callbacks: Vec::new(),
     }
 }
 

@@ -151,8 +151,8 @@ def _(mo):
     ## Configure the path to scenario storage
 
     A ``bptk`` instance finds its scenarios through the ``"scenario_storage"`` key, which
-    defaults to ``"scenarios/"`` — a folder named ``scenarios`` relative to any directory on
-    ``sys.path``.
+    defaults to ``"scenarios/"`` — a folder named ``scenarios`` in the working directory. The
+    path can be relative to the working directory or absolute.
 
     The folders beside this page are laid out like this, and you can open the files:
 
@@ -187,9 +187,46 @@ def _(mo):
     )
     ```
 
-    Note that the **parent** of the ``"scenario_storage"`` path is added to ``sys.path``. The
-    instance therefore also resolves the ``"model"`` path inside the scenario JSON relative to
-    that parent.
+    An absolute path finds the same files from any working directory:
+
+    ```python
+    bptk_instance = bptk(
+        configuration={"scenario_storage": "/home/me/my_project/scenarios/"},
+    )
+    ```
+
+    The **parent** of the ``"scenario_storage"`` folder is the project directory, and it is
+    added to ``sys.path``. The ``"model"`` inside a scenario JSON is named relative to it, in
+    either of two notations: a path to a module, ``"simulation_models/my_model"``, or a
+    dotted class, ``"src.my_model.MyModel"``. Both work whether the storage path is relative
+    or absolute.
+
+    The model does not have to sit below the scenarios. Here the two are siblings, and the
+    script beside them can be started from anywhere:
+
+    ```
+    my_project/
+    ├── Model/
+    │   └── growth.py        # class Growth(Model)
+    ├── Scenario/
+    │   └── growth.json      # "model": "Model.growth.Growth"
+    └── run.py
+    ```
+
+    ``run.py`` builds the storage path from its own location, so it is absolute:
+
+    ```python
+    from pathlib import Path
+    from BPTK_Py import bptk
+
+    project = Path(__file__).resolve().parent
+    bptk_instance = bptk(configuration={"scenario_storage": str(project / "Scenario")})
+    ```
+
+    ``my_project`` is the parent of ``Scenario``, so it is the project directory, and
+    ``"Model.growth.Growth"`` names ``my_project/Model/growth.py``. With the path notation
+    the same file would be ``"Model/growth"``, which expects the class to be called
+    ``simulation_model``.
 
     ## Configure graphic settings
 

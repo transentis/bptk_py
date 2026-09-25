@@ -1062,6 +1062,14 @@ class TestNamedDot:
         with pytest.raises(Exception, match="'nonsense' is not one of the labels"):
             operator.term()
 
+    def test_a_matrix_index_that_does_not_address_the_result_raises(self):
+        """Rows come from the left operand, columns from the right - 'b' is neither."""
+        model, _factor, _regions, _products, by_product, by_channel = self._model()
+        operator = DotOperator(by_product, by_channel, ["north", "b"])
+
+        with pytest.raises(Exception, match="does not address the result"):
+            operator.term()
+
     def test_labels_that_do_not_line_up_raise(self):
         model, _factor, regions, products, _by_product, _by_channel = self._model()
         target = model.converter("target")
@@ -1170,6 +1178,67 @@ class TestDimensionSelector:
         target = model.converter("target")
         with pytest.raises(OperatorError, match="or 2 for this 2-dimensional array"):
             target.equation = v.arr_sum(1)
+
+
+class TestAValueOnAnArrayedElement:
+    """A single value assigned to an element the modeller gave a shape.
+
+    It used to be accepted, and left the element holding a value beside its cells: the
+    Python engine computed it, `to_json` serialized the cells only, and the Rust engine
+    therefore returned no such series at all - the engines disagreed and nothing was
+    raised. An aggregation over the element's own cells is the usual way in.
+    """
+
+    def _model(self):
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="scalar_on_arrayed")
+        headcount = model.converter("headcount")
+        headcount.setup_named_vector({"a": 1.0, "b": 2.0})
+        return model, headcount
+
+    def test_an_aggregation_over_its_own_cells_is_refused(self):
+        model, headcount = self._model()
+        total = model.converter("total")
+        total.setup_named_vector({"a": 0.0, "b": 0.0})
+        with pytest.raises(Exception, match="holds no value beside its cells"):
+            total.equation = headcount.arr_sum()
+
+    def test_a_number_is_refused(self):
+        model, _ = self._model()
+        target = model.converter("target")
+        target.setup_vector(2, 0.0)
+        with pytest.raises(Exception, match="holds no value beside its cells"):
+            target.equation = 5.0
+
+    def test_an_arrayed_stock_is_refused_too(self):
+        model, headcount = self._model()
+        level = model.stock("level")
+        level.setup_named_vector({"a": 0.0, "b": 0.0})
+        with pytest.raises(Exception, match="holds no value beside its cells"):
+            level.equation = headcount.arr_sum()
+
+    def test_the_message_names_the_element_and_how_to_address_a_cell(self):
+        model, headcount = self._model()
+        total = model.converter("total")
+        total.setup_named_vector({"a": 0.0, "b": 0.0})
+        with pytest.raises(Exception, match=r"total\['<label>'\].equation"):
+            total.equation = headcount.arr_sum()
+
+    def test_an_element_of_its_own_takes_the_aggregation(self):
+        model, headcount = self._model()
+        total = model.converter("total")
+        total.equation = headcount.arr_sum()
+        assert total(1) == pytest.approx(3.0)
+
+    def test_a_shape_that_came_from_an_equation_may_become_a_value_again(self):
+        # Only a shape the modeller set up is protected. An element the library shaped
+        # from an equation is reshaped by the next one, and a `dot` of two vectors is
+        # how that ends at a single value.
+        model, headcount = self._model()
+        target = model.converter("target")
+        target.equation = headcount * 2.0
+        assert target["a"](1) == pytest.approx(2.0)
+        target.equation = headcount.dot(headcount)
+        assert target(1) == pytest.approx(5.0)
 
 
 class TestArrayedStockFlow:
@@ -1590,3 +1659,116 @@ class TestFlagshipScenarios:
             scenario_managers=["matrix_mgr"], scenarios=["base"],
             equations=["weighted[0]", "weighted[1]"])
         assert frame.iloc[-1].tolist() == pytest.approx([7.0, 9.0])
+
+
+class TestCustomFunctionsOverArrays:
+    """What a user-defined function does when it meets an array.
+
+    Two behaviours, chosen once per function at registration. The default follows the
+    rule every other operator obeys since arrays reached the DSL: one call per index,
+    result of the same shape. `elementwise=False` says the function wants the array
+    itself and answers once.
+    """
+
+    def test_elementwise_is_the_default(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_elementwise")
+        vector = model.constant("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        times_ten = model.function("times_ten", lambda model, t, x: x * 10)
+        target = model.converter("target")
+        target.equation = times_ten(vector)
+
+        assert [target[i](1) for i in range(3)] == pytest.approx([10.0, 20.0, 30.0])
+
+    def test_elementwise_keeps_the_labels_of_a_named_array(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_named")
+        regions = model.constant("regions")
+        regions.setup_named_vector({"north": 1.0, "south": 2.0})
+        times_ten = model.function("times_ten", lambda model, t, x: x * 10)
+        target = model.converter("target")
+        target.equation = times_ten(regions)
+
+        assert target["north"](1) == pytest.approx(10.0)
+        assert target["south"](1) == pytest.approx(20.0)
+
+    def test_a_whole_array_function_receives_a_list(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_list")
+        vector = model.constant("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        seen = []
+
+        def total(model, t, values):
+            seen.append(values)
+            return sum(values)
+
+        summed = model.function("total", total, elementwise=False)
+        target = model.converter("target")
+        target.equation = summed(vector)
+
+        assert target(1) == pytest.approx(6.0)
+        assert seen[0] == [1.0, 2.0, 3.0]
+
+    def test_a_whole_array_function_receives_a_named_array_as_a_dict(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_dict")
+        regions = model.constant("regions")
+        regions.setup_named_vector({"north": 1.0, "south": 2.0})
+        seen = []
+
+        def northern(model, t, values):
+            seen.append(values)
+            return values["north"]
+
+        pick = model.function("northern", northern, elementwise=False)
+        target = model.converter("target")
+        target.equation = pick(regions)
+
+        assert target(1) == pytest.approx(1.0)
+        assert seen[0] == {"north": 1.0, "south": 2.0}
+
+    def test_a_matrix_arrives_nested(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_matrix")
+        matrix = model.constant("matrix")
+        matrix.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
+        seen = []
+
+        def flatten(model, t, rows):
+            seen.append(rows)
+            return sum(sum(row) for row in rows)
+
+        total = model.function("flatten", flatten, elementwise=False)
+        target = model.converter("target")
+        target.equation = total(matrix)
+
+        assert target(1) == pytest.approx(10.0)
+        assert seen[0] == [[1.0, 2.0], [3.0, 4.0]]
+
+    def test_a_whole_array_function_has_no_dimensions(self):
+        """Asked directly, not only through the equation setter.
+
+        The setter stops at `is_any_subelement_arrayed`, so nothing reaches
+        `resolve_dimensions` today - but the two answers have to agree, or an operator
+        that does ask gets told the function is an array of three.
+        """
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_dims")
+        vector = model.constant("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        summed = model.function("total", lambda model, t, xs: sum(xs), elementwise=False)
+        elementwise = model.function("ten", lambda model, t, x: x * 10)
+
+        assert summed(vector).resolve_dimensions() == -1
+        assert summed(vector).is_any_subelement_arrayed() is False
+        # The default answers the other way, over the same argument.
+        assert elementwise(vector).resolve_dimensions() == [3, 0]
+
+    def test_a_whole_array_function_is_scalar_in_a_larger_expression(self):
+        """It answers once, so what is built on top of it has no indices either."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="fn_scalar")
+        vector = model.constant("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        summed = model.function("total", lambda model, t, xs: sum(xs), elementwise=False)
+        target = model.converter("target")
+        target.equation = summed(vector) * 2.0
+
+        assert target(1) == pytest.approx(12.0)
+        assert target._elements.vector_size() == 0
+

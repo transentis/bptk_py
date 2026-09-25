@@ -130,3 +130,26 @@ class TestFileMonitor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFileMonitorIsADaemon(unittest.TestCase):
+    """A watcher must not hold the interpreter open after the script is done.
+
+    Its loop ends only on `kill()`, so as a non-daemon thread it kept every
+    script that built a `bptk()` from ever exiting - which read as "the run does
+    not return" to whoever was waiting for it.
+    """
+
+    @pytest.mark.requires_threads
+    @patch("os.stat")
+    @patch("os.path.isfile", return_value=True)
+    def test_the_monitor_thread_does_not_keep_the_process_alive(self, mock_isfile, mock_stat):
+        mock_stat.return_value.st_mtime = 100
+
+        monitor = FileMonitor(json_file="test.json", update_func=MagicMock())
+        try:
+            thread = next(t for t in threading.enumerate() if t.name.endswith("__monitor)"))
+            self.assertTrue(thread.daemon)
+        finally:
+            monitor.kill()
+

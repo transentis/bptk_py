@@ -57,11 +57,11 @@ The first place to go to for help and installation instructions is the [online d
 
 The [Quickstart](https://bptk.transentis.com/quickstart/quickstart.html) provides a _single page_ overview of all the modeling techniques supported by BPTK.
 
-The online documentation is generated from an extensive set of [marimo](https://marimo.io) notebooks, and those notebooks are in this repository under `docs/tutorial`. To run them yourself:
+The online documentation is generated from an extensive set of [marimo](https://marimo.io) notebooks, and those notebooks are in this repository under `website-tutorial`. To run them yourself:
 
 ```bash
-pip install -r docs/tutorial/requirements.txt
-marimo edit docs/tutorial/quickstart/quickstart.py
+pip install -r website-tutorial/requirements.txt
+marimo edit website-tutorial/quickstart/quickstart.py
 ```
 
 Every notebook brings the models and scenario files it needs. The diagrams do not travel with them - they are on the website, where the same notebook is rendered with its figures, so a notebook opened locally shows a broken image where the website shows a diagram.
@@ -73,6 +73,22 @@ If you want to build simulation models using a UI and AI, plesae check our [Meta
 For any questions our suggestions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 3.2.0
+
+* Breaking: `backend="rust"` raises `RustBackendError` when the model cannot run on the engine, instead of quietly computing it in Python. The message names the cause - the model, a compiled XMILE model, an installation without the engine, or an engine failure
+* Feature: a model with user-defined functions runs on the Rust backend, calling back into Python at those nodes. Hybrid models and `elementwise=False` functions still need `backend="python"`
+* Feature: a user-defined function says how it treats an arrayed argument - per index by default, or the whole array with `elementwise=False`. See [User Defined Functions](https://bptk.transentis.com/sd-dsl/sd_user_defined_functions/sd_user_defined_functions.html)
+* Breaking: assigning a single value to an element you gave a shape raises - an arrayed element holds no value beside its cells. It used to be accepted, and the engines then disagreed: Python computed the value, the Rust engine returned no such series at all
+* Breaking: a server session that asks for the Rust engine and cannot have it answers 400 on its first step, naming the reason, instead of serving the session from the Python engine
+* Feature: a stock starts from any expression, not only from a number, a constant or a converter - `stock.initial_value = k * 2.0 + 5.0`
+* Bugfix: `stock.initial_value = 100` no longer raises. An integer is a valid initial value, as it is everywhere else in the DSL
+* Bugfix: a stock whose initial value reads another stock through a converter starts from the same number on both engines
+* Bugfix: a user-defined function reads its arguments at the time its equation is evaluated for. A function in a stock's equation - evaluated at `t-dt` - integrated the current value instead of the previous one
+* Bugfix: the training progress bar advances once per scenario rather than once per episode - with three scenarios it stood still through three trainings and then jumped
+* Bugfix: a script that builds a `bptk()` ends by itself. The file monitors ran as non-daemon threads, so the interpreter waited for a watch loop that only `kill()` stops
+* Bugfix: a scenario file's dotted model name (`"pkg.module.Class"`) is found when `scenario_storage` is absolute or the working directory is not the project root
+* Upgraded numpy from 2.3.1 to 2.4.6 and pandas from 2.3.0 to 3.0.6
 
 ### 3.1.1
 

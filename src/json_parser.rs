@@ -76,6 +76,11 @@ pub enum JsonExpr {
         #[serde(rename = "else")]
         else_: Box<JsonExpr>,
     },
+    #[serde(rename = "py_callback")]
+    PyCallback {
+        name: String,
+        args: Vec<JsonExpr>,
+    },
 }
 
 /// Literal values can be either numbers or strings (for lookup table names).
@@ -100,6 +105,9 @@ pub enum ParseError {
     UnknownBinaryOp(String),
     UnknownUnaryOp(String),
     UnknownFunction(String),
+    /// A `py_callback` node in a build without Python. Not a malformed model: the same
+    /// JSON loads in the extension module, and the message says so.
+    PythonCallbackUnsupported(String),
     /// Carries one readable path per cycle, e.g. `["a → b → a"]`. Empty when the
     /// cycle was detected but not described (the first, cheap sorting pass).
     CyclicDependency(Vec<String>),
@@ -113,6 +121,12 @@ impl std::fmt::Display for ParseError {
             ParseError::UnknownBinaryOp(op) => write!(f, "Unknown binary operator: '{}'", op),
             ParseError::UnknownUnaryOp(op) => write!(f, "Unknown unary operator: '{}'", op),
             ParseError::UnknownFunction(name) => write!(f, "Unknown function: '{}'", name),
+            ParseError::PythonCallbackUnsupported(name) => write!(
+                f,
+                "Model calls the Python function '{}', which this build cannot do: it was \
+                 compiled without Python.",
+                name
+            ),
             ParseError::CyclicDependency(cycles) if cycles.is_empty() => {
                 write!(f, "Cyclic dependency among non-stock entities")
             }
@@ -140,6 +154,8 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
     // Order: stocks first, then flows, converters, constants
     let mut entity_index: HashMap<String, usize> = HashMap::new();
     let mut entities: Vec<Entity> = Vec::new();
+    // Callback names in the order they are first seen; the slot is the position.
+    let mut callbacks = CallbackSlots::default();
 
     // Stocks
     for s in &jm.entities.stocks {
@@ -198,9 +214,9 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
     // Stocks: resolve initial_value and equation
     let mut idx = 0;
     for s in &jm.entities.stocks {
-        let initial_value = resolve_expr(&s.initial_value, &entity_index)?;
+        let initial_value = resolve_expr(&s.initial_value, &entity_index, &mut callbacks)?;
         let equation = match &s.equation {
-            Some(eq) => resolve_expr(eq, &entity_index)?,
+            Some(eq) => resolve_expr(eq, &entity_index, &mut callbacks)?,
             None => Expr::Literal(0.0),
         };
         entities[idx].kind = EntityKind::Stock { initial_value };
@@ -210,25 +226,25 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
 
     // Flows
     for f in &jm.entities.flows {
-        entities[idx].equation = resolve_expr(&f.equation, &entity_index)?;
+        entities[idx].equation = resolve_expr(&f.equation, &entity_index, &mut callbacks)?;
         idx += 1;
     }
 
     // Biflows
     for f in &jm.entities.biflows {
-        entities[idx].equation = resolve_expr(&f.equation, &entity_index)?;
+        entities[idx].equation = resolve_expr(&f.equation, &entity_index, &mut callbacks)?;
         idx += 1;
     }
 
     // Converters
     for c in &jm.entities.converters {
-        entities[idx].equation = resolve_expr(&c.equation, &entity_index)?;
+        entities[idx].equation = resolve_expr(&c.equation, &entity_index, &mut callbacks)?;
         idx += 1;
     }
 
     // Constants
     for c in &jm.entities.constants {
-        entities[idx].equation = resolve_expr(&c.equation, &entity_index)?;
+        entities[idx].equation = resolve_expr(&c.equation, &entity_index, &mut callbacks)?;
         idx += 1;
     }
 
@@ -251,13 +267,43 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
         entity_index,
         graphical_functions,
         eval_order,
+        #[cfg(feature = "python")]
+        // `Py` is not `Clone`, so the empty slots are built rather than repeated.
+        callbacks: callbacks.names.iter().map(|_| None).collect(),
+        callback_names: callbacks.names,
     })
+}
+
+/// Callback names in first-seen order. The slot an expression carries is the position in
+/// `names`, so a name mentioned twice resolves to the same slot and is registered once.
+// Only the `py_callback` arm fills this, and that arm is Python-only - without the
+// feature the registry is built, stays empty and is never asked anything.
+#[cfg_attr(not(feature = "python"), allow(dead_code))]
+#[derive(Default)]
+struct CallbackSlots {
+    names: Vec<String>,
+    index: HashMap<String, usize>,
+}
+
+#[cfg_attr(not(feature = "python"), allow(dead_code))]
+impl CallbackSlots {
+    fn slot_for(&mut self, name: &str) -> usize {
+        if let Some(&slot) = self.index.get(name) {
+            return slot;
+        }
+        let slot = self.names.len();
+        self.names.push(name.to_string());
+        self.index.insert(name.to_string(), slot);
+        slot
+    }
 }
 
 /// Resolve a JSON expression tree into a typed Expr with usize references.
 fn resolve_expr(
     json_expr: &JsonExpr,
     entity_index: &HashMap<String, usize>,
+    // Written only by the `py_callback` arm, which a build without Python never takes.
+    #[cfg_attr(not(feature = "python"), allow(unused_variables))] callbacks: &mut CallbackSlots,
 ) -> Result<Expr, ParseError> {
     match json_expr {
         JsonExpr::Literal { value } => match value {
@@ -279,15 +325,15 @@ fn resolve_expr(
             let bin_op = parse_bin_op(op)?;
             Ok(Expr::BinaryOp {
                 op: bin_op,
-                left: Box::new(resolve_expr(left, entity_index)?),
-                right: Box::new(resolve_expr(right, entity_index)?),
+                left: Box::new(resolve_expr(left, entity_index, callbacks)?),
+                right: Box::new(resolve_expr(right, entity_index, callbacks)?),
             })
         }
         JsonExpr::UnaryOp { op, operand } => {
             let un_op = parse_un_op(op)?;
             Ok(Expr::UnaryOp {
                 op: un_op,
-                operand: Box::new(resolve_expr(operand, entity_index)?),
+                operand: Box::new(resolve_expr(operand, entity_index, callbacks)?),
             })
         }
         JsonExpr::Call { function, args } => {
@@ -297,7 +343,7 @@ fn resolve_expr(
                     value: JsonLiteralValue::String(table_name),
                 } = &args[1]
                 {
-                    let resolved_args = vec![resolve_expr(&args[0], entity_index)?];
+                    let resolved_args = vec![resolve_expr(&args[0], entity_index, callbacks)?];
                     return Ok(Expr::Call {
                         function: BuiltinFn::Lookup(table_name.clone()),
                         args: resolved_args,
@@ -308,7 +354,7 @@ fn resolve_expr(
             let builtin = parse_builtin_fn(function)?;
             let resolved_args: Result<Vec<Expr>, ParseError> = args
                 .iter()
-                .map(|a| resolve_expr(a, entity_index))
+                .map(|a| resolve_expr(a, entity_index, callbacks))
                 .collect();
             Ok(Expr::Call {
                 function: builtin,
@@ -320,10 +366,29 @@ fn resolve_expr(
             then,
             else_,
         } => Ok(Expr::If {
-            condition: Box::new(resolve_expr(condition, entity_index)?),
-            then: Box::new(resolve_expr(then, entity_index)?),
-            else_: Box::new(resolve_expr(else_, entity_index)?),
+            condition: Box::new(resolve_expr(condition, entity_index, callbacks)?),
+            then: Box::new(resolve_expr(then, entity_index, callbacks)?),
+            else_: Box::new(resolve_expr(else_, entity_index, callbacks)?),
         }),
+        JsonExpr::PyCallback { name, args } => {
+            #[cfg(feature = "python")]
+            {
+                let slot = callbacks.slot_for(name);
+                let resolved: Result<Vec<Expr>, ParseError> = args
+                    .iter()
+                    .map(|a| resolve_expr(a, entity_index, callbacks))
+                    .collect();
+                Ok(Expr::PyCallback {
+                    slot,
+                    args: resolved?,
+                })
+            }
+            #[cfg(not(feature = "python"))]
+            {
+                let _ = args;
+                Err(ParseError::PythonCallbackUnsupported(name.clone()))
+            }
+        }
     }
 }
 
@@ -472,6 +537,15 @@ fn collect_refs_inner(expr: &Expr, refs: &mut Vec<usize>, break_delays: bool, dt
             collect_refs_inner(condition, refs, break_delays, dt);
             collect_refs_inner(then, refs, break_delays, dt);
             collect_refs_inner(else_, refs, break_delays, dt);
+        }
+        #[cfg(feature = "python")]
+        Expr::PyCallback { args, .. } => {
+            // A callback reads whatever its arguments read, so those edges have to be in
+            // the ordering - otherwise the engine would call Python with a cell that has
+            // not been evaluated at this step yet.
+            for a in args {
+                collect_refs_inner(a, refs, break_delays, dt);
+            }
         }
     }
 }

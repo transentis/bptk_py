@@ -44,6 +44,9 @@ class ScenarioManagerSd(ScenarioManager):
         self.name = name
         self.model = model
         self.model_file = model_file
+        # The module as the scenario file names it, relative to the project directory.
+        # None when the manager only knows a file path; the name is then read off that.
+        self.model_module = None
         self.source = source
 
         self.base_constants = base_constants
@@ -63,12 +66,13 @@ class ScenarioManagerSd(ScenarioManager):
         self.scenarios[scenario.name] = scenario
         self.instantiate_model()
 
-    def load_scenarios(self, scen_dict, model_file, source=None):
+    def load_scenarios(self, scen_dict, model_file, source=None, model_module=None):
         """
         Interpret the JSON dictionary for this scenario manager and instantiate simulationScenario objects
         :param scen_dict: JSON dictionary containing the scenario instructions: base_constants (optional), base_points (optional) and strategies (optional). Define at least a scenario...
         :param model_file: Relative link to simulation model (from working directory of your notebook / script)
         :param source: Optional: link to source file (itmx)
+        :param model_module: Optional: the model as the scenario file names it - "folder/model" or "package.module.Class" - relative to the project directory
         :return: None
         """
         # Create simulation scenarios from structure
@@ -107,6 +111,7 @@ class ScenarioManagerSd(ScenarioManager):
                 self.scenarios[scenario_name] = sce
 
         self.model_file=model_file
+        self.model_module = model_module
         self.source = source
 
         self.instantiate_model()
@@ -252,7 +257,12 @@ class ScenarioManagerSd(ScenarioManager):
 
             ## need to check whether this is in model/model_name notation (XMILE) or model.model_name notation (SDDSL)
            
-            if full_file_path.parent.name: 
+            # The name the scenario file gave is the one to import. Reading it off the file
+            # path instead turned the project directory into a package whenever that path
+            # had more than the model's own folder in it - an absolute scenario storage.
+            if self.model_module:
+                package_link = ".".join(Path(self.model_module).parts)
+            elif full_file_path.parent.name:
                 package_link = full_file_path.parent.name + "." + full_file_path.stem
             else:
                 package_link = full_file_path.stem

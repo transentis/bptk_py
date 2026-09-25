@@ -14,6 +14,7 @@
 import pandas as pd
 
 from ..logger import log
+from ..exceptions import RustBackendError, rust_backend_error
 from .scenario_runner import ScenarioRunner
 from ..sdsimulation import SdSimulation
 
@@ -89,8 +90,8 @@ class SdRunner(ScenarioRunner):
         :param backend: "python" (default) or "rust" — execution backend. When "rust",
             each scenario's first step lazily initialises a `RustSdModel` cached on
             `sc.rust_model`; subsequent steps advance that model by one timestep.
-            If JSON serialization or any Rust call fails, the scenario falls back to
-            the Python backend for the rest of the session (sticky via `sc._rust_failed`).
+            If JSON serialization or any Rust call fails, `RustBackendError` is
+            raised and the session ends: an engine cannot be swapped halfway.
         :param seed: Optional[int] — RNG seed passed to the Rust engine's `init()`.
             Fixing it makes a stochastic model's trajectory reproducible, which is
             what lets a Rust-backed session be replayed identically after the process
@@ -113,35 +114,18 @@ class SdRunner(ScenarioRunner):
             log("[ERROR] No scenarios found for scenario manager \"{}\" and scenarios \"{}\"".format(scenario_manager,",".join(scenarios)))
 
         for scenario, sc in scenario_objects.items():
-            use_rust = (backend == "rust") and not getattr(sc, "_rust_failed", False)
-
-            if use_rust:
+            if backend == "rust":
                 try:
                     self._run_scenario_step_rust(sc, step, settings, scenario_manager, scenario, equations, seed=seed)
-                except (ValueError, ImportError, AttributeError) as e:
-                    # Falling back on the very first step is harmless - there is no
-                    # history yet, so Python starts the session from scratch. Falling
-                    # back later is not: the Python backend has no record of the rounds
-                    # the Rust engine already played (its memo lives in the engine, not
-                    # in scenario_cache), so its lazy evaluator rebuilds them from the
-                    # settings that are current *now*. Anything that carries history -
-                    # a stock, a delay - then comes out wrong, and stays wrong for the
-                    # rest of the session. Loud enough to be seen: a message tagged
-                    # [ERROR] is printed even when logging goes to a file or to Logfire.
-                    if abs(float(step) - float(sc.starttime)) < 1e-9:
-                        log("[WARN] Rust step failed for '{}': {} — falling back to Python for the rest of this session".format(scenario, str(e)))
-                    else:
-                        log("[ERROR] Rust step failed for '{}' at step {}: {} — falling back to Python "
-                            "for the rest of this session. This session has already played earlier "
-                            "steps on the Rust engine, and the Python backend cannot see them: it "
-                            "recomputes that history with the settings of the current step, so results "
-                            "from here on may be wrong wherever the model carries state.".format(
-                                scenario, step, str(e)))
-                    sc._rust_failed = True
-                    sc.rust_model = None
-                    sc._rust_initial = None
-                    sc._rust_initial_returned = False
-                    self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations, settings_history)
+                except (ValueError, ImportError, AttributeError) as error:
+                    # A session cannot change engines halfway. The Python backend has no
+                    # record of the rounds the Rust engine already played - its memo lives
+                    # in the engine, not in scenario_cache - so its lazy evaluator would
+                    # rebuild that history from the settings current *now*, and anything
+                    # carrying state, a stock or a delay, would come out wrong and stay
+                    # wrong. Continuing quietly was the greater danger; the session ends
+                    # here instead.
+                    raise rust_backend_error(error) from error
             else:
                 self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations, settings_history)
 
@@ -223,6 +207,7 @@ class SdRunner(ScenarioRunner):
 
             engine = RustSdEngine()
             sc.rust_model = engine.load_model(rust_json_str)
+            sc.model.register_rust_functions(sc.rust_model)
 
             # Apply baseline scenario overrides (from scenario config, not per-step settings).
             # `sc.points` lookup overrides are already baked into model.points by setup_points()
@@ -300,6 +285,7 @@ class SdRunner(ScenarioRunner):
         rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
         engine = RustSdEngine()
         sc.rust_model = engine.load_model(rust_json_str)
+        sc.model.register_rust_functions(sc.rust_model)
 
         # Runspecs must be set before the grid is installed.
         sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
@@ -328,7 +314,6 @@ class SdRunner(ScenarioRunner):
 
         sc._rust_initial = None
         sc._rust_initial_returned = True
-        sc._rust_failed = False
 
     #TODO this really should just take on scenario manager - it doesn't make sense to call it on multiple scenario managers. It should be called run_scenarios
     def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], backend="python"):
@@ -421,17 +406,9 @@ class SdRunner(ScenarioRunner):
                 if backend == "rust":
                     try:
                         rust_json_str = sc.model.to_json()
-                    except (ValueError, AttributeError) as e:
-                        log("[WARN] Cannot serialize model to JSON: {} — falling back to Python".format(str(e)))
-                        rust_json_str = None
-
-                    if rust_json_str is not None:
-                        sc.result = self._run_scenario_rust(sc, equations, rust_json_str)
-                        if sc.result is None:
-                            log("[WARN] Falling back to Python engine for scenario '{}'".format(sc.name))
-                            sc.result = self._run_scenario_python(sc, equations, output)
-                    else:
-                        sc.result = self._run_scenario_python(sc, equations, output)
+                    except (ValueError, AttributeError) as error:
+                        raise rust_backend_error(error) from error
+                    sc.result = self._run_scenario_rust(sc, equations, rust_json_str)
                 else:
                     sc.result = self._run_scenario_python(sc, equations, output)
 
@@ -448,20 +425,28 @@ class SdRunner(ScenarioRunner):
         return simu.start(output=output, equations=equations)
 
     def _run_scenario_rust(self, sc, equations, json_str):
-        """Execute a scenario using the Rust engine. Returns None on failure (triggers fallback)."""
+        """Execute a scenario using the Rust engine.
+
+        Raises `RustBackendError` if the engine cannot run it. The scenario is not
+        computed on the Python engine instead: the caller asked for this engine, and a
+        quiet substitution is indistinguishable from success.
+        """
         try:
             from BPTK_Py._rust_engine import RustSdEngine
 
             engine = RustSdEngine()
             rust_model = engine.load_model(json_str)
+            sc.model.register_rust_functions(rust_model)
 
             # Apply scenario constant overrides
             for name, value in sc.constants.items():
                 if isinstance(value, (int, float)):
                     rust_model.set_constant(name, float(value))
                 else:
-                    log("[WARN] Non-numeric constant '{}' — cannot use Rust engine".format(name))
-                    return None
+                    raise RustBackendError(
+                        "Scenario '{}' overrides the constant '{}' with a non-numeric "
+                        "value, which the Rust engine has no place for.".format(
+                            sc.name, name))
 
             # Note: scenario lookup points overrides are already applied to
             # model.points by setup_points() at registration time, so to_json()
@@ -483,7 +468,6 @@ class SdRunner(ScenarioRunner):
             df = df.sort_index()
             return df
 
-        except (ValueError, ImportError) as e:
-            log("[WARN] Rust engine failed: {} — falling back to Python".format(str(e)))
-            return None
+        except (ValueError, ImportError) as error:
+            raise rust_backend_error(error) from error
 

@@ -1415,15 +1415,18 @@ def test_vector():
                     test_element4 = get_element(t, model, "test_element4")
                     setup_vector(test_element4, j, 2.0, n)
 
+                    # A target of its own per round: an element the modeller gave a
+                    # shape holds no single value, so reusing one across the rounds
+                    # would test that rule rather than the shape rules of `dot`.
                     try:
-                        test_element3 = get_element(t, model, "test_element_exc")
+                        test_element3 = get_element(t, model, "test_element_exc_dot_" + str(j))
                         test_element3.equation = test_element4.dot(test_element2)
                         assert(j == i)
                     except:
                         assert(j != i or n == 1)
 
                     try:
-                        test_element3 = get_element(t, model, "test_element_exc")
+                        test_element3 = get_element(t, model, "test_element_exc_" + str(j))
                         setup_vector(test_element3, j, elements1, n)
                         assert(j == i)
                     except:
@@ -1615,15 +1618,18 @@ def test_vector_constants():
                 test_constant4 = model.constant("test_constant4" + index)
                 setup_vector(test_constant4, j, 2.0, n)
 
+                # A target of its own per round: an element the modeller gave a shape
+                # holds no single value, so reusing one across the rounds would test
+                # that rule rather than the shape rules of `dot`.
                 try:
-                    test_constant3 = model.converter("test_constant_exc" + index)
+                    test_constant3 = model.converter("test_constant_exc_dot" + str(j) + index)
                     test_constant3.equation = test_constant4.dot(test_constant2)
                     assert(j == i)
                 except:
                     assert(j != i or n == 1)
 
                 try:
-                    test_constant3 = model.converter("test_constant_exc" + index)
+                    test_constant3 = model.converter("test_constant_exc" + str(j) + index)
                     setup_vector(test_constant3, j, elements1, n)
                     assert(j == i)
                 except:

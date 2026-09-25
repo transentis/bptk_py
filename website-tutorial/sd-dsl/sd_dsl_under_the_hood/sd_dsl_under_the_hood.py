@@ -847,5 +847,127 @@ def _(stock_3):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Things to watch out for
+
+    Everything above explains *when* an equation is evaluated, which is where the three
+    surprises of the SD DSL come from. They are not defects; they follow from what a stock
+    is.
+
+    ### A stock's equation is evaluated one step back
+
+    A stock at time `t` holds what it held at `t-dt`, plus `dt` times its net flow **at
+    `t-dt`**. So a step adds what the flow was the step *before*, not what it is now. With
+    a constant flow that is invisible. With a flow that changes over time it is not:
+    """)
+    return
+
+
+@app.cell
+def _():
+    # Imported under other names: this page builds its own `Model` from scratch further
+    # up, and marimo wants every top-level name to belong to exactly one cell.
+    from BPTK_Py import Model as DslModel
+    from BPTK_Py import sd_functions as dsl_sd
+
+    timing = DslModel(starttime=0, stoptime=3, dt=1, name="timing")
+    timing_stock = timing.stock("stock")
+    timing_stock.initial_value = 0.0
+    timing_flow = timing.flow("flow")
+    timing_flow.equation = dsl_sd.time()
+    timing_stock.equation = timing_flow
+
+    timing.simulate(["flow", "stock"])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The flow reads 0, 1, 2, 3 - and the stock reads 0, 0, 1, 3, not 0, 1, 3, 6. At `t=3`
+    the stock has accumulated the flow's values at 0, 1 and 2. Anything you write in front
+    of a flow - a converter, a user-defined function - is read at that earlier time too,
+    because it is part of the stock's equation.
+
+    ### An initial value is evaluated before the run
+
+    `initial_value` may be a number, a constant, a converter or any expression, and it is
+    evaluated once, with `t` at the start time, before the first step. Step 0 settles
+    first, so an initial value that reads a converter - which in turn reads another stock -
+    gets the right number. But it is not part of the run: it cannot look at a later step,
+    and nothing in it accumulates:
+    """)
+    return
+
+
+@app.cell
+def _(DslModel, dsl_sd):
+    initial = DslModel(starttime=0, stoptime=3, dt=1, name="initial")
+    head_start = initial.converter("head_start")
+    head_start.equation = 10.0 + dsl_sd.time()
+    level = initial.stock("level")
+    level.initial_value = head_start
+    level.equation = 0.0
+
+    initial.simulate(["head_start", "level"])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `head_start` runs 10, 11, 12, 13 - and `level` holds 10 for the whole run. The stock
+    read the converter at the start time, and that is the only time it read it. An
+    initial value that is supposed to keep changing is not an initial value; it is a
+    flow.
+
+    ### Memoisation is per model, and per run
+
+    Every evaluated value is cached under its equation name and its time. That is what
+    makes the recursion above affordable: below, three converters read the same
+    user-defined function, and counting its calls shows how often it actually runs.
+    """)
+    return
+
+
+@app.cell
+def _(DslModel):
+    calls = []
+
+    def count(model, t, value):
+        calls.append(t)
+        return value
+
+    cached = DslModel(starttime=0, stoptime=3, dt=1, name="cached")
+    counted = cached.function("counted", count)
+    cached_base = cached.constant("base")
+    cached_base.equation = 1.0
+    shared = cached.converter("shared")
+    shared.equation = counted(cached_base)
+    for reader_index in range(3):
+        cached.converter("reader_{}".format(reader_index)).equation = shared * 1.0
+
+    readers = ["reader_0", "reader_1", "reader_2"]
+    cached.simulate(readers)
+    first_run = len(calls)
+    cached.simulate(readers)
+
+    "{} calls in the first run, {} after the second".format(first_run, len(calls))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Four calls for four timesteps, however many converters read the function - that is
+    the cache. A second run repeats them: the cache belongs to one run, and a model
+    reused across two runs with different settings has to be reset. `bptk` does that for
+    you between scenarios; `model.reset_cache()` does it by hand.
+    """)
+    return
+
+
 if __name__ == "__main__":
     app.run()

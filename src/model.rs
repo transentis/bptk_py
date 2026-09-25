@@ -13,6 +13,15 @@ pub struct SdModel {
     /// Evaluation order for non-stock entities (indices into `entities`).
     /// Computed via topological sort at load time.
     pub eval_order: Vec<usize>,
+    /// The Python functions this model calls back into, by slot. A `PyCallback`
+    /// expression carries the slot, never the name: the name is resolved once at load
+    /// time, the way an entity reference becomes an index. Always empty in a build
+    /// without Python, where such a node is a load error.
+    pub callback_names: Vec<String>,
+    /// What to call for each slot, `None` until it is registered. Parallel to
+    /// `callback_names`.
+    #[cfg(feature = "python")]
+    pub callbacks: Vec<Option<pyo3::Py<pyo3::PyAny>>>,
 }
 
 #[derive(Debug)]
@@ -54,6 +63,11 @@ pub enum Expr {
         then: Box<Expr>,
         else_: Box<Expr>,
     },
+    /// A call into a Python function: the arguments are evaluated to numbers here and
+    /// the answer is one number. The variant does not exist without Python - there is
+    /// no interpreter to call, which is the whole reason the crate splits.
+    #[cfg(feature = "python")]
+    PyCallback { slot: usize, args: Vec<Expr> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

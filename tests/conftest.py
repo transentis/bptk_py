@@ -145,8 +145,10 @@ def cleanup_compiled_models():
         file_path.unlink()
 
 
-# Log messages the bptk layers emit when they give up on the Rust engine and
-# compute in Python instead. Each of these means "the Rust engine did not run".
+# Log messages that would mean "the Rust engine did not run, and Python ran instead".
+# Since 3.2.0 the library no longer does that - it raises `RustBackendError` - so none
+# of these is emitted any more. The list stays because a later phase could add a path,
+# and a silent substitution is the failure that looks green.
 # Deliberately excluded: the invalid-backend-string messages (bptk.py) - those are
 # input validation, not engine failures - and the export_state message, where Rust
 # did run and only the resume shortcut fell back to replay.
@@ -275,14 +277,15 @@ def _fallback_lines_since(offset):
 def pytest_runtest_call(item):
     """Fail any test during which bptk silently fell back from Rust to Python.
 
-    The fallback is a production feature: when the engine cannot load or run a
-    model, bptk logs a [WARN] and computes in Python, so results stay correct.
-    In tests it is a trap - a parity test that compares "python" against a "rust"
-    run that never happened compares Python with Python and passes for the wrong
-    reason. That is how the delay-cycle limitation stayed hidden until 2026-08-11.
+    Such a fallback used to be a production feature: when the engine could not load or
+    run a model, bptk logged a [WARN] and computed in Python, so results stayed correct.
+    In tests it was a trap - a parity test comparing "python" against a "rust" run that
+    never happened compares Python with Python and passes for the wrong reason, which is
+    how the delay-cycle limitation stayed hidden until 2026-08-11. Since 3.2.0 the
+    library raises instead, for the same reason one release later.
 
-    Tests that exercise the fallback on purpose opt out with
-    ``@pytest.mark.allow_rust_fallback``.
+    The guard stays, because a later phase could add a path back. A test that writes
+    such a line on purpose opts out with ``@pytest.mark.allow_rust_fallback``.
 
     Separately, a test asking for a non-Python backend that the engine never
     serves also fails - see RUST_USE above. A test that stubs the engine call

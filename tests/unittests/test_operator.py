@@ -1441,3 +1441,40 @@ class TestGenericArrayProtocol(unittest.TestCase):
         largest.equation = sd.sqrt(v.arr_rank(1))
         self.assertFalse(largest.arrayed)
         self.assertEqual(largest(1), 3.0)
+
+
+class TestNaryOperatorRendersItsArgumentsAtTheTimeAsked(unittest.TestCase):
+    """A custom function's arguments follow the time its term is rendered with.
+
+    A stock renders its equation at `t-model.dt`. The arguments used to be written out
+    with `str()`, which renders an element at the default `t`, so the function's own time
+    moved while its arguments did not - and a stock integrated the current value instead
+    of the previous one, with an identity function in between changing the result.
+    """
+
+    def test_the_argument_carries_the_time(self):
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="nary_time")
+        source = model.converter("source")
+        source.equation = 1.0
+        identity = model.function("identity", lambda model, t, x: x)
+
+        term = identity(source).term("t-model.dt")
+
+        self.assertIn("model.memoize('source',t-model.dt)", term)
+
+    def test_a_stock_integrates_the_previous_value(self):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="nary_stock")
+        ramp = model.converter("ramp")
+        ramp.equation = sd.time()
+        identity = model.function("identity", lambda model, t, x: x)
+
+        direct = model.stock("direct")
+        direct.initial_value = 0.0
+        direct.equation = ramp
+        through_function = model.stock("through_function")
+        through_function.initial_value = 0.0
+        through_function.equation = identity(ramp)
+
+        self.assertEqual([direct(t) for t in range(5)],
+                         [through_function(t) for t in range(5)])
+

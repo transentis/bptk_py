@@ -141,6 +141,12 @@ def _(mo):
       replays identically, without one the numbers after the restart are different ones.
       The Python engine ignores it.
 
+    A session asking for `"rust"` on a model the engine cannot take starts, and then fails
+    on its **first step** with 400 and a message naming the reason - a model is not
+    serialised until it runs. Until 3.2.0 such a session quietly used the Python engine
+    instead. Which models those are is on the [Execution
+    Backends](../../concepts/execution_backends/execution_backends.md) page.
+
     ```json
     {
       "scenario_managers": ["smSirModel"],
@@ -192,6 +198,13 @@ def _(mo):
     node format. A server without the compiled engine answers 500; a malformed body, a
     missing `model` or `equations`, or a model the engine cannot load answers 400 naming
     the field or the problem.
+
+    **A model that carries user-defined functions is refused**, with 400 and the names of
+    the functions. Such a model runs on the engine everywhere else, by calling back into
+    Python - but here the model arrived over HTTP, and running the Python that goes with
+    it is a different decision from running the model. Serve such a model from a process
+    that holds the functions, through `/run` and a registered scenario manager, rather
+    than by posting the model itself.
 
     ## equations
 

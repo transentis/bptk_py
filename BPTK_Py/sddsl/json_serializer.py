@@ -16,6 +16,7 @@ nothing about dimensions. `dot` is expanded into a sum of products here rather t
 becoming a call.
 """
 
+import inspect
 import json
 from . import operators as ops
 from .element import Element
@@ -31,6 +32,11 @@ from .constant import Constant
 _inline_tables = {}
 _inline_counter = 0
 
+# The model being serialized. A custom function is emitted by name, and that name has to be
+# checked against the callable the model holds for it - which `_expr_to_json` cannot reach,
+# taking an expression and recursing through dozens of call sites.
+_current_model = None
+
 
 def _next_inline_id():
     global _inline_counter
@@ -42,6 +48,11 @@ def _reset_inline_tables():
     global _inline_tables, _inline_counter
     _inline_tables = {}
     _inline_counter = 0
+
+
+def _set_current_model(model):
+    global _current_model
+    _current_model = model
 
 
 # ── Comparison sign → JSON op mapping ────────────────────────────────────────
@@ -183,17 +194,96 @@ def _dot_to_json(expr):
         [operands([index[0], key], [key, index[1]]) for key in contracted])
 
 
+# ── Custom functions ─────────────────────────────────────────────────────────
+
+def _check_call_site_arity(fn, name, argument_count):
+    """
+    Check that `fn` accepts what the call site passes: the model, the time, and the
+    arguments of the expression.
+
+    The signature itself is not the criterion. `lambda model, t, *args: ...` is a
+    perfectly well defined custom function and three test fixtures use one, so what
+    matters is whether a call of this shape binds, not whether the parameters are
+    counted out.
+    """
+    try:
+        signature = inspect.signature(fn)
+    except (TypeError, ValueError):
+        # A built-in or a C callable has no signature to inspect. Nothing to check,
+        # and refusing it here would be a rule the Python engine does not have.
+        return
+
+    try:
+        signature.bind(*((None,) * (argument_count + 2)))
+    except TypeError as error:
+        raise ValueError(
+            "Custom function '{}' does not accept the arguments of its call site: it is "
+            "called with the model, the time and {} argument(s), which gives {} in total, "
+            "and binding them failed with: {}".format(
+                name, argument_count, argument_count + 2, error))
+
+
+def _py_callback_to_json(expr):
+    """
+    A custom function as a node the engine answers by calling back into Python.
+
+    Only the name is serialized, never the callable: the engine resolves it to a slot at
+    load time and the caller registers what to run. Everything this function raises is a
+    ValueError, because that is what makes the run fall back to the Python engine
+    cleanly.
+    """
+    if not expr.elementwise:
+        raise ValueError(
+            "Custom function '{}' takes whole arrays (elementwise=False), which has no "
+            "node in the engine format: a callback answers with one number, and an "
+            "array-taking function is handed a sequence and answers once.".format(
+                expr.name))
+
+    if _current_model is None:
+        raise ValueError(
+            "Custom function '{}' cannot be serialized outside model_to_json(), which is "
+            "what makes the model's callables reachable.".format(expr.name))
+
+    fn = _current_model.fn.get(expr.name)
+    if fn is None:
+        raise ValueError(
+            "Custom function '{}' has no callable registered on the model.".format(
+                expr.name))
+
+    if _current_model.agent_factories or _current_model.agents:
+        # A hybrid model advances its two halves in lockstep: the agents compute step t
+        # and write what the SD side reads at step t. The engine runs every step at once,
+        # so at step 50 the agents have not moved and there is nothing to read. The
+        # criterion is the model's shape, never what the function's body does - a look
+        # inside the callable would be a guess.
+        raise ValueError(
+            "Custom function '{}' belongs to a model that also has agents. A hybrid "
+            "model advances its agents and its System Dynamics side one step at a time, "
+            "and the engine computes every step at once, so a function that reads what "
+            "the agents produced would read a step that has not happened. Hybrid models "
+            "run on the Python engine.".format(expr.name))
+
+    _check_call_site_arity(fn, expr.name, len(expr.args))
+
+    return {
+        "type": "py_callback",
+        "name": expr.name,
+        "args": [_expr_to_json(arg) for arg in expr.args],
+    }
+
+
 # ── Expression serializer ────────────────────────────────────────────────────
 
 def _expr_to_json(expr):
     """
     Recursively convert an SD DSL expression tree to a JSON-compatible dict.
 
-    Handles: literals, element references, the array aggregations, `dot`, and all
-    operators and built-in functions that the Rust engine supports. Raises ValueError
-    for nodes the engine cannot express - a custom function, or a reference to the
-    parent of an arrayed element - which makes the runner fall back to the Python
-    engine.
+    Handles: literals, element references, the array aggregations, `dot`, all
+    operators and built-in functions that the Rust engine supports, and a custom
+    function, which becomes a node the engine answers by calling back into Python.
+    Raises ValueError for nodes the engine cannot express - a function that takes whole
+    arrays, or a reference to the parent of an arrayed element - which makes the runner
+    fall back to the Python engine.
     """
 
     # ── Scalar literals ──────────────────────────────────────────────────
@@ -584,12 +674,9 @@ def _expr_to_json(expr):
                 "args": [_expr_to_json(expr.left), _expr_to_json(expr.right),
                          _expr_to_json(expr.mean), _expr_to_json(expr.stddev)]}
 
-    # ── Unsupported: custom functions ────────────────────────────────────
+    # ── Custom functions: a call back into Python, by name ─────────────────
     if isinstance(expr, ops.NaryOperator):
-        raise ValueError(
-            f"Custom function '{expr.name}' is not supported by to_json(). "
-            f"The Rust engine does not support user-defined functions."
-        )
+        return _py_callback_to_json(expr)
 
     # ── Fallback ─────────────────────────────────────────────────────────
     raise ValueError(
@@ -608,11 +695,22 @@ def model_to_json(model) -> str:
     with brackets, and the parent is skipped - it holds no equation, only its
     sub-elements do.
 
+    A custom function becomes a `py_callback` node carrying its name; the callable
+    itself is never serialized.
+
     Returns a JSON string. Raises ValueError if the model uses features the Rust engine
-    cannot express, such as a custom function.
+    cannot express, such as a custom function that takes whole arrays.
     """
     _reset_inline_tables()
+    _set_current_model(model)
+    try:
+        return _model_to_json(model)
+    finally:
+        _set_current_model(None)
 
+
+def _model_to_json(model) -> str:
+    """The body of `model_to_json`, run with the serialization context in place."""
     specs = {
         "starttime": model.starttime,
         "stoptime": model.stoptime,

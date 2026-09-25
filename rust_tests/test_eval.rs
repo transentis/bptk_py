@@ -14,6 +14,9 @@ fn empty_model() -> SdModel {
         entity_index: HashMap::new(),
         graphical_functions: HashMap::new(),
         eval_order: Vec::new(),
+        callback_names: Vec::new(),
+        #[cfg(feature = "python")]
+        callbacks: Vec::new(),
     }
 }
 

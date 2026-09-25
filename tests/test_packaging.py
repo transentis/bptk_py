@@ -86,12 +86,12 @@ class TestDependencyGroups:
     def test_the_marimo_pin_agrees_with_the_readers_requirements(self, pyproject):
         """One version in two files, and the site is a different site if they differ.
 
-        The `docs` group is what a checkout renders with; `docs/tutorial/requirements.txt`
+        The `docs` group is what a checkout renders with; `website-tutorial/requirements.txt`
         is what a reader installs to run the notebooks. The marimo release decides which
         islands runtime the pages embed - unpinned, CI once rendered 437 files where a
         laptop rendered 405 from the same sources.
         """
-        requirements = PYPROJECT.parent / "docs" / "tutorial" / "requirements.txt"
+        requirements = PYPROJECT.parent / "website-tutorial" / "requirements.txt"
         if not requirements.is_file():
             pytest.skip("documentation sources not available - public checkout")
 

@@ -287,12 +287,16 @@ def _(mo):
     | **north** | 58,800 | 63,200 | 37,350 |
     | **south** | 18,000 | 68,400 | 131,400 |
 
-    The aggregations turn those six cells into the four series the plot draws:
-    `total_revenue` adds them up to **377,150**, `best_line` picks the southern gizmo at
-    **131,400**, `median_line` sits at **61,000**, and `weakest_line` is the southern
-    stripe at **18,000**. A factor of seven between the best and the worst cell, which is
-    what the standard deviation of 35,138 is saying; the second strongest line is the
-    northern mohawk at 68,400. Total margin is 164,050 a month.
+    The aggregations turn those six cells into the four series the plot draws.
+    `total_revenue` adds them up to **377,150** a month; `best_line` is the southern gizmo
+    and `weakest_line` the southern stripe, a factor of seven apart. `median_line` is
+    **61,000**, which is no cell of the table: with six cells the median is the average of
+    the two middle ones. `second_best_line` picks the northern mohawk, and
+    `revenue_spread` - the standard deviation over the six cells - says how unevenly that
+    revenue is spread.
+
+    Margin is a different quantity from all of those: price minus unit cost, times the
+    units. Over the same six cells it comes to **164,050** a month.
 
     From month 1 on every cell grows at its own rate, so those four lines drift apart -
     and watching them drift is the point of the plot.
@@ -334,10 +338,12 @@ def _(mo):
     | **north** | 74,660 | 101,653 | 236,843 |
     | **south** | 36,590 | 97,778 | 423,778 |
 
-    Revenue per month has gone from 377,150 to 971,303 and margin per month from 164,050
-    to 443,543 - both about two and a half times. But the *shape* has changed more than
-    the size: the two gizmo lines were 45 % of revenue in month 0 and are 68 % by month
-    24. The northern gizmo alone goes from a tenth of the portfolio to a quarter of it.
+    The cells are rounded to whole units, so they add up to one less than the
+    **971,303** the model reports.
+
+    Revenue and margin per month have both grown about two and a half times. But the
+    *shape* has changed more than the size: the two gizmo lines were 45 % of revenue in
+    month 0 and are 68 % of it by month 24.
 
     The plot below is where that shift becomes visible, and it deliberately does **not**
     draw the numbers in the table. It draws `share` - each cell divided by the total - so
@@ -434,10 +440,10 @@ def _(Model, bptk):
 def _(mo):
     mo.md(r"""
     With one price list applied to both regions, the north brings in **159,350** a month
-    and the south **244,050**, for a group total of 403,400. The northern figure is the
-    same 159,350 the named model produced, because the northern prices *are* the list
-    prices there; the southern figure is higher than the named model's 217,800, and that
-    difference is the model speaking rather than a mistake. A matrix times a *vector* of
+    and the south **244,050**. The northern figure is the one the named model produced,
+    because the northern prices *are* the list prices there; the southern figure is higher
+    than the named model's, and that difference is the model speaking rather than a
+    mistake. A matrix times a *vector* of
     prices says "one price list for every region". If prices really differ by region, the
     element-wise `units * price` above is the honest formulation.
     """)

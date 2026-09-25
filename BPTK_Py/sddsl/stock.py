@@ -14,6 +14,7 @@ from .element import ArrayedEquation, Element
 from .element import ElementError
 from .constant import Constant
 from .converter import Converter
+from .operators import Operator
 
 
 class Stock(Element):
@@ -35,13 +36,27 @@ class Stock(Element):
 
     @initial_value.setter
     def initial_value(self, initial_value):
-        if isinstance(initial_value, (float, Constant, Converter)):
-            self.__initial_value = initial_value
-            self.build_function_string()
-            self.generate_function()
-        else:
+        # A number, an element or an expression built from them. The engines have always
+        # treated an initial value as a full expression - the JSON format serializes it
+        # the way it serializes an equation, and the Python side renders it with `str()`,
+        # which is the element's or the operator's term - so the setter used to be
+        # narrower than either of them. A bool is an int in Python and is refused
+        # deliberately: `True` as a starting level is a slip, not an intention.
+        acceptable = (
+            isinstance(initial_value, (int, float)) and not isinstance(initial_value, bool)
+            or isinstance(initial_value, (Element, Operator))
+        )
+        if not acceptable:
             raise ElementError(
-                "Initial values must be floating point values, constants or converters")
+                "The initial value of stock '{}' is a {}. It has to be a number, another "
+                "element - a constant or a converter - or an expression built from them. "
+                "A value that has to be computed, by a user-defined function for "
+                "instance, belongs in a converter that the stock then starts "
+                "from.".format(self.name, type(initial_value).__name__))
+
+        self.__initial_value = initial_value
+        self.build_function_string()
+        self.generate_function()
 
     def add_arr_equation(self, name, value):
         s = self.model.stock(self.name + "[" + name + "]")

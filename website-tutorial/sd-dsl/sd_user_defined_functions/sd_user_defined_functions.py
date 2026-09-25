@@ -41,7 +41,7 @@ def _():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     model = Model(starttime=1,stoptime=10,dt=0.25,name='TestModel')
-    return model, sd
+    return Model, model, sd
 
 
 @app.cell(hide_code=True)
@@ -231,6 +231,135 @@ def _(bptk, scenarios_to_plot):
         equations=["another_converter"],
         format="axes",
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Functions and arrays
+
+    An argument can be an arrayed element, and a function says once - when it is
+    registered - what that should mean.
+
+    **By default a function is applied per index**, which is the rule every operator in
+    the DSL follows: the result is an array of the same shape, and a named array keeps
+    its labels.
+    """)
+    return
+
+
+@app.cell
+def _(Model):
+    array_model = Model(starttime=1.0, stoptime=5.0, dt=1.0, name="arrays_and_functions")
+
+    revenue = array_model.constant("revenue")
+    revenue.setup_named_vector({"north": 100.0, "south": 250.0})
+
+    commission = array_model.function("commission", lambda model, t, amount: amount * 0.1)
+
+    per_region = array_model.converter("per_region")
+    per_region.equation = commission(revenue)
+
+    {name: per_region[name](1) for name in ("north", "south")}
+    return array_model, commission, revenue
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **A function declared with `elementwise=False` receives the whole array instead** and
+    answers once. An unnamed array arrives as a list, a named one as a dict keyed by its
+    labels, and a matrix arrives nested. The result is a single value, so anything built
+    on top of it is scalar too.
+    """)
+    return
+
+
+@app.cell
+def _(array_model, revenue):
+    largest_region = array_model.function(
+        "largest_region",
+        lambda model, t, amounts: max(amounts.values()),
+        elementwise=False,
+    )
+
+    peak = array_model.converter("peak")
+    peak.equation = largest_region(revenue)
+
+    peak(1)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Which of the two you want is a property of the function, not of the call, so it is
+    stated where the function is registered. The default is the element-wise one, because
+    that is what every other operator does with an array.
+
+    The aggregations the DSL already carries - `arr_sum`, `arr_mean`, `arr_max` and the
+    rest - need no function at all, and they run on the Rust engine. Reach for
+    `elementwise=False` when the reduction is one the DSL does not have.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Where a user-defined function may stand
+
+    A function computes the value of an element, so it goes where an equation goes: a
+    converter, a flow, a biflow, and the equation of a stock. It can also be a stock's
+    *initial value*, since an initial value is an expression like any other:
+
+    ```python
+    starting_point = model.function("starting_point", lambda model, t: 42.0)
+
+    stock = model.stock("stock")
+    stock.initial_value = starting_point()
+    ```
+
+    An initial value is evaluated before the run rather than during it, so a function
+    standing there is called once, with `t` at the start time.
+
+    ## Which functions run on the Rust engine
+
+    Since 3.2.0 a model with user-defined functions runs on the [Rust
+    engine](../../concepts/execution_backends/execution_backends.md). The engine evaluates
+    the model and calls back into Python at those nodes, once per node and timestep, so
+    the function you wrote is the function that runs.
+
+    The run says so, because it is not a pure engine run:
+
+    ```
+    [WARN] This model calls 1 user-defined Python function(s) ('largest_region'). Those
+    nodes are evaluated in Python while the rest of the model runs on the Rust engine.
+    ```
+
+    Nothing is wrong there - the numbers are the same either way - but each call crosses
+    between two runtimes, and [what that costs is
+    measured](../../concepts/execution_backends/benchmarks/callback_benchmark.md).
+
+    Two shapes stay on the Python engine, and asking for `backend="rust"` with them raises
+    `RustBackendError` rather than quietly computing the answer elsewhere:
+
+    * **`elementwise=False`.** Such a function is handed a whole array and answers once,
+      where a callback answers with one number per node.
+    * **A hybrid model** - agents and a System Dynamics side - **whose function reads what
+      the agents produced.** The two halves advance one step at a time, and the engine
+      computes every step of a run at once, so the function would read a step that has not
+      happened yet. A model that merely *has* agents is fine.
+
+    ## On the server
+
+    `/execute` refuses a model that carries user-defined functions, with HTTP 400 naming
+    them. The model arrived over HTTP, and running the Python that goes with it is a
+    different decision from running the model. Serve such a model from a process that
+    holds the functions - a `bptk` instance with the scenario manager registered - rather
+    than by posting the model itself.
+    """)
     return
 
 

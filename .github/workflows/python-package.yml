@@ -71,9 +71,22 @@ jobs:
       # "No interpreter found at path C:/hostedtoolcache/.../python" - no `.exe`.
       run: |
         uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
+    - name: Build the engine without Python
+      # The wheel is a shared library the interpreter loads; the test binaries start by
+      # themselves. Only this step builds the first form without pyo3, so a break that
+      # hits it alone - which is the form the standalone binary and WASM need - shows up
+      # here rather than in a later phase.
+      run: |
+        cargo build --no-default-features
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
+    - name: Run Rust engine tests with Python linked
+      # The build without Python cannot run what touches the callbacks - the code is not
+      # in it. This configuration links libpython, so those tests exist and run. The
+      # interpreter is asked for its own path, for the reason the sync step gives above.
+      run: |
+        PYO3_PYTHON="$(python -c 'import sys; print(sys.executable)')" cargo test --no-default-features --features python
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -132,9 +145,22 @@ jobs:
     - name: Install the project and its dependencies
       run: |
         uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
+    - name: Build the engine without Python
+      # The wheel is a shared library the interpreter loads; the test binaries start by
+      # themselves. Only this step builds the first form without pyo3, so a break that
+      # hits it alone - which is the form the standalone binary and WASM need - shows up
+      # here rather than in a later phase.
+      run: |
+        cargo build --no-default-features
     - name: Run Rust engine tests
       run: |
         cargo test --no-default-features
+    - name: Run Rust engine tests with Python linked
+      # The build without Python cannot run what touches the callbacks - the code is not
+      # in it. This configuration links libpython, so those tests exist and run. The
+      # interpreter is asked for its own path, for the reason the sync step gives above.
+      run: |
+        PYO3_PYTHON="$(python -c 'import sys; print(sys.executable)')" cargo test --no-default-features --features python
     - name: Lint with flake8
       run: |
         uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics

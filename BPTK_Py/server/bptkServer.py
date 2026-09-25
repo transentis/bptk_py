@@ -17,6 +17,7 @@
 from flask import Flask, redirect, url_for, request, make_response, jsonify, Response, g
 from BPTK_Py.bptk import bptk
 from BPTK_Py.logger import logger as log_module
+from BPTK_Py.exceptions import RustBackendError
 import pandas as pd
 import json
 import copy
@@ -199,36 +200,35 @@ def _check_for_py_callbacks(model_def):
     Walk the JSON expression trees of an ``/execute`` model definition and
     refuse it if any ``py_callback`` node is present.
 
-    ``py_callback`` is a planned node type that would let a Rust model invoke a
-    Python function during evaluation. The server has no mechanism to register
-    such functions, so requests containing them cannot succeed — we reject them
-    up-front with a clear error rather than let the Rust engine fail mid-load
-    with a less obvious message.
+    A ``py_callback`` node is how a model built with ``Model.function()`` says that
+    one of its values is computed by a Python function. Running it means running
+    Python that arrived over HTTP, which is a different decision from making a model
+    faster — so the endpoint refuses, and says which functions it refused rather than
+    letting the engine fail mid-load with a message about a slot.
 
     Returns ``None`` if the model is clean, or a human-readable error
-    message describing why it was rejected.
+    message naming the functions it found.
 
     The walk is O(total nodes in the model) and runs once per request. It
     descends into every dict / list value so nodes nested under ``if`` /
     binary-op / call args are caught even when buried deep in an
     expression tree.
     """
+    found = []
+
     def walk(node):
         if not isinstance(node, dict):
-            return None
+            return
         if node.get("type") == "py_callback":
-            return "py_callback nodes are not supported by /execute"
+            name = node.get("name")
+            found.append(str(name) if name else "<unnamed>")
+            return
         for v in node.values():
             if isinstance(v, dict):
-                err = walk(v)
-                if err:
-                    return err
+                walk(v)
             elif isinstance(v, list):
                 for item in v:
-                    err = walk(item)
-                    if err:
-                        return err
-        return None
+                    walk(item)
 
     if not isinstance(model_def, dict):
         return "model must be a JSON object"
@@ -240,9 +240,17 @@ def _check_for_py_callbacks(model_def):
         for ent in entities.get(kind, []) or []:
             for field in ("equation", "initial_value"):
                 if field in ent:
-                    err = walk(ent[field])
-                    if err:
-                        return err
+                    walk(ent[field])
+
+    if found:
+        names = sorted(set(found))
+        return (
+            "This model is computed in part by user-defined Python functions ({}), "
+            "which /execute does not run: the model arrived over HTTP, and running "
+            "the Python that goes with it is a different decision from running the "
+            "model. Remove the py_callback nodes, or run the model in a process that "
+            "holds the functions.".format(", ".join("'{}'".format(n) for n in names))
+        )
     return None
 
 
@@ -263,6 +271,10 @@ class BptkServer(Flask):
         self._instance_manager = InstanceManager(bptk_factory)
         self._bearer_token = bearer_token
         self._externalize_state_completely = externalize_state_completely
+
+        # A model the Rust engine cannot take reaches this far as an exception, from any
+        # endpoint that runs one. Registered once rather than wrapped at each call site.
+        self.register_error_handler(RustBackendError, self._rust_backend_error_response)
 
         # specifying the routes and methods of the api
         self.route("/", methods=['GET'],strict_slashes=False)(self._home_resource)
@@ -1088,6 +1100,18 @@ class BptkServer(Flask):
         # Cleanup instance if needed (for stateless operation)
         self._cleanup_instance_if_needed(instance_uuid)
 
+        return resp
+
+    def _rust_backend_error_response(self, error):
+        """Answer 400 when the Rust engine cannot run the model of this session.
+
+        A 400 rather than a 500 because the caller chose the engine - in the session's
+        `backend` field, or by the server's default - and asking for the other one is the
+        fix. The message names which of the four causes it is.
+        """
+        resp = make_response(json.dumps({"error": str(error)}), 400)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp
 
     @token_required

@@ -1,8 +1,12 @@
 import pytest
 import io
 import json
+import os
 import sys
+import tempfile
+import uuid
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import BPTK_Py
@@ -10,6 +14,7 @@ import BPTK_Py.logger.logger as logmod
 from BPTK_Py import bptk
 from BPTK_Py import Agent, Model
 from BPTK_Py.config import config as default_config
+from BPTK_Py.scenariorunners import HybridRunner
 
 
 class _TrainingAgent(Agent):
@@ -52,6 +57,40 @@ class _TrainingModel(Model):
             "learner",
             lambda agent_id, model, properties: _TrainingAgent(agent_id, model, properties),
         )
+
+
+class _ProgressRecorder:
+    """Stands in for the tqdm-backed bar: the schedulers only write `value`."""
+
+    def __init__(self):
+        self.values = []
+
+    @property
+    def value(self):
+        return self.values[-1] if self.values else 0
+
+    @value.setter
+    def value(self, value):
+        self.values.append(value)
+
+    def close(self):
+        pass
+
+
+def _build_two_scenario_training_bptk():
+    """Two scenarios in one manager, so an episode has more than one step to show."""
+    testBptk = bptk()
+    model = _TrainingModel(name="trainingModel")
+    scenario = {
+        "runspecs": {"starttime": 1, "stoptime": 3, "dt": 1},
+        "properties": {},
+        "agents": [{"name": "learner", "count": 1}],
+    }
+    testBptk.register_scenario_manager({
+        "trainManager": {"type": "abm", "model": model,
+                         "scenarios": {"first": dict(scenario), "second": dict(scenario)}},
+    })
+    return testBptk
 
 
 def _build_training_bptk():
@@ -641,8 +680,8 @@ class TestBptk(unittest.TestCase):
 
     @pytest.mark.requires_rust
     def testBptk_end_session_clears_rust_state(self):
-        """After end_session, the four Rust fields populated mid-session must
-        all be reset on the underlying SimulationScenario."""
+        """After end_session, the Rust fields populated mid-session must all be reset
+        on the underlying SimulationScenario."""
         testBptk = self._build_simple_step_bptk()
         testBptk.begin_session(scenarios=["testScenario"],
                                scenario_managers=["testManager"],
@@ -661,7 +700,6 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(sc.rust_model)
         self.assertIsNone(sc._rust_initial)
         self.assertFalse(sc._rust_initial_returned)
-        self.assertFalse(sc._rust_failed)
         self.assertIsNone(testBptk.session_state)
 
     def testBptk_end_session_python_session_no_rust_state(self):
@@ -681,8 +719,8 @@ class TestBptk(unittest.TestCase):
 
         self.assertIsNone(sc.rust_model)
         self.assertFalse(sc._rust_initial_returned)
-        self.assertFalse(sc._rust_failed)
 
+    @pytest.mark.requires_rust
     def testBptk_end_session_reset_exception_swallowed(self):
         """If rust_model.reset() raises, end_session must still complete and
         leave the scenario in a clean state. The real RustSdModel.reset() is a
@@ -705,6 +743,7 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(sc.rust_model)
         self.assertIsNone(testBptk.session_state)
 
+    @pytest.mark.requires_rust
     def testBptk_run_step_passes_backend_to_runner(self):
         """run_step must forward session_state['backend'] to SdRunner.run_scenario_step."""
         from BPTK_Py.scenariorunners.sd_runner import SdRunner
@@ -1865,3 +1904,217 @@ class TestMatplotlibStyling(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestTrainingProgress(unittest.TestCase):
+    """The bar tracks the work, not only the episodes.
+
+    Every episode trains each scenario in turn, so a bar that moves once per
+    episode stands still for that whole round - the longer the training and the
+    more scenarios, the less it says.
+    """
+
+    @pytest.mark.requires_threads
+    def test_the_bar_advances_once_per_scenario(self):
+        testBptk = _build_two_scenario_training_bptk()
+        recorder = _ProgressRecorder()
+
+        runner = HybridRunner(testBptk.scenario_manager_factory)
+        runner.train_scenario(scenarios=["first", "second"], agents=["learner"],
+                              episodes=2, scenario_managers=["trainManager"],
+                              progress_widget=recorder)
+
+        # Two episodes over two scenarios: four steps, and each one shows.
+        self.assertEqual(recorder.values, [0.0, 0.25, 0.5, 0.75])
+
+
+_STORAGE_MODEL_SOURCE = '''
+from BPTK_Py import Model
+
+
+class {class_name}(Model):
+
+    def __init__(self):
+        super().__init__(starttime=0, stoptime=4, dt=1, name="{class_name}")
+        growth = self.constant("growth")
+        growth.equation = 2.0
+        level = self.stock("level")
+        level.initial_value = 0.0
+        inflow = self.flow("inflow")
+        inflow.equation = growth
+        level.equation = inflow
+'''
+
+
+_STORAGE_ABM_SOURCE = '''
+from BPTK_Py import Agent, Model
+
+
+class CounterAgent(Agent):
+
+    def initialize(self):
+        self.agent_type = "counter"
+        self.state = "active"
+        self.set_property("tally", {"type": "Double", "value": 0.0})
+
+    def act(self, time, round_no, step_no):
+        self.tally += 1.0
+
+
+class Counter(Model):
+
+    def instantiate_model(self):
+        self.register_agent_factory(
+            "counter", lambda agent_id, model, properties: CounterAgent(agent_id, model, properties))
+'''
+
+
+class TestScenarioStorageModelPath(unittest.TestCase):
+    """A scenario file names its model relative to the project directory - the parent
+    of the folder the file sits in - either as a path to a module
+    ("simulation_models/growth") or as a dotted class ("src.growth.Growth"). Neither the
+    working directory nor whether "scenario_storage" is relative or absolute may change
+    which module that names."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._cwd = os.getcwd()
+        self._sys_path = list(sys.path)
+        self._modules = set(sys.modules)
+        # A fresh package name per test: the modules of an earlier test stay in
+        # sys.modules and would otherwise answer for this one.
+        self.package = "pkg_" + uuid.uuid4().hex[:8]
+        self.root = Path(self._tmp.name).resolve()
+        self.project = self.root / "project"
+        (self.project / "scenarios").mkdir(parents=True)
+        (self.project / self.package).mkdir()
+        (self.root / "elsewhere").mkdir()
+
+    def tearDown(self):
+        os.chdir(self._cwd)
+        sys.path[:] = self._sys_path
+        for name in set(sys.modules) - self._modules:
+            del sys.modules[name]
+        self._tmp.cleanup()
+
+    def _write_project(self, notation):
+        """A model and a scenario file naming it in the given notation."""
+        if notation == "path":
+            class_name = "simulation_model"
+            model = "{}/growth".format(self.package)
+        else:
+            class_name = "Growth"
+            model = "{}.growth.Growth".format(self.package)
+        (self.project / self.package / "growth.py").write_text(
+            _STORAGE_MODEL_SOURCE.format(class_name=class_name))
+        (self.project / "scenarios" / "growth.json").write_text(json.dumps({
+            "smGrowth": {
+                "model": model,
+                "base_constants": {"growth": 2.0},
+                "scenarios": {"base": {}, "fast": {"constants": {"growth": 5.0}}},
+            }
+        }))
+
+    def _run(self, storage):
+        instance = bptk(configuration={
+            "scenario_storage": storage,
+            "set_scenario_monitor": False,
+            "set_model_monitor": False,
+        })
+        df = instance.run_scenarios(scenario_managers=["smGrowth"],
+                                    scenarios=["base", "fast"],
+                                    equations=["level"])
+        return list(df["smGrowth_base_level"]), list(df["smGrowth_fast_level"])
+
+    def _assert_runs(self, storage):
+        base, fast = self._run(storage)
+        self.assertEqual(base, [0.0, 2.0, 4.0, 6.0, 8.0])
+        self.assertEqual(fast, [0.0, 5.0, 10.0, 15.0, 20.0])
+
+    # The layout the default configuration expects: relative storage, run from the
+    # project directory.
+
+    def test_relative_storage_from_project_dir_path_notation(self):
+        self._write_project("path")
+        os.chdir(self.project)
+        self._assert_runs("scenarios/")
+
+    def test_relative_storage_from_project_dir_class_notation(self):
+        self._write_project("class")
+        os.chdir(self.project)
+        self._assert_runs("scenarios/")
+
+    # Relative storage that reaches into the project from outside it.
+
+    def test_relative_storage_from_parent_dir_path_notation(self):
+        self._write_project("path")
+        os.chdir(self.root)
+        self._assert_runs("project/scenarios/")
+
+    def test_relative_storage_from_parent_dir_class_notation(self):
+        self._write_project("class")
+        os.chdir(self.root)
+        self._assert_runs("project/scenarios/")
+
+    def test_relative_storage_from_sibling_dir_class_notation(self):
+        self._write_project("class")
+        os.chdir(self.root / "elsewhere")
+        self._assert_runs("../project/scenarios/")
+
+    # Absolute storage, run from a directory that has nothing to do with the project.
+
+    def test_absolute_storage_from_elsewhere_path_notation(self):
+        self._write_project("path")
+        os.chdir(self.root / "elsewhere")
+        self._assert_runs(str(self.project / "scenarios"))
+
+    def test_absolute_storage_from_elsewhere_class_notation(self):
+        self._write_project("class")
+        os.chdir(self.root / "elsewhere")
+        self._assert_runs(str(self.project / "scenarios"))
+
+    def test_absolute_storage_from_project_dir_class_notation(self):
+        self._write_project("class")
+        os.chdir(self.project)
+        self._assert_runs(str(self.project / "scenarios"))
+
+    # Agent-based models go through the hybrid scenario manager, which imports the
+    # dotted class as it stands.
+
+    def _assert_abm_runs(self, storage):
+        (self.project / self.package / "counter.py").write_text(_STORAGE_ABM_SOURCE)
+        (self.project / "scenarios" / "counter.json").write_text(json.dumps({
+            "smCounter": {
+                "type": "abm",
+                "name": "counter",
+                "model": "{}.counter.Counter".format(self.package),
+                "scenarios": {"base": {
+                    "runspecs": {"starttime": 0, "stoptime": 3, "dt": 1},
+                    "properties": {},
+                    "agents": [{"name": "counter", "count": 2}],
+                }},
+            }
+        }))
+        instance = bptk(configuration={
+            "scenario_storage": storage,
+            "set_scenario_monitor": False,
+            "set_model_monitor": False,
+        })
+        df = instance.run_scenarios(scenario_managers=["smCounter"], scenarios=["base"],
+                                    agents=["counter"], agent_states=["active"],
+                                    agent_properties=["tally"],
+                                    agent_property_types=["total"])
+        self.assertEqual(list(df["smCounter_base_counter_active_tally_total"]),
+                         [2.0, 4.0, 6.0, 8.0])
+
+    def test_abm_relative_storage_from_project_dir(self):
+        os.chdir(self.project)
+        self._assert_abm_runs("scenarios/")
+
+    def test_abm_relative_storage_from_parent_dir(self):
+        os.chdir(self.root)
+        self._assert_abm_runs("project/scenarios/")
+
+    def test_abm_absolute_storage_from_elsewhere(self):
+        os.chdir(self.root / "elsewhere")
+        self._assert_abm_runs(str(self.project / "scenarios"))

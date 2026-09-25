@@ -5,6 +5,7 @@ import pytest
 
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
+from BPTK_Py import RustBackendError
 import BPTK_Py.logger.logger as logmod
 import os
 import pandas as pd
@@ -215,95 +216,72 @@ class TestSdRunner(unittest.TestCase):
             py_mock.assert_not_called()
 
     @pytest.mark.allow_rust_unused
-    def test_run_scenario_step_sticky_failed_skips_rust(self):
-        """A scenario flagged _rust_failed must skip the Rust path even when
-        backend='rust' is requested (no retry within the same session)."""
-        runner, sc = self._build_runner_and_scenario()
-        sc._rust_failed = True
-        with mock.patch.object(SdRunner, "_run_scenario_step_python",
-                               autospec=True) as py_mock, \
-             mock.patch.object(SdRunner, "_run_scenario_step_rust",
-                               autospec=True) as rust_mock:
-            py_mock.side_effect = lambda self, sc, *a, **kw: setattr(
-                sc, "result", pd.DataFrame({"totalValue": {0.0: 0.0}}))
-            runner.run_scenario_step(step=0, settings=None,
-                                     scenario_manager="smPortfolio1",
-                                     scenarios=["scenarioLowInterest"],
-                                     equations=["totalValue"],
-                                     backend="rust")
-            py_mock.assert_called_once()
-            rust_mock.assert_not_called()
-
-    @pytest.mark.allow_rust_fallback
-    def test_run_scenario_step_value_error_triggers_fallback(self):
+    def test_run_scenario_step_value_error_raises(self):
+        """A session cannot change engines halfway, so a failed step ends it."""
         runner, sc = self._build_runner_and_scenario()
         with mock.patch.object(SdRunner, "_run_scenario_step_rust",
                                autospec=True,
                                side_effect=ValueError("simulated rust failure")):
-            runner.run_scenario_step(step=0, settings=None,
-                                     scenario_manager="smPortfolio1",
-                                     scenarios=["scenarioLowInterest"],
-                                     equations=["totalValue"],
-                                     backend="rust")
-        self.assertTrue(sc._rust_failed)
-        self.assertIsNone(sc.rust_model)
-        self.assertIsNotNone(sc.result)  # python path produced a result
+            with self.assertRaises(RustBackendError) as context:
+                runner.run_scenario_step(step=0, settings=None,
+                                         scenario_manager="smPortfolio1",
+                                         scenarios=["scenarioLowInterest"],
+                                         equations=["totalValue"],
+                                         backend="rust")
+        self.assertIn("simulated rust failure", str(context.exception))
 
-    @pytest.mark.allow_rust_fallback
-    def test_run_scenario_step_import_error_triggers_fallback(self):
+    @pytest.mark.allow_rust_unused
+    def test_run_scenario_step_import_error_names_the_installation(self):
         runner, sc = self._build_runner_and_scenario()
         with mock.patch.object(SdRunner, "_run_scenario_step_rust",
                                autospec=True,
                                side_effect=ImportError("_rust_engine not built")):
-            runner.run_scenario_step(step=0, settings=None,
-                                     scenario_manager="smPortfolio1",
-                                     scenarios=["scenarioLowInterest"],
-                                     equations=["totalValue"],
-                                     backend="rust")
-        self.assertTrue(sc._rust_failed)
-        self.assertIsNotNone(sc.result)
+            with self.assertRaises(RustBackendError) as context:
+                runner.run_scenario_step(step=0, settings=None,
+                                         scenario_manager="smPortfolio1",
+                                         scenarios=["scenarioLowInterest"],
+                                         equations=["totalValue"],
+                                         backend="rust")
+        self.assertIn("no Rust engine", str(context.exception))
 
-    @pytest.mark.allow_rust_fallback
-    def test_run_scenario_step_attribute_error_triggers_fallback(self):
-        """E.g. an XMILE SimulationModel that lacks to_json — must fall back."""
+    @pytest.mark.allow_rust_unused
+    def test_run_scenario_step_attribute_error_names_xmile(self):
+        """E.g. a compiled XMILE model, which has no `to_json` at all."""
         runner, sc = self._build_runner_and_scenario()
         with mock.patch.object(SdRunner, "_run_scenario_step_rust",
                                autospec=True,
                                side_effect=AttributeError("no to_json")):
-            runner.run_scenario_step(step=0, settings=None,
-                                     scenario_manager="smPortfolio1",
-                                     scenarios=["scenarioLowInterest"],
-                                     equations=["totalValue"],
-                                     backend="rust")
-        self.assertTrue(sc._rust_failed)
+            with self.assertRaises(RustBackendError) as context:
+                runner.run_scenario_step(step=0, settings=None,
+                                         scenario_manager="smPortfolio1",
+                                         scenarios=["scenarioLowInterest"],
+                                         equations=["totalValue"],
+                                         backend="rust")
+        self.assertIn("XMILE", str(context.exception))
+
+    def test_the_replayed_history_skips_what_it_must_not_apply(self):
+        """A Python session restored into a fresh process replays the overrides of the
+        steps already played. An entry that is empty, or that belongs to the step being
+        computed rather than to one before it, is skipped - otherwise the step would be
+        computed with settings from its own future."""
+        runner, sc = self._build_runner_and_scenario()
+        sc.sd_simulation = None
+
+        history = {
+            "0.0": {},                                                   # nothing to apply
+            "1.0": {"smPortfolio1": {"scenarioLowInterest": {
+                "constants": {"interestRate": 0.5}}}},                   # before the step
+            "2.0": {"smPortfolio1": {"scenarioLowInterest": {
+                "constants": {"interestRate": 0.9}}}},                   # the step itself
+        }
+
+        runner._run_scenario_step_python(sc, step=2.0, settings=None,
+                                         scenario_manager="smPortfolio1",
+                                         scenario="scenarioLowInterest",
+                                         equations=["totalValue"],
+                                         settings_history=history)
+
         self.assertIsNotNone(sc.result)
-
-    @pytest.mark.allow_rust_fallback
-    def test_run_scenario_step_fallback_logs_warning(self):
-        """Fallback must emit a [WARN] log line so operators see the switch."""
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
-
-        runner, _ = self._build_runner_and_scenario()
-        with mock.patch.object(SdRunner, "_run_scenario_step_rust",
-                               autospec=True,
-                               side_effect=ValueError("boom")):
-            runner.run_scenario_step(step=0, settings=None,
-                                     scenario_manager="smPortfolio1",
-                                     scenarios=["scenarioLowInterest"],
-                                     equations=["totalValue"],
-                                     backend="rust")
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-        self.assertIn("[WARN]", content)
-        self.assertIn("falling back to Python", content)
 
     @pytest.mark.requires_rust
     def test_run_scenario_step_rust_first_call_initialises_model(self):

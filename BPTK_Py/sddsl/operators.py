@@ -783,31 +783,64 @@ class ComparisonOperator(BinaryOperator):
         return str(element_1) + "{}".format(self.sign) + str(element_2)
 
 
-class NaryOperator(Operator):
+def _array_literal(element, time):
+    """An arrayed element as a Python literal of its sub-elements.
 
-    def __init__(self, name,  *args):
+    A named array becomes a dict keyed by its labels, an unnamed one a list in index
+    order, and a matrix nests. This is what a function declared `elementwise=False`
+    receives in place of one index's value.
+    """
+    parts = []
+    for key in element._elements.equations:
+        sub = element._elements[key]
+        rendered = (_array_literal(sub, time) if sub._elements.vector_size()
+                    else sub.term(time))
+        parts.append("{}: {}".format(repr(key), rendered) if element.named_arrayed
+                     else rendered)
+    return ("{" + ", ".join(parts) + "}") if element.named_arrayed \
+        else ("[" + ", ".join(parts) + "]")
+
+
+class NaryOperator(Operator):
+    """A user-defined function, registered through `Model.function`.
+
+    `elementwise` decides what an arrayed argument means. True - the default, and the
+    rule every other operator follows - calls the function once per index, so the result
+    is an array of the same shape. False hands the whole array over as a list or a dict
+    and the result is a single value.
+    """
+
+    def __init__(self, name,  *args, elementwise=True):
         super().__init__()
         self.name = name
         self.args = args
+        self.elementwise = elementwise
+
+    def is_any_subelement_arrayed(self) -> bool:
+        # A function that takes whole arrays is scalar however arrayed its arguments
+        # are: it is handed the array and answers once, so there is nothing to spread
+        # over indices.
+        if not self.elementwise:
+            return False
+        return super().is_any_subelement_arrayed()
+
+    def resolve_dimensions(self):
+        if not self.elementwise:
+            return -1
+        return super().resolve_dimensions()
+
+    def _argument_term(self, arg, time):
+        if not self.elementwise and _is_arrayed_element(arg):
+            return _array_literal(arg, time)
+        # `str(arg)` was rendering an element at the default `t` while the function's own
+        # time argument carried the time asked for, so a custom function inside a stock -
+        # rendered at `t-model.dt` - read its arguments one step too late.
+        return str(arg.term(time)) if hasattr(arg, "term") else str(arg)
 
     def term(self,  time="t"):
-        fn_str = "model.fn['{}'](model, {}".format(self.name, time)
-
-        num_args = len(self.args)
-
-        if num_args:
-            fn_str += ","
-
-        count = 0
-        for arg in self.args:
-            fn_str += str(arg)
-            count += 1
-            if count < num_args:
-                fn_str += ","
-
-        fn_str += ")"
-
-        return fn_str
+        rendered = [self._argument_term(arg, time) for arg in self.args]
+        return "model.fn['{}'](model, {}{}{})".format(
+            self.name, time, "," if rendered else "", ",".join(rendered))
 
 
 class ModOperator(BinaryOperator):

@@ -50,7 +50,6 @@ class SimulationScenario():
         self.rust_model = None
         self._rust_initial = None
         self._rust_initial_returned = False
-        self._rust_failed = False
 
         self.stoptime = 0.0
         self.starttime = 0.0

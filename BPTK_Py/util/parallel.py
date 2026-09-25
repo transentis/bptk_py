@@ -71,7 +71,7 @@ def start_or_run(target, args=()):
     return thread
 
 
-def start_or_skip(target, args=(), what="background task"):
+def start_or_skip(target, args=(), what="background task", daemon=False):
     """Start `target` in a thread, or skip it where threads are unavailable.
 
     The counterpart to `start_or_run`, and the distinction matters: the callers
@@ -84,10 +84,19 @@ def start_or_skip(target, args=(), what="background task"):
     event loop, an endless monitor loop would take that loop over and freeze the
     page.
 
+    A `daemon=True` thread does not keep the interpreter alive. That is what a
+    watcher wants: a loop that only ends on `kill()` otherwise holds the process
+    open after the script is done, and the caller has to know to call
+    `bptk.destroy()`. The price is that the thread is cut off wherever it stands
+    when the interpreter exits, so a caller that *writes* during its loop has to
+    be able to live with a half-written file.
+
     Args:
         target: The callable to run.
         args: Positional arguments for it.
         what: Named in the log line when the thread cannot be started.
+        daemon: Whether the thread may be killed at interpreter exit rather than
+            waited for.
 
     Returns:
         The started `Thread`, or `None` when it was skipped.
@@ -96,7 +105,7 @@ def start_or_skip(target, args=(), what="background task"):
         log("[INFO] No usable thread model in the browser, continuing without {}.".format(what))
         return None
 
-    thread = Thread(target=target, args=args)
+    thread = Thread(target=target, args=args, daemon=daemon)
 
     try:
         thread.start()

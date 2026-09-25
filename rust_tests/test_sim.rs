@@ -13,7 +13,7 @@ fn test_constant_model() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["x".to_string()], None);
+    let results = model.simulate(&["x".to_string()], None).unwrap();
 
     let x = &results["x"];
     // 6 timesteps: 0,1,2,3,4,5
@@ -49,7 +49,7 @@ fn test_linear_growth() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["level".to_string(), "inflow".to_string()], None);
+    let results = model.simulate(&["level".to_string(), "inflow".to_string()], None).unwrap();
 
     let level = &results["level"];
     // level(0)=0, level(1)=10, level(2)=20, ...
@@ -96,7 +96,7 @@ fn test_exponential_growth() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["population".to_string()], None);
+    let results = model.simulate(&["population".to_string()], None).unwrap();
 
     let pop = &results["population"];
     let mut expected = 100.0;
@@ -137,7 +137,7 @@ fn test_flow_non_negativity() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["level".to_string(), "outflow".to_string()], None);
+    let results = model.simulate(&["level".to_string(), "outflow".to_string()], None).unwrap();
 
     let outflow = &results["outflow"];
     // Flow should be clamped to 0
@@ -223,7 +223,7 @@ fn test_sir_model() {
         "susceptible".to_string(),
         "infected".to_string(),
         "recovered".to_string(),
-    ], None);
+    ], None).unwrap();
 
     let s = &results["susceptible"];
     let i = &results["infected"];
@@ -275,7 +275,7 @@ fn test_fractional_dt() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["level".to_string()], None);
+    let results = model.simulate(&["level".to_string()], None).unwrap();
 
     let level = &results["level"];
     // 9 timesteps: 0.0, 0.25, 0.5, ..., 2.0
@@ -314,7 +314,7 @@ fn test_set_runspecs() {
     // Override runspecs
     model.set_runspecs(0.0, 3.0, 0.5);
 
-    let results = model.simulate(&["level".to_string()], None);
+    let results = model.simulate(&["level".to_string()], None).unwrap();
     let level = &results["level"];
 
     // With dt=0.5 and stoptime=3.0: 7 timesteps (0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
@@ -349,7 +349,7 @@ fn test_nonzero_starttime() {
     }"#;
 
     let model = parse_json(json).unwrap();
-    let results = model.simulate(&["level".to_string()], None);
+    let results = model.simulate(&["level".to_string()], None).unwrap();
 
     let level = &results["level"];
     assert_eq!(level.len(), 4); // t=5,6,7,8
@@ -394,7 +394,7 @@ fn test_init_returns_at_step_zero() {
     // After init(), current_step must be 0, step 0 must be evaluated (level=0,
     // inflow=10), and step 1's stock must be pre-integrated (level=10).
     let model = linear_growth_model();
-    let state = model.init(None);
+    let state = model.init(None).unwrap();
 
     assert_eq!(state.current_step, 0);
 
@@ -412,7 +412,7 @@ fn test_init_returns_at_step_zero() {
 #[test]
 fn test_step_advances_cursor_by_one() {
     let model = linear_growth_model();
-    let mut state = model.init(None);
+    let mut state = model.init(None).unwrap();
     assert_eq!(state.current_step, 0);
 
     model.step(&mut state).expect("step 1 should succeed");
@@ -430,7 +430,7 @@ fn test_step_past_stoptime_returns_error() {
     // num_steps = 6 (t = 0..5). After init() we're at cursor 0; 5 more step()
     // calls bring us to cursor 5; the sixth must return PastStoptime.
     let model = linear_growth_model();
-    let mut state = model.init(None);
+    let mut state = model.init(None).unwrap();
 
     for _ in 0..5 {
         model.step(&mut state).expect("within bounds");
@@ -449,31 +449,31 @@ fn test_manual_stepping_matches_simulate() {
     // by hand must produce a memo identical to the one simulate() composes.
     let model = linear_growth_model();
 
-    let mut hand = model.init(None);
+    let mut hand = model.init(None).unwrap();
     while hand.current_step + 1 < hand.memo[0].len() {
         model.step(&mut hand).expect("within bounds");
     }
 
     // Build the reference state by re-running simulate() via the same primitives.
-    let mut auto = model.init(None);
-    model.run_to_end(&mut auto);
+    let mut auto = model.init(None).unwrap();
+    model.run_to_end(&mut auto).unwrap();
 
     assert_eq!(hand.memo, auto.memo);
     assert_eq!(hand.current_step, auto.current_step);
 
     // And both must agree with simulate()'s extracted results.
     let extracted = model.extract_results(&hand, &["level".to_string(), "inflow".to_string()]);
-    let from_simulate = model.simulate(&["level".to_string(), "inflow".to_string()], None);
+    let from_simulate = model.simulate(&["level".to_string(), "inflow".to_string()], None).unwrap();
     assert_eq!(extracted, from_simulate);
 }
 
 #[test]
 fn test_run_to_end_after_init() {
     let model = linear_growth_model();
-    let mut state = model.init(None);
+    let mut state = model.init(None).unwrap();
     assert_eq!(state.current_step, 0);
 
-    model.run_to_end(&mut state);
+    model.run_to_end(&mut state).unwrap();
     assert_eq!(state.current_step, 5);
 
     let level_idx = model.entity_index["level"];
@@ -486,8 +486,8 @@ fn test_extract_results_filters_requested_equations() {
     // Only requested equations should appear in the output; unknown names are
     // silently dropped (matches simulate()'s pre-refactor behaviour).
     let model = linear_growth_model();
-    let mut state = model.init(None);
-    model.run_to_end(&mut state);
+    let mut state = model.init(None).unwrap();
+    model.run_to_end(&mut state).unwrap();
 
     let only_level = model.extract_results(&state, &["level".to_string()]);
     assert_eq!(only_level.len(), 1);
@@ -526,7 +526,7 @@ fn test_single_step_run_handles_no_integration() {
         }
     }"#;
     let model = parse_json(json).unwrap();
-    let mut state = model.init(None);
+    let mut state = model.init(None).unwrap();
 
     assert_eq!(state.memo[0].len(), 1);
     assert_eq!(state.current_step, 0);

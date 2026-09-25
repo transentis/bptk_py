@@ -19,6 +19,14 @@ pub struct SimulationState {
     /// lock is always uncontended (the GIL serializes access) and only taken by
     /// stochastic functions; deterministic models never touch it.
     rng: Mutex<StdRng>,
+    /// The first failure of a Python callback, kept until somebody asks for it.
+    ///
+    /// The evaluator answers with a number and has no channel of its own: every other
+    /// operation it performs is total, and giving sixty infallible builtins a fallible
+    /// signature to express the one that is not would be the wrong trade. So a failing
+    /// callback records what went wrong, answers NaN, and the step that contains it ends
+    /// as an error. A `Mutex` for the same reason as the RNG above.
+    error: Mutex<Option<String>>,
 }
 
 impl SimulationState {
@@ -31,7 +39,25 @@ impl SimulationState {
             memo: vec![vec![0.0; num_steps]; num_entities],
             current_step: 0,
             rng: Mutex::new(rng),
+            error: Mutex::new(None),
         }
+    }
+
+    /// Record a failure, keeping the first one: a later step evaluated with NaN can
+    /// fail for a reason that is only a consequence of this one.
+    pub fn record_error(&self, message: String) {
+        let mut slot = self.error.lock().expect("simulation error mutex poisoned");
+        if slot.is_none() {
+            *slot = Some(message);
+        }
+    }
+
+    /// Take the recorded failure, leaving the state usable again.
+    pub fn take_error(&self) -> Option<String> {
+        self.error
+            .lock()
+            .expect("simulation error mutex poisoned")
+            .take()
     }
 
     pub fn rng(&self) -> std::sync::MutexGuard<'_, StdRng> {

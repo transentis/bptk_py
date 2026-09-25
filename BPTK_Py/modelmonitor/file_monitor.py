@@ -51,7 +51,10 @@ class FileMonitor():
         self._cached_stamp = os.stat(self.json_file).st_mtime
 
         # Starting the thread
-        if start_or_skip(self.__monitor, what="scenario file monitoring") is None:
+        # A daemon thread, so a script that built a `bptk()` ends on its own. This
+        # loop only reads, so nothing is lost when the interpreter cuts it off.
+        if start_or_skip(self.__monitor, what="scenario file monitoring",
+                         daemon=True) is None:
             self.running = False
 
     def kill(self):

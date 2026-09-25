@@ -119,7 +119,7 @@ class ScenarioManagerFactory():
 
                 # ScenarioManager -> "scenarios" ->
                 scen_dict = model_dictionary[scenario_manager_name]["scenarios"]
-                model_file = model_dictionary[scenario_manager_name]["model"]
+                model_module = model_dictionary[scenario_manager_name]["model"]
 
                 source = model_dictionary[scenario_manager_name].get(
                     "source", None)
@@ -131,10 +131,11 @@ class ScenarioManagerFactory():
                 if source:
                     source = str(main_dir / source)
 
-                model_file = str(main_dir / model_file)
+                model_file = str(main_dir / model_module)
 
                 # Create simulation scenarios from structure
-                manager.load_scenarios(scen_dict=scen_dict, model_file=model_file, source=source)
+                manager.load_scenarios(scen_dict=scen_dict, model_file=model_file, source=source,
+                                       model_module=model_module)
 
                 # Start monitor for source file
                 if self.start_model_monitor and "source" in model_dictionary[scenario_manager_name].keys():

@@ -295,7 +295,6 @@ class TestScenario(unittest.TestCase):
         self.assertIsNone(scenario_empty.rust_model)
         self.assertIsNone(scenario_empty._rust_initial)
         self.assertFalse(scenario_empty._rust_initial_returned)
-        self.assertFalse(scenario_empty._rust_failed)
 
         # Same defaults when the constructor populates other fields from a dict.
         scenario_with_dict = SimulationScenario(
@@ -307,7 +306,6 @@ class TestScenario(unittest.TestCase):
         self.assertIsNone(scenario_with_dict.rust_model)
         self.assertIsNone(scenario_with_dict._rust_initial)
         self.assertFalse(scenario_with_dict._rust_initial_returned)
-        self.assertFalse(scenario_with_dict._rust_failed)
 
     def testScenario_get_property_vallue(self):
         dictionary = {

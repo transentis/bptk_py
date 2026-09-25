@@ -1750,7 +1750,7 @@ def test_execute_resource(empty_app, empty_client):
                         "type": "binary_op",
                         "op": "add",
                         "left": {"type": "literal", "value": 1.0},
-                        "right": {"type": "py_callback", "function": "user_fn"},
+                        "right": {"type": "py_callback", "name": "user_fn", "args": []},
                     },
                 }],
             },
@@ -1764,7 +1764,81 @@ def test_execute_resource(empty_app, empty_client):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response_py_callback.status_code == 400
+    # The refusal names the function, so the answer says what to take out.
+    assert b'user_fn' in response_py_callback.data
     assert b'py_callback' in response_py_callback.data
+
+
+def _unservable_factory():
+    """A server whose model cannot run on the Rust engine: a function that takes whole
+    arrays, which the engine's callback has no shape for."""
+    model = Model(starttime=1.0, stoptime=5.0, dt=1.0, name="Whole Array Model")
+    vector = model.converter("vector")
+    vector.setup_vector(3, [1.0, 2.0, 3.0])
+    total = model.function("total_of", lambda inner_model, t, values: sum(values),
+                           elementwise=False)
+    stock = model.stock("stock")
+    flow = model.flow("flow")
+    stock.initial_value = 0.0
+    stock.equation = flow
+    flow.equation = total(vector)
+
+    instance = BPTK_Py.bptk()
+    instance.register_scenario_manager({"mgr": {"model": model}})
+    instance.register_scenarios(scenario_manager="mgr", scenarios={"base": {}})
+    return instance
+
+
+@pytest.mark.allow_rust_unused
+def test_a_session_the_engine_cannot_serve_answers_400():
+    """The caller chose the engine, so the answer says so rather than failing as a bare
+    500 with nothing in it."""
+    server = BptkServer(__name__, _unservable_factory, None, token)
+    client = server.test_client()
+
+    instance_uuid = json.loads(client.post(
+        '/start-instance',
+        headers={"Authorization": f"Bearer {token}"}).data)["instance_uuid"]
+
+    started = client.post(
+        f'/{instance_uuid}/begin-session',
+        data=json.dumps({"scenario_managers": ["mgr"], "scenarios": ["base"],
+                         "equations": ["stock"], "backend": "rust"}),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"})
+    assert started.status_code == 200, started.data
+
+    stepped = client.post(
+        f'/{instance_uuid}/run-step',
+        headers={"Authorization": f"Bearer {token}"})
+
+    assert stepped.status_code == 400, stepped.data
+    body = json.loads(stepped.data)
+    assert "total_of" in body["error"]
+
+
+def test_execute_refuses_a_model_written_with_model_function(empty_app, empty_client):
+    """The real shape, not a hand-written node: a model built with `Model.function()`
+    and serialized the way a client would serialize it."""
+    model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="served_callback")
+    model.function("uplift", lambda served_model, t, value: value * 1.1)
+    source = model.converter("source")
+    source.equation = 10.0
+    raised = model.converter("raised")
+    raised.equation = model.functions["uplift"](source)
+
+    response = empty_client.post(
+        '/execute',
+        data=json.dumps({"model": json.loads(model.to_json()), "equations": ["raised"]}),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 400, response.data
+    body = response.data.decode()
+    assert "uplift" in body
+    # And the reason, so the refusal does not read as a missing feature.
+    assert "over HTTP" in body
 
 
 def test_execute_resource_authentication(empty_app, empty_client):
@@ -2021,8 +2095,22 @@ def test_check_for_py_callbacks_edge_cases():
     # py_callback buried inside a list-valued arg must be rejected (the walker
     # descends into list items, not just dict children).
     model_list_callback = {"entities": {"constants": [
-        {"name": "x", "equation": {"type": "call", "args": [{"type": "py_callback"}]}}]}}
-    assert "py_callback" in _check_for_py_callbacks(model_list_callback)
+        {"name": "x", "equation": {"type": "call",
+                                   "args": [{"type": "py_callback", "name": "buried"}]}}]}}
+    assert "buried" in _check_for_py_callbacks(model_list_callback)
+
+    # Every function is named, once, in a stable order - a model may call several.
+    model_two_callbacks = {"entities": {"constants": [
+        {"name": "x", "equation": {"type": "py_callback", "name": "second"}},
+        {"name": "y", "equation": {"type": "py_callback", "name": "first"}},
+        {"name": "z", "equation": {"type": "py_callback", "name": "second"}}]}}
+    message = _check_for_py_callbacks(model_two_callbacks)
+    assert "'first', 'second'" in message
+
+    # A node without a name still produces a message rather than a blank one.
+    model_unnamed = {"entities": {"constants": [
+        {"name": "x", "equation": {"type": "py_callback"}}]}}
+    assert "<unnamed>" in _check_for_py_callbacks(model_unnamed)
 
     # A clean model whose list arg contains a non-dict leaf is accepted.
     model_list_scalar = {"entities": {"constants": [

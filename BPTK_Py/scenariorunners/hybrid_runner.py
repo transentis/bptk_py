@@ -22,6 +22,13 @@ from ..logger import log
 class HybridRunner(ScenarioRunner):
     """
     This class runs agent-based and hybrid simulation models that are built using the Model class. 
+
+    These models run on the Python engine, and this runner takes no ``backend`` argument at
+    all. The reason is the lockstep: the agents compute step t and write what the System
+    Dynamics side reads at step t, while the Rust engine computes every step of a run at
+    once - at step 50 the agents have not moved and there is nothing to read. The engine
+    can only preserve the lockstep by being driven one step at a time, which costs a
+    crossing between the two runtimes per step, which is the cost it exists to remove.
     """
 
     def _get_agents_for_model(self, scenario):
@@ -449,11 +456,15 @@ class HybridRunner(ScenarioRunner):
 
             log("[INFO] Starting episode {} of {}".format(episode_count, episodes-1))
 
-            if progress_widget:
-                #TODO: need to handle the case of multiple simulations being trained - the following is only correct for the single simulation case
-                progress_widget.value = episode_count/episodes
+            for position, scenario in enumerate(scenario_objects):
+                if progress_widget:
+                    # Per scenario rather than per episode: an episode trains every
+                    # scenario in turn, so a bar that only moves between episodes stands
+                    # still for as long as the training takes times the number of them.
+                    progress_widget.value = (
+                        (episode_count * len(scenario_objects) + position)
+                        / (episodes * len(scenario_objects)))
 
-            for scenario in scenario_objects:
                 scenario.begin_episode(episode_count)
 
                 scenario.run(collect_data=False)

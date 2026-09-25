@@ -1,5 +1,5 @@
 import unittest
-from threading import Thread
+from threading import Event, Thread
 
 import pytest
 from unittest.mock import patch
@@ -116,6 +116,24 @@ class TestStartOrSkip(unittest.TestCase):
         self.assertIsInstance(thread, Thread)
         thread.join()
         self.assertEqual(collected, [42])
+
+    @pytest.mark.requires_threads
+    def test_a_watcher_does_not_keep_the_interpreter_alive(self):
+        """The monitors ask for this: their loop ends only on `kill()`."""
+        done = Event()
+
+        thread = start_or_skip(done.wait, what="a watcher", daemon=True)
+
+        self.assertTrue(thread.daemon)
+        done.set()
+        thread.join()
+
+    @pytest.mark.requires_threads
+    def test_a_thread_is_not_a_daemon_unless_asked(self):
+        thread = start_or_skip(lambda: None)
+
+        self.assertFalse(thread.daemon)
+        thread.join()
 
     def test_skips_rather_than_running_inline(self):
         collected = []

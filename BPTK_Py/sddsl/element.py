@@ -10,6 +10,8 @@
 # MIT License
 
 
+from contextlib import contextmanager
+from functools import wraps
 import logging
 from .operators import *
 
@@ -23,6 +25,40 @@ import scipy.stats
 from scipy.stats import norm
 
 from BPTK_Py.util import timerange
+
+
+# Giving an element a shape assigns to its cells, and a cell that is being reshaped can
+# still carry the sub-elements of the shape before it. Those assignments are the library
+# reshaping the element, not a modeller putting a value where an array belongs, so the
+# guard in `_handle_arrayed` stands down while one is running.
+_reshaping_depth = 0
+
+
+@contextmanager
+def _reshaping():
+    global _reshaping_depth
+    _reshaping_depth += 1
+    try:
+        yield
+    finally:
+        _reshaping_depth -= 1
+
+
+def _while_reshaping(method):
+    """Runs a `setup_*` method with the guard stood down.
+
+    A call from the model itself, rather than from inside another reshaping, also marks
+    the element's shape as one the modeller set up. A shape the library derived from an
+    equation is not protected: the next equation may give the element a different one,
+    and a `dot` of two vectors ends at a single value.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if _reshaping_depth == 0:
+            self._shaped_by_setup = True
+        with _reshaping():
+            return method(self, *args, **kwargs)
+    return wrapper
 
 
 class Element:
@@ -105,6 +141,33 @@ class Element:
     def _handle_arrayed(self, equation) -> bool:
         """
             Handles arrayed equations. Returns true if the equation is arrayed.
+        """
+        with _reshaping():
+            arrayed_equation, handled_by_stock = self._distribute_arrayed(equation)
+
+        if (_reshaping_depth == 0 and equation is not None and not arrayed_equation
+                and not handled_by_stock and self._elements.vector_size() > 0
+                and getattr(self, "_shaped_by_setup", False)):
+            # A scalar equation on an element that already has sub-elements. Nothing
+            # distributes it, so the element would hold a value of its own beside its
+            # cells: the Python engine computes it, the JSON format has no place for it -
+            # it serializes the cells - and the Rust engine therefore returns no such
+            # series at all. An aggregation over the element's own cells is the usual way
+            # into this, and it belongs in an element of its own. `None` is not a value:
+            # giving an element a new shape clears its cells that way.
+            raise ElementError(
+                "'{}' has sub-elements, and the equation it was given is a single value. "
+                "An arrayed element holds no value beside its cells: assign per cell, as "
+                "in {}['<label>'].equation = ..., or give the value an element of its "
+                "own.".format(self.name, self.name))
+
+        return arrayed_equation
+
+    def _distribute_arrayed(self, equation):
+        """
+            Spreads an arrayed equation over the element's cells, creating them where
+            they do not exist yet. Returns whether the equation was arrayed, and whether
+            a stock distributed it itself.
         """
         arrayed_equation = False
         handled_by_stock = False
@@ -194,7 +257,7 @@ class Element:
                                 for j in range(dims[1]):
                                     self[i][j] = equation.clone_with_index([i, j])
 
-        return arrayed_equation
+        return arrayed_equation, handled_by_stock
 
 
     def _mirror_arrayed(self, source):
@@ -488,6 +551,7 @@ class Element:
         "Power Operator"
         return PowerOperator(self, power)
 
+    @_while_reshaping
     def setup_vector(self, size, default_value=0.0, set_stack_equation = False):
         """
         Creates sub-elements for this element.
@@ -517,6 +581,7 @@ class Element:
                 else:
                     self[i] = default_value[i]
 
+    @_while_reshaping
     def setup_named_vector(self, values, set_stack_equation = False):
         """
         Creates sub-elements for this element.
@@ -534,6 +599,7 @@ class Element:
             else:
                 self[name] = values[name]
 
+    @_while_reshaping
     def setup_matrix(self, size, default_value=0.0, set_stack_equation = False):
         """
         Creates sub-elements for this element.
@@ -560,6 +626,7 @@ class Element:
                 self[i] = None
                 self[i].setup_vector(size[1], default_value[i], set_stack_equation)
 
+    @_while_reshaping
     def setup_named_matrix(self, names, set_stack_equation = False):
         """
         Creates sub-elements for this element.

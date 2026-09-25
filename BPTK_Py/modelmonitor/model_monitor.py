@@ -53,7 +53,14 @@ class ModelMonitor():
         self._cached_stamp = os.stat(self.source_file).st_mtime
 
         # Starting the thread
-        if start_or_skip(self.__monitor, what="model monitoring") is None:
+        # A daemon thread, for the same reason as the scenario file monitor: a
+        # script that built a `bptk()` has to be able to end without calling
+        # `bptk.destroy()`. Unlike that one this loop *writes* - it transpiles the
+        # source into a `.py` beside it - so an interpreter exiting in exactly that
+        # moment can leave a half-written file behind. The next change transpiles
+        # it again, and the alternative was a process that never ends at all.
+        if start_or_skip(self.__monitor, what="model monitoring",
+                         daemon=True) is None:
             self.running = False
 
     def kill(self):

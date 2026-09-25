@@ -162,7 +162,7 @@ def _(mo):
     mo.md(r"""
     Note that in our models we differentiate between _constants_ and _converters_ – this isn't strictly necessary from a System Dynamics point of view, but it makes it easier to check the model for errors.
 
-    Now let's initialize our stocks - to do this, we just need to set the `initial_value` property of the stocks. The initial value can either be a numerical constant or a constant element.
+    Now let's initialize our stocks - to do this, we just need to set the `initial_value` property of the stocks. The initial value can be a number, a constant or a converter, or any expression built from them; it is evaluated once, before the run starts.
     """)
     return
 

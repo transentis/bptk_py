@@ -11,6 +11,20 @@ pub type SimulationResults = HashMap<String, HashMap<String, f64>>;
 pub enum StepError {
     /// `step()` was called when `current_step` is already the last step.
     PastStoptime,
+    /// A Python callback failed during the step. Carries the message the evaluator
+    /// recorded, including the traceback where there is one.
+    Callback(String),
+}
+
+impl std::fmt::Display for StepError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StepError::PastStoptime => {
+                write!(f, "PastStoptime: the simulation has already reached stoptime")
+            }
+            StepError::Callback(message) => write!(f, "{}", message),
+        }
+    }
 }
 
 impl SdModel {
@@ -26,24 +40,41 @@ impl SdModel {
     /// 5. If `num_steps > 1`, Euler-integrate stocks into step 1
     ///
     /// On return `state.current_step == 0`.
-    pub fn init(&self, seed: Option<u64>) -> SimulationState {
+    pub fn init(&self, seed: Option<u64>) -> Result<SimulationState, StepError> {
         let num_steps = ((self.stoptime - self.starttime) / self.dt).round() as usize + 1;
         let mut state = SimulationState::new(self.entities.len(), num_steps, seed);
 
-        // Pre-evaluate non-stock entities at step 0 so that constants and
-        // converters are available for stock `initial_value` expressions.
-        self.eval_step(&mut state, 0);
+        // Settle step 0. An initial value may read a converter that reads another
+        // stock's initial value, so one pass in each direction is not enough: with a
+        // single round the converter is corrected afterwards while the stock that read
+        // it keeps the stale number - which is how the same model answered 50 in Python
+        // and 0 here. Each round fixes one more link of such a chain, so the number of
+        // stocks bounds it, and the loop stops as soon as nothing moves. The bound also
+        // ends it when a value is NaN, which never compares equal to itself.
+        let stock_count = self
+            .entities
+            .iter()
+            .filter(|entity| matches!(entity.kind, EntityKind::Stock { .. }))
+            .count();
 
-        // Initialise stocks at step 0 (can now reference evaluated constants).
-        for (i, entity) in self.entities.iter().enumerate() {
-            if let EntityKind::Stock { ref initial_value } = entity.kind {
-                state.memo[i][0] = self.eval_expr(initial_value, &state, 0);
+        self.eval_step(&mut state, 0);
+        for _ in 0..stock_count.max(1) {
+            let mut settled = true;
+            for (i, entity) in self.entities.iter().enumerate() {
+                if let EntityKind::Stock { ref initial_value } = entity.kind {
+                    let value = self.eval_expr(initial_value, &state, 0);
+                    if value != state.memo[i][0] {
+                        settled = false;
+                    }
+                    state.memo[i][0] = value;
+                }
+            }
+            // Non-stocks read stocks, so they follow every correction.
+            self.eval_step(&mut state, 0);
+            if settled {
+                break;
             }
         }
-
-        // Re-evaluate non-stocks at step 0 so that flows / converters
-        // referencing stocks pick up the correct initial stock values.
-        self.eval_step(&mut state, 0);
 
         // Euler integration into step 1 if present.
         if num_steps > 1 {
@@ -51,7 +82,10 @@ impl SdModel {
         }
 
         state.current_step = 0;
-        state
+        match state.take_error() {
+            Some(message) => Err(StepError::Callback(message)),
+            None => Ok(state),
+        }
     }
 
     /// Advance the simulation by one timestep. Evaluates all non-stock
@@ -71,15 +105,20 @@ impl SdModel {
             self.integrate_stocks(state, next);
         }
         state.current_step = next;
-        Ok(())
+        match state.take_error() {
+            Some(message) => Err(StepError::Callback(message)),
+            None => Ok(()),
+        }
     }
 
     /// Repeatedly call `step()` until the simulation has reached `stoptime`.
-    pub fn run_to_end(&self, state: &mut SimulationState) {
+    pub fn run_to_end(&self, state: &mut SimulationState) -> Result<(), StepError> {
         let num_steps = state.memo[0].len();
         while state.current_step + 1 < num_steps {
-            self.step(state).expect("bounds checked above");
+            // The bound is checked above, so the only failure left is a callback's.
+            self.step(state)?;
         }
+        Ok(())
     }
 
     /// Build the output results dict from `state`'s memo table, for the
@@ -107,10 +146,14 @@ impl SdModel {
     }
 
     /// Full simulation: `init` → `run_to_end` → `extract_results`.
-    pub fn simulate(&self, equations: &[String], seed: Option<u64>) -> SimulationResults {
-        let mut state = self.init(seed);
-        self.run_to_end(&mut state);
-        self.extract_results(&state, equations)
+    pub fn simulate(
+        &self,
+        equations: &[String],
+        seed: Option<u64>,
+    ) -> Result<SimulationResults, StepError> {
+        let mut state = self.init(seed)?;
+        self.run_to_end(&mut state)?;
+        Ok(self.extract_results(&state, equations))
     }
 
     /// Evaluate all non-stock entities at `step` in topological order,

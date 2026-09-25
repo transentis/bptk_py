@@ -17,9 +17,15 @@ dev:
 dev-debug:
     uv run maturin develop --uv
 
-# Run Rust engine tests
+# Run Rust engine tests, in the build that has no Python at all
 test-engine:
-    PYO3_PYTHON={{justfile_directory()}}/.venv/bin/python cargo test --no-default-features
+    cargo test --no-default-features
+
+# The same tests with Python linked in, which is where anything touching the callbacks
+# can run. Not the wheel's build: an extension module leaves libpython to the interpreter,
+# a test binary starts by itself and has to link it.
+test-engine-python:
+    PYO3_PYTHON={{justfile_directory()}}/.venv/bin/python cargo test --no-default-features --features python
 
 # Run tests. `uv run` syncs first, so the engine is never stale.
 test: dev

@@ -11,7 +11,7 @@ import pytest
 import pandas as pd
 from pandas._testing import assert_frame_equal
 
-from BPTK_Py import Model
+from BPTK_Py import Model, RustBackendError
 import BPTK_Py
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.sddsl import functions as sd
@@ -834,132 +834,76 @@ class TestBiflowModel:
 # Tests: fallback behaviour
 # ---------------------------------------------------------------------------
 
-@pytest.mark.allow_rust_fallback
-class TestFallback:
-    """Tests that models with unsupported features fall back to Python and log [WARN]."""
+@pytest.mark.allow_rust_unused
+class TestRustBackendRefusal:
+    """A model that cannot run on the engine raises, instead of being computed in Python.
+
+    Both engines produce the same numbers, so a substitution was invisible - which is
+    what made it dangerous: a run meant to be fast, or meant to exercise the engine,
+    looked exactly like one that had.
+    """
 
     @pytest.fixture
     def unsupported_model(self):
-        """Model using custom NaryOperator function — not supported by Rust engine."""
-        model = Model(starttime=0, stoptime=10, dt=1, name="nary_fallback")
+        """A model the serializer refuses.
+
+        The refusal is a function that takes whole arrays: it is handed the array and
+        answers once, where a callback node evaluates its arguments to numbers and
+        answers with one number. An element-wise function - the default - has no such
+        problem; it is spread over the indices before serialization and runs on Rust.
+        """
+        model = Model(starttime=0, stoptime=10, dt=1, name="whole_array_refusal")
+        vector = model.converter("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        total = model.function("total_of", lambda model, t, values: sum(values),
+                               elementwise=False)
         stock = model.stock("stock")
         flow = model.flow("flow")
         stock.initial_value = 100.0
         stock.equation = flow
-        # Register a custom function that works in Python but can't be serialized to JSON
-        my_fn = model.function("my_custom_fn", lambda model, t, *args: 5.0)
-        flow.equation = my_fn(model.stock("stock"))
+        flow.equation = total(vector)
         return model
 
-    def _cleanup_logfile(self):
-        """Reload logger module and clear the logfile."""
-        importlib.reload(logmod)
-        logmod.logfire_enabled = False
-        logmod.loglevel = "WARN"
-        with open(logmod.logfile, "w", encoding="UTF-8") as f:
-            pass
-
-    def _read_logfile(self):
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            return f.read()
-
-    def test_fallback_run_scenarios(self, unsupported_model):
-        """run_scenarios(backend='rust') falls back to Python and logs [WARN]."""
-        self._cleanup_logfile()
-
+    def _bptk_with(self, model):
         bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": unsupported_model}})
+        bptk.register_scenario_manager({"mgr": {"model": model}})
         bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        return bptk
 
-        result = bptk.run_scenarios(
-            scenario_managers=["mgr"],
-            scenarios=["base"],
-            equations=["stock"],
-            backend="rust",
-        )
-        assert result is not None
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) > 0
+    def test_run_scenarios_raises(self, unsupported_model):
+        bptk = self._bptk_with(unsupported_model)
 
-        content = self._read_logfile()
-        assert "[WARN]" in content
-        assert "falling back" in content.lower()
+        with pytest.raises(RustBackendError) as error:
+            bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["stock"], backend="rust")
 
-    def test_fallback_simulate(self, unsupported_model):
-        """model.simulate(backend='rust') falls back to Python and logs [WARN]."""
-        self._cleanup_logfile()
+        assert "total_of" in str(error.value)
 
-        result = unsupported_model.simulate(["stock"], backend="rust")
-        assert result is not None
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) > 0
-
-        content = self._read_logfile()
-        assert "[WARN]" in content
-        assert "falling back" in content.lower()
+    def test_simulate_raises(self, unsupported_model):
+        with pytest.raises(RustBackendError, match="total_of"):
+            unsupported_model.simulate(["stock"], backend="rust")
 
     @pytest.mark.requires_extra("plotting")
-    def test_fallback_plot_scenarios(self, unsupported_model):
-        """plot_scenarios(backend='rust') falls back to Python and still produces output."""
+    def test_plot_scenarios_raises(self, unsupported_model):
         import matplotlib
         matplotlib.use("Agg")
 
-        self._cleanup_logfile()
+        bptk = self._bptk_with(unsupported_model)
 
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": unsupported_model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        with pytest.raises(RustBackendError):
+            bptk.plot_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                                equations=["stock"], backend="rust")
 
-        bptk.plot_scenarios(
-            scenario_managers=["mgr"],
-            scenarios=["base"],
-            equations=["stock"],
-            backend="rust",
-        )
+    def test_a_session_raises_on_its_first_step(self, unsupported_model):
+        """A session cannot change engines halfway, so it does not start on one it
+        cannot keep."""
+        bptk = self._bptk_with(unsupported_model)
 
-        content = self._read_logfile()
-        assert "[WARN]" in content
-        assert "falling back" in content.lower()
+        with pytest.raises(RustBackendError):
+            _run_session_history(bptk, ["mgr"], ["base"], ["stock", "flow"],
+                                 steps=3, backend="rust")
 
-    def test_fallback_step(self, unsupported_model):
-        """begin_session(backend='rust') + run_step on a model that can't be
-        JSON-serialised must transparently fall back to the Python step path
-        for the rest of the session, with a [WARN] log line."""
-        self._cleanup_logfile()
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": unsupported_model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        rust_history = _run_session_history(bptk, ["mgr"], ["base"],
-                                            ["stock", "flow"], steps=6, backend="rust")
-
-        # Compare against a clean Python-only session on a freshly-built model
-        # (the unsupported_model fixture is shared, so we rebuild equivalent state).
-        py_model = Model(starttime=0, stoptime=10, dt=1, name="nary_py")
-        s = py_model.stock("stock")
-        f = py_model.flow("flow")
-        s.initial_value = 100.0
-        s.equation = f
-        my_fn = py_model.function("my_custom_fn", lambda model, t, *args: 5.0)
-        f.equation = my_fn(py_model.stock("stock"))
-        py_bptk = BPTK_Py.bptk()
-        py_bptk.register_scenario_manager({"mgr": {"model": py_model}})
-        py_bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-        py_history = _run_session_history(py_bptk, ["mgr"], ["base"],
-                                          ["stock", "flow"], steps=6, backend="python")
-
-        for i, (p, r) in enumerate(zip(py_history, rust_history)):
-            _assert_step_dicts_equal(p, r, i)
-
-        content = self._read_logfile()
-        assert "[WARN]" in content
-        assert "falling back" in content.lower()
-
-    def test_fallback_non_numeric_constant(self):
-        """Non-numeric constant override triggers fallback to Python."""
-        self._cleanup_logfile()
-
+    def test_a_non_numeric_constant_raises(self):
         model = Model(starttime=0, stoptime=5, dt=1, name="non_numeric_const")
         stock = model.stock("stock")
         flow = model.flow("flow")
@@ -976,22 +920,55 @@ class TestFallback:
             scenario_manager="mgr",
         )
 
-        result = bptk.run_scenarios(
-            scenario_managers=["mgr"],
-            scenarios=["base"],
-            equations=["stock"],
-            backend="rust",
-        )
-        assert result is not None
-        assert isinstance(result, pd.DataFrame)
+        with pytest.raises(RustBackendError, match="non-numeric"):
+            bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["stock"], backend="rust")
 
-        content = self._read_logfile()
-        assert "Non-numeric constant" in content
+    def test_a_model_without_to_json_says_so(self, monkeypatch):
+        """A model compiled from XMILE is a plain class with no serialization at all.
+        The message names that, rather than repeating an AttributeError."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="no_to_json")
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        flow = model.flow("flow")
+        flow.equation = 1.0
+        stock.equation = flow
 
-    def test_fallback_engine_raises_after_load(self, monkeypatch):
-        """ValueError raised by the Rust engine after load_model() is caught and triggers fallback."""
-        self._cleanup_logfile()
+        def no_serialization(self):
+            raise AttributeError("'simulation_model' object has no attribute 'to_json'")
 
+        # On the class: the scenario runs a clone of the model, not this instance.
+        monkeypatch.setattr(Model, "to_json", no_serialization)
+
+        bptk = self._bptk_with(model)
+
+        with pytest.raises(RustBackendError, match="XMILE"):
+            bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["stock"], backend="rust")
+
+    def test_an_installation_without_the_engine_says_so(self, monkeypatch):
+        """The pure-Python wheel carries no engine; the message names the installation
+        rather than blaming the model."""
+        import builtins
+
+        real_import = builtins.__import__
+
+        def without_engine(name, *args, **kwargs):
+            if name == "BPTK_Py._rust_engine":
+                raise ImportError("No module named 'BPTK_Py._rust_engine'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", without_engine)
+
+        model = Model(starttime=0, stoptime=3, dt=1, name="no_engine")
+        converter = model.converter("value")
+        converter.equation = 1.0
+
+        with pytest.raises(RustBackendError, match="no Rust engine"):
+            model.simulate(["value"], backend="rust")
+
+    def test_an_engine_failure_after_load_raises(self, monkeypatch):
+        """What the engine itself raises reaches the caller rather than a Python run."""
         model = Model(starttime=0, stoptime=3, dt=1, name="rust_runtime_error")
         stock = model.stock("stock")
         flow = model.flow("flow")
@@ -1001,12 +978,8 @@ class TestFallback:
         flow.equation = constant
         constant.equation = 1.0
 
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        bptk = self._bptk_with(model)
 
-        # Make the Rust engine's simulate() blow up so that the inner
-        # try/except in _run_scenario_rust catches it (sd_runner.py:282-284).
         import BPTK_Py._rust_engine as rust_engine_mod
 
         original_load = rust_engine_mod.RustSdEngine.load_model
@@ -1018,14 +991,8 @@ class TestFallback:
                 def __init__(self, inner):
                     self._inner = inner
 
-                def set_constant(self, *a, **kw):
-                    return self._inner.set_constant(*a, **kw)
-
-                def set_points(self, *a, **kw):
-                    return self._inner.set_points(*a, **kw)
-
-                def set_runspecs(self, *a, **kw):
-                    return self._inner.set_runspecs(*a, **kw)
+                def __getattr__(self, name):
+                    return getattr(self._inner, name)
 
                 def simulate(self, *a, **kw):
                     raise ValueError("simulated runtime failure")
@@ -1034,21 +1001,9 @@ class TestFallback:
 
         monkeypatch.setattr(rust_engine_mod.RustSdEngine, "load_model", patched_load)
 
-        result = bptk.run_scenarios(
-            scenario_managers=["mgr"],
-            scenarios=["base"],
-            equations=["stock"],
-            backend="rust",
-        )
-        assert result is not None
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) > 0
-
-        content = self._read_logfile()
-        assert "Rust engine failed" in content
-        assert "simulated runtime failure" in content
-        assert "falling back" in content.lower()
-
+        with pytest.raises(RustBackendError, match="simulated runtime failure"):
+            bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                               equations=["stock"], backend="rust")
 
 
 # ---------------------------------------------------------------------------
@@ -3018,27 +2973,20 @@ class TestFallbackGuard:
                 "— drop it from KNOWN_NON_ENGINE_FALLBACKS".format(known, reason))
 
     @pytest.mark.allow_rust_fallback
-    def test_guard_detects_a_real_fallback(self):
-        """Provoke a fallback and confirm the guard's own helpers see it. Marked, so
-        the guard does not fail this test for doing exactly what it is testing."""
+    def test_the_guard_still_recognises_a_fallback_line(self):
+        """No code path in the library falls back to Python any more - it raises - so the
+        line is written here rather than provoked. The detector stays because a later
+        phase could add a path, and this is what proves it would still be seen. Marked,
+        so the guard does not fail the test that writes the line."""
         from conftest import _fallback_lines_since, _logfile_size
-
-        model = Model(starttime=0, stoptime=3, dt=1, name="guard_probe")
-        stock = model.stock("stock")
-        flow = model.flow("flow")
-        stock.initial_value = 100.0
-        stock.equation = flow
-        # A custom NaryOperator: works in Python, cannot be serialised to JSON.
-        my_fn = model.function("my_custom_fn", lambda model, t, *args: 5.0)
-        flow.equation = my_fn(model.stock("stock"))
+        from BPTK_Py.logger import log
 
         offset = _logfile_size()
-        result = model.simulate(["stock"], backend="rust")
+        log("[WARN] Rust engine failed: simulated — falling back to Python")
 
-        assert result is not None, "the fallback must still produce Python results"
         assert _fallback_lines_since(offset), (
-            "the guard did not notice a fallback that definitely happened — its marker "
-            "list or the log destination has drifted")
+            "the guard no longer notices a fallback line — its marker list or the log "
+            "destination has drifted")
 
     # The branches below are never taken in a green run — the guard only fails a test
     # when something went wrong — so they are exercised directly.
@@ -3114,7 +3062,15 @@ class TestFallbackGuard:
 # ---------------------------------------------------------------------------
 
 @pytest.mark.allow_rust_fallback
-class TestMidSessionFallbackIsLoud:
+@pytest.mark.allow_rust_unused
+class TestASessionCannotChangeEngines:
+    """A session that cannot go on with the engine ends, rather than finishing in Python.
+
+    The Python backend has no record of the rounds the engine already played - its memo
+    lives in the engine, not in `scenario_cache` - so it would rebuild that history from
+    the settings current now, and anything carrying state would come out wrong and stay
+    wrong. That used to be a `[WARN]` on the first step and an `[ERROR]` later.
+    """
 
     def _bptk(self):
         return _build_simple_bptk()
@@ -3130,38 +3086,21 @@ class TestMidSessionFallbackIsLoud:
 
         monkeypatch.setattr(SdRunner, "_run_scenario_step_rust", maybe_raise)
 
-    def _logfile_since(self, offset):
-        with open(logmod.logfile, "r", encoding="UTF-8", errors="replace") as f:
-            f.seek(offset)
-            return f.read()
+    def test_a_failure_on_the_first_step_raises(self, monkeypatch):
+        self._fail_rust_from_step(monkeypatch, threshold=0.0)
 
-    def test_fallback_on_the_first_step_is_a_warning(self, monkeypatch):
-        self._fail_rust_from_step(monkeypatch, threshold=0.0)   # fail immediately
-        offset = os.path.getsize(logmod.logfile) if os.path.exists(logmod.logfile) else 0
+        with pytest.raises(RustBackendError, match="simulated engine failure"):
+            _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
+                                 steps=3, backend="rust")
 
-        history = _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
-                                       steps=3, backend="rust")
+    def test_a_failure_after_the_session_advanced_raises(self, monkeypatch):
+        """The dangerous one: three steps have been played on the engine, and Python
+        cannot see them."""
+        self._fail_rust_from_step(monkeypatch, threshold=3.0)
 
-        content = self._logfile_since(offset)
-        assert "[WARN] Rust step failed" in content
-        assert "[ERROR] Rust step failed" not in content
-        # results are still correct - Python simply ran the whole session
-        python_history = _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
-                                              steps=3, backend="python")
-        for i, (py_step, fallback_step) in enumerate(zip(python_history, history)):
-            _assert_step_dicts_equal(py_step, fallback_step, i)
-
-    def test_fallback_after_the_session_advanced_is_an_error(self, monkeypatch):
-        self._fail_rust_from_step(monkeypatch, threshold=3.0)   # fail from step 3 on
-        offset = os.path.getsize(logmod.logfile) if os.path.exists(logmod.logfile) else 0
-
-        _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
-                             steps=4, backend="rust")
-
-        content = self._logfile_since(offset)
-        assert "[ERROR] Rust step failed" in content, content[-500:]
-        assert "may be wrong" in content
-        assert "at step 3.0" in content
+        with pytest.raises(RustBackendError, match="simulated engine failure"):
+            _run_session_history(self._bptk(), ["mgr"], ["base"], ["stock"],
+                                 steps=4, backend="rust")
 
 
 # ---------------------------------------------------------------------------
@@ -3316,3 +3255,467 @@ class TestArrayedElementKindsAboveTheEngine:
         """
         _interleave_step(lambda: _build_stateful_bptk(manager_name="arr_sf_step_mgr"),
                          ["arr_sf_step_mgr"], ["base"], STATEFUL_EQUATIONS, steps=5)
+
+
+# ---------------------------------------------------------------------------
+# Tests: user-defined functions on the Rust engine
+# ---------------------------------------------------------------------------
+
+def _scaling_model(name="callback_model"):
+    """A model whose converter is computed by a Python function."""
+    model = Model(starttime=0, stoptime=5, dt=1, name=name)
+    model.function("scale", lambda model, t, x: 2 * x + t)
+    source = model.converter("source")
+    source.equation = 3.0
+    scaled = model.converter("scaled")
+    scaled.equation = model.functions["scale"](source)
+    return model
+
+
+class TestCustomFunctionsOnRust:
+    """A custom function runs in Rust, calling back into Python at its own node."""
+
+    def test_a_custom_function_matches_the_python_engine(self):
+        python = _scaling_model().simulate(["scaled"], backend="python")
+        rust = _scaling_model().simulate(["scaled"], backend="rust")
+        assert rust["scaled"].tolist() == pytest.approx(python["scaled"].tolist())
+
+    def test_a_custom_function_in_a_stock_reads_the_previous_step(self):
+        """A stock's equation is evaluated at t-dt, and its arguments travel with it."""
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="callback_stock")
+            model.function("identity", lambda model, t, x: x)
+            stock = model.stock("stock")
+            stock.initial_value = 0.0
+            flow = model.flow("flow")
+            flow.equation = 1.0
+            stock.equation = model.functions["identity"](flow)
+            return model
+
+        python = build().simulate(["stock"], backend="python")
+        rust = build().simulate(["stock"], backend="rust")
+        assert rust["stock"].tolist() == pytest.approx(python["stock"].tolist())
+        # And the values themselves: one per step, integrated from the step before.
+        assert rust["stock"].tolist() == pytest.approx([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+
+    def test_an_elementwise_function_runs_per_index(self):
+        def build():
+            model = Model(starttime=0, stoptime=3, dt=1, name="callback_arrayed")
+            model.function("double", lambda model, t, x: 2 * x)
+            vector = model.converter("v")
+            vector.setup_vector(3, [1.0, 2.0, 3.0])
+            out = model.converter("out")
+            out.equation = model.functions["double"](vector)
+            return model
+
+        names = ["out[0]", "out[1]", "out[2]"]
+        python = build().simulate(names, backend="python")
+        rust = build().simulate(names, backend="rust")
+        for name in names:
+            assert rust[name].tolist() == pytest.approx(python[name].tolist())
+
+    def test_a_variadic_function_runs(self):
+        def build():
+            model = Model(starttime=0, stoptime=3, dt=1, name="callback_variadic")
+            model.function("constant_five", lambda model, t, *args: 5.0)
+            source = model.converter("source")
+            source.equation = 1.0
+            out = model.converter("out")
+            out.equation = model.functions["constant_five"](source, source)
+            return model
+
+        rust = build().simulate(["out"], backend="rust")
+        assert rust["out"].tolist() == pytest.approx([5.0] * 4)
+
+    def test_a_run_says_that_part_of_it_is_python(self):
+        """Not a fallback and nothing is wrong - but it is not what was asked for, and it
+        is why a run with many callbacks can be slower than expected."""
+        importlib.reload(logmod)
+        logmod.logfire_enabled = False
+        logmod.loglevel = "WARN"
+        with open(logmod.logfile, "w", encoding="UTF-8"):
+            pass
+
+        _scaling_model("says_so").simulate(["scaled"], backend="rust")
+
+        with open(logmod.logfile, "r", encoding="UTF-8") as logfile:
+            content = logfile.read()
+        assert "[WARN]" in content
+        assert "'scale'" in content or "scale" in content
+        assert "runs on the Rust engine" in content
+        # A warning, not a fallback: the guard in conftest must not read it as one.
+        assert "falling back" not in content.lower()
+
+    def test_run_scenarios_matches_across_backends(self):
+        def bptk_with(model_name, manager):
+            bptk = BPTK_Py.bptk()
+            bptk.register_scenario_manager({manager: {"model": _scaling_model(model_name)}})
+            bptk.register_scenarios(scenarios={"base": {}}, scenario_manager=manager)
+            return bptk
+
+        python = bptk_with("cb_py", "cb_py_mgr").run_scenarios(
+            scenario_managers=["cb_py_mgr"], scenarios=["base"],
+            equations=["scaled"], backend="python")
+        rust = bptk_with("cb_rs", "cb_rs_mgr").run_scenarios(
+            scenario_managers=["cb_rs_mgr"], scenarios=["base"],
+            equations=["scaled"], backend="rust")
+
+        assert list(rust.columns) == list(python.columns)
+        for column in python.columns:
+            assert rust[column].tolist() == pytest.approx(python[column].tolist())
+
+
+class TestCustomFunctionRegistration:
+    """The engine says what it needs and refuses to run without it."""
+
+    def _loaded(self, model=None):
+        from BPTK_Py._rust_engine import RustSdEngine
+
+        model = model or _scaling_model("registration_model")
+        return model, RustSdEngine().load_model(model.to_json())
+
+    def test_a_loaded_model_lists_what_it_needs(self):
+        model, rust_model = self._loaded()
+        assert rust_model.required_functions() == ["scale"]
+        assert rust_model.registered_functions() == []
+
+        model.register_rust_functions(rust_model)
+        assert rust_model.required_functions() == []
+        assert rust_model.registered_functions() == ["scale"]
+
+    def test_running_without_registration_names_what_is_missing(self):
+        _, rust_model = self._loaded()
+        with pytest.raises(ValueError, match="'scale'"):
+            rust_model.simulate(["scaled"])
+        with pytest.raises(ValueError, match="not registered"):
+            rust_model.init(["scaled"])
+
+    def test_registering_a_name_the_model_does_not_call_raises(self):
+        _, rust_model = self._loaded()
+        with pytest.raises(ValueError, match="does not call a function named 'nope'"):
+            rust_model.register_function("nope", lambda t: 1.0)
+
+    def test_a_function_that_raises_surfaces_its_traceback(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="callback_raises")
+
+        def explode(model, t):
+            raise ZeroDivisionError("no")
+
+        model.function("explode", explode)
+        out = model.converter("out")
+        out.equation = model.functions["explode"]()
+
+        from BPTK_Py._rust_engine import RustSdEngine
+        rust_model = RustSdEngine().load_model(model.to_json())
+        model.register_rust_functions(rust_model)
+
+        with pytest.raises(RuntimeError) as error:
+            rust_model.simulate(["out"])
+        message = str(error.value)
+        assert "explode" in message
+        assert "ZeroDivisionError" in message
+        # The traceback, so the line inside the user's function is visible.
+        assert "Traceback" in message
+
+    def test_a_function_that_answers_with_something_else_raises(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="callback_not_a_number")
+        model.function("wordy", lambda model, t: "seven")
+        out = model.converter("out")
+        out.equation = model.functions["wordy"]()
+
+        from BPTK_Py._rust_engine import RustSdEngine
+        rust_model = RustSdEngine().load_model(model.to_json())
+        model.register_rust_functions(rust_model)
+
+        with pytest.raises(RuntimeError, match="wordy"):
+            rust_model.simulate(["out"])
+
+    def test_a_name_without_a_callable_on_the_model_raises(self):
+        model, rust_model = self._loaded()
+        del model.fn["scale"]
+        with pytest.raises(ValueError, match="nothing is registered"):
+            model.register_rust_functions(rust_model)
+
+
+# ---------------------------------------------------------------------------
+# Tests: the hybrid boundary
+# ---------------------------------------------------------------------------
+
+def _model_with_agents(name, with_custom_function):
+    """A model that has agents, and optionally a custom function as well."""
+    from BPTK_Py import Agent
+
+    model = Model(starttime=0, stoptime=3, dt=1, name=name)
+    model.register_agent_factory(
+        "worker", lambda uid, agent_model, properties: Agent(uid, agent_model, properties))
+
+    source = model.converter("source")
+    source.equation = 2.0
+    out = model.converter("out")
+    if with_custom_function:
+        model.function("bridge", lambda bridge_model, t, x: x * 3)
+        out.equation = model.functions["bridge"](source)
+    else:
+        out.equation = source * 3
+    return model
+
+
+class TestHybridBoundary:
+    """Agents and a custom function together stay on the Python engine."""
+
+    @pytest.mark.allow_rust_unused
+    def test_agents_plus_a_custom_function_are_refused(self):
+        """The two halves of a hybrid model advance one step at a time; the engine runs
+        every step at once, so a function reading what the agents produced would read a
+        step that has not happened. Such a model runs on the Python engine - which is
+        what the caller has to ask for."""
+        model = _model_with_agents("hybrid_refusal", with_custom_function=True)
+
+        with pytest.raises(ValueError, match="also has agents"):
+            model.to_json()
+
+        with pytest.raises(RustBackendError, match="also has agents"):
+            model.simulate(["out"], backend="rust")
+
+        # And on the engine the caller can have, the model answers.
+        assert model.simulate(["out"], backend="python")["out"].tolist() == pytest.approx(
+            [6.0] * 4)
+
+    def test_agents_without_a_custom_function_still_run_on_rust(self):
+        """The criterion is narrow on purpose: agents alone take nothing away from an SD
+        side that computes by itself."""
+        model = _model_with_agents("agents_only", with_custom_function=False)
+        payload = model.to_json()
+        assert "py_callback" not in payload
+
+        result = model.simulate(["out"], backend="rust")
+        assert result["out"].tolist() == pytest.approx([6.0] * 4)
+
+    def test_a_function_that_evaluates_the_model_raises(self):
+        """A callback may not ask the model for an equation: the engine is mid-step, and
+        the Python evaluator it would reach is a second model with different settings."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="reentrant")
+        model.function("peek", lambda peek_model, t: peek_model.equation("source", t))
+        source = model.converter("source")
+        source.equation = 2.0
+        out = model.converter("out")
+        out.equation = model.functions["peek"]()
+
+        with pytest.raises(RuntimeError) as error:
+            model.simulate(["out"], backend="rust")
+
+        message = str(error.value)
+        assert "peek" in message
+        assert "Rust engine was calling it" in message
+
+    def test_the_mark_does_not_outlive_the_call(self):
+        """A failing callback must not leave the model unable to evaluate afterwards."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="mark_cleared")
+
+        def explode(explode_model, t):
+            raise ValueError("no")
+
+        model.function("explode", explode)
+        out = model.converter("out")
+        out.equation = model.functions["explode"]()
+
+        with pytest.raises(RuntimeError):
+            model.simulate(["out"], backend="rust")
+
+        # The mark is a thread-local, so a model that never saw the engine is the proof:
+        # left standing, it would make every evaluation anywhere raise.
+        sane = Model(starttime=0, stoptime=3, dt=1, name="after_the_failure")
+        value = sane.converter("value")
+        value.equation = 7.0
+        assert sane.simulate(["value"], backend="python")["value"].tolist() == [7.0] * 4
+
+
+# ---------------------------------------------------------------------------
+# Tests: parity for the shapes a custom function takes
+# ---------------------------------------------------------------------------
+
+def _both_backends(builder, equations):
+    """Run the same model on each engine and hand back the two frames."""
+    return (builder().simulate(equations, backend="python"),
+            builder().simulate(equations, backend="rust"))
+
+
+class TestCustomFunctionParity:
+    """Every shape from the corpus, on both engines, compared value by value."""
+
+    def test_a_function_of_time_only(self):
+        def build():
+            model = Model(starttime=0, stoptime=5, dt=1, name="parity_time")
+            model.function("doubled_time", lambda model, t: 2 * t)
+            out = model.converter("out")
+            out.equation = model.functions["doubled_time"]()
+            return model
+
+        python, rust = _both_backends(build, ["out"])
+        assert rust["out"].tolist() == pytest.approx(python["out"].tolist())
+        assert rust["out"].tolist() == pytest.approx([0.0, 2.0, 4.0, 6.0, 8.0, 10.0])
+
+    def test_a_function_of_several_arguments(self):
+        def build():
+            model = Model(starttime=0, stoptime=4, dt=1, name="parity_args")
+            model.function("weighted", lambda model, t, a, b: 0.25 * a + 0.75 * b)
+            first = model.converter("first")
+            first.equation = 4.0
+            second = model.converter("second")
+            second.equation = 8.0
+            out = model.converter("out")
+            out.equation = model.functions["weighted"](first, second)
+            return model
+
+        python, rust = _both_backends(build, ["out"])
+        assert rust["out"].tolist() == pytest.approx(python["out"].tolist())
+
+    def test_a_function_inside_a_larger_expression(self):
+        """The callback is one node of an expression, not the whole equation."""
+        def build():
+            model = Model(starttime=0, stoptime=4, dt=1, name="parity_nested")
+            model.function("half", lambda model, t: 0.5)
+            source = model.converter("source")
+            source.equation = 10.0
+            out = model.converter("out")
+            out.equation = 2.0 * model.functions["half"]() + source
+            return model
+
+        python, rust = _both_backends(build, ["out"])
+        assert rust["out"].tolist() == pytest.approx(python["out"].tolist())
+        assert rust["out"].tolist() == pytest.approx([11.0] * 5)
+
+    def test_an_elementwise_function_over_a_named_vector(self):
+        def build():
+            model = Model(starttime=0, stoptime=3, dt=1, name="parity_named")
+            model.function("uplift", lambda model, t, x: x * 1.1)
+            base = model.converter("base")
+            base.setup_named_vector({"north": 10.0, "south": 20.0})
+            out = model.converter("out")
+            out.setup_named_vector({"north": 0.0, "south": 0.0})
+            out.equation = model.functions["uplift"](base)
+            return model
+
+        names = ["out[north]", "out[south]"]
+        python, rust = _both_backends(build, names)
+        for name in names:
+            assert rust[name].tolist() == pytest.approx(python[name].tolist())
+
+    def test_an_elementwise_function_over_a_matrix(self):
+        def build():
+            model = Model(starttime=0, stoptime=3, dt=1, name="parity_matrix")
+            model.function("negate", lambda model, t, x: -x)
+            base = model.converter("base")
+            base.setup_matrix((2, 2), [[1.0, 2.0], [3.0, 4.0]])
+            out = model.converter("out")
+            out.setup_matrix((2, 2))
+            out.equation = model.functions["negate"](base)
+            return model
+
+        names = ["out[0][0]", "out[0][1]", "out[1][0]", "out[1][1]"]
+        python, rust = _both_backends(build, names)
+        for name in names:
+            assert rust[name].tolist() == pytest.approx(python[name].tolist())
+
+    def test_a_function_feeding_a_stock_initial_value(self):
+        """Through a converter, which is how a computed initial value was written before
+        an initial value could be an expression."""
+        def build():
+            model = Model(starttime=0, stoptime=4, dt=1, name="parity_initial")
+            model.function("starting_point", lambda model, t: 42.0)
+            start = model.converter("start")
+            start.equation = model.functions["starting_point"]()
+            stock = model.stock("stock")
+            stock.initial_value = start
+            flow = model.flow("flow")
+            flow.equation = 1.0
+            stock.equation = flow
+            return model
+
+        python, rust = _both_backends(build, ["stock"])
+        assert rust["stock"].tolist() == pytest.approx(python["stock"].tolist())
+        assert rust["stock"].tolist()[0] == pytest.approx(42.0)
+
+    def test_a_function_as_the_initial_value_itself(self):
+        """The callback sits in the initial value slot, which the format has always
+        treated as an expression."""
+        def build():
+            model = Model(starttime=0, stoptime=4, dt=1, name="parity_initial_direct")
+            model.function("starting_point", lambda model, t: 42.0)
+            stock = model.stock("stock")
+            stock.initial_value = model.functions["starting_point"]()
+            flow = model.flow("flow")
+            flow.equation = 1.0
+            stock.equation = flow
+            return model
+
+        python, rust = _both_backends(build, ["stock"])
+        assert rust["stock"].tolist() == pytest.approx(python["stock"].tolist())
+        assert rust["stock"].tolist()[0] == pytest.approx(42.0)
+
+    def test_an_expression_as_the_initial_value(self):
+        def build():
+            model = Model(starttime=0, stoptime=4, dt=1, name="parity_initial_expression")
+            constant = model.constant("k")
+            constant.equation = 10.0
+            stock = model.stock("stock")
+            stock.initial_value = constant * 2.0 + 5.0
+            flow = model.flow("flow")
+            flow.equation = 1.0
+            stock.equation = flow
+            return model
+
+        python, rust = _both_backends(build, ["stock"])
+        assert rust["stock"].tolist() == pytest.approx(python["stock"].tolist())
+        assert rust["stock"].tolist()[0] == pytest.approx(25.0)
+
+    def test_an_initial_value_that_reads_another_stock(self):
+        """Step 0 has to settle: the converter reads a stock, and a stock starts from the
+        converter. One pass in each direction left the second stock on the value the
+        converter had before it was corrected - 50 in Python, 0 on the engine."""
+        def build(depth):
+            model = Model(starttime=0, stoptime=3, dt=1, name="parity_initial_chain")
+            first = model.stock("first")
+            first.initial_value = 50.0
+            rising = model.flow("rising")
+            rising.equation = 1.0
+            first.equation = rising
+
+            previous = first
+            for level in range(depth):
+                mirror = model.converter("mirror{}".format(level))
+                mirror.equation = previous
+                stock = model.stock("s{}".format(level))
+                stock.initial_value = mirror
+                still = model.flow("still{}".format(level))
+                still.equation = 0.0
+                stock.equation = still
+                previous = stock
+            return model
+
+        for depth in (1, 3):
+            names = ["s{}".format(level) for level in range(depth)]
+            python, rust = _both_backends(lambda: build(depth), names)
+            for name in names:
+                assert rust[name].tolist() == pytest.approx(python[name].tolist())
+                assert rust[name].tolist()[0] == pytest.approx(50.0)
+
+    def test_a_step_by_step_session_calls_back_too(self):
+        """A session loads the model on its own path, so it registers on its own too."""
+        def builder():
+            model = Model(starttime=1, stoptime=6, dt=1, name="parity_session")
+            model.function("scale", lambda scale_model, t, x: 2 * x + t)
+            source = model.converter("source")
+            source.equation = 3.0
+            scaled = model.converter("scaled")
+            scaled.equation = model.functions["scale"](source)
+            stock = model.stock("stock")
+            stock.initial_value = 0.0
+            stock.equation = scaled
+
+            bptk = BPTK_Py.bptk()
+            bptk.register_scenario_manager({"session_mgr": {"model": model}})
+            bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="session_mgr")
+            return bptk
+
+        _interleave_step(builder, ["session_mgr"], ["base"], ["scaled", "stock"], steps=5)

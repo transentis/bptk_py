@@ -270,7 +270,6 @@ fn test_topological_sort_order() {
 // Non-stock entities are evaluated eagerly once per timestep in a precomputed
 // order, so a loop is only solvable if something in it reads a past value: a stock
 // (integrated in the previous step) or a `delay` (reads memo[step - delay_steps]).
-// See docs/internal/architecture/rust-engine-delay-cycle-issue.md
 
 fn loop_model_json(delay_duration: &str) -> String {
     format!(r#"{{
@@ -295,7 +294,7 @@ fn test_loop_closed_by_delay_parses() {
     let json = loop_model_json(r#"{ "type": "literal", "value": 1.0 }"#);
     let model = parse_json(&json).expect("a loop broken by a one-step delay must load");
     // a(1)=1, then a(t) = a(t-1) + 1
-    let results = model.simulate(&["a".to_string()], None);
+    let results = model.simulate(&["a".to_string()], None).unwrap();
     let a = &results["a"];
     assert_eq!(a["1.0"], 1.0);
     assert_eq!(a["2.0"], 2.0);
@@ -372,7 +371,7 @@ fn test_model_and_state_are_send_and_sync() {
 fn test_state_can_be_stepped_from_another_thread() {
     let json = loop_model_json(r#"{ "type": "literal", "value": 1.0 }"#);
     let model = parse_json(&json).unwrap();
-    let mut state = model.init(None);
+    let mut state = model.init(None).unwrap();
 
     // Move model and state into a second thread and continue stepping there.
     let handle = std::thread::spawn(move || {
@@ -429,7 +428,7 @@ fn test_loop_with_delay_nested_in_expression_parses() {
         }
     }"#;
     let model = parse_json(json).expect("a nested delay must still break the loop");
-    let results = model.simulate(&["a".to_string()], None);
+    let results = model.simulate(&["a".to_string()], None).unwrap();
     assert_eq!(results["a"]["1.0"], 1.0);
     assert_eq!(results["a"]["3.0"], 3.0);
 }
@@ -461,7 +460,7 @@ fn test_two_independent_delay_loops_parse() {
         }
     }"#;
     let model = parse_json(json).expect("two delay-broken loops must both be ordered");
-    let results = model.simulate(&["a1".to_string(), "a2".to_string()], None);
+    let results = model.simulate(&["a1".to_string(), "a2".to_string()], None).unwrap();
     assert_eq!(results["a1"]["4.0"], 4.0);
     assert_eq!(results["a2"]["4.0"], 40.0);
 }
@@ -516,7 +515,7 @@ fn test_loop_with_unary_op_in_the_cycle_parses() {
         }
     }"#;
     let model = parse_json(json).expect("a cycle through a unary op must be orderable");
-    let results = model.simulate(&["a".to_string(), "d".to_string()], None);
+    let results = model.simulate(&["a".to_string(), "d".to_string()], None).unwrap();
     // t=1: d = initial 2 -> a = -2 + 1 = -1 ; t=2: d = a(1) = -1 -> a = 1 + 1 = 2
     assert_eq!(results["a"]["1.0"], -1.0);
     assert_eq!(results["a"]["2.0"], 2.0);
@@ -648,4 +647,52 @@ fn test_delay_broken_loop_produces_no_cycle_error() {
     // The naming must not fire for models that are fine.
     let json = loop_model_json(r#"{ "type": "literal", "value": 1.0 }"#);
     assert!(parse_json(&json).is_ok());
+}
+
+// ── Python callbacks ────────────────────────────────────────────────────────
+
+fn callback_model_json() -> String {
+    r#"{
+        "name": "callback",
+        "specs": { "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 },
+        "entities": { "converters": [
+            { "name": "source", "equation": { "type": "literal", "value": 2.0 } },
+            { "name": "scaled", "equation": {
+                "type": "py_callback", "name": "scale",
+                "args": [ { "type": "ref", "name": "source" } ] } }
+        ] }
+    }"#
+    .to_string()
+}
+
+#[test]
+#[cfg(not(feature = "python"))]
+fn test_a_callback_node_is_a_load_error_without_python() {
+    // The same JSON loads in the extension module, so the message says what is missing
+    // rather than calling the model invalid.
+    let error = parse_json(&callback_model_json()).unwrap_err();
+    let message = error.to_string();
+    assert!(message.contains("scale"), "{}", message);
+    assert!(message.contains("without Python"), "{}", message);
+}
+
+#[test]
+#[cfg(feature = "python")]
+fn test_a_callback_name_resolves_to_a_slot() {
+    let model = parse_json(&callback_model_json()).unwrap();
+    assert_eq!(model.callback_names, vec!["scale".to_string()]);
+    // Unregistered until somebody registers it.
+    assert!(model.callbacks.iter().all(Option::is_none));
+}
+
+#[test]
+#[cfg(feature = "python")]
+fn test_a_callback_argument_is_ordered_before_it() {
+    // Without the argument's edge the engine would call Python with a cell that has not
+    // been evaluated at this step yet.
+    let model = parse_json(&callback_model_json()).unwrap();
+    let source = model.entity_index["source"];
+    let scaled = model.entity_index["scaled"];
+    let position = |idx: usize| model.eval_order.iter().position(|&i| i == idx).unwrap();
+    assert!(position(source) < position(scaled));
 }

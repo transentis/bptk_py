@@ -26,10 +26,17 @@ from ..util import floating_point as fp
 # or serialized for it, and thread-local because the schedulers evaluate in parallel.
 _evaluation = threading.local()
 
+# Set while a user-defined function is running inside the Rust engine. Such a function may
+# not evaluate the model: the engine is mid-step, and the Python evaluator it would reach
+# is a second, independent one - it knows nothing of the constants or runspecs set on the
+# loaded engine model, so the answer would be quietly computed from a different model.
+_rust_callback = threading.local()
+
 
 from .agent import Agent
 from .event import Event
 from ..logger import log
+from ..exceptions import rust_backend_error
 from ..sddsl import Constant, Converter, Flow, Biflow, NaryOperator, Stock
 
 
@@ -136,11 +143,62 @@ class Model:
         skipped because it holds no equation, and the aggregations become ``arr_*``
         calls. ``dot`` is expanded into a sum of products.
 
+        A user-defined function becomes a node carrying its name, which the engine
+        answers by calling back into Python; the callable itself is never serialized.
+
         Raises ``ValueError`` if the model uses a feature the Rust engine cannot
-        express, such as a custom function.
+        express, such as a user-defined function registered with ``elementwise=False``,
+        which is handed a whole array and answers once.
         """
         from ..sddsl.json_serializer import model_to_json
         return model_to_json(self)
+
+    def register_rust_functions(self, rust_model):
+        """Hand a loaded Rust model the callables for the functions it calls.
+
+        The loaded model is asked what it needs rather than being told what the
+        serializer emitted: the names live in the JSON, so a model that was never
+        serialized here - one loaded from a file - is handled the same way.
+
+        The model is bound to each callable before it crosses over, so the engine holds
+        something it can call with a time and numbers and knows nothing about BPTK.
+        """
+        needed = rust_model.required_functions()
+        for name in needed:
+            fn = self.fn.get(name)
+            if fn is None:
+                raise ValueError(
+                    "The model calls a function named '{}', but nothing is registered "
+                    "for it. Register it with Model.function().".format(name))
+            rust_model.register_function(name, self._bind_for_engine(fn))
+
+        if needed:
+            # Said out loud because it is not what was asked for: the run is on the Rust
+            # engine, but these nodes are evaluated in Python, once per node and timestep.
+            # Nothing is wrong - the results are the same - so this warns and does not
+            # stop anything.
+            log("[WARN] This model calls {} user-defined Python function(s) ({}). Those "
+                "nodes are evaluated in Python while the rest of the model runs on the "
+                "Rust engine.".format(len(needed), ", ".join(sorted(needed))))
+
+    def _bind_for_engine(self, fn):
+        """Bind this model into `fn` and mark the model while the engine runs it.
+
+        The engine calls what it is given with the time and the argument values; the
+        model is bound here so that nothing of BPTK crosses over. The mark is what makes
+        an evaluation from inside such a function fail loudly instead of quietly
+        answering from a second model - see `memoize`.
+        """
+        model = self
+
+        def call(t, *args):
+            _rust_callback.active = True
+            try:
+                return fn(model, t, *args)
+            finally:
+                _rust_callback.active = False
+
+        return call
 
     def simulate(self, equations: list, backend: str = "python"):
         """Run simulation and return results as a Pandas DataFrame.
@@ -151,13 +209,17 @@ class Model:
 
         Returns:
             Pandas DataFrame with time as index (named ``"t"``) and equations as columns.
+
+        Raises:
+            RustBackendError: if ``backend="rust"`` was asked for and this model cannot
+                run on the engine. It is not computed on the Python engine instead -
+                that would look exactly like a run that had used the engine.
         """
         if backend == "rust":
             try:
                 return self._simulate_rust(equations)
-            except (ValueError, AttributeError, ImportError) as e:
-                log("[WARN] Cannot run with Rust backend: {} — falling back to Python.".format(e))
-                return self._simulate_python(equations)
+            except (ValueError, AttributeError, ImportError) as error:
+                raise rust_backend_error(error) from error
         else:
             return self._simulate_python(equations)
 
@@ -168,6 +230,7 @@ class Model:
         json_str = self.to_json()
         engine = RustSdEngine()
         rust_model = engine.load_model(json_str)
+        self.register_rust_functions(rust_model)
 
         raw = rust_model.simulate(equations)
         # Convert string time keys to float
@@ -315,7 +378,7 @@ class Model:
 
         Properties set via this mechanism are stored internally in a dictionary of properties, the value of the property directly can be access directly as an object attribute, i.e. as self.<name of property>.
 
-        The key point about keeping properties in this way is that they can then easily be collected in a data collector.
+        A property set this way is not collected by the standard data collector and cannot be plotted directly - `collect_agent_statistics` sees the agents, not the model. Reading it back through `get_property`, or as an attribute, is what it is for.
 
         Args:
             name: String.
@@ -323,7 +386,6 @@ class Model:
             property_spec: Dict.
                 Specification of property: {"type":<type of property, free form string>,"value":<value of property>}. In principle the property can store any kind of value, the type is currently not evaluated by the framework.
         """
-        #TODO: Currently model properties are not collected by the standard data collector and they are also not directly plotable. This might be a useful extension.
         self.properties[name] = property_spec
 
     def get_property(self, name):
@@ -866,6 +928,15 @@ class Model:
         # `self.memoize('name', t)` - see sdcompiler/generator/py/py.py - so the name is
         # part of the contract with generated code and cannot move behind an underscore.
 
+        if getattr(_rust_callback, "active", False):
+            raise RuntimeError(
+                "A user-defined function asked the model for the equation '{}' while the "
+                "Rust engine was calling it. That is not supported: the engine is in the "
+                "middle of a step, and the Python evaluator this would reach is a second "
+                "model that knows nothing about the constants and runspecs the engine is "
+                "running with, so the answer would come from somewhere else. A function "
+                "that needs a model value takes it as an argument.".format(equation))
+
         #normalize the arg
 
         normalized_arg= fp.normalize(arg, self.dt, self.starttime, max(fp.scale(self.starttime), fp.scale(self.dt)))
@@ -962,20 +1033,27 @@ class Model:
             self.stocks[name] = stock
             return stock
 
-    def function(self, name, fn):
+    def function(self, name, fn, elementwise=True):
         """Create a user defined function for System Dynamics.
 
         Args:
             name:  String.
                 Name of the function.
-            fn: returns
+            fn: The callable, which receives the model and the current time followed by
+                the arguments of the call site.
+            elementwise: Boolean (Default=True).
+                What an arrayed argument means. True calls the function once per index,
+                so the result is an array of the same shape - the rule every operator
+                follows. False hands the whole array over instead: a list for an unnamed
+                array, a dict keyed by the labels for a named one, nested for a matrix,
+                and the result is a single value.
 
         Returns: 
         A function which wraps the user defined function for use within System Dynamics.
         """
 
         if name not in self.functions:
-            self.functions[name] = lambda *args: NaryOperator(name, *args)
+            self.functions[name] = lambda *args: NaryOperator(name, *args, elementwise=elementwise)
             self.fn[name] = fn
 
         return self.functions[name]

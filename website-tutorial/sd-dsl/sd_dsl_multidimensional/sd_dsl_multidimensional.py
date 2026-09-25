@@ -2496,6 +2496,28 @@ def _(arrays_bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Things to watch out for
+
+    These all work; they just do not always work the way a first reading suggests.
+
+    * **Element-wise is the default, everywhere.** Every operator applies to an array
+      index by index, and so does a
+      [user-defined function](../sd_user_defined_functions/sd_user_defined_functions.md):
+      it is called once per index, and the result is an array of the same shape. A
+      function that wants the whole array instead is registered with
+      `elementwise=False` - and that one does not run on the Rust engine: a run that
+      asks for it raises, and a run that does not stays in Python. The element-wise
+      form runs on the engine like everything else here.
+    * **An aggregation is a scalar, and it needs an element of its own.**
+      `headcount.arr_sum()` is one number, and assigning it to an element you gave a
+      shape raises: an arrayed element holds no value beside its cells.
+    * **The order of a dimension is the order you declared it in.** `arr_rank` and
+      `arr_median` sort, and both engines sort the same list - but a named vector's
+      "first" index is the first key you set up, not the alphabetically first label.
+    * **A sub-element is an element of its own.** `headcount["north"]` has its own
+      equation, its own name in the result frame (`headcount[north]`), and a scenario
+      overrides it under that name.
+
     ## What Is Not Supported
 
     Worth knowing before you build on arrays. None of these fails silently - each one

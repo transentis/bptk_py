@@ -383,5 +383,133 @@ class TestArrayedSerialization(unittest.TestCase):
                          mul(ref("v[b]"), lit(2.0)))
 
 
+class TestCustomFunctionSerialization(unittest.TestCase):
+    """A user-defined function becomes a node carrying its name, never its code."""
+
+    def setUp(self):
+        self.model = Model(starttime=0, stoptime=5, dt=1, name="json_callback")
+
+    def converters(self, model=None):
+        payload = json.loads(model_to_json(model or self.model))
+        return {entity["name"]: entity["equation"]
+                for entity in payload["entities"]["converters"]}
+
+    def test_every_call_site_shape_serializes(self):
+        self.model.function("scale", lambda model, t, x: 2 * x)
+        self.model.function("timed", lambda model, t: 5 * t)
+        self.model.function("variadic", lambda model, t, *args: 5.0)
+
+        source = self.model.converter("source")
+        source.equation = 3.0
+        scaled = self.model.converter("scaled")
+        scaled.equation = self.model.functions["scale"](source)
+        timed = self.model.converter("timed_value")
+        timed.equation = self.model.functions["timed"]()
+        variadic = self.model.converter("variadic_value")
+        variadic.equation = self.model.functions["variadic"](source, source)
+
+        converters = self.converters()
+
+        self.assertEqual(converters["scaled"],
+                         {"type": "py_callback", "name": "scale",
+                          "args": [ref("source")]})
+        self.assertEqual(converters["timed_value"],
+                         {"type": "py_callback", "name": "timed", "args": []})
+        self.assertEqual(converters["variadic_value"],
+                         {"type": "py_callback", "name": "variadic",
+                          "args": [ref("source"), ref("source")]})
+
+    def test_an_elementwise_function_over_an_array_emits_one_node_per_index(self):
+        self.model.function("double", lambda model, t, x: 2 * x)
+        vector = self.model.converter("v")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        out = self.model.converter("out")
+        out.equation = self.model.functions["double"](vector)
+
+        converters = self.converters()
+
+        for index in range(3):
+            self.assertEqual(
+                converters["out[{}]".format(index)],
+                {"type": "py_callback", "name": "double",
+                 "args": [ref("v[{}]".format(index))]})
+
+    def test_a_function_taking_whole_arrays_raises(self):
+        self.model.function("total", lambda model, t, arr: sum(arr),
+                            elementwise=False)
+        vector = self.model.converter("v")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+        out = self.model.converter("out")
+        out.equation = self.model.functions["total"](vector)
+
+        with self.assertRaises(ValueError) as context:
+            model_to_json(self.model)
+
+        message = str(context.exception)
+        self.assertIn("total", message)
+        self.assertIn("elementwise=False", message)
+
+    def test_a_call_site_the_function_cannot_accept_raises(self):
+        self.model.function("two", lambda model, t, x, y: x + y)
+        source = self.model.converter("source")
+        source.equation = 1.0
+        out = self.model.converter("out")
+        out.equation = self.model.functions["two"](source)
+
+        with self.assertRaises(ValueError) as context:
+            model_to_json(self.model)
+
+        message = str(context.exception)
+        self.assertIn("two", message)
+        # Both arities, so the message says what was passed and what was expected.
+        self.assertIn("1 argument", message)
+        self.assertIn("'y'", message)
+
+    def test_a_callable_that_cannot_be_inspected_is_accepted(self):
+        """`max` has no signature to read; refusing it would be a rule Python does not have."""
+        self.model.function("largest", max)
+        source = self.model.converter("source")
+        source.equation = 1.5
+        out = self.model.converter("out")
+        out.equation = self.model.functions["largest"](source)
+
+        self.assertEqual(self.converters()["out"]["name"], "largest")
+
+    def test_a_name_without_a_callable_raises(self):
+        self.model.function("gone", lambda model, t, x: x)
+        source = self.model.converter("source")
+        source.equation = 1.0
+        out = self.model.converter("out")
+        out.equation = self.model.functions["gone"](source)
+        del self.model.fn["gone"]
+
+        with self.assertRaises(ValueError) as context:
+            model_to_json(self.model)
+
+        self.assertIn("no callable registered", str(context.exception))
+
+    def test_serializing_an_expression_outside_a_model_raises(self):
+        """`_expr_to_json` alone cannot reach the model that holds the callables."""
+        with self.assertRaises(ValueError) as context:
+            _expr_to_json(ops.NaryOperator("orphan", 1.0))
+
+        self.assertIn("outside model_to_json", str(context.exception))
+
+    def test_the_context_does_not_outlive_the_call(self):
+        """A failed serialization leaves no model behind for the next one."""
+        from BPTK_Py.sddsl import json_serializer
+
+        self.model.function("two", lambda model, t, x, y: x + y)
+        source = self.model.converter("source")
+        source.equation = 1.0
+        out = self.model.converter("out")
+        out.equation = self.model.functions["two"](source)
+
+        with self.assertRaises(ValueError):
+            model_to_json(self.model)
+
+        self.assertIsNone(json_serializer._current_model)
+
+
 if __name__ == "__main__":
     unittest.main()

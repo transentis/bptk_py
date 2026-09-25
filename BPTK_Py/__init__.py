@@ -5,6 +5,7 @@ from .sddsl import Module
 from .bptk import bptk, conf
 from .config import config
 from .logger import log
+from .exceptions import RustBackendError
 # No Python-version check here: `requires-python = ">=3.11"` in pyproject.toml is the
 # one that works, and pip refuses the install below it. The guard that used to stand
 # here printed a message about the *server* from the package's own __init__, and could

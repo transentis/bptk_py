@@ -31,7 +31,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INTERNAL_REPO="$(dirname "$SCRIPT_DIR")"
 DOCS_REPO="${DOCS_REPO:-${INTERNAL_REPO}/../bptk-docs}"
-OUTPUT="${INTERNAL_REPO}/docs/tutorial/_output"
+OUTPUT="${INTERNAL_REPO}/website-tutorial/_output"
 
 DRY_RUN=""
 ALLOW_DIRTY="no"

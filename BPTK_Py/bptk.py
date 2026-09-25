@@ -617,7 +617,6 @@ class bptk():
                                 scenario_object.rust_model = None
                                 scenario_object._rust_initial = None
                                 scenario_object._rust_initial_returned = False
-                                scenario_object._rust_failed = False
                             self.reset_scenario_cache(scenario_manager=manager.name, scenario=scenario)
             self.session_state=None
 
@@ -834,7 +833,6 @@ class bptk():
                 sc_name for sc_name, sc_obj in manager.scenarios.items()
                 if sc_name in scenarios
                 and getattr(sc_obj, "rust_model", None) is None
-                and not getattr(sc_obj, "_rust_failed", False)
             ]
             if not to_restore:
                 continue
@@ -1354,7 +1352,9 @@ class bptk():
     def destroy(self):
         """ Destroy the BPTK object without stopping the Python Kernel.
 
-        Kills all the file monitors and makes sure the Python process can die happily.
+        Kills all the file monitors. A script does not need this to end - the
+        monitors are daemon threads and do not hold the interpreter open - but a
+        long-lived kernel does, to stop watching files it no longer cares about.
         """
         log("[INFO] BPTK API: Got destroy signal. Stopping all threads that are running in background")
         self.scenario_manager_factory.destroy()

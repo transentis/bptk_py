@@ -463,7 +463,7 @@ def _(mo):
     mo.md(r"""
     ## Model.function
 
-    **function(name, fn)**
+    **function(name, fn, elementwise=True)**
 
     Returns a Lambda function that wraps the function _fn_.
 
@@ -477,6 +477,15 @@ def _(mo):
 
         * **fn** – Function
         A function that will be used within a SD DSL model. The function must accept at least a _model_ parameter and a time _t_ parameter.
+
+        * **elementwise** – Boolean (Default=True).
+        What an arrayed argument means. `True` calls the function once per index, so the
+        result is an array of the same shape - the rule every operator follows. `False`
+        hands the whole array over instead: a list for an unnamed array, a dict keyed by
+        the labels for a named one, nested for a matrix, and the result is a single value.
+        The element-wise form runs on the Rust engine. `elementwise=False` does not: a
+        run that asks for the Rust backend raises `RustBackendError`, and a run that
+        does not stays on the Python engine.
 
     Returns:
     A function which wraps the user defined function for use within SD DSL models.
@@ -801,7 +810,7 @@ def _(mo):
 
     Properties set via this mechanism are stored internally in a dictionary of properties, the value of the property directly can be access directly as an object attribute, i.e. as self.<name of property>.
 
-    The key point about keeping properties in this way is that they can then easily be collected in a data collector.
+    A property set this way is not collected by the standard data collector and cannot be plotted directly - `collect_agent_statistics` sees the agents, not the model. Reading it back through `get_property`, or as an attribute, is what it is for.
 
     * **Parameters**
 
@@ -890,8 +899,11 @@ def _(mo):
 
     * **Raises**
 
-        `ValueError` if the model uses user-defined functions. In a normal run that
-        exception is caught and the scenario continues on the Python engine; see
+        `ValueError` for anything the engine cannot express - a user-defined function
+        registered with `elementwise=False`, or one in a model that also has agents. An
+        ordinary user-defined function serialises: it becomes a node the engine answers
+        by calling back into Python. In a run, that `ValueError` becomes a
+        `RustBackendError`; see
         [Execution Backends](../concepts/execution_backends/execution_backends.md).
     """)
     return
