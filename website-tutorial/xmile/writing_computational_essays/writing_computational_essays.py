@@ -116,7 +116,6 @@ def _():
     from BPTK_Py.bptk import bptk 
 
     bptk = bptk()
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
@@ -148,8 +147,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # marimo renders a cell's last expression, not its stdout - so the listing has to be
-    # captured to reach the page rather than the browser console.
     with mo.capture_stdout() as managers_and_scenarios:
         print("Available Scenario Managers and Scenarios:")
         managers = bptk.scenario_manager_factory.get_scenario_managers(
@@ -527,8 +524,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # marimo has no `IPython.display`; `mo.md` renders the same markup, and a markdown
-    # list is less work than assembling HTML by hand.
     stocks = bptk.scenario_manager_factory.get_scenario(
         "smSimpleProjectManagement", "scenario100"
     ).model.stocks
@@ -547,8 +542,7 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # The constants of two scenarios side by side. Both listings in one cell, because a
-    # cell renders one value: printing into a captured buffer keeps them together.
+    # The constants of two scenarios side by side.
     def constants_of(scenario_name):
         scenario = bptk.scenario_manager_factory.get_scenario(
             "smSimpleProjectManagement", scenario_name

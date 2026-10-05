@@ -7,25 +7,19 @@ from unittest.mock import patch, mock_open, MagicMock
 import BPTK_Py.logger.logger as logmod
 
 import sys, io
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestLogger(unittest.TestCase):
-    def setUp(self):
-        pass
-
     # Logfire module state is restored after every test by the reset_logfire_state
     # fixture in tests/conftest.py.
 
-    def testLogger_loglevel_error(self):
+    def test_loglevel_error(self):
         importlib.reload(logmod)
         logmod.logfire_enabled = False
         logmod.loglevel = "ERROR"
                
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         #Message on ERROR-level will be logged (and printed)
 
@@ -40,11 +34,7 @@ class TestLogger(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR]: This is an error message", content)  
         self.assertIn("[ERROR]: This is an error message", output)  
@@ -53,57 +43,37 @@ class TestLogger(unittest.TestCase):
 
         logmod.log("[WARN]: This is a warn message")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertNotIn("[WARN]: This is a warn message", content)  
 
-    def testLogger_loglevel_info(self):
+    def test_loglevel_info(self):
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
               
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         #Message on Info-level will be logged
 
         logmod.log("[INFO]: This is an info message")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO]: This is an info message", content)  
 
-    def testLogger_loglevel_warn(self):
+    def test_loglevel_warn(self):
         importlib.reload(logmod)
         logmod.loglevel = "WARN"
             
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         #Message on Warn-level will be logged
 
         logmod.log("[WARN]: This is a warn message")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[WARN]: This is a warn message", content)  
 
@@ -111,17 +81,13 @@ class TestLogger(unittest.TestCase):
 
         logmod.log("[INFO]: This is an info message")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertNotIn("[INFO]: This is an info message", content)      
 
     @patch("BPTK_Py.logger.logfire_adapter.logfire")
     @pytest.mark.requires_extra("observability")
-    def testLogger_log_with_logfire(self, mock_logfire):
+    def test_log_with_logfire(self, mock_logfire):
         importlib.reload(logmod)
 
         logmod.loglevel = "INFO"
@@ -154,11 +120,7 @@ class TestLogger(unittest.TestCase):
     def test_configure_logfire(self):
         importlib.reload(logmod)
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         logmod.loglevel = "INFO"    
 
@@ -172,11 +134,7 @@ class TestLogger(unittest.TestCase):
         self.assertTrue(logmod.logfire_enabled)
         self.assertIsInstance(logmod.logfire_adapter, logmod.LogfireAdapter)        
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] Logfire logging enabled successfully", content)  
 
@@ -223,11 +181,7 @@ class TestLogger(unittest.TestCase):
     def test_disable_logfire(self):
         #cleanup logfile
         importlib.reload(logmod)
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         logmod.loglevel = "INFO"    
 
@@ -239,26 +193,15 @@ class TestLogger(unittest.TestCase):
         logmod.disable_logfire()
 
         self.assertFalse(logmod.logfire_enabled)
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] Logfire logging disabled", content)          
 
 class Test_FallbackSpan(unittest.TestCase):
-    def setUp(self):
-        pass    
-
     def test_enter(self):
         importlib.reload(logmod)
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         logmod.loglevel = "INFO" 
 
@@ -273,11 +216,7 @@ class Test_FallbackSpan(unittest.TestCase):
             self.assertIsNotNone(span.start_time)
         self.assertFalse(logmod.logfire_enabled)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn(f"[INFO] SPAN_START: {span_name} (database_query=None, query_type=SELECT, rows=5)", content)
         self.assertIn(f"[INFO] SPAN_END: {span_name} (duration=", content)
@@ -286,11 +225,7 @@ class Test_FallbackSpan(unittest.TestCase):
             self.assertIs(returned, empty_span)
             self.assertIsNotNone(empty_span.start_time)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn(f"[INFO] SPAN_START: {empty_span_name}", content)
         self.assertIn(f"[INFO] SPAN_END: {empty_span_name} (duration=", content)
@@ -298,11 +233,7 @@ class Test_FallbackSpan(unittest.TestCase):
     def test_exit(self):
         importlib.reload(logmod)
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         logmod.loglevel = "INFO" 
 
@@ -312,11 +243,7 @@ class Test_FallbackSpan(unittest.TestCase):
         # __enter__ is not called!
         span.__exit__(None, None, None)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn(f"[INFO] SPAN_END: {span_name}", content)
         for line in content.splitlines():
@@ -345,11 +272,7 @@ class Test_FallbackSpan(unittest.TestCase):
         self.assertEqual(result.attributes, {"database_query": None, "query_type": "SELECT", "rows": 5})
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         logmod.loglevel = "WARN"
         logmod.logfire_enabled=True
@@ -362,14 +285,6 @@ class Test_FallbackSpan(unittest.TestCase):
             result = logmod.span(name="my_span", **attributes)
             self.assertIsInstance(result, logmod.FallbackSpan)
 
-            try:
-                with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                    content = file.read()
-            except FileNotFoundError:
-                self.fail()
+            content = read_log()
 
             self.assertIn(f"[WARN] Failed to create Logfire span: span failed, falling back to basic span", content)
-
-if __name__ == '__main__':
-    unittest.main()   
-

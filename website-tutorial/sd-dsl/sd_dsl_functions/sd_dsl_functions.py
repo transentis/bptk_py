@@ -35,6 +35,8 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     This document illustrates how to use the operators for the SD DSL. To use the operators, you need to import the `sd_functions`, in addition to importing the `Model` class.
+
+    The statistical functions - the random distributions, INVNORM and NORMALCDF - check their arguments. An argument a function does not accept, such as a negative ``stddev``, gives NaN, and one ``[ERROR]`` names the element, the time and the values; it is printed as well as written to the log file, once per element and run. A NaN or an infinity that arrives as an argument gives NaN without a message: it comes from further up the model.
     """)
     return
 
@@ -53,7 +55,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
@@ -145,10 +146,6 @@ def _(Model, bptk, sd):
     input_converter.equation = sd.time() - 5
     abs_converter = model_1.converter('abs_converter')
     abs_converter.equation = sd.abs(input_converter)
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_1)
     bptk.plot_scenarios(
@@ -193,10 +190,6 @@ def _(Model, bptk, sd):
     delayed_input_1.equation = sd.delay(model_2, input_function, 1.0, 1.0)
     delayed_input_2.equation = sd.delay(model_2, input_function, 2.0, 0.0)
     delayed_input_3.equation = sd.delay(model_2, input_function, 2.5, 0.5)
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_2)
     bptk.plot_scenarios(
@@ -350,10 +343,6 @@ def _(a, b, bptk, model_5, sd):
     #| echo: true
     c = model_5.converter('c')
     c.equation=sd.max(a,b)
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_5)
     bptk.plot_scenarios(scenario_managers=['smMax'], scenarios=['base'], equations=['a', 'b', 'c'], format="axes")
@@ -390,10 +379,6 @@ def _(Model, bptk, sd):
     b_1.equation = 10.0 - sd.step(5.0, 5.0)
     c_1 = model_6.converter('c')
     c_1.equation = sd.min(a_1, b_1)
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_6)
     bptk.plot_scenarios(scenario_managers=['smMin'], scenarios=['base'], equations=['a', 'b', 'c'], format="axes")
@@ -431,10 +416,6 @@ def _(Model, bptk, sd):
     flow = model_7.flow('flow')
     flow.equation = sd.pulse(model_7, 10.0, 2.0, 2.0)
     stock.equation = flow
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_7)
     bptk.plot_scenarios(
@@ -484,10 +465,6 @@ def _(Model, bptk, sd):
     input_function_1.equation = sd.step(10.0, 3.0)
     smooth = model_8.converter('smooth')
     smooth.equation = sd.smooth(model_8, input_function_1, 2.0, 0.0)
-    # Registering a model whose scenario manager already exists leaves the *old*
-    # model in place - `register_scenario_manager` warns and keeps it. So if you edit
-    # this cell and press play, drop the registry first or you will plot the model you
-    # started with rather than the one you just changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model_8)
     bptk.plot_scenarios(
@@ -566,15 +543,14 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The STEP function generates a change of specified height, which occurs at a specified time.
+    The STEP function generates a change of specified height, which occurs at a specified time:
+    it is 0 before `timestep` and `height` from `timestep` on, as XMILE's STEP is.
 
     Signature: `step(height, timestep)`
 
-    `input_function`: any model element or a floating point number
+    `height`: any model element or a floating point number
 
-    `averaging_time`: any model element or a floating point numnber
-
-    `initial_value`: a floating point value or a constant
+    `timestep`: any model element or a floating point number
     """)
     return
 
@@ -715,7 +691,8 @@ def _(mo):
     mo.md(r"""
     ## ROUND Function
 
-    This function rounds any input to a specified number of digits.
+    This function rounds any input to a specified number of digits. A half rounds away
+    from zero, as a spreadsheet rounds: 2.5 becomes 3, -2.5 becomes -3.
 
     Signature:
     ``round(expression, digits)``
@@ -822,8 +799,9 @@ def _(mo):
     Signature:
     ``lookup(element, points)``
 
-    ``element`` is the input to look up, ``points`` a list of ``(x, y)`` tuples in ascending
-    order of ``x``.
+    ``element`` is the input to look up, ``points`` a list of ``(x, y)`` tuples, in any
+    order - they are sorted by ``x``. Two points at the same ``x`` are refused with an
+    error naming it, since the table would have two values there.
 
     This is the DSL equivalent of a graphical function in a XMILE model, and it is the right
     tool whenever a relationship is known empirically but has no closed form:
@@ -1130,9 +1108,9 @@ def _(mo):
     mo.md(r"""
     ## INVNORM Function
 
-    The INVNORM operator calculates the inverse of the NORMALCDF function (see below).
+    The INVNORM operator calculates the inverse of the NORMALCDF function (see below): the value below which a share ``p`` of a normal distribution lies.
 
-    Parameter is the ``probability p`` (any value between 0 and 1).
+    Parameters are the ``probability p`` (between 0 and 1), and optionally the ``mean`` (default 0) and the ``stddev`` (default 1). Either of the two may be given without the other.
 
     Example:
     """)
@@ -1142,10 +1120,10 @@ def _(mo):
 @app.cell
 def _(Model, sd):
     #| echo: true
-    m_11 = Model(starttime=-0.5, stoptime=1, dt=0.1)
+    m_11 = Model(starttime=0.05, stoptime=0.95, dt=0.05)
     f_10 = m_11.biflow(name='invnorm')
     p_2 = sd.time()
-    f_10.equation = sd.invnorm(p_2)
+    f_10.equation = sd.invnorm(p_2, mean=100, stddev=15)
     f_10.plot(format="axes")
     return
 

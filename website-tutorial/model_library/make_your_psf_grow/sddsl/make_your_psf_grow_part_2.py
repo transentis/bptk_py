@@ -51,7 +51,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    > Please make sure to read [part one](make_your_psf_grow_part_1.ipynb) of this document - it introduces a challenge which we "solve" with the model presented in this document.
+    > Please make sure to read [part one](make_your_psf_grow_part_1.md) of this document - it introduces a challenge which we "solve" with the model presented in this document.
     """)
     return
 
@@ -223,11 +223,6 @@ def _(model):
 
 @app.cell
 def _(bptk, cash, cashIn, cashOut, collectingRevenue, cost):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     cost.equation = 200.0 * (80 / 12 + 1) + 306.0
     cash.equation = cashIn - cashOut
     # Step 3 turns cashIn into the delayed revenue flow, so step 1 says what it means:
@@ -412,11 +407,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, cash, cashIn, cashOut, collectingRevenue, cost, overheadCost, professionalStaff, staffCost):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     cost.equation = staffCost + overheadCost
     professionalStaff.initial_value = 200.0
     cash.equation = cashIn - cashOut
@@ -605,11 +595,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, projectDeliveryRate):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     projectDeliveryRate.equation = 160.0
 
     bptk.register_scenarios(
@@ -655,9 +640,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, projectDeliveryRate, sd):
-    # Its own name, not `step3` again: registering two different scenarios under one
-    # name means the second wins, and then the table above - which the text promises
-    # will be constant at 2816 - showed these fluctuating values instead
     projectDeliveryRate.equation=sd.lookup(sd.time(),"fluctuatingRevenue")
     bptk.register_scenarios(
         scenario_manager="psfLocal",
@@ -699,15 +681,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, projectDeliveryRate, sd):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
-    # The lookup, not the constant: both scenarios below carry `fluctuatingRevenue`
-    # points, and with the constant equation those points are silently ignored - the
-    # revenue was flat and the two curves lay on top of each other, where the whole
-    # point of the section is that collecting lags making
     projectDeliveryRate.equation = sd.lookup(sd.time(), "fluctuatingRevenue")
 
     bptk.register_scenarios(
@@ -754,15 +727,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, projectDeliveryRate, sd):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
-    # The lookup, not the constant: both scenarios below carry `fluctuatingRevenue`
-    # points, and with the constant equation those points are silently ignored - the
-    # revenue was flat and the two curves lay on top of each other, where the whole
-    # point of the section is that collecting lags making
     projectDeliveryRate.equation = sd.lookup(sd.time(), "fluctuatingRevenue")
 
     bptk.register_scenarios(
@@ -899,11 +863,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, deliveringProjects, projectDeliveryCapacity, projectDeliveryRate, projects, sd):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     projectDeliveryCapacity.equation = 160.0
     projectDeliveryRate.equation = sd.min(projects, projectDeliveryCapacity)
     # Step 6 gives the backlog an inflow. Here it only drains.
@@ -941,11 +900,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, deliveringProjects, projectDeliveryCapacity, projectDeliveryRate, projects, sd):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     projectDeliveryCapacity.equation = 160.0
     projectDeliveryRate.equation = sd.min(projects, projectDeliveryCapacity)
     # Step 6 gives the backlog an inflow. Here it only drains.
@@ -1092,11 +1046,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, businessDevelopmentAllocationPct, businessDevelopmentCapacity, deliveringProjects, professionalStaff, projectDeliveryCapacity, projects, workCapacity):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     professionalStaff.initial_value = 200.0
     businessDevelopmentAllocationPct.equation = 20.0
     projectDeliveryCapacity.equation = workCapacity - businessDevelopmentCapacity
@@ -1308,14 +1257,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, businessDevelopmentAllocationPct, deliveringProjects, projects, proposals, prospectingProjects, winningProjects):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
-    # The steady-state test below runs on the constant allocation of step 5; the lookup
-    # belongs to the experiment further down, which is where the points come from. With
-    # the lookup and no points, every element downstream of the allocation fails.
     businessDevelopmentAllocationPct.equation = 20.0
 
     # Steps 4 and 5 set the backlog to drain only, so step 6 says its own form again.
@@ -1558,11 +1499,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, businessDevelopmentAllocationPct, deliveringProjects, professionalStaff, projects, proposals, prospectingProjects, sd, staffArriving, winningProjects):
-    # The model grows over seven steps, and several elements are given a new equation
-    # along the way. Two cells assigning the same element have no dependency between
-    # them, so which one wins is up to marimo's ordering - and then a step's scenario
-    # is measured against another step's model. Each step sets what it is about, right
-    # where it registers its scenarios.
     businessDevelopmentAllocationPct.equation = sd.lookup(sd.time(), "businessDevelopmentAllocation%")
     professionalStaff.equation = staffArriving
 

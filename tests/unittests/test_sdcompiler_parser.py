@@ -188,7 +188,3 @@ class TestStandaloneImports(unittest.TestCase):
         # A name that is already qualified keeps its own model, and a leading dot goes
         self.assertEqual(extract_connects("sub", {"@to": ".b", "@from": "other.a"}),
                          {"b": "other.a"})
-
-
-if __name__ == '__main__':
-    unittest.main()

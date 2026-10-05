@@ -7,8 +7,12 @@ package back into `import BPTK_Py`. These tests cover that seam.
 
 What they cannot cover is what a wheel actually contains - that needs a clean
 venv and belongs in CI.
+
+At the end, one check on the package's source as a whole: no function takes a list or
+a dict as its default.
 """
 
+import ast
 import subprocess
 import sys
 import textwrap
@@ -106,6 +110,18 @@ class TestDependencyGroups:
         assert in_group[0] == in_file[0], (
             f"pyproject pins {in_group[0]}, requirements.txt pins {in_file[0]}"
         )
+
+    def test_the_engine_crate_carries_the_package_version(self, pyproject):
+        """The engine reports its crate version, and it is released with the package."""
+        cargo_toml = PYPROJECT.parent / "Cargo.toml"
+        if not cargo_toml.is_file():
+            pytest.skip("Cargo.toml not available - running against an install")
+        with cargo_toml.open("rb") as handle:
+            crate_version = tomllib.load(handle)["package"]["version"]
+
+        assert crate_version == pyproject["project"]["version"], (
+            f"Cargo.toml declares {crate_version}, pyproject.toml "
+            f"{pyproject['project']['version']}. Bump both.")
 
 
 class TestChangelog:
@@ -338,3 +354,36 @@ class TestPublishWorkflow:
         assert "test" in needs[0], (
             "the publish job no longer depends on the test job, so a red suite would "
             "not stop the upload: {}".format(needs[0].strip()))
+
+
+# ── No mutable defaults ────────────────────────────────────────────────────────
+#
+# A default is built once, when the function is defined, so a list default is one list
+# shared by every call that leaves the argument out: the first call that appends to it
+# changes what every later call starts from. None as the default and an empty list made
+# in the function keep each call apart.
+
+PACKAGE = Path(__file__).resolve().parent.parent / "BPTK_Py"
+
+
+def _mutable_defaults():
+    for path in sorted(PACKAGE.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for function in ast.walk(tree):
+            if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            positional = function.args.posonlyargs + function.args.args
+            pairs = list(zip(positional[len(positional) - len(function.args.defaults):],
+                             function.args.defaults))
+            pairs += [(arg, default) for arg, default in zip(function.args.kwonlyargs,
+                                                             function.args.kw_defaults)
+                      if default is not None]
+            for arg, default in pairs:
+                if isinstance(default, (ast.List, ast.Dict, ast.Set)):
+                    yield "{}:{} {}({}=...)".format(path.relative_to(PACKAGE), default.lineno,
+                                                    function.name, arg.arg)
+
+
+def test_no_function_has_a_mutable_default():
+    found = list(_mutable_defaults())
+    assert found == [], "\n".join(found)

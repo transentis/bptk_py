@@ -7,10 +7,22 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
-from build_any_wheel import (ANY_TAG, build_any_wheel, main,  # noqa: E402
-                             rewrite_wheel_metadata)
+
+def _load_script(name):
+    """Import a script from scripts/ without putting that folder on sys.path for good."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, SCRIPTS / (name + ".py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_build_any_wheel = _load_script("build_any_wheel")
+ANY_TAG = _build_any_wheel.ANY_TAG
+build_any_wheel = _build_any_wheel.build_any_wheel
+main = _build_any_wheel.main
+rewrite_wheel_metadata = _build_any_wheel.rewrite_wheel_metadata
 
 
 def _make_platform_wheel(target_dir, with_extension=True, tag="cp311-abi3-macosx_11_0_arm64"):
@@ -164,7 +176,3 @@ class TestBuildAnyWheel(unittest.TestCase):
             main()
 
         self.assertEqual(len(list(out.glob(f"*-{ANY_TAG}.whl"))), 1)
-
-
-if __name__ == "__main__":
-    unittest.main()

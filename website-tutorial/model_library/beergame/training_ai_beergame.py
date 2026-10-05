@@ -42,11 +42,11 @@ def _(mo):
 
     * our favorite description of the game is in Peter Senge’s [The Fifth Discipline](https://www.amazon.com/-/de/dp/B000SEIFKK/ref=sr_1_1?__mk_de_DE=ÅMÅŽÕÑ&keywords=fifth+discipline&qid=1584205992&sr=8-1)
     * John Sterman’s [Business Dynamics](https://www.amazon.com/-/de/dp/007238915X/ref=sr_1_2?__mk_de_DE=ÅMÅŽÕÑ&keywords=business+dynamics&qid=1584206015&sr=8-2) analyses the game using system dynamics stock and flow models.
-    * [Understanding The Beergame](understanding_the_beergame.ipynb), another notebook in this repository, provides in-depth analysis of the game.
+    * [Understanding The Beergame](understanding_the_beergame.md), another page of this model library, provides in-depth analysis of the game.
 
     Agent-based modeling is an approch to buildig simulation models of real-world systems. In agent-based modeling, entities are captured by agents, which show behaviour in reaction to internal or external events. We will use agents to represent the players in the beergame.
 
-    Once we have the agents, we can investigate different ordering strategies and try to find one that enables the agents to play the beergame and optimize game performance. We have provide a separate notebook in this repository, [An Agend-based Approach To Modeling The Beer Game](beergame_abm.ipynb), that walks through the various stages.
+    Once we have the agents, we can investigate different ordering strategies and try to find one that enables the agents to play the beergame and optimize game performance. We provide a separate page in this model library, [An Agent-based Approach To Modeling The Beer Game](beergame_abm.md), that walks through the various stages.
 
     But using the agents we can do something even more interesting: Instead of giving the agents a set of predefined behaviours, we can train the agents to play the beergame using machine learning techniques, in particular a technique known as _Reinforcement Learning_.
 
@@ -77,7 +77,7 @@ def _(mo):
     * __Deliver beer.__ Deliver as much beer as he can to satisfy the customers demand (Note: in our implementation of the game above, this step is performed for you automatically).
     * __Place outgoing order__. The difficult step is to decide how many units of beer the player needs from his supplier to keep his inventory stocked up and to ensure he has enough beer to meet future demands.
 
-    > If you've never played the game or want to understand the game dynamics in more detail, make sure you read the companion notebook [Understanding the Beergame](understanding_the_beergame.ipynb).
+    > If you've never played the game or want to understand the game dynamics in more detail, make sure you read the companion notebook [Understanding the Beergame](understanding_the_beergame.md).
 
     Now that we know the structure of the game, let's learn about agent-based modeling and see how we can use agents to play the game.
     """)
@@ -203,7 +203,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    It is actually quite easy to define ordering policies that will lead to improved behaviour (again it is best to read [Understanding the Beergame](understanding_the_beergame.ipynb) for details).
+    It is actually quite easy to define ordering policies that will lead to improved behaviour (again it is best to read [Understanding the Beergame](understanding_the_beergame.md) for details).
 
     One simple strategy is to manage the order balance, i.e. the difference between incoming orders (i.e. those coming from the customer) and outgoing orders (i.e. those going to the supplier). Put simply, we would expect the balance to be a constant equal to the desired inventory, a sensible ordering strategy then would be:
 
@@ -764,9 +764,6 @@ def _(bptk):
         agent_property_types=["total"],
         return_df=True,
     )
-    # `train_scenarios` has no `format="axes"` the way `plot_scenarios` does: it either
-    # draws the chart itself, and then marimo has nothing to render, or it returns the
-    # data. So the data comes back and the chart is drawn here
     belohnung.columns = ["Supply Chain Reward"]
     belohnung.plot(
         title="Training Results: Supply Chain Reward Per Episode",
@@ -787,10 +784,6 @@ def _(mo):
 @app.cell
 def _(bptk):
     bptk.reset_scenario(scenario_manager="smBeergameQlOB", scenario="smart_agents")
-    # The name is what the two charts below hang on. Without it they have no dependency
-    # on the training above, and marimo may run them before it - or after the cell that
-    # empties the q-tables again further down, which is how they came to show an
-    # untrained model
     nach_training = "10 Episodes"
     return (nach_training,)
 
@@ -859,9 +852,6 @@ def _(mo):
 
 @app.cell
 def _(kosten_10, lieferkette_10):
-    # Depends on both charts above - not because it needs their values but because it
-    # destroys what they measure: emptying the q-tables before the charts above are
-    # drawn would leave them showing a model that no longer exists
     _ = kosten_10, lieferkette_10
     from src.abm.q_learning_base.sparseQTable import SparseQTable
     from src.abm.q_learning_ob.beergame import BeergameQlOB
@@ -896,7 +886,6 @@ def _(mo):
 
 @app.cell
 def _(BeergameQlOB, mo):
-    # Captured: marimo sends a cell's stdout to the console, not into the page.
     with mo.capture_stdout() as q_table_counts:
         print("Q-Table Counts")
         print("Brewery: {}".format(BeergameQlOB.brewery_q_table.count()))

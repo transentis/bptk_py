@@ -34,7 +34,7 @@ from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
 from BPTK_Py.sddsl.operators import DotOperator
 
-from test_parity import run_parity
+from tests.helpers.parity import run_parity
 
 
 # ---------------------------------------------------------------------------

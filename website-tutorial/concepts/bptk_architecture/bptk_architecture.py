@@ -80,7 +80,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
@@ -106,8 +105,6 @@ def _(mo):
 def _(bptk, mo):
     managers = bptk.scenario_manager_factory.get_scenario_managers()
 
-    # marimo sends a cell's stdout to the console rather than to its output area;
-    # captured and handed to `mo.plain_text` it comes back as one block.
     with mo.capture_stdout() as output:
         print("Available Scenario Managers and Scenarios:")
         for key, manager in managers.items():
@@ -141,9 +138,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # The UI elements have to live in a different cell from the one that reads their
-    # `.value` - marimo requires that, and merging the two would silently remove the
-    # interactivity.
     scenario_choice = mo.ui.dropdown(
         options=sorted(bptk.get_scenario_names(["smSimpleProjectManagement"])),
         value="scenario120",

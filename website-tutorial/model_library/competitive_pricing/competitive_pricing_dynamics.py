@@ -15,19 +15,37 @@ def _():
 
 
 @app.cell(hide_code=True)
+def _():
+    # What the charts compute: `bptk()` loads scenarios/competitive_pricing.json beside
+    # this page, which runs the Stella model in simulation_models/. The SD DSL code below
+    # is shown, not run - tests/docs/test_competitive_pricing.py checks it computes the same.
+    import BPTK_Py
+    bptk = BPTK_Py.bptk()
+    return (bptk,)
+
+
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # Competitive Pricing Model
+
+    This page builds the competitive pricing model in the SD DSL, one part at a time. The
+    code is shown rather than run: the charts further down compute the same model from its
+    Stella file, `simulation_models/competitive_pricing.stmx`, and the code and the Stella
+    model give the same numbers in every scenario on this page.
     """)
     return
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
-
-    return Model, sd
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -38,10 +56,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(Model):
-    model = Model(starttime=0.0,stoptime=2.0,dt=0.25,name='CompetitvePricing')
-    return (model,)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    model = Model(starttime=1.0, stoptime=61.0, dt=0.25, name='CompetitvePricing')
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -93,12 +115,16 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     productionCapacity = model.stock("productionCapacity")
     production = model.stock("production")
     inventory = model.stock("inventory")
-    return inventory, production, productionCapacity
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -109,12 +135,16 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     productionStartRate = model.flow("productionStartRate")
     productionRate = model.flow("productionRate")
     consumptionRate = model.flow("consumptionRate")
-    return consumptionRate, productionRate, productionStartRate
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -125,16 +155,16 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     capacityUtilization = model.converter("capacityUtilization")
     effectOfProfitabilityOnCapacityUtilization = model.converter("effectOfProfitabilityOnCapacityUtilization")
     inventoryCoverage = model.converter("inventoryCoverage")
-    return (
-        capacityUtilization,
-        effectOfProfitabilityOnCapacityUtilization,
-        inventoryCoverage,
-    )
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -153,10 +183,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     productionTime = model.constant("productionTime")
-    return (productionTime,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -191,18 +225,17 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     relativeValueOfProduct = model.converter("relativeValueOfProduct")
     effectOfRelativeValueOnDemand = model.converter("effectOfRelativeValueOnDemand")
     referenceDemand = model.converter("referenceDemand")
     demand = model.converter("demand")
-    return (
-        demand,
-        effectOfRelativeValueOnDemand,
-        referenceDemand,
-        relativeValueOfProduct,
-    )
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -221,12 +254,16 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     sizeOfShock = model.constant("sizeOfShock")
     marketShockOn = model.constant("marketShockOn")
     priceOfSubstitutes = model.constant("priceOfSubstitutes")
-    return marketShockOn, priceOfSubstitutes, sizeOfShock
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -269,11 +306,15 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     minimumPrice = model.converter("minimumPrice")
     capacityCostPerUnit = model.converter("capacityCostPerUnit")
-    return capacityCostPerUnit, minimumPrice
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -292,10 +333,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     expectedPrice = model.stock("expectedPrice")
-    return (expectedPrice,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -306,10 +351,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
-    changeInExpectedPrice = model.flow("changeInExpectedPrice")
-    return (changeInExpectedPrice,)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    changeInExpectedPrice = model.biflow("changeInExpectedPrice")
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -320,12 +369,16 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     indicatedPrice = model.converter("indicatedPrice")
     effectOfInventoryCoverageOnPrice = model.converter("effectOfInventoryCoverageOnPrice")
     price = model.converter("price")
-    return effectOfInventoryCoverageOnPrice, indicatedPrice, price
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -344,10 +397,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     priceAdjustmentTime = model.constant("priceAdjustmentTime")
-    return (priceAdjustmentTime,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -382,14 +439,18 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     capacityCost = model.converter("capacityCost")
     variableCost = model.converter("variableCost")
     cost = model.converter("cost")
     revenue = model.converter("revenue")
     profit = model.converter("profit")
-    return capacityCost, cost, profit, revenue, variableCost
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -408,11 +469,15 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     unitCapacityCost = model.constant("unitCapacityCost")
     unitVariableCost = model.constant("unitVariableCost")
-    return unitCapacityCost, unitVariableCost
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -439,10 +504,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     perceivedInventoryCoverage = model.stock("perceivedInventoryCoverage")
-    return (perceivedInventoryCoverage,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -453,10 +522,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
-    changeInPerceivedInventoryCoverage = model.flow("changeInPerceivedInventoryCoverage")
-    return (changeInPerceivedInventoryCoverage,)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    changeInPerceivedInventoryCoverage = model.biflow("changeInPerceivedInventoryCoverage")
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -467,10 +540,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     normalizedPerceivedInventoryCoverage = model.converter("normalizedPerceivedInventoryCoverage")
-    return (normalizedPerceivedInventoryCoverage,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -489,11 +566,15 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     referenceInventoryCoverage = model.constant("referenceInventoryCoverage")
     inventoryCoveragePerceptionTime = model.constant("inventoryCoveragePerceptionTime")
-    return inventoryCoveragePerceptionTime, referenceInventoryCoverage
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -520,10 +601,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     expectedProfitability = model.stock("expectedProfitability")
-    return (expectedProfitability,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -534,10 +619,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
-    changeInExpectedProfitability = model.flow("changeInExpectedProfitability")
-    return (changeInExpectedProfitability,)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    changeInExpectedProfitability = model.biflow("changeInExpectedProfitability")
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -548,10 +637,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     normalizedExpectedProfitability = model.converter("normalizedExpectedProfitability")
-    return (normalizedExpectedProfitability,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -570,11 +663,15 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     referenceExpectedProfitability = model.constant("referenceExpectedProfitability")
     profitAdjustmentTime = model.constant("profitAdjustmentTime")
-    return profitAdjustmentTime, referenceExpectedProfitability
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -585,21 +682,18 @@ def _(mo):
     return
 
 
-@app.cell
-def _(
-    expectedPrice,
-    expectedProfitability,
-    inventory,
-    perceivedInventoryCoverage,
-    production,
-    productionCapacity,
-):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     productionCapacity.initial_value = 200.0
     production.initial_value = 300.0
     inventory.initial_value = 300.0
     expectedPrice.initial_value = 3.0
     perceivedInventoryCoverage.initial_value = 3.0
     expectedProfitability.initial_value = 100.0
+    ```
+    """)
     return
 
 
@@ -619,8 +713,10 @@ def _(mo):
     return
 
 
-@app.cell
-def _(capacityUtilization, consumptionRate, demand, effectOfProfitabilityOnCapacityUtilization, inventory, inventoryCoverage, model, normalizedExpectedProfitability, production, productionCapacity, productionRate, productionStartRate, productionTime, sd):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     productionTime.equation = 3.0
     effectOfProfitabilityOnCapacityUtilization.equation = sd.lookup(normalizedExpectedProfitability,"effectOfProfitabilityOnCapacityUtilization")
     capacityUtilization.equation = effectOfProfitabilityOnCapacityUtilization
@@ -628,6 +724,8 @@ def _(capacityUtilization, consumptionRate, demand, effectOfProfitabilityOnCapac
     productionRate.equation = sd.min(production, sd.delay(model, productionStartRate, productionTime, 100.0))
     consumptionRate.equation = sd.min(inventory,demand)
     inventoryCoverage.equation = inventory/consumptionRate
+    ```
+    """)
     return
 
 
@@ -639,29 +737,29 @@ def _(mo):
     return
 
 
-@app.cell
-def _(
-    consumptionRate,
-    inventory,
-    production,
-    productionRate,
-    productionStartRate,
-):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     production.equation = productionStartRate - productionRate
     inventory.equation = productionRate - consumptionRate
+    ```
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We define the effect of profitability on capacity utilzation in our model using a non-linear relationship (depending on the normalized expected profitability). We capture this relationship in a lookup table that we store in the `points` property of the model (using a Python list):
+    We define the effect of profitability on capacity utilization in our model using a non-linear relationship (depending on the normalized expected profitability). We capture this relationship in a lookup table that we store in the `points` property of the model (using a Python list):
     """)
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     model.points["effectOfProfitabilityOnCapacityUtilization"] = [
         [0.0,0.324],
         [0.167,0.33],
@@ -678,6 +776,17 @@ def _(model):
         [2.0,0.968]
     ]
     model.plot_lookup("effectOfProfitabilityOnCapacityUtilization", format="axes")
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(bptk):
+    bptk.plot_lookup(
+        scenario_managers=["smCompetitivePricing"],
+        lookup_names=["effectOfProfitabilityOnCapacityUtilization"],
+        scenarios=["base"], format="axes")
     return
 
 
@@ -689,8 +798,10 @@ def _(mo):
     return
 
 
-@app.cell
-def _(demand, effectOfRelativeValueOnDemand, marketShockOn, model, price, priceOfSubstitutes, referenceDemand, relativeValueOfProduct, sd, sizeOfShock):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     sizeOfShock.equation = 50.0
     marketShockOn.equation = 0.0
     priceOfSubstitutes.equation = 3.0
@@ -714,6 +825,8 @@ def _(demand, effectOfRelativeValueOnDemand, marketShockOn, model, price, priceO
         [2.0,1.66]
     ]
     model.plot_lookup("effectOfRelativeValueOnDemand", format="axes")
+    ```
+    """)
     return
 
 
@@ -725,13 +838,15 @@ def _(mo):
     return
 
 
-@app.cell
-def _(capacityCost, capacityCostPerUnit, changeInExpectedPrice, effectOfInventoryCoverageOnPrice, expectedPrice, indicatedPrice, minimumPrice, model, normalizedPerceivedInventoryCoverage, price, priceAdjustmentTime, productionRate, sd, unitVariableCost):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     priceAdjustmentTime.equation = 3.0
     capacityCostPerUnit.equation = capacityCost/productionRate
     minimumPrice.equation = unitVariableCost+capacityCostPerUnit
     effectOfInventoryCoverageOnPrice.equation = sd.lookup(normalizedPerceivedInventoryCoverage,"effectOfInventoryCoverageOnPrice")
-    price.equation = expectedPrice/effectOfInventoryCoverageOnPrice
+    price.equation = expectedPrice*effectOfInventoryCoverageOnPrice
     indicatedPrice.equation = sd.max(price, minimumPrice)
     changeInExpectedPrice.equation = (indicatedPrice-expectedPrice)/priceAdjustmentTime
     # And the stock integrates that flow. Without this line the flow is computed and
@@ -754,6 +869,17 @@ def _(capacityCost, capacityCostPerUnit, changeInExpectedPrice, effectOfInventor
         [2.0,0.298]
     ]
     model.plot_lookup("effectOfInventoryCoverageOnPrice", format="axes")
+    ```
+    """)
+    return
+
+
+@app.cell
+def _(bptk):
+    bptk.plot_lookup(
+        scenario_managers=["smCompetitivePricing"],
+        lookup_names=["effectOfInventoryCoverageOnPrice"],
+        scenarios=["base"], format="axes")
     return
 
 
@@ -765,8 +891,10 @@ def _(mo):
     return
 
 
-@app.cell
-def _(capacityCost, consumptionRate, cost, price, productionCapacity, productionRate, profit, revenue, unitCapacityCost, unitVariableCost, variableCost):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     unitCapacityCost.equation = 0.5
     unitVariableCost.equation = 1.0
     capacityCost.equation = unitCapacityCost*productionCapacity
@@ -774,6 +902,8 @@ def _(capacityCost, consumptionRate, cost, price, productionCapacity, production
     cost.equation = variableCost + capacityCost
     revenue.equation = price * consumptionRate
     profit.equation = revenue - cost
+    ```
+    """)
     return
 
 
@@ -785,13 +915,17 @@ def _(mo):
     return
 
 
-@app.cell
-def _(changeInPerceivedInventoryCoverage, inventoryCoverage, inventoryCoveragePerceptionTime, normalizedPerceivedInventoryCoverage, perceivedInventoryCoverage, referenceInventoryCoverage):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     referenceInventoryCoverage.equation = 3.0
     inventoryCoveragePerceptionTime.equation = 3.0
     changeInPerceivedInventoryCoverage.equation = (inventoryCoverage-perceivedInventoryCoverage)/inventoryCoveragePerceptionTime
     normalizedPerceivedInventoryCoverage.equation = perceivedInventoryCoverage/referenceInventoryCoverage
     perceivedInventoryCoverage.equation = changeInPerceivedInventoryCoverage
+    ```
+    """)
     return
 
 
@@ -803,13 +937,17 @@ def _(mo):
     return
 
 
-@app.cell
-def _(changeInExpectedProfitability, expectedProfitability, normalizedExpectedProfitability, profit, profitAdjustmentTime, referenceExpectedProfitability):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     referenceExpectedProfitability.equation = 100.0
     profitAdjustmentTime.equation = 12.0
     changeInExpectedProfitability.equation = (profit-expectedProfitability)/profitAdjustmentTime
     expectedProfitability.equation = changeInExpectedProfitability
     normalizedExpectedProfitability.equation = expectedProfitability/referenceExpectedProfitability
+    ```
+    """)
     return
 
 
@@ -829,11 +967,14 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     import BPTK_Py
-    bptk = BPTK_Py.bptk()
-    return (bptk,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
@@ -844,11 +985,13 @@ def _(mo):
     return
 
 
-@app.cell
-def _(model):
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
     scenario_manager = {
         "smCompetitivePricing":{
-    
+
         "model": model,
         "base_constants": {
             "marketShockOn":0,
@@ -910,40 +1053,29 @@ def _(model):
                  "base":{
                   }    
             }
-        
+
      }
     }
-    return (scenario_manager,)
+    ```
+    """)
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The next step is to register the scenario manager as follows:
+    The next step is to register the scenario manager, and with it the scenarios we want to
+    compare against the base case:
     """)
     return
 
 
-@app.cell
-def _(bptk, scenario_manager):
-    # Registering a manager whose name already exists leaves the *old* model in place -
-    # `register_scenario_manager` warns and keeps it. Dropping the registry first is what
-    # lets an edit anywhere in the model above reach the sixteen charts below.
-    bptk.reset_all_scenarios()
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    bptk = BPTK_Py.bptk()
     bptk.register_scenario_manager(scenario_manager)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    Once we have this, we can define and register more scenarios as follows:
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
     bptk.register_scenarios(
         scenarios =
             {
@@ -1006,14 +1138,14 @@ def _(bptk):
                                 [2.0, 1.0]
                             ] 
                    }
-               
+
                },
                "capacityUtilizationLoop":{
                    "constants":{
                         "marketShockOn":1
                     },
                    "points":{
-                      
+
                         "effectOfRelativeValueOnDemand" :
                         [
                             [0.0, 1.0],
@@ -1030,7 +1162,7 @@ def _(bptk):
                             [1.8333333333333333, 1.0],
                             [2.0, 1.0]
                         ]
-               
+
                }
                },
                  "substitutionLoop":{
@@ -1055,11 +1187,13 @@ def _(bptk):
                                [2.0, 0.5]
                            ]
                    }
-               
+
                }
             }
         ,
         scenario_manager="smCompetitivePricing")
+    ```
+    """)
     return
 
 
@@ -1386,8 +1520,6 @@ def _(mo):
 
 @app.cell
 def _(bptk):
-    # `register_scenarios` returns nothing, so the name below is what gives the chart a
-    # dependency on this cell. Without it marimo would see no reason to redraw.
     bptk.register_scenarios(
         scenarios={
             "myShock": {
@@ -1399,15 +1531,9 @@ def _(bptk):
         },
         scenario_manager="smCompetitivePricing",
     )
-    my_scenario = "myShock"
-    return (my_scenario,)
-
-
-@app.cell
-def _(bptk, my_scenario):
     bptk.plot_scenarios(
         scenario_managers=["smCompetitivePricing"],
-        scenarios=["base", my_scenario],
+        scenarios=["base", "myShock"],
         equations=["profit"],
         title="Profit: base case against your own shock",
         format="axes",

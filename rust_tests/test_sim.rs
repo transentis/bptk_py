@@ -1,4 +1,7 @@
+mod common;
+
 use bptk_rust_engine::json_parser::parse_json;
+use common::load_error;
 
 #[test]
 fn test_constant_model() {
@@ -312,7 +315,7 @@ fn test_set_runspecs() {
     let mut model = parse_json(json).unwrap();
 
     // Override runspecs
-    model.set_runspecs(0.0, 3.0, 0.5);
+    model.set_runspecs(0.0, 3.0, 0.5).unwrap();
 
     let results = model.simulate(&["level".to_string()], None).unwrap();
     let level = &results["level"];
@@ -536,4 +539,136 @@ fn test_single_step_run_handles_no_integration() {
 
     let err = model.step(&mut state).expect_err("past stoptime");
     assert!(matches!(err, StepError::PastStoptime));
+}
+
+// ── Run specs that cannot run, and a model with nothing in it ───────────────
+
+fn one_constant(specs: &str) -> String {
+    format!(
+        r#"{{
+        "name": "specs",
+        "specs": {},
+        "entities": {{ "constants": [
+            {{ "name": "x", "equation": {{ "type": "literal", "value": 1.0 }} }}
+        ] }}
+    }}"#,
+        specs
+    )
+}
+
+#[test]
+fn test_specs_that_cannot_run_are_refused_at_load() {
+    // A dt of 0 used to saturate the step count and abort the allocation.
+    let cases = [
+        (r#"{ "starttime": 0.0, "stoptime": 10.0, "dt": 0.0 }"#, "dt must be positive"),
+        (r#"{ "starttime": 0.0, "stoptime": 10.0, "dt": -1.0 }"#, "dt must be positive"),
+        (r#"{ "starttime": 10.0, "stoptime": 0.0, "dt": 1.0 }"#,
+         "stoptime must not be before starttime"),
+        (r#"{ "starttime": 0.0, "stoptime": 1e300, "dt": 1.0 }"#, "more than a run can hold"),
+    ];
+    for (specs, expected) in cases {
+        let message = load_error(&one_constant(specs));
+        assert!(message.contains(expected), "{}: {}", specs, message);
+    }
+}
+
+#[test]
+fn test_set_runspecs_refuses_what_cannot_run_and_keeps_the_old_specs() {
+    let mut model = parse_json(&one_constant(
+        r#"{ "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 }"#)).unwrap();
+    let error = model.set_runspecs(0.0, 3.0, 0.0).unwrap_err();
+    assert!(error.contains("dt must be positive"), "{}", error);
+    let error = model.set_runspecs(f64::NAN, 3.0, 1.0).unwrap_err();
+    assert!(error.contains("must be finite"), "{}", error);
+    assert_eq!(model.dt, 1.0);
+    assert_eq!(model.simulate(&["x".to_string()], None).unwrap()["x"].len(), 4);
+}
+
+#[test]
+fn test_a_run_of_a_single_step_is_valid() {
+    let model = parse_json(&one_constant(
+        r#"{ "starttime": 5.0, "stoptime": 5.0, "dt": 1.0 }"#)).unwrap();
+    assert_eq!(model.simulate(&["x".to_string()], None).unwrap()["x"].len(), 1);
+}
+
+#[test]
+fn test_a_model_without_entities_runs_and_steps() {
+    // It used to read the step count off the first entity's row, which it does not have.
+    let model = parse_json(r#"{
+        "name": "empty",
+        "specs": { "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 },
+        "entities": {}
+    }"#).unwrap();
+    assert!(model.simulate(&[], None).unwrap().is_empty());
+    let mut state = model.init(None).unwrap();
+    assert_eq!(state.num_steps, 4);
+    model.run_to_end(&mut state).unwrap();
+    assert_eq!(state.current_step, 3);
+}
+
+// ── A delay shorter than half a step ────────────────────────────────────────
+
+/// a = d + 1, d = delay(a, duration, 0): a loop the delay closes. `duration` is the JSON of
+/// the delay's duration.
+fn delay_loop(duration: &str) -> String {
+    format!(
+        r#"{{
+        "name": "short_delay",
+        "specs": {{ "starttime": 0.0, "stoptime": 6.0, "dt": 1.0 }},
+        "entities": {{ "converters": [
+            {{ "name": "a", "equation": {{ "type": "binary_op", "op": "add",
+                "left": {{ "type": "ref", "name": "d" }},
+                "right": {{ "type": "literal", "value": 1.0 }} }} }},
+            {{ "name": "d", "equation": {{ "type": "call", "function": "delay", "args": [
+                {{ "type": "ref", "name": "a" }}, {}, {{ "type": "literal", "value": 0.0 }} ] }} }}
+        ] }}
+    }}"#,
+        duration
+    )
+}
+
+#[test]
+fn test_a_delay_closing_a_loop_that_shrinks_below_half_a_step_stops_the_run_there() {
+    // The duration drops to 0.2 at t=3: from then on the delay reads the step it is in,
+    // which the loop has not computed. It used to read whatever the cell held.
+    let duration = r#"{ "type": "if",
+        "condition": { "type": "binary_op", "op": "gte",
+            "left": { "type": "call", "function": "time", "args": [] },
+            "right": { "type": "literal", "value": 3.0 } },
+        "then": { "type": "literal", "value": 0.2 },
+        "else": { "type": "literal", "value": 1.0 } }"#;
+    let model = parse_json(&delay_loop(duration)).unwrap();
+    let mut state = model.init(None).unwrap();
+    model.step(&mut state).unwrap();
+    model.step(&mut state).unwrap();
+    let message = model.step(&mut state).unwrap_err().to_string();
+    assert!(message.starts_with("Cyclic dependency among non-stock entities at t=3.0"), "{}", message);
+    assert!(message.contains("the delay in 'd' has a duration of 0.2"), "{}", message);
+}
+
+#[test]
+fn test_a_delay_of_one_step_keeps_the_loop_running() {
+    let model = parse_json(&delay_loop(r#"{ "type": "literal", "value": 1.0 }"#)).unwrap();
+    let results = model.simulate(&["a".to_string()], None).unwrap();
+    assert_eq!(results["a"]["6.0"], 7.0);
+}
+
+#[test]
+fn test_a_short_delay_outside_a_loop_reads_the_current_step() {
+    // Nothing reads back: the input is ordered first, and the same step is there to read.
+    let model = parse_json(r#"{
+        "name": "short_open",
+        "specs": { "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 },
+        "entities": { "converters": [
+            { "name": "src", "equation": { "type": "call", "function": "time", "args": [] } },
+            { "name": "short", "equation": { "type": "binary_op", "op": "mul",
+                "left": { "type": "literal", "value": 0.1 },
+                "right": { "type": "literal", "value": 1.0 } } },
+            { "name": "d", "equation": { "type": "call", "function": "delay", "args": [
+                { "type": "ref", "name": "src" }, { "type": "ref", "name": "short" },
+                { "type": "literal", "value": 0.0 } ] } }
+        ] }
+    }"#).unwrap();
+    let results = model.simulate(&["d".to_string()], None).unwrap();
+    assert_eq!(results["d"]["2.0"], 2.0);
 }

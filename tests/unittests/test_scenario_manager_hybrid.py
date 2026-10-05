@@ -2,30 +2,24 @@ import unittest
 
 from BPTK_Py import Model, Agent
 from BPTK_Py.scenariomanager.scenario_manager_hybrid import ScenarioManagerHybrid
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestScenarioManagerSD(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testScenarioManagerHybrid_init_error(self):
+    def test_scenario_manager_hybrid_init_error(self):
         with self.assertRaises(ValueError) as context:
             scenarioManager = ScenarioManagerHybrid(json_config="testJsonConfig",name="testName",model="testModel") 
 
-    def testScenarioMagerHybrid_get_config(self):
+    def test_scenario_manager_hybrid_get_config(self):
         scenarioManager = ScenarioManagerHybrid(json_config="testJsonConfig",name="testName",model=Model()) 
 
         self.assertEqual(scenarioManager.get_config(),"testJsonConfig")
 
-    def testScenarioManagerHybrid_instantiate_model(self):
+    def test_scenario_manager_hybrid_instantiate_model(self):
         import BPTK_Py.logger.logger as logmod
         logmod.loglevel="INFO"
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()  
+        clear_log()
 
         model = Model()
         func1 = lambda agent_id, model, properties: Agent(agent_id=agent_id,model=model,properties=properties,agent_type="agent1")
@@ -114,11 +108,7 @@ class TestScenarioManagerSD(unittest.TestCase):
 
         scenarioManager.instantiate_model(scenario_dictionary=scenarioDictionary,reset=True)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] Resetting the simulation scenarios for testScenarioManagerName", content)         
         self.assertIn("[INFO] Successfully instantiated the simulation model for scenario scenario1", content)         
@@ -142,12 +132,11 @@ class TestScenarioManagerSD(unittest.TestCase):
         self.assertEqual(scenarioManager.scenarios["scenario2"].agent(agent_id=2).get_property_value(name="agentproperty"),"testAgentProperty3")
         self.assertEqual(scenarioManager.scenarios["scenario2"].agent(agent_id=3).get_property_value(name="agentproperty"),"testAgentProperty4")
 
-    def testScenarioManagerHybrid_instantiate_model_missing_module(self):
+    def test_scenario_manager_hybrid_instantiate_model_missing_module(self):
         """If the configured model module cannot be imported, the manager logs and skips."""
         import BPTK_Py.logger.logger as logmod
         logmod.loglevel = "INFO"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         json_config = {"model": "nonexistent.module.Foo", "scenarios": {"scenario1": {}}}
         scenarioManager = ScenarioManagerHybrid(json_config=json_config, name="mgr", model=None)
@@ -156,16 +145,23 @@ class TestScenarioManagerSD(unittest.TestCase):
 
         self.assertEqual(scenarioManager.scenarios, {})  # nothing instantiated
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn("[ERROR] File nonexistent/module.py not found", content)
+        # The message used to end on "Original Error: " with nothing after it
+        self.assertIn("Original Error: No module named 'nonexistent'", content)
 
-    def testScenarioManagerHybrid_instantiate_model_missing_class(self):
+    def test_scenario_manager_hybrid_initialises_its_base(self):
+        scenarioManager = ScenarioManagerHybrid(json_config={}, name="mgr")
+
+        self.assertEqual(scenarioManager.name, "mgr")
+        self.assertEqual(scenarioManager.type, "abm")
+        self.assertEqual(scenarioManager.scenarios, {})
+
+    def test_scenario_manager_hybrid_instantiate_model_missing_class(self):
         """If the model class is not found in the module, the manager logs and skips."""
         import BPTK_Py.logger.logger as logmod
         logmod.loglevel = "INFO"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         json_config = {"model": "BPTK_Py.NonExistentClass", "scenarios": {"scenario1": {}}}
         scenarioManager = ScenarioManagerHybrid(json_config=json_config, name="mgr", model=None)
@@ -174,9 +170,5 @@ class TestScenarioManagerSD(unittest.TestCase):
 
         self.assertEqual(scenarioManager.scenarios, {})  # nothing instantiated
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn("[ERROR] Could not find class NonExistentClass in BPTK_Py", content)
-
-if __name__ == '__main__':
-    unittest.main()

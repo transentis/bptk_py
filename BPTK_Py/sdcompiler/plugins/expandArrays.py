@@ -73,9 +73,6 @@ def alter_identifier(IR, entity, expression, model_name):
         name_ = expression["name"]
         type_ = expression["type"]
 
-        # if "args" in expression.keys():
-        # alter_identifier(IR,entity, expression["args"],model_name)
-
         if type_ == "identifier":
 
             labels_ = []
@@ -95,7 +92,8 @@ def alter_identifier(IR, entity, expression, model_name):
                     expression["args"] = toLabelObjects(labels_)
 
 
-def clone_entity(model_name, entity, idx, product=None, connects=None,dimensions={},entities=None):
+def clone_entity(model_name, entity, idx, product=None, connects=None,dimensions=None,entities=None):
+    dimensions = {} if dimensions is None else dimensions
     ent = deepcopy(entity)
     try:
         from ..parsers.smile.grammar import SMILEVisitor, grammar

@@ -3,9 +3,6 @@ import unittest
 from BPTK_Py.sdcompiler.plugins.stockExpressions import DimJoinedExpression, JoinedExpression
 
 class TestStockExpressions(unittest.TestCase):
-    def setUp(self):
-        pass
-    
     def test_DimJoinedExpression(self):
         with self.assertRaises(TypeError):
             DimJoinedExpression(["A"], 123, "2")
@@ -127,7 +124,3 @@ class TestStockExpressions(unittest.TestCase):
             ]
         }
         self.assertEqual(JoinedExpression(["A", "B", "C", "D"], "-"), expected)
-
-
-if __name__ == '__main__':
-    unittest.main()    

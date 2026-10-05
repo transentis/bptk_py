@@ -171,9 +171,6 @@ def _(mo):
 def _():
     import pandas as pd
     import matplotlib
-    # One cell rather than three: the three equations refer to each other, and
-    # marimo refuses a cycle between cells. Jupyter got away with it
-    # because every cell shared one namespace and ran top to bottom.
     stock = lambda t: stock(t-1) + flow(t-1) if t>0 else 1
     flow = lambda t: stock(t) * rate(t)
     rate = lambda t: 0.1
@@ -252,9 +249,8 @@ def _(mo):
 
 @app.cell
 def _(equations, mo):
-    # marimo has no `%timeit`, so the measurement is written out. Every extra
-    # timestep doubles the work: the stock recurses into itself and into the
-    # flow, and the flow recurses back into the stock.
+    # Every extra timestep doubles the work: the stock recurses into itself and into
+    # the flow, and the flow recurses back into the stock.
     import time
 
     def elapsed(call):
@@ -274,13 +270,6 @@ def _(equations, mo):
     return (elapsed,)
 
 
-@app.cell
-def _():
-    equations_1 = {}
-    memo={}
-    return equations_1, memo
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -290,7 +279,10 @@ def _(mo):
 
 
 @app.cell
-def _(equations_1, memo):
+def _():
+    equations_1 = {}
+    memo = {}
+
     def memoize(equation, time):
         try:
             mymemo = memo[equation]
@@ -307,7 +299,7 @@ def _(equations_1, memo):
     equations_1['flow'] = lambda t: memoize('stock', t) * memoize('rate', t)
     equations_1['rate'] = lambda t: 0.1
     equations_1['stock'](5)
-    return
+    return equations_1, memo
 
 
 @app.cell
@@ -852,7 +844,7 @@ def _(mo):
     mo.md(r"""
     ## Things to watch out for
 
-    Everything above explains *when* an equation is evaluated, which is where the three
+    Everything above explains *when* an equation is evaluated, which is where the four
     surprises of the SD DSL come from. They are not defects; they follow from what a stock
     is.
 
@@ -867,8 +859,6 @@ def _(mo):
 
 @app.cell
 def _():
-    # Imported under other names: this page builds its own `Model` from scratch further
-    # up, and marimo wants every top-level name to belong to exactly one cell.
     from BPTK_Py import Model as DslModel
     from BPTK_Py import sd_functions as dsl_sd
 
@@ -965,6 +955,43 @@ def _(mo):
     the cache. A second run repeats them: the cache belongs to one run, and a model
     reused across two runs with different settings has to be reset. `bptk` does that for
     you between scenarios; `model.reset_cache()` does it by hand.
+
+    ### A loop needs a stock or a delay
+
+    A stock reads the step before, and so does a `delay`. That is what lets a feedback
+    loop run: each step finds what it needs already computed. Two converters that read
+    each other have no step before to fall back on - neither can be computed first, and
+    the model is asked for an equation that is still being worked out:
+    """)
+    return
+
+
+@app.cell
+def _(DslModel):
+    from BPTK_Py import CyclicDependencyError
+
+    circular = DslModel(starttime=0, stoptime=3, dt=1, name="circular")
+    price = circular.converter("price")
+    demand = circular.converter("demand")
+    price.equation = 100.0 - demand
+    demand.equation = 50.0 + price * 0.5
+
+    try:
+        circular.simulate(["price"])
+        cycle_report = "no loop"
+    except CyclicDependencyError as cycle:
+        cycle_report = str(cycle)
+    cycle_report
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The message names the loop, element by element. The Rust engine names the same loop
+    in the same words, and says so when it loads the model; the Python engine says so when
+    the loop is first reached. Make one of the two a stock, or read the other through
+    `sd.delay`, and the loop has an order again.
     """)
     return
 

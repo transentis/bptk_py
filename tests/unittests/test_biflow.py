@@ -12,7 +12,7 @@ class TestBiflow(unittest.TestCase):
     `tests/unittests/test_flow.py`, which is the pattern the fix follows.
     """
 
-    def testBiflow_add_arr_equation(self):
+    def test_add_arr_equation(self):
         model = Model()
         biflow = Biflow(model=model, name="testBiflow")
 
@@ -21,7 +21,7 @@ class TestBiflow(unittest.TestCase):
         self.assertEqual(
             biflow.model.biflows["testBiflow[testNameBiflow]"].equation, "testEquation")
 
-    def testBiflow_add_arr_empty(self):
+    def test_add_arr_empty(self):
         model = Model()
         biflow = Biflow(model=model, name="testBiflow")
 
@@ -29,7 +29,7 @@ class TestBiflow(unittest.TestCase):
 
         self.assertIs(return_value, model.biflows["testBiflow[testNameBiflow]"])
 
-    def testBiflow_get_arr_equation(self):
+    def test_get_arr_equation(self):
         model = Model()
         biflow1 = Biflow(model=model, name="testBiflow1")
         biflow2 = Biflow(model=model, name="testBiflow2")
@@ -44,7 +44,7 @@ class TestBiflow(unittest.TestCase):
         self.assertIs(biflow2.get_arr_equation(name="testName2"),
                       model.biflows["testBiflow2[testName2]"])
 
-    def testBiflow_setup_named_vector_registers_every_sub_element(self):
+    def test_setup_named_vector_registers_every_sub_element(self):
         model = Model(starttime=0.0, stoptime=3.0, dt=1.0)
         biflow = model.biflow("net")
 
@@ -55,7 +55,3 @@ class TestBiflow(unittest.TestCase):
         for name in ("in", "out"):
             self.assertIn("net[" + name + "]", model.biflows)
             self.assertIsNotNone(biflow[name])
-
-
-if __name__ == '__main__':
-    unittest.main()

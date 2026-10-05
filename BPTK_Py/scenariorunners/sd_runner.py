@@ -14,9 +14,59 @@
 import pandas as pd
 
 from ..logger import log
-from ..exceptions import RustBackendError, rust_backend_error
+from ..exceptions import rust_backend_error
+from ..modeling.model import _leaf_list, load_rust_model, rust_frame
 from .scenario_runner import ScenarioRunner
 from ..sdsimulation import SdSimulation
+from ..sdsimulation.sd_simulation import requested_element
+
+
+def _runspecs(sc):
+    return sc.starttime, sc.stoptime, sc.dt
+
+
+def _arrayed_leaves(model, equation):
+    """The sub-elements of `equation` if it names an arrayed element of `model`. A model
+    compiled from XMILE has no such elements; its arrays are asked for as `name[*]`."""
+    leaves_of = getattr(model, "_arrayed_leaves", None)
+    return leaves_of(equation) if leaves_of is not None else None
+
+
+def index_equations(equations, scenario_objects, caller=""):
+    """Map each requested equation to the scenarios whose model has it, and log an
+    error with suggestions for every equation no scenario has.
+
+    An arrayed request such as `stock[*]` is looked up by its raw name `stock`.
+    `caller` prefixes the message, as `begin_session:` does for its own errors.
+    """
+    from ..util.didyoumean import didyoumean
+
+    all_equations = list(dict.fromkeys(
+        name for sc in scenario_objects.values() for name in sc.model.equations.keys()))
+
+    dict_equations = {}
+    for equation in equations:
+        cleaned_equation = requested_element(equation)
+        dict_equations[equation] = [name for name, sc in scenario_objects.items()
+                                    if (equation in sc.model.equations or cleaned_equation in sc.model.equations)
+                                    and _arrayed_leaves(sc.model, equation) is None]
+
+    prefix = caller + ": " if caller else ""
+    for equation, found_in in dict_equations.items():
+        leaves = next((leaves for leaves in (_arrayed_leaves(sc.model, equation)
+                                              for sc in scenario_objects.values()) if leaves is not None), None)
+        if leaves is not None:
+            log("[ERROR] {}\"{}\" is an array and has no values of its own. Did you maybe mean one of {}?".format(
+                prefix, equation, _leaf_list(leaves, '"')))
+        elif found_in == []:
+            nearest_equations = didyoumean(equation, all_equations, 3)
+            if len(nearest_equations) > 0:
+                log("[ERROR] {}No simulation model containing equation \"{}\". Did you maybe mean one of \"{}\"?".format(
+                    prefix, equation, ", ".join(nearest_equations)))
+            else:
+                log("[ERROR] {}No simulation model containing equation \"{}\"".format(prefix, equation))
+
+    return dict_equations
 
 
 class SdRunner(ScenarioRunner):
@@ -35,9 +85,6 @@ class SdRunner(ScenarioRunner):
         :param return_format: the data type of the return.(can either be dataframe, dictionary or json)
         :param scenarios: names of scenarios
         :param equations:  names of equations
-        :param start_date: start date of the timeseries
-        :param freq: frequency of time series, e.g. "D" for daily data
-        :param series_names: names of series to rename to, using a dict: {equation_name : rename_to}
         :return:
         """
         
@@ -201,26 +248,7 @@ class SdRunner(ScenarioRunner):
         first_call = sc.rust_model is None
 
         if first_call:
-            from BPTK_Py._rust_engine import RustSdEngine
-
-            rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
-
-            engine = RustSdEngine()
-            sc.rust_model = engine.load_model(rust_json_str)
-            sc.model.register_rust_functions(sc.rust_model)
-
-            # Apply baseline scenario overrides (from scenario config, not per-step settings).
-            # `sc.points` lookup overrides are already baked into model.points by setup_points()
-            # at scenario registration time, so to_json() already includes them.
-            for name, value in sc.constants.items():
-                if isinstance(value, (int, float)):
-                    sc.rust_model.set_constant(name, float(value))
-                else:
-                    raise ValueError(
-                        "Non-numeric constant '{}' — cannot use Rust engine".format(name)
-                    )
-
-            sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
+            sc.rust_model = load_rust_model(sc.model, sc.constants, _runspecs(sc), sc.name)
 
         # Apply per-step settings overrides. On the first call this must happen *before*
         # init(), because init() evaluates step 0 (t == starttime) and its values are what
@@ -275,27 +303,13 @@ class SdRunner(ScenarioRunner):
 
         `blob` is the `(current_step, {entity_name: [values]})` pair produced by
         `RustSdModel.export_state()`; JSON round-trips it as a 2-element list.
-        Raises (ValueError/ImportError/AttributeError) on failure so the caller can
-        fall back to replay.
+        Raises `RustBackendError` (or ValueError/ImportError/AttributeError) on failure
+        so the caller can fall back to replay.
         """
-        from BPTK_Py._rust_engine import RustSdEngine
-
         current_step, memo = blob[0], blob[1]
 
-        rust_json_str = sc.model.to_json()  # may raise ValueError → caller falls back
-        engine = RustSdEngine()
-        sc.rust_model = engine.load_model(rust_json_str)
-        sc.model.register_rust_functions(sc.rust_model)
-
         # Runspecs must be set before the grid is installed.
-        sc.rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
-
-        # Baseline scenario constants (points are already baked into to_json()).
-        for name, value in sc.constants.items():
-            if isinstance(value, (int, float)):
-                sc.rust_model.set_constant(name, float(value))
-            else:
-                raise ValueError("Non-numeric constant '{}' — cannot use Rust engine".format(name))
+        sc.rust_model = load_rust_model(sc.model, sc.constants, _runspecs(sc), sc.name)
 
         # Folded per-step overrides: reconstruct the model's mutable constant/points
         # state so future steps evaluate with the correct equations (no re-simulation).
@@ -316,7 +330,7 @@ class SdRunner(ScenarioRunner):
         sc._rust_initial_returned = True
 
     #TODO this really should just take on scenario manager - it doesn't make sense to call it on multiple scenario managers. It should be called run_scenarios
-    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=[], backend="python"):
+    def run_scenario(self, sd_results_dict, return_format, scenarios, equations, scenario_managers=None, backend="python"):
         """
         Runs all relevant scenarios for a given scenario manager.
 
@@ -327,6 +341,7 @@ class SdRunner(ScenarioRunner):
         :param scenario_managers: names of scenario managers to plot
         :param backend: "python" (default) or "rust" — execution backend
        """
+        scenario_managers = [] if scenario_managers is None else scenario_managers
 
         # Obtain simulation results
         scenario_objects = self._run_scenarios(scenarios=scenarios, equations=equations, output=["frame"], scenario_managers=scenario_managers, backend=backend)
@@ -336,49 +351,11 @@ class SdRunner(ScenarioRunner):
                 str(scenario_managers), str(scenarios)))
             return None
 
-        # Visualize Object
-        dict_equations = {}
-
-        # Clean up scenarios if we did not find all with the specified scenario managers. Will not warn if a scenario name is missing
-        scenarios = [key for key in scenario_objects.keys()]
-
-        all_equations = [item for sublist in [list(mod.model.equations.keys()) for mod in scenario_objects.values()] for item in sublist]
-        all_equations = list(dict.fromkeys(all_equations))
-        # Generate an index {equation .: [scenario1,scenario2...], equation2: [...] }
-        # We are checking which scenarios can handle which equation
-        import re
-        for scenario_name in scenarios:
-            sc = scenario_objects[scenario_name]  # <-- Obtain the actual scenario object
-            for equation in equations:
-
-                # Looking for patterns that refer to an arrayed variable. "*"-Equations are not really equations for us. Hence, removing array notation to find the raw name of the equation
-                if "*" in equation:
-                    re_find_indices = r'\[([^)]+)\]'
-                    search = re.search(re_find_indices, equation)  # .group(0)#.replace("[", "").replace("]", "")
-                    if search:
-                        group = search.group(0)
-                        cleaned_equation =equation.replace(group, "")
-                    else: cleaned_equation = equation
-
-                else: # Not an array variable
-                    cleaned_equation = equation
-                if cleaned_equation not in dict_equations.keys(): dict_equations[equation] = []
-
-                if cleaned_equation in sc.model.equations.keys():
-                    dict_equations[equation] += [scenario_name]
-
-        # Search whether we found a match for all equations. Otherwise "did you mean" support
-        for equation,scenario in dict_equations.items():
-            if scenario == []:
-                from ..util.didyoumean import didyoumean
-                nearest_equations = didyoumean(equation, all_equations, 3)
-
-                if len(nearest_equations) > 0:log("[ERROR] No simulation model containing equation \"{}\". Did you maybe mean one of \"{}\"?".format(equation,", ".join(nearest_equations)))
-                else: log("[ERROR] No simulation model containing equation \"{}\"".format(equation))
+        dict_equations = index_equations(equations, scenario_objects)
         return self.__generate_df(sd_results_dict, return_format, scenario_objects, dict_equations,
                                 )
 
-    def _run_scenarios(self, scenarios, equations=[], output=["frame"], scenario_managers=[], backend="python"):
+    def _run_scenarios(self, scenarios, equations=None, output=("frame",), scenario_managers=None, backend="python"):
         """
         Method to run the simulations
         :param scenarios: names of scenarios to simulate
@@ -388,6 +365,8 @@ class SdRunner(ScenarioRunner):
         :param backend: "python" (default) or "rust" — execution backend
         :return: dict of SimulationScenario
         """
+        equations = [] if equations is None else equations
+        scenario_managers = [] if scenario_managers is None else scenario_managers
         ## Load scenarios
 
         log("[INFO] Attempting to load scenarios from scenarios folder.")
@@ -404,11 +383,7 @@ class SdRunner(ScenarioRunner):
                 sc = scenario_objects[key]
 
                 if backend == "rust":
-                    try:
-                        rust_json_str = sc.model.to_json()
-                    except (ValueError, AttributeError) as error:
-                        raise rust_backend_error(error) from error
-                    sc.result = self._run_scenario_rust(sc, equations, rust_json_str)
+                    sc.result = self._run_scenario_rust(sc, equations)
                 else:
                     sc.result = self._run_scenario_python(sc, equations, output)
 
@@ -424,50 +399,16 @@ class SdRunner(ScenarioRunner):
         simu.change_runspecs(starttime=sc.starttime, stoptime=sc.stoptime, dt=sc.dt)
         return simu.start(output=output, equations=equations)
 
-    def _run_scenario_rust(self, sc, equations, json_str):
+    def _run_scenario_rust(self, sc, equations):
         """Execute a scenario using the Rust engine.
 
         Raises `RustBackendError` if the engine cannot run it. The scenario is not
         computed on the Python engine instead: the caller asked for this engine, and a
         quiet substitution is indistinguishable from success.
         """
+        rust_model = load_rust_model(sc.model, sc.constants, _runspecs(sc), sc.name)
         try:
-            from BPTK_Py._rust_engine import RustSdEngine
-
-            engine = RustSdEngine()
-            rust_model = engine.load_model(json_str)
-            sc.model.register_rust_functions(rust_model)
-
-            # Apply scenario constant overrides
-            for name, value in sc.constants.items():
-                if isinstance(value, (int, float)):
-                    rust_model.set_constant(name, float(value))
-                else:
-                    raise RustBackendError(
-                        "Scenario '{}' overrides the constant '{}' with a non-numeric "
-                        "value, which the Rust engine has no place for.".format(
-                            sc.name, name))
-
-            # Note: scenario lookup points overrides are already applied to
-            # model.points by setup_points() at registration time, so to_json()
-            # already includes them. No need to call set_points() here.
-
-            # Apply scenario runspec overrides
-            rust_model.set_runspecs(float(sc.starttime), float(sc.stoptime), float(sc.dt))
-
-            # Run simulation
-            raw = rust_model.simulate(equations)
-
-            # Convert to DataFrame matching SdSimulation output format
-            converted = {}
-            for eq_name, time_series in raw.items():
-                converted[eq_name] = {float(t): v for t, v in time_series.items()}
-
-            df = pd.DataFrame(converted)
-            df.index.name = "t"
-            df = df.sort_index()
-            return df
-
-        except (ValueError, ImportError) as error:
+            return rust_frame(rust_model.simulate(equations))
+        except ValueError as error:
             raise rust_backend_error(error) from error
 

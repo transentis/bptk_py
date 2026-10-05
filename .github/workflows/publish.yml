@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11","3.12","3.13"]
+        python-version: ["3.12","3.13","3.14"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -81,12 +81,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter python3.11
+          args: --release --out dist --interpreter python3.12
           manylinux: auto
       - uses: actions/upload-artifact@v7
         with:
@@ -103,12 +103,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Build a platform wheel to derive from
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out platform-dist --interpreter python3.11
+          args: --release --out platform-dist --interpreter python3.12
           manylinux: auto
       - name: Derive the py3-none-any wheel
         run: |
@@ -165,12 +165,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter python3.11
+          args: --release --out dist --interpreter python3.12
       - uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.target }}
@@ -183,7 +183,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:

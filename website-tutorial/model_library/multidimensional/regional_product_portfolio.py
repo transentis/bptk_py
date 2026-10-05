@@ -338,8 +338,7 @@ def _(mo):
     | **north** | 74,660 | 101,653 | 236,843 |
     | **south** | 36,590 | 97,778 | 423,778 |
 
-    The cells are rounded to whole units, so they add up to one less than the
-    **971,303** the model reports.
+    Together the six cells come to **971,302** a month.
 
     Revenue and margin per month have both grown about two and a half times. But the
     *shape* has changed more than the size: the two gizmo lines were 45 % of revenue in
@@ -466,7 +465,7 @@ def _(mo):
 
 
 @app.cell
-def _(trade, volume):
+def _(bptk, trade, volume):
     # Rows are products, columns are measures (0 = price, 1 = unit cost).
     rates = trade.constant("rates")
     rates.setup_matrix([3, 2], [[49.0, 31.0],
@@ -481,7 +480,10 @@ def _(trade, volume):
     region_margin.setup_vector(2, [0.0, 0.0])
     for _region in (0, 1):
         region_margin[_region].equation = financials[_region][0] - financials[_region][1]
-    return financials, region_margin
+
+    bptk_trade = bptk()
+    bptk_trade.register_model(trade)
+    return (bptk_trade,)
 
 
 @app.cell(hide_code=True)
@@ -497,13 +499,6 @@ def _(mo):
     result needs six products, two sums per region and a subtraction.
     """)
     return
-
-
-@app.cell
-def _(bptk, financials, region_margin, trade):
-    bptk_trade = bptk()
-    bptk_trade.register_model(trade)
-    return (bptk_trade,)
 
 
 @app.cell

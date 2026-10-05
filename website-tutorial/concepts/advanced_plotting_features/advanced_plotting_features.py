@@ -47,7 +47,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'

@@ -14,6 +14,8 @@ pub enum StepError {
     /// A Python callback failed during the step. Carries the message the evaluator
     /// recorded, including the traceback where there is one.
     Callback(String),
+    /// The run specs cannot run, or their results do not fit in memory.
+    Specs(String),
 }
 
 impl std::fmt::Display for StepError {
@@ -22,7 +24,7 @@ impl std::fmt::Display for StepError {
             StepError::PastStoptime => {
                 write!(f, "PastStoptime: the simulation has already reached stoptime")
             }
-            StepError::Callback(message) => write!(f, "{}", message),
+            StepError::Callback(message) | StepError::Specs(message) => write!(f, "{}", message),
         }
     }
 }
@@ -31,7 +33,8 @@ impl SdModel {
     /// Allocate a fresh `SimulationState`, evaluate step 0, and integrate
     /// stocks into step 1 if the run has more than one step.
     ///
-    /// Algorithm (matches Python behavior in stock.py:68-82):
+    /// Algorithm (matches how the Python engine starts a stock, `Stock` in
+    /// `BPTK_Py/sddsl/stock.py`):
     /// 1. Allocate memo table: entities.len() x num_steps
     /// 2. Pre-evaluate non-stock entities at step 0 (constants, converters, flows)
     /// 3. Initialise stocks at step 0 from their `initial_value` expression
@@ -41,8 +44,10 @@ impl SdModel {
     ///
     /// On return `state.current_step == 0`.
     pub fn init(&self, seed: Option<u64>) -> Result<SimulationState, StepError> {
-        let num_steps = ((self.stoptime - self.starttime) / self.dt).round() as usize + 1;
-        let mut state = SimulationState::new(self.entities.len(), num_steps, seed);
+        let num_steps =
+            num_steps_for(self.starttime, self.stoptime, self.dt).map_err(StepError::Specs)?;
+        let mut state = SimulationState::try_new(self.entities.len(), num_steps, seed)
+            .map_err(StepError::Specs)?;
 
         // Settle step 0. An initial value may read a converter that reads another
         // stock's initial value, so one pass in each direction is not enough: with a
@@ -62,6 +67,7 @@ impl SdModel {
             let mut settled = true;
             for (i, entity) in self.entities.iter().enumerate() {
                 if let EntityKind::Stock { ref initial_value } = entity.kind {
+                    state.set_current_entity(i);
                     let value = self.eval_expr(initial_value, &state, 0);
                     if value != state.memo[i][0] {
                         settled = false;
@@ -95,7 +101,7 @@ impl SdModel {
     /// Returns `Err(StepError::PastStoptime)` if `current_step` is already at
     /// the last step (i.e. there is nothing more to evaluate).
     pub fn step(&self, state: &mut SimulationState) -> Result<(), StepError> {
-        let num_steps = state.memo[0].len();
+        let num_steps = state.num_steps;
         let next = state.current_step + 1;
         if next >= num_steps {
             return Err(StepError::PastStoptime);
@@ -113,7 +119,7 @@ impl SdModel {
 
     /// Repeatedly call `step()` until the simulation has reached `stoptime`.
     pub fn run_to_end(&self, state: &mut SimulationState) -> Result<(), StepError> {
-        let num_steps = state.memo[0].len();
+        let num_steps = state.num_steps;
         while state.current_step + 1 < num_steps {
             // The bound is checked above, so the only failure left is a callback's.
             self.step(state)?;
@@ -128,13 +134,13 @@ impl SdModel {
         state: &SimulationState,
         equations: &[String],
     ) -> SimulationResults {
-        let num_steps = state.memo[0].len();
+        let num_steps = state.num_steps;
         let mut results: SimulationResults = HashMap::new();
         for eq_name in equations {
             if let Some(&idx) = self.entity_index.get(eq_name) {
                 let mut time_series: HashMap<String, f64> = HashMap::new();
                 for step in 0..num_steps {
-                    let t = self.starttime + step as f64 * self.dt;
+                    let t = self.time_at(step);
                     // Use rounded time string to avoid floating point display issues
                     let t_str = format_time(t);
                     time_series.insert(t_str, state.memo[idx][step]);
@@ -160,6 +166,7 @@ impl SdModel {
     /// writing each result into `state.memo`. Flows are clamped to ≥ 0.
     fn eval_step(&self, state: &mut SimulationState, step: usize) {
         for &idx in &self.eval_order {
+            state.set_current_entity(idx);
             let val = self.eval_expr(&self.entities[idx].equation, state, step);
             state.memo[idx][step] = if matches!(self.entities[idx].kind, EntityKind::Flow) {
                 val.max(0.0)
@@ -174,6 +181,7 @@ impl SdModel {
     fn integrate_stocks(&self, state: &mut SimulationState, step: usize) {
         for (i, entity) in self.entities.iter().enumerate() {
             if matches!(entity.kind, EntityKind::Stock { .. }) {
+                state.set_current_entity(i);
                 let flow_val = self.eval_expr(&entity.equation, state, step);
                 state.memo[i][step + 1] = state.memo[i][step] + self.dt * flow_val;
             }

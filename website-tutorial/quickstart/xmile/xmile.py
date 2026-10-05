@@ -104,10 +104,6 @@ def _(mo):
 
 @app.cell
 def _(bptk_3, mo):
-    # `list_equations` prints rather than returning, and marimo sends a cell's
-    # stdout to the console, not to its output. Captured and handed to
-    # `mo.plain_text` it becomes one block - `mo.redirect_stdout()` would render
-    # every `print` as a paragraph of its own, with a blank line after each.
     with mo.capture_stdout() as output:
         bptk_3.list_equations(scenario_managers=['xmile_customer_acquisition'], scenarios=[])
 

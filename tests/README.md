@@ -1,33 +1,61 @@
-# BPTK Test
+# BPTK-Py Tests
 
-This repo contains automated tests for BPTK_Py. 
+The test suite of BPTK-Py, run with pytest. The environment is managed by uv: there is
+no requirements file to install from, `uv run` syncs `.venv` from `uv.lock` before it
+runs anything.
 
-This package is used as submodule for BPTK_Py. Please edit your tests here and push them. 
-The script for publication in BPTK_Py automatically pulls all the newest tests from this repo
+## Running the tests
 
-Current tests:
+```bash
+# Rebuild the Rust extension, then run the whole suite
+just test
 
-* [sd/test_xmile.py](sd/): Contains tests for XMILE operators
-* [unittests/](unittests/): Unittests for BPTK_Py
+# Run the suite without rebuilding (after a change to src/, run `just dev` first)
+uv run pytest ./
 
-## Add unit tests
-Just write your tests in [unittests/](unittests/) or [sd/](sd/).
-Make sure the filenames begin with ```test_```. Pytest will automatically discover the tests.
+# One module, or the unit tests only
+uv run pytest tests/test_sddsl.py
+uv run pytest tests/unittests/
 
-Each method inside the tests also needs to begin with the same ```test_``` prefix.
-
-A valid test may be
-
-```python
-def test_xmile_operator():
-    assert True == True
+# The same suite in the browser platform (Pyodide under node)
+just test-browser
 ```
 
-while 
+The internal repository also has `tests/docs/`, the website's checks, run by
+`just test-docs` after a render. A plain `pytest` run leaves it out (`norecursedirs` in
+`pyproject.toml`), because it needs the rendered site and the documentation's
+dependencies.
 
-```python
-def xmile_operator():
-    assert True == True
-```
+## What is skipped, and why
 
-is invalid!
+`conftest.py` decides what a given platform and install can run:
+
+- a module that needs an optional extra (`[plotting]`, `[xmile]`, `[server]`) or the
+  compiled Rust engine is not collected when that is missing - see
+  `_OPTIONAL_TEST_MODULES`
+- the markers `requires_extra`, `requires_rust` and `requires_threads` skip single tests
+- a test that asks for the Rust backend fails if the engine never loaded a model, unless
+  it is marked `allow_rust_unused`
+
+With everything installed nothing is skipped. A new module that imports the Rust engine,
+directly or through another test module, has to be added to `_OPTIONAL_TEST_MODULES`.
+
+The tests against a real Postgres or Redis are off unless `ENABLE_POSTGRES_TESTS` or
+`ENABLE_REDIS_TESTS` is `true`; see [README_external_state_tests.md](README_external_state_tests.md).
+
+## Layout
+
+- `test_*.py` - integration tests: the SD DSL, XMILE, both engines and their parity,
+  the server, external state, packaging
+- `unittests/` - unit tests, one module per component
+- `helpers/` - what the tests share and that is no test: the arrayed models, the engine
+  JSON building blocks, running a model on both engines, reading the logfile, the external
+  state settings. Nothing in it imports the Rust engine at module level, so it can be
+  imported where the engine is not installed
+- `.env` - local configuration for the external state tests, copied from `.env.example`;
+  never commit credentials in it
+
+## Adding tests
+
+pytest collects files named `test_*.py` and, inside them, functions and methods named
+`test_*`. Name a module after what it covers, so two modules never share a name.

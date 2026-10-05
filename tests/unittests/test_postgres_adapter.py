@@ -5,6 +5,7 @@ from BPTK_Py.util.statecompression import compress_settings, compress_results, d
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
 from BPTK_Py.externalstateadapter.postgres_adapter import PostgresAdapter
+from tests.helpers.log_helpers import clear_log, read_log
 
 def _ts(dt: datetime.datetime) -> str:
     # converting timestamps in sql format
@@ -91,8 +92,7 @@ class TestPostgresAdapter(unittest.TestCase):
     def setUp(self):
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         self.client = FakePG()
         self.adapter = PostgresAdapter(
@@ -101,15 +101,13 @@ class TestPostgresAdapter(unittest.TestCase):
         )
 
     def test_init_logs(self):
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("[INFO] PostgresAdapter initialized with compression: True", content)
 
     def test__load_instance_not_found(self):
         inst = self.adapter._load_instance("does-not-exist")
         self.assertIsNone(inst)
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("No data found in PostgreSQL for instance does-not-exist", content)        
 
     def test__load_instance_found(self):
@@ -143,8 +141,7 @@ class TestPostgresAdapter(unittest.TestCase):
         self.assertEqual(inst.timeout, fake_timeout)           
         self.assertEqual(inst.time, fake_time)                 
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Data retrieved from PostgreSQL for instance {instance_id}", content)
         self.assertIn(f"Instance {instance_id} loaded successfully from PostgreSQL", content)
 
@@ -187,8 +184,7 @@ class TestPostgresAdapter(unittest.TestCase):
         # Load instance
         state = self.adapter.load_instance(instance_id)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Loading instance testtesttest", content)       
         self.assertIn("State loaded for instance testtesttest", content)
         self.assertIn("Decompressing state for instance testtesttest", content)     
@@ -197,7 +193,7 @@ class TestPostgresAdapter(unittest.TestCase):
         self.assertIn("Instance testtesttest loaded successfully", content)  
 
         self.assertEqual(state.state["settings_log"], decompress_settings(compress_settings(original_settings_log)))
-        self.assertEqual(state.state["results_log"], decompress_results(compress_results(original_results_log)))
+        self.assertEqual(state.state["results_log"], self.adapter._restore_numeric_keys(decompress_results(compress_results(original_results_log))))
         self.assertEqual(state.state["scenario_cache"], self.adapter._restore_numeric_keys(original_scenario_cache))
 
     def test__load_instance_exception(self):
@@ -214,8 +210,7 @@ class TestPostgresAdapter(unittest.TestCase):
         with self.assertRaises(psycopg.Error):
             adapter._load_instance("broken-id")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
 
         self.assertIn("Failed to load instance broken-id", content)
         self.assertIn("Simulated DB failure", content)
@@ -244,8 +239,7 @@ class TestPostgresAdapter(unittest.TestCase):
         inst = self.adapter.delete_instance(instance_id)        
 
         self.assertNotIn(instance_id, self.client._store)
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Deleting instance {instance_id} from PostgreSQL", content)
         self.assertIn(f"Instance {instance_id} deleted successfully from PostgreSQL", content)
 
@@ -263,8 +257,7 @@ class TestPostgresAdapter(unittest.TestCase):
         with self.assertRaises(psycopg.Error):
             adapter.delete_instance("broken-id")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
 
         self.assertIn("Deleting instance broken-id from PostgreSQL", content)
         self.assertIn("Failed to delete instance broken-id from PostgreSQL: Simulated DB failure", content)
@@ -294,8 +287,7 @@ class TestPostgresAdapter(unittest.TestCase):
         expected_row = _instance_to_row(inst)
         self.assertEqual(stored_row, expected_row)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Inserting new instance {instance_id} into PostgreSQL", content)
         self.assertIn(f"Instance {instance_id} inserted successfully into PostgreSQL", content)
 
@@ -322,8 +314,7 @@ class TestPostgresAdapter(unittest.TestCase):
         expected_row = _instance_to_row(inst2)
         self.assertEqual(stored_row, expected_row)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Updating existing instance {instance_id} in PostgreSQL", content)
         self.assertIn(f"Instance {instance_id} updated successfully in PostgreSQL", content)
 
@@ -350,8 +341,7 @@ class TestPostgresAdapter(unittest.TestCase):
         expected_row = _instance_to_row(inst2)
         self.assertEqual(stored_row, expected_row)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Instance {instance_id} already up to date in PostgreSQL", content)        
 
     def test_save_instance_exception(self):
@@ -385,11 +375,7 @@ class TestPostgresAdapter(unittest.TestCase):
         with self.assertRaises(psycopg.Error):
             self.adapter._save_instance(inst)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
 
         self.assertIn("Saving instance test-exception to PostgreSQL", content)
         self.assertIn("Failed to save instance test-exception to PostgreSQL: Simulated DB failure", content)
-
-if __name__ == '__main__':
-    unittest.main()         

@@ -14,7 +14,6 @@ import random
 import threading
 
 import numpy as np
-import math
 from scipy.interpolate import interp1d
 
 from ..util import floating_point as fp
@@ -24,6 +23,11 @@ from ..util import floating_point as fp
 # by computing forward instead, and the calls it makes itself must not each try the same.
 # Module level rather than an attribute, so that nothing about a Model has to be copied
 # or serialized for it, and thread-local because the schedulers evaluate in parallel.
+#
+# `_evaluation.pending` holds the equations this thread is computing right now, in call
+# order. A request for one of them again, at the same time, is a loop that cannot finish,
+# and the order is the loop's path. Thread-local and not a mark in the memo, because
+# other threads read the same memo and would see another thread's work as a loop.
 _evaluation = threading.local()
 
 # Set while a user-defined function is running inside the Rust engine. Such a function may
@@ -36,8 +40,56 @@ _rust_callback = threading.local()
 from .agent import Agent
 from .event import Event
 from ..logger import log
-from ..exceptions import rust_backend_error
+from ..exceptions import CyclicDependencyError, RustBackendError, rust_backend_error
 from ..sddsl import Constant, Converter, Flow, Biflow, NaryOperator, Stock
+from ..sddsl.distributions import invalid_argument_message
+from ..util.lookup_data import lookup_points
+
+
+def load_rust_model(model, constants=None, runspecs=None, scenario_name=None):
+    """Load `model` into a fresh Rust engine and return the engine's model.
+
+    `constants` are a scenario's overrides, `runspecs` its (starttime, stoptime, dt).
+    Lookup overrides need no step here: a scenario bakes them into the model's points
+    when it is registered, so `to_json()` already carries them.
+
+    Raises `RustBackendError` for every reason the engine cannot take the model - no
+    engine installed, a model without serialization, a constant that is not a number.
+    """
+    try:
+        from BPTK_Py._rust_engine import RustSdEngine
+
+        rust_model = RustSdEngine().load_model(model.to_json())
+        model.register_rust_functions(rust_model)
+    except (ValueError, AttributeError, ImportError) as error:
+        raise rust_backend_error(error) from error
+
+    for name, value in (constants or {}).items():
+        if not isinstance(value, (int, float)):
+            raise RustBackendError(
+                "Scenario '{}' overrides the constant '{}' with a non-numeric "
+                "value, which the Rust engine has no place for.".format(scenario_name, name))
+        rust_model.set_constant(name, float(value))
+
+    if runspecs is not None:
+        rust_model.set_runspecs(*(float(spec) for spec in runspecs))
+
+    return rust_model
+
+
+def _leaf_list(leaves, quote):
+    """Sub-element names for a message: all of a short list, the first five of a long one."""
+    shown = ", ".join("{0}{1}{0}".format(quote, leaf) for leaf in leaves[:5])
+    return shown if len(leaves) <= 5 else "{} and {} more".format(shown, len(leaves) - 5)
+
+
+def rust_frame(raw):
+    """The result of `RustSdModel.simulate()` as the frame the Python engine returns."""
+    import pandas as pd
+
+    df = pd.DataFrame({eq: {float(t): v for t, v in series.items()} for eq, series in raw.items()})
+    df.index.name = "t"
+    return df.sort_index()
 
 
 class Model:
@@ -54,6 +106,9 @@ class Model:
             Instance of DataCollector. This is configurable, so that you can add your own data collection algorithms.
 
     """
+
+    # The default for a subclass that does not call Model.__init__
+    _memo_filled = False
 
 
     def __init__(self, starttime=0.0, stoptime=0.0, dt=1.0,name="", scheduler=None,data_collector=None):
@@ -79,6 +134,11 @@ class Model:
 
         ## For Hybrid Models (SD and AB)
         self.memo = {}
+        # Whether anything has been computed since the last reset_cache(). Setting an
+        # equation resets the cache, so building an array of n cells reset it n times
+        # over every equation of the model - quadratic in the model's size, with
+        # nothing in the cache to clear.
+        self._memo_filled = False
         self.equations = {}
         self.stocks = {}
         self.flows = {}
@@ -89,6 +149,9 @@ class Model:
         self.functions = {}
         self.fn = {}
         self.equation_id = 0  # unique id used for internally generated functions
+        # Elements whose builtin has been reported for an invalid argument; once is enough
+        # per element until the cache is reset, or a run of many steps repeats one line.
+        self.invalid_arguments_reported = set()
 
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
@@ -211,37 +274,36 @@ class Model:
             Pandas DataFrame with time as index (named ``"t"``) and equations as columns.
 
         Raises:
+            KeyError: if an equation is not part of the model, on either backend.
             RustBackendError: if ``backend="rust"`` was asked for and this model cannot
                 run on the engine. It is not computed on the Python engine instead -
                 that would look exactly like a run that had used the engine.
         """
+        unknown = [equation for equation in equations if equation not in self.equations]
+        if unknown:
+            from ..util.didyoumean import didyoumean
+            nearest = didyoumean(unknown[0], list(self.equations.keys()), 3)
+            raise KeyError("The model '{}' has no equation '{}'.{}".format(
+                self.name, unknown[0],
+                " Did you maybe mean one of '{}'?".format("', '".join(nearest)) if nearest else ""))
+
+        for equation in equations:
+            leaves = self._arrayed_leaves(equation)
+            if leaves is not None:
+                raise KeyError("'{}' is an array and has no values of its own. Did you maybe "
+                               "mean one of {}?".format(equation, _leaf_list(leaves, "'")))
+
         if backend == "rust":
-            try:
-                return self._simulate_rust(equations)
-            except (ValueError, AttributeError, ImportError) as error:
-                raise rust_backend_error(error) from error
+            return self._simulate_rust(equations)
         else:
             return self._simulate_python(equations)
 
     def _simulate_rust(self, equations: list):
-        import pandas as pd
-        from BPTK_Py._rust_engine import RustSdEngine
-
-        json_str = self.to_json()
-        engine = RustSdEngine()
-        rust_model = engine.load_model(json_str)
-        self.register_rust_functions(rust_model)
-
-        raw = rust_model.simulate(equations)
-        # Convert string time keys to float
-        converted = {}
-        for eq_name, time_series in raw.items():
-            converted[eq_name] = {float(t): v for t, v in time_series.items()}
-
-        df = pd.DataFrame(converted)
-        df.index.name = "t"
-        df = df.sort_index()
-        return df
+        rust_model = load_rust_model(self)
+        try:
+            return rust_frame(rust_model.simulate(equations))
+        except ValueError as error:
+            raise rust_backend_error(error) from error
 
     def _simulate_python(self, equations: list):
         import pandas as pd
@@ -262,15 +324,7 @@ class Model:
         """Reset the model.
         Cleara out all agents, agent and event statistics and resets the cache of SD equations. Keeps the agent factories though, so you could directly reconfigure the model using the configure method.
         """
-        for agent_type in self.agent_type_map:
-            self.agent_type_map[agent_type] = []
-
-        self.agents = []
-        # With the agent list emptied, the id counter has to start over with it. Left
-        # running, the next agent got id 10 while `agents` was a fresh list of ten, so
-        # `model.agents[event.receiver_id]` in the scheduler raised IndexError - and the
-        # docstring above promises exactly the reconfiguration that did not work.
-        self.next_agent_id = 0
+        self._remove_agents()
 
         self.reset_cache()
 
@@ -460,8 +514,13 @@ class Model:
             if self.properties[name]["type"] == "Lookup":
                 self.points[name] = value
 
+            # The value lives in self.properties only, as for an agent. A copy in
+            # __dict__ would be found before __getattr__ and go stale on the next
+            # set_property_value. A real attribute of the same name is still updated.
+            if name not in self.__dict__:
+                return
 
-        super.__setattr__(self, name, value)
+        super().__setattr__(name, value)
 
     def run_specs(self, starttime, stoptime, dt):
         """Configure the runspecs of the model.
@@ -591,7 +650,6 @@ class Model:
         
         Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories hier and set up model properties.
         """
-        pass
 
     def enqueue_event(self, event):
         """Called by the framework to enqueue events.
@@ -716,13 +774,24 @@ class Model:
                 Dictionary containing the config: {"runspecs":<dictionary of runspecs>,"properties":<dictionary of properties>,"agents":<list of agent-specs>}.
         """
 
+        self._remove_agents()
+
+        for agent in config:
+            self.create_agents(agent)
+
+    def _remove_agents(self):
         for agent_type in self.agent_type_map:
             self.agent_type_map[agent_type] = []
 
         self.agents = []
-        
-        for agent in config:
-            self.create_agents(agent)
+        # With the agent list emptied, the id counter has to start over with it. Left
+        # running, the next agent got id 10 while `agents` was a fresh list of ten, so
+        # `model.agents[event.receiver_id]` in the scheduler raised IndexError. The events
+        # still queued from the last run go too: they are addressed to the agents removed
+        # here, and the first step of the next run would deliver them to whoever now
+        # holds those ids - or to nobody, which raised the same IndexError.
+        self.next_agent_id = 0
+        self.events = []
         
          
     def configure(self, config):
@@ -829,8 +898,11 @@ class Model:
         #This is used internally by SD DSL lookup function / the Lookup operator.
 
         if type(points) is str:
-            points = self.points[points]
-
+            if points not in self.points:
+                raise ValueError("Lookup of a table the model does not have: '{}'".format(points))
+            points = lookup_points(points, self.points[points])
+        else:
+            points = lookup_points("inline", points)
 
         x_vals = np.array([x[0] for x in points])
         y_vals = np.array([x[1] for x in points])
@@ -949,17 +1021,30 @@ class Model:
         if normalized_arg in mymemo.keys():
             return mymemo[normalized_arg]
 
+        key = (id(self), equation, normalized_arg)
+
         # Already inside an evaluation: this call is one link of the chain the outermost
         # one started, and it is that one which retries if the chain grows too long.
         if getattr(_evaluation, "active", False):
-            result = self.equations[equation](normalized_arg)
+            pending = _evaluation.pending
+            if key in pending:
+                raise self._cyclic_dependency_error(pending, key)
+            pending[key] = None
+            try:
+                result = self.equations[equation](normalized_arg)
+            finally:
+                pending.pop(key, None)
             mymemo[normalized_arg] = result
+            if not self._memo_filled:
+                self._memo_filled = True
             return result
 
         _evaluation.active = True
+        _evaluation.pending = {key: None}
         try:
             result = self.equations[equation](normalized_arg)
         except RecursionError:
+            _evaluation.pending = {}
             # A stock asks for the step before it, which asks for the step before that:
             # a cold evaluation at a late step is a chain as long as the run, and Python
             # runs out of stack at about 330 steps - counted in steps, so a fine `dt`
@@ -968,9 +1053,49 @@ class Model:
             result = self._evaluate_forward(equation, normalized_arg)
         finally:
             _evaluation.active = False
+            _evaluation.pending = {}
 
         mymemo[normalized_arg] = result
+        if not self._memo_filled:
+            self._memo_filled = True
         return result
+
+    def report_invalid_argument(self, builtin, t, reason, parameters, values):
+        """Log that `builtin` was given arguments it does not accept, once per element.
+
+        Called by the statistical builtins of the SD DSL, which return NaN in that case.
+        The element is the one being evaluated. `[ERROR]` rather than `[WARN]`, because
+        `log` prints an error without any setting, and a gap in a series that nobody is
+        told about is the silence this report exists to end.
+        """
+        pending = getattr(_evaluation, "pending", None)
+        element = next(reversed(pending))[1] if pending else "an equation"
+        if element in self.invalid_arguments_reported:
+            return
+        self.invalid_arguments_reported.add(element)
+        log(invalid_argument_message(builtin, element, t, reason, parameters, values))
+
+    def _cyclic_dependency_error(self, pending, key):
+        """The error for a loop that closes at `key`, worded as the Rust engine words it.
+
+        The loop is the part of the pending record from the first request for `key` on.
+        It is rotated to start where the Rust engine starts it - at the element that comes
+        first in stocks, flows, biflows, converters, constants - so that both engines
+        name the same loop the same way, whichever element the evaluation happened to
+        begin with.
+        """
+        chain = list(pending)
+        loop = [name for (_, name, _) in chain[chain.index(key):]]
+
+        rank = {}
+        for elements in (self.stocks, self.flows, self.biflows, self.converters, self.constants):
+            for name in elements:
+                rank.setdefault(name, len(rank))
+        start = min(range(len(loop)), key=lambda i: (rank.get(loop[i], len(rank)), i))
+        loop = loop[start:] + loop[:start]
+
+        return CyclicDependencyError(
+            "Cyclic dependency among non-stock entities: " + " → ".join(loop + loop[:1]))
 
     def _evaluate_forward(self, equation, target):
         """Evaluate `equation` from `starttime` up to `target`, keeping each step shallow.
@@ -989,6 +1114,8 @@ class Model:
                 else:
                     result = self.equations[equation](t)
                     mymemo[t] = result
+                    if not self._memo_filled:
+                        self._memo_filled = True
                 t = fp.normalize(t + self.dt, self.dt, self.starttime, precision)
         except RecursionError:
             # Not the timestep chain then, but one evaluation that is itself too deep -
@@ -1052,9 +1179,13 @@ class Model:
         A function which wraps the user defined function for use within System Dynamics.
         """
 
-        if name not in self.functions:
-            self.functions[name] = lambda *args: NaryOperator(name, *args, elementwise=elementwise)
-            self.fn[name] = fn
+        # A second definition under the same name replaces the first, as a notebook cell
+        # run again expects. Equations look the callable up by name when they are
+        # evaluated, so they follow; what they computed with the old one is discarded.
+        if name in self.fn:
+            self.reset_cache()
+        self.functions[name] = lambda *args: NaryOperator(name, *args, elementwise=elementwise)
+        self.fn[name] = fn
 
         return self.functions[name]
 
@@ -1138,6 +1269,35 @@ class Model:
         """
         return self.memoize(name,t)
 
+    def _arrayed_leaves(self, name):
+        """The names of the scalar sub-elements of the arrayed element `name`, in index
+        order and depth-first for a matrix - or None if `name` is no arrayed element.
+
+        An arrayed element holds no value beside its cells, so asking for it by its own
+        name is answered with these names rather than with a column of zeros.
+        """
+        for elements in (self.stocks, self.flows, self.biflows, self.converters, self.constants):
+            if name in elements:
+                element = elements[name]
+                break
+        else:
+            return None
+
+        if not element.arrayed or element._elements.vector_size() == 0:
+            return None
+
+        leaves = []
+
+        def walk(node):
+            if node._elements.vector_size() == 0:
+                leaves.append(node.name)
+                return
+            for key in node._elements.equations:
+                walk(node._elements[key])
+
+        walk(element)
+        return leaves
+
     def reset_cache(self):
         """Reset cache of all System Dynamics equations and of the ABM data collector
         """
@@ -1147,8 +1307,12 @@ class Model:
         for agent in self.agents:
             agent.reset_cache()
 
-        for equation in self.memo:
-            self.memo[equation] = {}
+        if self._memo_filled:
+            for equation in self.memo:
+                self.memo[equation] = {}
+            self._memo_filled = False
+
+        self.invalid_arguments_reported = set()
 
 
 

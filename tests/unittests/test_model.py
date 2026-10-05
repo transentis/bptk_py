@@ -1,8 +1,12 @@
 import pytest
+import threading
 import unittest
 
-from BPTK_Py import Model, Agent, Event, DataCollector
-import BPTK_Py.logger.logger as logmod
+import BPTK_Py
+from BPTK_Py import Model, Agent, Event, DataCollector, CyclicDependencyError
+from BPTK_Py import sd_functions as sd
+from BPTK_Py.util.lookup_data import lookup_data, lookup_points
+from tests.helpers.log_helpers import clear_log, read_log
 
 class Test_Model(unittest.TestCase):
     def test_set_scenario_manager(self):
@@ -100,6 +104,40 @@ class Test_Model(unittest.TestCase):
         for agent in model.agents:
             self.assertIs(model.agents[agent.id], agent)
 
+    def test_configuring_again_restarts_the_ids_and_drops_the_old_events(self):
+        """A model configured and run a second time - a notebook cell run again - raised
+        IndexError: `configure_agents` kept the id counter, and the events left over from
+        the first run were addressed to agents that no longer existed."""
+        from BPTK_Py import SimultaneousScheduler
+
+        class Caller(Agent):
+            def act(self, time, round_no, step_no):
+                # The last agent's event is still queued when the run ends.
+                self.model.enqueue_event(Event("call", self.id, len(self.model.agents) - 1))
+
+        model = Model(starttime=1, stoptime=3, dt=1, scheduler=SimultaneousScheduler())
+        model.register_agent_factory(
+            "caller", lambda agent_id, model, properties: Caller(agent_id, model, properties))
+        config = {"runspecs": {"starttime": 1, "stoptime": 3, "dt": 1.0}, "properties": {},
+                  "agents": [{"name": "caller", "count": 5}]}
+
+        model.configure(config)
+        model.run()
+        self.assertTrue(model.events)
+
+        model.configure(config)
+        self.assertEqual([agent.id for agent in model.agents], list(range(5)))
+        self.assertEqual(model.events, [])
+        model.run()
+
+    def test_reset_drops_the_queued_events(self):
+        model = Model()
+        model.enqueue_event(Event("left over", 0, 3))
+
+        model.reset()
+
+        self.assertEqual(model.events, [])
+
     def test_reset_cache(self):
         model = Model()
 
@@ -128,7 +166,67 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.data_collector.agent_statistics,{})
         self.assertEqual(model.data_collector.event_statistics,{})
         for agent in model.agents:
-            self.assertEqual(agent.reset_cache_called,1)             
+            self.assertEqual(agent.reset_cache_called,1)
+
+    def test_reset_cache_skips_an_empty_memo_and_clears_a_filled_one(self):
+        """reset_cache walks the memo only when something was computed since the last
+        reset: building an array resets it once per cell, with nothing to clear."""
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="memo")
+        rate = model.constant("rate")
+        rate.equation = 1.0
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        stock.equation = rate
+
+        self.assertFalse(model._memo_filled)
+        self.assertEqual(model.memoize("stock", 2.0), 2.0)
+        self.assertTrue(model._memo_filled)
+
+        # A changed equation still invalidates what was computed with the old one
+        rate.equation = 5.0
+        self.assertFalse(model._memo_filled)
+        self.assertEqual(model.memoize("stock", 2.0), 10.0)
+
+    def test_a_function_defined_again_replaces_the_first(self):
+        """The second definition used to be dropped without a word, so a notebook cell
+        run again with a changed function kept computing with the old one."""
+        model = Model(starttime=0.0, stoptime=10.0, dt=1.0, name="redefined")
+        uplift = model.function("uplift", lambda model, t: 5 * t)
+        converter = model.converter("converter")
+        converter.equation = uplift()
+        self.assertEqual(converter(5), 25.0)
+
+        model.function("uplift", lambda model, t: 6 * t)
+
+        # The equation built from the first definition follows, and nothing cached stays
+        self.assertEqual(converter(5), 30.0)
+
+    @pytest.mark.requires_rust
+    def test_a_function_defined_again_reaches_the_rust_engine(self):
+        model = Model(starttime=0.0, stoptime=10.0, dt=1.0, name="redefined")
+        uplift = model.function("uplift", lambda model, t: 5 * t)
+        model.converter("converter").equation = uplift()
+        model.function("uplift", lambda model, t: 6 * t)
+
+        instance = BPTK_Py.bptk()
+        instance.register_model(model)
+        for backend in ("python", "rust"):
+            results = instance.run_scenarios(scenario_managers=["smRedefined"], scenarios=["base"],
+                                             equations=["converter"], backend=backend)
+            self.assertEqual(results.loc[5.0].tolist(), [30.0], backend)
+
+    def test_a_restored_cache_is_cleared_by_the_next_reset(self):
+        from BPTK_Py.scenariomanager.scenario import SimulationScenario
+
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="restored")
+        model.constant("c").equation = 1.0
+        scenario = SimulationScenario(dictionary={}, name="s", model=model, scenario_manager_name="m")
+
+        scenario._set_cache({"c": {0.0: 99.0}})
+        self.assertEqual(model.memoize("c", 0.0), 99.0)
+
+        model.reset_cache()
+        self.assertEqual(model.memoize("c", 0.0), 1.0)
 
     def test_agent_ids(self):
         model = Model()
@@ -188,7 +286,31 @@ class Test_Model(unittest.TestCase):
 
         model.set_property_value(name="name",value="testModelNameEdited")      
 
-        self.assertEqual(model.get_property(name="name"),{"type" : "String", "value": "testModelNameEdited"})  
+        self.assertEqual(model.get_property(name="name"),{"type" : "String", "value": "testModelNameEdited"})
+
+    def test_property_attribute_follows_every_way_of_setting_it(self):
+        model = Model()
+        model.set_property(name="rate", property_spec={"type": "Double", "value": 0.1})
+
+        model.rate = 0.2
+        self.assertEqual(model.rate, 0.2)
+        self.assertEqual(model.get_property_value(name="rate"), 0.2)
+
+        # An assignment used to leave a copy in __dict__ that hid every later change
+        model.set_property_value(name="rate", value=0.3)
+        self.assertEqual(model.rate, 0.3)
+
+        model.set_property(name="rate", property_spec={"type": "Double", "value": 0.4})
+        self.assertEqual(model.rate, 0.4)
+
+    def test_property_named_like_an_attribute_still_sets_the_attribute(self):
+        model = Model(dt=1.0)
+        model.set_property(name="dt", property_spec={"type": "Double", "value": 1.0})
+
+        model.dt = 0.5
+
+        self.assertEqual(model.dt, 0.5)
+        self.assertEqual(model.get_property_value(name="dt"), 0.5)
 
     def test_get_property_value(self):
         model = Model()
@@ -481,17 +603,11 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.agent_count_per_state(agent_type="testType2",state="active"),2)  
 
     def test_statistics_errorlog(self):
-        from BPTK_Py.logger.logger import logfile
-
         model = Model()
 
         model.statistics()
 
-        try:
-            with open(logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Tried to obtain Agent statistics but no data Collector available!", content)                        
 
@@ -534,11 +650,7 @@ class Test_Model(unittest.TestCase):
 
     def test_add_equation(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         model = Model()
         flow = model.flow("flow")
@@ -553,11 +665,7 @@ class Test_Model(unittest.TestCase):
         self.assertEqual(model.equations["converter"](1), 3.0)
         self.assertEqual(model.memo["converter"],{})
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[WARN] Hybrid Model : Overwriting equation flow", content)  
         self.assertNotIn("[WARN] Hybrid Model : Overwriting equation converter", content)  
@@ -647,5 +755,220 @@ class Test_Model(unittest.TestCase):
                       str(caught.exception))
 
 
-if __name__ == '__main__':
-    unittest.main()
+class Test_CycleDetection(unittest.TestCase):
+    """Elements that read one another within the same timestep can never be evaluated.
+    The engine notices the moment an equation is asked for again while it is still
+    being computed, and names the loop in the same words as the Rust engine. A stock or
+    a delay reads an earlier step and so breaks a loop - those models must keep running.
+    """
+
+    PREFIX = "Cyclic dependency among non-stock entities: "
+
+    def two_element_cycle(self):
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="cycle")
+        a = model.converter("a")
+        b = model.converter("b")
+        a.equation = b + 1.0
+        b.equation = a * 2.0
+        return model
+
+    def assertNamesLoop(self, model, equation, t, loop):
+        with self.assertRaises(CyclicDependencyError) as caught:
+            model.evaluate_equation(equation, t)
+        self.assertEqual(str(caught.exception), self.PREFIX + loop)
+
+    def test_a_two_element_cycle_is_named(self):
+        self.assertNamesLoop(self.two_element_cycle(), "a", 2.0, "a → b → a")
+
+    def test_the_loop_is_named_the_same_whichever_element_is_asked_first(self):
+        self.assertNamesLoop(self.two_element_cycle(), "b", 2.0, "a → b → a")
+
+    def test_it_is_a_value_error_as_on_the_rust_engine(self):
+        with self.assertRaises(ValueError):
+            self.two_element_cycle().evaluate_equation("a", 0.0)
+
+    def test_a_self_reference_is_a_cycle(self):
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="self")
+        a = model.converter("a")
+        a.equation = a + 1.0
+        self.assertNamesLoop(model, "a", 1.0, "a → a")
+
+    def test_a_cycle_through_module_names_reports_the_names_verbatim(self):
+        model = Model(starttime=1.0, stoptime=5.0, dt=1.0, name="modules")
+        decision = model.converter("wholesaler.orderDecision")
+        making = model.flow("wholesaler.makingOrders")
+        sending = model.flow("wholesaler.sendingOrders")
+        decision.equation = sending + 1.0
+        making.equation = decision
+        sending.equation = making
+        self.assertNamesLoop(model, "wholesaler.orderDecision", 1.0,
+                             "wholesaler.makingOrders → wholesaler.orderDecision → "
+                             "wholesaler.sendingOrders → wholesaler.makingOrders")
+
+    def test_a_cycle_reached_through_a_stock_leaves_the_stock_out(self):
+        """The stock reads its flow one step earlier; the loop is among flow and
+        converter at that step, and the stock is no part of it."""
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="behind_stock")
+        level = model.stock("level")
+        inflow = model.flow("inflow")
+        rate = model.converter("rate")
+        level.initial_value = 1.0
+        level.equation = inflow
+        inflow.equation = rate
+        rate.equation = inflow * 0.5
+        self.assertNamesLoop(model, "level", 3.0, "inflow → rate → inflow")
+
+    def test_a_cycle_is_raised_from_a_run(self):
+        with self.assertRaises(CyclicDependencyError):
+            self.two_element_cycle().simulate(["a"], backend="python")
+
+    def test_a_loop_broken_by_a_stock_still_runs(self):
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="stock_loop")
+        level = model.stock("level")
+        inflow = model.flow("inflow")
+        rate = model.converter("rate")
+        level.initial_value = 10.0
+        level.equation = inflow
+        inflow.equation = rate
+        rate.equation = level * 0.1
+        self.assertAlmostEqual(model.evaluate_equation("level", 5.0), 10.0 * 1.1 ** 5)
+
+    def test_a_loop_broken_by_a_delay_still_runs(self):
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="delay_loop")
+        a = model.converter("a")
+        d = model.converter("d")
+        a.equation = d + 1.0
+        d.equation = sd.delay(model, a, 1.0, 0.0)
+        self.assertEqual([model.evaluate_equation("a", t) for t in range(6)],
+                         [1, 2, 3, 4, 5, 6])
+
+    def test_a_loop_closed_by_a_zero_duration_delay_is_a_cycle(self):
+        """delay(x, 0) reads the current step, so it breaks nothing."""
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="delay_zero")
+        a = model.converter("a")
+        d = model.converter("d")
+        a.equation = d + 1.0
+        d.equation = sd.delay(model, a, 0.0, 0.0)
+        self.assertNamesLoop(model, "a", 2.0, "a → d → a")
+
+    def test_two_sub_elements_of_one_array_reading_each_other_are_a_cycle(self):
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="array_cycle")
+        a = model.converter("a")
+        a.setup_vector(2, 0.0)
+        a[0].equation = a[1] + 1.0
+        a[1].equation = a[0] * 2.0
+        self.assertNamesLoop(model, "a[1]", 1.0, "a[0] → a[1] → a[0]")
+
+    def test_a_sub_element_reading_its_neighbour_is_no_cycle(self):
+        model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="array_chain")
+        a = model.converter("a")
+        a.setup_vector(2, 0.0)
+        a[0].equation = 5.0
+        a[1].equation = a[0] + 1.0
+        self.assertEqual([model.evaluate_equation("a[1]", t) for t in range(4)], [6.0] * 4)
+
+    def test_an_error_caught_inside_an_equation_leaves_no_false_cycle_behind(self):
+        """An equation that catches a failure below it and carries on must not leave the
+        failed element recorded as still being computed."""
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="caught")
+        attempts = []
+
+        def fragile(t):
+            attempts.append(t)
+            if len(attempts) == 1:
+                raise KeyError("first attempt fails")
+            return 1.0
+
+        def tolerant(t):
+            try:
+                model.memoize("fragile", t)
+            except KeyError:
+                pass
+            return model.memoize("fragile", t) + 1.0
+
+        model.add_equation("fragile", fragile)
+        model.add_equation("tolerant", tolerant)
+        self.assertEqual(model.memoize("tolerant", 0.0), 2.0)
+
+    @pytest.mark.requires_threads
+    def test_threads_evaluating_one_model_do_not_see_each_other_as_a_loop(self):
+        """Threads can evaluate one model at once on its shared memo - two server
+        requests, say. What one thread is computing is not a loop for another that asks
+        for the same equation."""
+        model = Model(starttime=0.0, stoptime=5.0, dt=1.0, name="threads")
+        inside = threading.Event()
+        release = threading.Event()
+
+        def slow(t):
+            inside.set()
+            release.wait(timeout=5)
+            return 3.0
+
+        model.add_equation("slow", slow)
+        model.add_equation("reader", lambda t: model.memoize("slow", t) + 1.0)
+
+        results, errors = {}, []
+
+        def run(name):
+            try:
+                results[name] = model.memoize(name, 0.0)
+            except Exception as error:
+                errors.append(error)
+
+        first = threading.Thread(target=run, args=("slow",))
+        first.start()
+        inside.wait(timeout=5)
+        second = threading.Thread(target=run, args=("reader",))
+        second.start()
+        release.set()
+        first.join()
+        second.join()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(results, {"slow": 3.0, "reader": 4.0})
+
+    def test_the_error_is_exported_at_package_level(self):
+        self.assertIs(BPTK_Py.CyclicDependencyError, BPTK_Py.exceptions.CyclicDependencyError)
+
+
+class Test_LookupPoints(unittest.TestCase):
+    """A lookup table's points are sorted by x before interpolation, and points that are
+    no table are refused - the same rule as on the Rust engine."""
+
+    def lookup_model(self, points):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="points")
+        model.points["tab"] = points
+        return model
+
+    def test_points_in_order_are_returned_as_they_are(self):
+        points = [[0, 0], [1, 1]]
+        self.assertIs(lookup_points("tab", points), points)
+
+    def test_points_out_of_order_are_sorted(self):
+        self.assertEqual(lookup_points("tab", [[10, 100], [0, 0], [5, 50]]),
+                         [[0, 0], [5, 50], [10, 100]])
+        self.assertEqual(self.lookup_model([[10, 100], [0, 0]])._lookup(2.5, "tab"), 25.0)
+
+    def test_two_points_at_one_x_are_refused(self):
+        with self.assertRaisesRegex(ValueError, "Lookup table 'tab' has two points at x=5.0"):
+            lookup_points("tab", [[5, 10], [0, 0], [5, 90]])
+
+    def test_a_table_without_points_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "Lookup table 'tab' has no points"):
+            lookup_points("tab", [])
+
+    def test_a_point_whose_x_is_not_a_number_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "x must be a finite number"):
+            lookup_points("tab", [[float("nan"), 0], [1, 1]])
+
+    def test_inline_points_are_checked_where_they_are_written(self):
+        with self.assertRaisesRegex(ValueError, "Lookup table 'inline' has two points"):
+            sd.lookup(1.0, [[1, 0], [1, 1]])
+
+    def test_a_table_the_model_does_not_have_is_named(self):
+        with self.assertRaisesRegex(ValueError, "Lookup of a table the model does not have: 'x'"):
+            self.lookup_model([[0, 0], [1, 1]])._lookup(0.5, "x")
+
+    def test_a_plotted_table_is_sorted_too(self):
+        frame = lookup_data(self.lookup_model([[10, 100], [0, 0], [5, 50]]), "tab")
+        self.assertEqual(list(frame.index), [0, 5, 10])

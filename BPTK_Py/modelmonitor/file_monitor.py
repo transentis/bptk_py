@@ -92,8 +92,9 @@ class FileMonitor():
                         self.update_func(self.json_file)
                         log("[INFO] JSON Monitor for {}: model updated and relaoded scenarios!".format(
                             str(self.json_file)))
-                    except:
-                        log("[WARN] Could not reload scenario file. Will keep monitoring anyway...")
+                    except Exception as error:
+                        log("[WARN] Could not reload scenario file {}: {}. Will keep monitoring anyway...".format(
+                            self.json_file, error))
 
                     # Store new timestamp as cached timestamp
                     self._cached_stamp = stamp

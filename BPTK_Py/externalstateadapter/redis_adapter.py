@@ -109,12 +109,8 @@ class RedisAdapter(ExternalStateAdapter):
             log(f"[INFO] Decompressing state for instance {instance_uuid}")
             self._decompress_logs(state.state)
 
-        # Apply scenario_cache numeric key restoration (no compression, just JSON key conversion fix)
         if(state is not None and state.state is not None):
-            if "scenario_cache" in state.state:
-                log(f"[INFO] Restoring numeric keys in scenario_cache for instance {instance_uuid}")
-                state.state["scenario_cache"] = self._restore_numeric_keys(state.state["scenario_cache"])
-                log(f"[INFO] Numeric keys restored for instance {instance_uuid}")
+            self._restore_time_keys(state.state, instance_uuid)
 
         return state
 

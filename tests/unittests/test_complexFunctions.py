@@ -41,7 +41,3 @@ class TestCartesianProduct(unittest.TestCase):
         from BPTK_Py.sdcompiler.plugins.complexFunctions import cartesian_product
 
         self.assertEqual(cartesian_product([["A"], ["X"]]), ("A", "X"))
-
-
-if __name__ == '__main__':
-    unittest.main()

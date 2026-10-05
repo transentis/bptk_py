@@ -16,7 +16,7 @@
 ## Architecture note:
 ##   bptk-py is now a maturin-built package containing both the Python sources
 ##   and the Rust engine (BPTK_Py._rust_engine). Production releases are cut by
-##   tagging vX.Y.Z and letting .github/workflows/publish.yml build the full
+##   tagging release-X.Y.Z and letting .github/workflows/publish.yml build the full
 ##   platform-wheel matrix (Linux x86_64+aarch64, macOS x86_64+aarch64,
 ##   Windows x86_64) plus the sdist, and upload to PyPI via trusted publishing.
 ##
@@ -117,8 +117,13 @@ source ./venv_temp/bin/activate
 # used to be - pytest and python-dotenv - and that list went stale the moment the
 # suite gained a dependency on wheel: six tests failed for want of a package the
 # extra already declared.
+#
+# Pinned to the version just uploaded. Unpinned, a Test PyPI index that does not
+# serve it yet - or is down - lets the resolver take the newest release from real
+# PyPI instead, and every check below then passes against the wrong package.
+VERSION="$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)"
 uv pip install --index-url https://test.pypi.org/simple/ \
-    "bptk_py[test]" \
+    "bptk_py[test]==${VERSION}" \
     --extra-index-url https://pypi.org/simple
 
 # Both checks below run from a temporary directory on purpose. The checkout is

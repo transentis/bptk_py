@@ -35,6 +35,7 @@ class ScenarioManagerHybrid(ScenarioManager):
         if model and not isinstance(model, Model):
             raise ValueError("model param is not of type BPTK_Py.Model")
 
+        super().__init__()
         self.json_config = json_config
         self.type = "abm"
         self.scenarios = {}
@@ -83,8 +84,8 @@ class ScenarioManagerHybrid(ScenarioManager):
                         mod = importlib.import_module(packageName)
                     except ModuleNotFoundError as e:
                         log(
-                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping. Original Error: ".format(
-                                packageName.replace(".", "/"),e))
+                            "[ERROR] File {}.py not found. Probably this is due to a faulty configuration or you forget to delete one. Skipping. Original Error: {}".format(
+                                packageName.replace(".", "/"), e))
 
                         return
 

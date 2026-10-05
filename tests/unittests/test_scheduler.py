@@ -1,7 +1,7 @@
 import unittest
 
 from BPTK_Py import Model, Scheduler
-from BPTK_Py.logger.logger import logfile
+from tests.helpers.log_helpers import read_log
 
 class Test_Scheduler(unittest.TestCase):
     def test_init(self):
@@ -19,11 +19,7 @@ class Test_Scheduler(unittest.TestCase):
 
         scheduler.run(model=model)
 
-        try:
-            with open(logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Scheduler.run should be overriden in a subclass", content)          
 
@@ -33,11 +29,7 @@ class Test_Scheduler(unittest.TestCase):
 
         scheduler.run_step(model=model, sim_round=1, dt=1)
 
-        try:
-            with open(logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Scheduler.run_step should be overriden in a subclass", content) 
 
@@ -60,7 +52,3 @@ class Test_Scheduler(unittest.TestCase):
         self.assertEqual(return_value,None)
         self.assertEqual(delayed_event,scheduler.delayed_events[0])
         self.assertEqual(delayed_event.delay,0)
-
-
-if __name__ == '__main__':
-    unittest.main()

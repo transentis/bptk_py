@@ -52,7 +52,7 @@ def _(mo):
 
     It is essentially a wrapper around the bptk class that forwards REST API calls to bptk.
 
-    You will typically start the framework by instantiating the `bptk` class within a Jupyer notebook, as follows:
+    You will typically start the framework by instantiating the `bptk` class within a Jupyter notebook, as follows:
 
     ```default
     from BPTK_Py.server import BptkServer
@@ -106,7 +106,10 @@ def _(mo):
 
 
         * **bearer_token** – String.
-        When set, every request must carry it as `Authorization: Bearer …`.
+        When set, every request must carry it as `Authorization: Bearer …`. One without it,
+        or with another token, is answered 401 with `{"Unauthorized": "…"}`. Every response
+        carries `Access-Control-Allow-Origin: *`, so a page served from another origin can
+        read it - a 401 included.
 
 
         * **externalize_state_completely** – Boolean (Default=False).
@@ -130,7 +133,9 @@ def _(mo):
 
     This endpoint starts a session for single step simulation. There can only be one session per instance at a time.
 
-    Besides the scenarios to run, the body takes two optional fields:
+    Sessions run System Dynamics scenarios only. The body names the scenario managers, the
+    scenarios and the `equations` to simulate; an agent field such as `agents` that carries
+    anything is answered 400. Besides these, the body takes two optional fields:
 
     * **backend** – `"python"` or `"rust"`, and it decides the engine for the **whole
       session**: a session keeps the engine it started on for its lifetime. Omit it and the
@@ -142,9 +147,9 @@ def _(mo):
       The Python engine ignores it.
 
     A session asking for `"rust"` on a model the engine cannot take starts, and then fails
-    on its **first step** with 400 and a message naming the reason - a model is not
-    serialised until it runs. Until 3.2.0 such a session quietly used the Python engine
-    instead. Which models those are is on the [Execution
+    on its **first step** with 400 and a message naming the reason - on `run-step` and
+    `run-steps`; `stream-steps` names it in the body instead. A model is not serialised
+    until it runs. Which models those are is on the [Execution
     Backends](../../concepts/execution_backends/execution_backends.md) page.
 
     ```json
@@ -270,7 +275,7 @@ def _(mo):
 
     **POST /{instance_uuid}/run-steps**
 
-    This endpoint advances the relevant scenarios by one timestep and returns the data for that timestep.
+    This endpoint advances the relevant scenarios by `numberSteps` timesteps, applying `settings` at each, and returns the data of every step as a list. If a step fails, the answer is an error rather than the steps run so far.
 
     Arguments:
 
@@ -344,7 +349,9 @@ def _(mo):
 
     **POST /{instance_uuid}/stream-steps**
 
-    This endpoint is used to stream a simulation. This is useful for long-running simulations, the result of each simulation step is streamed accross the API:
+    This endpoint is used to stream a simulation. This is useful for long-running simulations, the result of each simulation step is streamed across the API.
+
+    The status 200 is sent before the first step runs, so a step that fails cannot change it: the stream ends with `{"error": "<message>"}` as its last element, and the body is still a valid JSON array.
 
     Arguments:
 

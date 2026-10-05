@@ -51,6 +51,26 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Model.add_equation
+
+    **add_equation(equation, lambda_method)**
+
+    Add an equation by name, computed by a function of the time. This is how a hand-written hybrid model gives its System Dynamics side an equation without building it from stocks, flows and converters.
+
+    * **Parameters**
+
+        **equation** – String.
+        The name of the equation. If the model already has an equation of that name, the new one replaces it and a warning is logged.
+
+        **lambda_method** – Callable.
+        A function of the time `t` that returns the equation's value, for example `lambda t: 2 * t`.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## Model.agent
 
     **agent(agent_id)**
@@ -238,6 +258,8 @@ def _(mo):
 
     Called to configure the model using a dictionary. This method is called by the framework if you instantiate models from scenario files. But you can also call the method directly.
 
+    It replaces the agents of an earlier configuration, together with the events still queued for them, so a model can be configured and run again.
+
     * **Parameters**
 
         **config** – Dict.
@@ -325,6 +347,40 @@ def _(mo):
 
         **agent_spec** – Dict.
         Specification of an agent using a dictionary with format {“name”:<agent name>, “count”: <initial count>}
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Model.delete_agent
+
+    **delete_agent(agent_id)**
+
+    Remove one agent from the model, while it runs or before.
+
+    * **Parameters**
+
+        **agent_id** – Integer.
+        The id of the agent to remove.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Model.delete_agents
+
+    **delete_agents(agent_ids)**
+
+    Remove several agents from the model at once.
+
+    * **Parameters**
+
+        **agent_ids** – List.
+        The ids of the agents to remove.
     """)
     return
 
@@ -465,9 +521,9 @@ def _(mo):
 
     **function(name, fn, elementwise=True)**
 
-    Returns a Lambda function that wraps the function _fn_.
+    Returns a Lambda function that wraps the function _fn_. A function of that name defined earlier is replaced, and the equations that call it compute with the new one.
 
-    The document [User Defined Functions](../sd-dsl/sd_user_defined_functions/sd_user_defined_functions.ipynb) illustrates how such functions can be used.
+    The document [User Defined Functions](../sd-dsl/sd_user_defined_functions/sd_user_defined_functions.md) illustrates how such functions can be used.
 
     * **Parameters**
 
@@ -613,7 +669,7 @@ def _(mo):
     mo.md(r"""
     ## Model.plot_lookup
 
-    **plot_lookup(lookup_names, config=None, format="plot")**
+    **plot_lookup(lookup_names, config=None, format="plot", matplotlib_rc_settings=None)**
 
     Plots lookup functions for the given list of lookup names.
 
@@ -627,6 +683,10 @@ def _(mo):
         matplotlib Axes, "df" returns the underlying dataframe. "plot" relies on the notebook
         displaying the figure as a side effect, which only Jupyter's inline backend does —
         in marimo, and in a plain script, use "axes".
+
+        **matplotlib_rc_settings** – Dict (Default None).
+        matplotlib settings for this one plot, laid over the central plotting configuration
+        rather than replacing it.
     """)
     return
 
@@ -859,6 +919,35 @@ def _(mo):
 
         **scenario_manager** – String.
         Name of the scenario manager.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Model.simulate
+
+    **simulate(equations, backend="python")**
+
+    Run the model once, without a scenario manager, and return the results.
+
+    * **Parameters**
+
+        **equations** – List.
+        The equations to include in the results.
+
+        **backend** – String (Default "python").
+        `"python"` or `"rust"`.
+
+    * **Returns**
+
+        A Pandas DataFrame with the time as index (named `"t"`) and one column per equation.
+
+    * **Raises**
+
+        `RustBackendError` if `backend="rust"` was asked for and the model cannot run on the
+        engine. It is not computed on the Python engine instead.
     """)
     return
 

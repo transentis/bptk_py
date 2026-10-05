@@ -45,13 +45,9 @@ build-all: build
 publish:
     cd scripts && ./publish.sh
 
-# Publish without tests
-publish_without_test:
-    cd scripts && ./publish_without_test.sh
-
 # Count lines of code
 cloc:
-    cloc . --exclude-dir .venv,__pycache__,_templates,docs,node_modules
+    cloc . --exclude-dir .venv,__pycache__,docs,node_modules
 
 # Run the test suite in the browser platform (Pyodide under node). Needs node.
 test-browser:

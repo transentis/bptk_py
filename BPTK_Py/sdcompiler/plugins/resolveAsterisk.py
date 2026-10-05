@@ -89,7 +89,6 @@ def resolveAsterisk(IR):
     '''
     This plugin replaces self by the respective entity's name
     '''
-    #return IR
     IR["dimensions"]["order"] = {}
 
     for name, model in IR["models"].items():

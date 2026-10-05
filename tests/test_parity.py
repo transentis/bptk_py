@@ -6,6 +6,8 @@ This verifies that the Rust engine produces identical results to the
 Python SD DSL for all supported features.
 """
 
+import contextlib
+import io
 import math
 import numpy as np
 import pytest
@@ -13,65 +15,7 @@ from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
 from BPTK_Py.util import timerange
 from BPTK_Py._rust_engine import RustSdEngine
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _rust_time_key(t):
-    """Format time value to match Rust engine's time key format."""
-    if t == int(t):
-        return f"{t:.1f}"
-    else:
-        return str(t)
-
-
-def run_parity(model, equations, atol=1e-10):
-    """
-    Run a model through both Python and Rust engines and compare results.
-
-    Args:
-        model: an SD DSL Model instance (fully defined)
-        equations: list of equation/entity names to compare
-        atol: absolute tolerance for pytest.approx
-
-    Returns:
-        (python_results, rust_results) dicts for further inspection if needed.
-    """
-    # --- Python results ---
-    py_results = {}
-    times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
-    for eq_name in equations:
-        # Look up the element by name
-        element = (
-            model.stocks.get(eq_name)
-            or model.flows.get(eq_name)
-            or model.biflows.get(eq_name)
-            or model.converters.get(eq_name)
-            or model.constants.get(eq_name)
-        )
-        assert element is not None, f"Element '{eq_name}' not found in model"
-        py_results[eq_name] = {t: element(t) for t in times}
-
-    # --- Rust results ---
-    json_str = model.to_json()
-    engine = RustSdEngine()
-    rust_model = engine.load_model(json_str)
-    rust_results = rust_model.simulate(equations)
-
-    # --- Compare ---
-    for eq_name in equations:
-        for t in times:
-            py_val = py_results[eq_name][t]
-            key = _rust_time_key(t)
-            assert key in rust_results[eq_name], \
-                f"Missing Rust key '{key}' for {eq_name}"
-            rust_val = rust_results[eq_name][key]
-            assert py_val == pytest.approx(rust_val, abs=atol), \
-                f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
-
-    return py_results, rust_results
+from tests.helpers.parity import run_parity, rust_time_key
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +87,16 @@ class TestParityArithmetic:
         b.equation = 3.0
         c.equation = (a + b) % b
         run_parity(model, ['a', 'b', 'c'])
+
+    def test_modulo_takes_the_sign_of_the_divisor(self):
+        """Floored, as Python's % and XMILE's MOD. The engine truncated, and so gave
+        -2 for (0 - 2) % 3 where Python gives 1 - only a negative operand shows it."""
+        model = Model(starttime=0, stoptime=6, dt=1, name='mod_signs')
+        shifted = model.converter('shifted')
+        shifted.equation = (sd.time() - 2.0) % 3.0
+        negative_divisor = model.converter('negative_divisor')
+        negative_divisor.equation = sd.time() % -3.0
+        run_parity(model, ['shifted', 'negative_divisor'])
 
     def test_modulo_with_a_literal_on_the_left(self):
         model = Model(starttime=1, stoptime=1, dt=1, name='mod_reflected')
@@ -228,6 +182,14 @@ class TestParityStep:
         a.equation = 5.0 + sd.step(15, 5)
         run_parity(model, ['a'])
 
+    def test_step_on_a_time_that_dt_does_not_hit_exactly(self):
+        """With dt = 0.3 the fourth step is 0.8999999999999999 unrounded; the engine
+        switched a step after the Python engine, whose times sit on the rounded grid."""
+        model = Model(starttime=0, stoptime=1.5, dt=0.3, name='step_odd_dt')
+        a = model.converter("a")
+        a.equation = sd.step(1.0, 0.9)
+        run_parity(model, ['a'])
+
 
 # ---------------------------------------------------------------------------
 # Test: Pulse function
@@ -244,6 +206,16 @@ class TestParityPulse:
         flow.equation = sd.pulse(model, 9.0, 1.5, 3.0)
         stock.equation = flow
         run_parity(model, ['stock', 'flow'])
+
+    def test_pulse_whose_times_dt_does_not_hit_exactly(self):
+        """dt = 0.1, a pulse every 0.3 from 0.2: 0.8 - 0.2 is not exactly 2 * 0.3, and the
+        Python engine compared exactly and skipped that pulse."""
+        model = Model(starttime=0, stoptime=1, dt=0.1, name='pulse_odd_dt')
+        flow = model.converter("p")
+        flow.equation = sd.pulse(model, 1.0, 0.2, 0.3)
+        run_parity(model, ['p'])
+        values = flow.plot(return_df=True)["p"]
+        assert [round(t, 2) for t, v in values.items() if v] == [0.2, 0.5, 0.8]
 
 
 # ---------------------------------------------------------------------------
@@ -284,56 +256,27 @@ class TestParityMathFunctions:
         run_parity(model, ['exp_val'])
 
     def test_round_away_from_half(self):
-        """Test round() for values that don't land on exact .5 boundaries.
-
-        KNOWN DIFFERENCE: Python uses banker's rounding (round half to even)
-        while Rust uses round half away from zero. For example:
-          - Python: round(0.5) = 0, round(1.5) = 2, round(2.5) = 2
-          - Rust:   round(0.5) = 1, round(1.5) = 2, round(2.5) = 3
-
-        This test avoids .5 boundaries to verify round() works identically
-        for unambiguous cases. The .5 boundary difference is documented
-        in the progress report.
-        """
+        """round() for values that do not land on a half."""
         model = Model(starttime=0, stoptime=5, dt=1, name='round')
         f = model.converter("round_val")
         f.equation = sd.round(sd.time() + 0.3, 0)
         run_parity(model, ['round_val'])
 
-    def test_round_half_difference(self):
-        """Demonstrate the known rounding difference at exact .5 boundaries.
+    def test_round_halves_away_from_zero_on_both(self):
+        """A half rounds away from zero, as a spreadsheet rounds: 2.5 -> 3, -2.5 -> -3.
 
-        Python: banker's rounding (round half to even)
-        Rust:   round half away from zero
-
-        This test documents the difference — it is NOT a bug.
+        The Python engine used Python's round(), which rounds half to even (2.5 -> 2),
+        and the two engines gave different numbers for the same model at every half.
         """
-        model = Model(starttime=0, stoptime=4, dt=0.5, name='round_half')
+        model = Model(starttime=-4, stoptime=4, dt=0.5, name='round_half')
         f = model.converter("round_val")
         f.equation = sd.round(sd.time(), 0)
+        g = model.converter("round_digits")
+        g.equation = sd.round(sd.time() * 0.05, 1)
+        run_parity(model, ['round_val', 'round_digits'])
 
-        # Python results
-        times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
-        py_results = {t: f(t) for t in times}
-
-        # Rust results
-        engine = RustSdEngine()
-        rust_model = engine.load_model(model.to_json())
-        rust_results = rust_model.simulate(["round_val"])
-
-        # At non-.5 values they agree
-        for t in [0.0, 1.0, 2.0, 3.0, 4.0]:
-            key = _rust_time_key(t)
-            assert py_results[t] == rust_results["round_val"][key]
-
-        # At .5 boundaries they may differ due to different rounding rules
-        for t in [0.5, 1.5, 2.5, 3.5]:
-            key = _rust_time_key(t)
-            py_val = py_results[t]
-            rust_val = rust_results["round_val"][key]
-            # Both are valid roundings — they just use different tie-breaking
-            assert abs(py_val - t) <= 0.5, f"Python round({t}) = {py_val}"
-            assert abs(rust_val - t) <= 0.5, f"Rust round({t}) = {rust_val}"
+        values = f.plot(return_df=True)["round_val"]
+        assert values[2.5] == 3.0 and values[-2.5] == -3.0 and values[0.5] == 1.0
 
     def test_pi(self):
         model = Model(starttime=0, stoptime=1, dt=1, name='pi')
@@ -552,6 +495,39 @@ class TestParityLookup:
         output = model.converter("output")
         output.equation = sd.lookup(input_val, "my_table")
         run_parity(model, ['input_val', 'output'])
+
+
+    def test_points_in_any_order_describe_the_same_curve(self):
+        """Both engines read the first point as the left edge; an unsorted table used to
+        give the same nonsense on both."""
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name='lookup_unsorted')
+        model.points["line"] = [[10, 100], [0, 0], [5, 50]]
+        output = model.converter("output")
+        output.equation = sd.lookup(sd.time(), "line")
+        run_parity(model, ['output'])
+        assert model.evaluate_equation("output", 2.5) == 25.0
+
+    def test_two_points_at_one_x_are_refused_by_both(self):
+        """The engines used to pick different values at that x."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name='lookup_duplicate')
+        model.points["tab"] = [[0, 0], [5, 10], [5, 90], [10, 100]]
+        output = model.converter("output")
+        output.equation = sd.lookup(5.0, "tab")
+        with pytest.raises(ValueError, match="Lookup table 'tab' has two points at x=5.0"):
+            model.evaluate_equation("output", 0.0)
+        with pytest.raises(ValueError, match="Lookup table 'tab' has two points at x=5.0"):
+            RustSdEngine().load_model(model.to_json())
+
+    def test_a_table_the_model_does_not_have_is_refused_by_both(self):
+        """Rust used to read 0.0, Python raised a bare KeyError."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name='lookup_missing')
+        output = model.converter("output")
+        output.equation = sd.lookup(5.0, "missing")
+        message = "Lookup of a table the model does not have: 'missing'"
+        with pytest.raises(ValueError, match=message):
+            model.evaluate_equation("output", 0.0)
+        with pytest.raises(ValueError, match=message):
+            RustSdEngine().load_model(model.to_json())
 
 
 # ---------------------------------------------------------------------------
@@ -923,7 +899,8 @@ class TestParityCombinatorialFunctions:
         model = Model(starttime=0, stoptime=1, dt=1, name='comb_n_lt_r')
         x = model.converter("x")
         x.equation = sd.combinations(2, 5)
-        run_parity(model, ['x'])
+        py, _ = run_parity(model, ['x'])
+        assert set(py['x'].values()) == {0.0}
 
     def test_permutations(self):
         model = Model(starttime=0, stoptime=1, dt=1, name='permutations')
@@ -1024,15 +1001,57 @@ class TestParityInfNan:
 class TestParityBiflow:
     """Test biflow serialization through the parity (to_json) path."""
 
-    def test_biflow_oscillator(self):
+    @pytest.mark.parametrize("dt, start", [(0.25, 1.0), (0.1, 10.0)])
+    def test_biflow_oscillator(self, dt, start):
         """Biflow allows negative values — simple oscillator."""
-        model = Model(starttime=0, stoptime=10, dt=0.25, name='biflow_osc')
+        model = Model(starttime=0, stoptime=10, dt=dt, name='biflow_osc')
         position = model.stock("position")
-        position.initial_value = 1.0
+        position.initial_value = start
         velocity = model.biflow("velocity")
         velocity.equation = -position
         position.equation = velocity
-        run_parity(model, ['position', 'velocity'])
+        _, rust = run_parity(model, ['position', 'velocity'])
+
+        assert min(rust['velocity'].values()) < 0, "a biflow is not clamped at zero"
+
+    def test_biflow_constant_negative(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name='biflow_const_neg_par')
+        stock = model.stock("stock")
+        bf = model.biflow("bf")
+        stock.initial_value = 100.0
+        stock.equation = bf
+        bf.equation = -10.0
+        run_parity(model, ['stock', 'bf'])
+
+    def test_biflow_vs_flow_clamping(self):
+        """The same negative equation: a flow clamps to 0, a biflow does not."""
+        model = Model(starttime=0, stoptime=3, dt=1, name='flow_vs_biflow_par')
+        stock_f = model.stock("stock_flow")
+        stock_bf = model.stock("stock_biflow")
+        f = model.flow("regular_flow")
+        bf = model.biflow("bi_flow")
+        stock_f.initial_value = 100.0
+        stock_bf.initial_value = 100.0
+        stock_f.equation = f
+        stock_bf.equation = bf
+        f.equation = -10.0
+        bf.equation = -10.0
+        run_parity(model, ['stock_flow', 'stock_biflow', 'regular_flow', 'bi_flow'])
+
+    def test_biflow_spring_mass_oscillator(self):
+        """Two stocks, a small dt: the classic biflow system."""
+        model = Model(starttime=0, stoptime=10, dt=0.01, name='spring_mass_par')
+        position = model.stock("position")
+        velocity = model.stock("velocity")
+        dp = model.biflow("change_in_position")
+        dv = model.biflow("change_in_velocity")
+        position.initial_value = 1.0
+        velocity.initial_value = 0.0
+        position.equation = dp
+        velocity.equation = dv
+        dp.equation = velocity
+        dv.equation = -position
+        run_parity(model, ['position', 'velocity'], atol=1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -1149,7 +1168,7 @@ def _run_stochastic_parity(equation, theoretical_mean, theoretical_var,
             engine = RustSdEngine()
             rust_model = engine.load_model(json_str)
             raw = rust_model.simulate(["x"], seed=42)
-            values = [raw["x"][_rust_time_key(t)] for t in times]
+            values = [raw["x"][rust_time_key(t)] for t in times]
 
         arr = np.array(values)
         sample_mean = float(arr.mean())
@@ -1268,130 +1287,214 @@ class TestParityStochastic:
 # Test: Stochastic function guards (invalid params → NaN)
 # ---------------------------------------------------------------------------
 
+def _error_lines(run):
+    """Call `run` and return the `[ERROR]` lines it printed, without their timestamps -
+    `log` prints every error, whatever the configured modes."""
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = run()
+    lines = [line.split(", ", 1)[1] for line in output.getvalue().splitlines()
+             if "[ERROR]" in line]
+    return result, lines
+
+
 def _run_nan_parity(equation, name):
-    """Build a model with the given equation, verify both backends return NaN."""
+    """Build a model with the given equation, verify both backends return NaN and report
+    it once, in the same words, however many steps are invalid."""
     model = Model(starttime=0, stoptime=1, dt=1, name=name)
     x = model.converter("x")
     x.equation = equation
     times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
 
     # Python results
-    for t in times:
-        val = x(t)
+    values, python_errors = _error_lines(lambda: [x(t) for t in times])
+    for t, val in zip(times, values):
         assert math.isnan(val), f"Python {name} at t={t}: expected NaN, got {val}"
 
     # Rust results
     engine = RustSdEngine()
     json_str = model.to_json()
     rust_model = engine.load_model(json_str)
-    rust_results = rust_model.simulate(["x"])
+    rust_results, rust_errors = _error_lines(lambda: rust_model.simulate(["x"]))
     for t in times:
-        key = _rust_time_key(t)
+        key = rust_time_key(t)
         val = rust_results["x"][key]
         assert math.isnan(val), f"Rust {name} at t={t}: expected NaN, got {val}"
+
+    assert len(python_errors) == 1, python_errors
+    assert rust_errors == python_errors
+    assert " in 'x' at t=0.0: " in python_errors[0]
 
 
 class TestParityStochasticGuards:
     """Invalid parameters should return NaN in both backends."""
 
-    def test_normal_negative_stddev(self):
-        _run_nan_parity(sd.normal(0, -1), "normal_neg_std")
+    @pytest.mark.parametrize("equation, name", [
+        pytest.param(sd.normal(0, -1), "normal_neg_std", id="normal_negative_stddev"),
+        pytest.param(sd.beta(-1, 2), "beta_neg_a", id="beta_negative_a"),
+        pytest.param(sd.beta(2, 0), "beta_zero_b", id="beta_zero_b"),
+        pytest.param(sd.binomial(-5, 0.5), "binom_neg_n", id="binomial_negative_n"),
+        pytest.param(sd.negbinomial(-5, 0.5), "negbinom_neg_n", id="negbinomial_negative_n"),
+        pytest.param(sd.poisson(-5), "poisson_neg_mu", id="poisson_negative_mu"),
+        pytest.param(sd.gamma(-1, 2), "gamma_neg_shape", id="gamma_negative_shape"),
+        pytest.param(sd.gamma(2, 0), "gamma_zero_scale", id="gamma_zero_scale"),
+        pytest.param(sd.exprnd(-1), "exprnd_neg", id="exprnd_negative_scale"),
+        pytest.param(sd.exprnd(0), "exprnd_zero", id="exprnd_zero_scale"),
+        pytest.param(sd.lognormal(0, -1), "lognorm_neg_std", id="lognormal_negative_stddev"),
+        pytest.param(sd.logistic(0, -1), "logistic_neg_scale", id="logistic_negative_scale"),
+        pytest.param(sd.triangular(10, 5, 1), "tri_lower_gt_upper", id="triangular_lower_gt_upper"),
+        pytest.param(sd.triangular(0, 15, 10), "tri_mode_gt_upper", id="triangular_mode_gt_upper"),
+        pytest.param(sd.triangular(5, 2, 10), "tri_mode_lt_lower", id="triangular_mode_lt_lower"),
+        pytest.param(sd.weibull(-1, 2), "weibull_neg_shape", id="weibull_negative_shape"),
+        pytest.param(sd.weibull(2, 0), "weibull_zero_scale", id="weibull_zero_scale"),
+        pytest.param(sd.binomial(10, -0.1), "binom_p_neg", id="binomial_p_negative"),
+        pytest.param(sd.binomial(10, 1.1), "binom_p_gt1", id="binomial_p_gt_one"),
+        pytest.param(sd.negbinomial(0, 0.5), "negbinom_zero_n", id="negbinomial_zero_n"),
+        pytest.param(sd.negbinomial(5, -0.1), "negbinom_p_neg", id="negbinomial_p_negative"),
+        pytest.param(sd.negbinomial(5, 1.1), "negbinom_p_gt1", id="negbinomial_p_gt_one"),
+        pytest.param(sd.triangular(5, 3, 5), "tri_leq_u_m_diff", id="triangular_lower_eq_upper_mode_differs"),
+        pytest.param(sd.pareto(-1, 1), "pareto_neg_shape", id="pareto_negative_shape"),
+        pytest.param(sd.pareto(0, 1), "pareto_zero_shape", id="pareto_zero_shape"),
+        pytest.param(sd.pareto(1, -1), "pareto_neg_scale", id="pareto_negative_scale"),
+        pytest.param(sd.pareto(1, 0), "pareto_zero_scale", id="pareto_zero_scale"),
+        pytest.param(sd.invnorm(-0.5, 0, 1), "invnorm_p_neg", id="invnorm_p_negative"),
+        pytest.param(sd.invnorm(1.5, 0, 1), "invnorm_p_gt1", id="invnorm_p_gt_one"),
+        pytest.param(sd.invnorm(0.5, 0, -1), "invnorm_neg_std", id="invnorm_negative_stddev"),
+        pytest.param(sd.normalcdf(-1, 1, 0, -1), "ncdf_neg_std", id="normalcdf_negative_stddev"),
+        pytest.param(sd.normalcdf(-1, 1, 0, 0), "ncdf_zero_std", id="normalcdf_zero_stddev"),
+        pytest.param(sd.invnorm(0.5, 7, 0), "invnorm_zero_std", id="invnorm_zero_stddev"),
+        pytest.param(sd.geometric(1.5), "geometric_p_gt_one", id="geometric_p_gt_one"),
+        pytest.param(sd.binomial(1e300, 0.5), "binomial_too_large", id="a_binomial_count_too_large_to_draw"),
+        pytest.param(sd.negbinomial(1e300, 0.5), "negbinomial_too_large", id="a_negbinomial_count_too_large_to_draw"),
+    ])
+    def test_invalid_arguments_give_nan_on_both_engines(self, equation, name):
+        _run_nan_parity(equation, name)
 
-    def test_beta_negative_a(self):
-        _run_nan_parity(sd.beta(-1, 2), "beta_neg_a")
 
-    def test_beta_zero_b(self):
-        _run_nan_parity(sd.beta(2, 0), "beta_zero_b")
+    def test_uniform_min_greater_than_max(self):
+        """Python used to swap the bounds without a word."""
+        _run_nan_parity(sd.uniform(5, 1), "uniform_min_gt_max")
 
-    def test_binomial_negative_n(self):
-        _run_nan_parity(sd.binomial(-5, 0.5), "binom_neg_n")
+    def test_geometric_p_zero(self):
+        """Both engines used to answer 1."""
+        _run_nan_parity(sd.geometric(0), "geometric_p_zero")
 
-    def test_negbinomial_negative_n(self):
-        _run_nan_parity(sd.negbinomial(-5, 0.5), "negbinom_neg_n")
+    def test_negbinomial_p_zero(self):
+        """Undefined; Rust used to answer inf."""
+        _run_nan_parity(sd.negbinomial(5, 0), "negbinom_p_zero")
 
-    def test_poisson_negative_mu(self):
-        _run_nan_parity(sd.poisson(-5), "poisson_neg_mu")
+    def test_a_poisson_rate_too_large_to_draw(self):
+        """Python raised, Rust never returned."""
+        _run_nan_parity(sd.poisson(1e300), "poisson_too_large")
 
-    def test_gamma_negative_shape(self):
-        _run_nan_parity(sd.gamma(-1, 2), "gamma_neg_shape")
+    @pytest.mark.parametrize("equation", [
+        sd.uniform(0, sd.Inf()), sd.normal(0, sd.Inf()), sd.beta(sd.Inf(), 1),
+        sd.binomial(sd.Inf(), 0.5), sd.negbinomial(sd.Inf(), 0.5), sd.gamma(sd.Inf(), 1),
+        sd.lognormal(sd.Inf(), 1), sd.poisson(sd.Inf()), sd.triangular(0, 1, sd.Inf()),
+        sd.weibull(sd.Inf(), 1), sd.pareto(sd.Inf(), 1), sd.exprnd(sd.Inf()),
+        sd.geometric(sd.Inf()), sd.logistic(0, sd.Inf()), sd.invnorm(0.5, sd.Inf(), 1),
+        sd.normalcdf(0, 1, 0, sd.Inf()),
+    ])
+    def test_an_infinite_argument_gives_nan_without_a_report(self, equation):
+        """Infinity comes from upstream like NaN. Python raised for some, returned inf
+        or a number for others, and Rust never returned for poisson."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="inf_argument")
+        x = model.converter("x")
+        x.equation = equation
+        values, python_errors = _error_lines(lambda: [x(0), x(1)])
+        rust = RustSdEngine().load_model(model.to_json())
+        results, rust_errors = _error_lines(lambda: rust.simulate(["x"]))
+        assert all(math.isnan(v) for v in values + list(results["x"].values()))
+        assert python_errors == [] and rust_errors == []
 
-    def test_gamma_zero_scale(self):
-        _run_nan_parity(sd.gamma(2, 0), "gamma_zero_scale")
+    def test_the_report_names_the_rule_and_the_values(self):
+        model = Model(starttime=0, stoptime=1, dt=1, name="report_words")
+        x = model.converter("x")
+        x.equation = sd.normal(10, -1)
+        _, errors = _error_lines(lambda: x(0))
+        assert errors == [
+            "[ERROR] normal in 'x' at t=0.0: stddev must not be negative "
+            "(mean=10.0, stddev=-1.0). The result is NaN wherever the arguments are "
+            "invalid; later occurrences in 'x' are not reported."]
 
-    def test_exprnd_negative_scale(self):
-        _run_nan_parity(sd.exprnd(-1), "exprnd_neg")
+    def test_a_nan_argument_gives_nan_without_a_report(self):
+        """It comes from upstream; the builtin did nothing wrong with it."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="nan_argument")
+        x = model.converter("x")
+        x.equation = sd.normal(sd.nan(), 1)
+        values, python_errors = _error_lines(lambda: [x(0), x(1)])
+        rust = RustSdEngine().load_model(model.to_json())
+        results, rust_errors = _error_lines(lambda: rust.simulate(["x"]))
+        assert all(math.isnan(v) for v in values + list(results["x"].values()))
+        assert python_errors == [] and rust_errors == []
 
-    def test_exprnd_zero_scale(self):
-        _run_nan_parity(sd.exprnd(0), "exprnd_zero")
+    def test_a_run_of_invalid_steps_is_reported_once_at_its_first_step(self):
+        """The bounds cross at t=3 and stay crossed; one line, naming t=3."""
+        model = Model(starttime=0, stoptime=20, dt=1, name="crossing")
+        lower = model.converter("lower")
+        lower.equation = sd.time()
+        x = model.converter("x")
+        x.equation = sd.uniform(lower, 2.5)
+        times = timerange(0, 20, 1, exclusive=False)
+        _, python_errors = _error_lines(lambda: [x(t) for t in times])
+        rust = RustSdEngine().load_model(model.to_json())
+        _, rust_errors = _error_lines(lambda: rust.simulate(["x"]))
+        assert len(python_errors) == 1
+        assert " in 'x' at t=3.0: " in python_errors[0]
+        assert rust_errors == python_errors
 
-    def test_lognormal_negative_stddev(self):
-        _run_nan_parity(sd.lognormal(0, -1), "lognorm_neg_std")
+    def test_each_element_is_reported_on_its_own(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="two_elements")
+        model.converter("a").equation = sd.exprnd(0)
+        model.converter("b").equation = sd.exprnd(-1)
+        _, python_errors = _error_lines(
+            lambda: [model.evaluate_equation(name, t) for name in "ab" for t in range(4)])
+        rust = RustSdEngine().load_model(model.to_json())
+        _, rust_errors = _error_lines(lambda: rust.simulate(["a", "b"]))
+        assert sorted(python_errors) == sorted(rust_errors)
+        assert [" in 'a' at " in e or " in 'b' at " in e for e in python_errors] == [True, True]
 
-    def test_logistic_negative_scale(self):
-        _run_nan_parity(sd.logistic(0, -1), "logistic_neg_scale")
+    def test_reset_cache_reports_again(self):
+        """Once per element until the cache is reset - a new run is a new report."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="reset_reports")
+        x = model.converter("x")
+        x.equation = sd.poisson(-1)
+        _, first = _error_lines(lambda: x(0))
+        model.reset_cache()
+        _, second = _error_lines(lambda: x(0))
+        assert len(first) == 1 and second == first
 
-    def test_triangular_lower_gt_upper(self):
-        _run_nan_parity(sd.triangular(10, 5, 1), "tri_lower_gt_upper")
+    def test_step_mode_reports_once_across_steps(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="stepped_reports")
+        model.converter("x").equation = sd.beta(0, 1)
+        rust = RustSdEngine().load_model(model.to_json())
+        _, errors = _error_lines(
+            lambda: [rust.init(["x"])] + [rust.step() for _ in range(3)])
+        assert len(errors) == 1 and " in 'x' at t=0.0: " in errors[0]
 
-    def test_triangular_mode_gt_upper(self):
-        _run_nan_parity(sd.triangular(0, 15, 10), "tri_mode_gt_upper")
+    def test_an_invalid_argument_inside_a_stock_names_the_stock(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="stock_report")
+        level = model.stock("level")
+        level.initial_value = 0.0
+        level.equation = sd.weibull(-1, 1)
+        _, python_errors = _error_lines(lambda: level(3))
+        rust = RustSdEngine().load_model(model.to_json())
+        _, rust_errors = _error_lines(lambda: rust.simulate(["level"]))
+        assert len(python_errors) == 1 and " in 'level' at t=0.0: " in python_errors[0]
+        assert rust_errors == python_errors
 
-    def test_triangular_mode_lt_lower(self):
-        _run_nan_parity(sd.triangular(5, 2, 10), "tri_mode_lt_lower")
 
-    def test_weibull_negative_shape(self):
-        _run_nan_parity(sd.weibull(-1, 2), "weibull_neg_shape")
+class TestParityInvnormDefaults:
+    """Either parameter of invnorm may be left out on its own, and the other applies."""
 
-    def test_weibull_zero_scale(self):
-        _run_nan_parity(sd.weibull(2, 0), "weibull_zero_scale")
+    def test_stddev_without_a_mean(self):
+        """Python dropped the stddev, Rust read it as the mean."""
+        _run_constant_parity(sd.invnorm(0.9, stddev=2), 2 * 1.2815515655446004,
+                             "invnorm_stddev_only")
 
-    def test_binomial_p_negative(self):
-        _run_nan_parity(sd.binomial(10, -0.1), "binom_p_neg")
-
-    def test_binomial_p_gt_one(self):
-        _run_nan_parity(sd.binomial(10, 1.1), "binom_p_gt1")
-
-    def test_negbinomial_zero_n(self):
-        _run_nan_parity(sd.negbinomial(0, 0.5), "negbinom_zero_n")
-
-    def test_negbinomial_p_negative(self):
-        _run_nan_parity(sd.negbinomial(5, -0.1), "negbinom_p_neg")
-
-    def test_negbinomial_p_gt_one(self):
-        _run_nan_parity(sd.negbinomial(5, 1.1), "negbinom_p_gt1")
-
-    def test_triangular_lower_eq_upper_mode_differs(self):
-        _run_nan_parity(sd.triangular(5, 3, 5), "tri_leq_u_m_diff")
-
-    def test_pareto_negative_shape(self):
-        _run_nan_parity(sd.pareto(-1, 1), "pareto_neg_shape")
-
-    def test_pareto_zero_shape(self):
-        _run_nan_parity(sd.pareto(0, 1), "pareto_zero_shape")
-
-    def test_pareto_negative_scale(self):
-        _run_nan_parity(sd.pareto(1, -1), "pareto_neg_scale")
-
-    def test_pareto_zero_scale(self):
-        _run_nan_parity(sd.pareto(1, 0), "pareto_zero_scale")
-
-    def test_invnorm_p_negative(self):
-        _run_nan_parity(sd.invnorm(-0.5, 0, 1), "invnorm_p_neg")
-
-    def test_invnorm_p_gt_one(self):
-        _run_nan_parity(sd.invnorm(1.5, 0, 1), "invnorm_p_gt1")
-
-    def test_invnorm_negative_stddev(self):
-        _run_nan_parity(sd.invnorm(0.5, 0, -1), "invnorm_neg_std")
-
-    def test_normalcdf_negative_stddev(self):
-        _run_nan_parity(sd.normalcdf(-1, 1, 0, -1), "ncdf_neg_std")
-
-    def test_normalcdf_zero_stddev(self):
-        _run_nan_parity(sd.normalcdf(-1, 1, 0, 0), "ncdf_zero_std")
-
-    def test_invnorm_zero_stddev(self):
-        _run_nan_parity(sd.invnorm(0.5, 7, 0), "invnorm_zero_std")
+    def test_mean_without_a_stddev(self):
+        _run_constant_parity(sd.invnorm(0.9, mean=10), 10 + 1.2815515655446004,
+                             "invnorm_mean_only")
 
 
 # ---------------------------------------------------------------------------
@@ -1406,16 +1509,18 @@ def _run_constant_parity(equation, expected, name):
     times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
 
     # Python
-    for t in times:
-        val = x(t)
+    values, python_errors = _error_lines(lambda: [x(t) for t in times])
+    for t, val in zip(times, values):
         assert abs(val - expected) < 1e-10, f"Python {name} at t={t}: expected {expected}, got {val}"
 
     # Rust
     engine = RustSdEngine()
     rust_model = engine.load_model(model.to_json())
-    rust_results = rust_model.simulate(["x"])
+    rust_results, rust_errors = _error_lines(lambda: rust_model.simulate(["x"]))
+    # A boundary value is a valid argument, and nothing is reported for it.
+    assert python_errors == [] and rust_errors == []
     for t in times:
-        key = _rust_time_key(t)
+        key = rust_time_key(t)
         val = rust_results["x"][key]
         assert abs(val - expected) < 1e-10, f"Rust {name} at t={t}: expected {expected}, got {val}"
 
@@ -1423,32 +1528,20 @@ def _run_constant_parity(equation, expected, name):
 class TestParityStochasticBoundary:
     """Valid boundary values should work in both backends."""
 
-    def test_normal_zero_stddev(self):
-        _run_constant_parity(sd.normal(5, 0), 5.0, "normal_zero_std")
+    @pytest.mark.parametrize("equation, expected, name", [
+        pytest.param(sd.normal(5, 0), 5.0, "normal_zero_std", id="normal_zero_stddev"),
+        pytest.param(sd.lognormal(0, 0), 1.0, "lognorm_zero_std", id="lognormal_zero_stddev"),
+        pytest.param(sd.logistic(5, 0), 5.0, "logistic_zero_scale", id="logistic_zero_scale"),
+        pytest.param(sd.binomial(0, 0.5), 0.0, "binom_zero_n", id="binomial_zero_n"),
+        pytest.param(sd.binomial(10, 0), 0.0, "binom_p_zero", id="binomial_p_zero"),
+        pytest.param(sd.binomial(10, 1), 10.0, "binom_p_one", id="binomial_p_one"),
+        pytest.param(sd.poisson(0), 0.0, "poisson_zero_mu", id="poisson_zero_mu"),
+        pytest.param(sd.triangular(5, 5, 5), 5.0, "tri_all_equal", id="triangular_all_equal"),
+        pytest.param(sd.invnorm(0.5, 0, 1), 0.0, "invnorm_valid", id="invnorm_valid"),
+    ])
+    def test_a_boundary_value_gives_a_constant_on_both_engines(self, equation, expected, name):
+        _run_constant_parity(equation, expected, name)
 
-    def test_lognormal_zero_stddev(self):
-        _run_constant_parity(sd.lognormal(0, 0), 1.0, "lognorm_zero_std")
-
-    def test_logistic_zero_scale(self):
-        _run_constant_parity(sd.logistic(5, 0), 5.0, "logistic_zero_scale")
-
-    def test_binomial_zero_n(self):
-        _run_constant_parity(sd.binomial(0, 0.5), 0.0, "binom_zero_n")
-
-    def test_binomial_p_zero(self):
-        _run_constant_parity(sd.binomial(10, 0), 0.0, "binom_p_zero")
-
-    def test_binomial_p_one(self):
-        _run_constant_parity(sd.binomial(10, 1), 10.0, "binom_p_one")
-
-    def test_poisson_zero_mu(self):
-        _run_constant_parity(sd.poisson(0), 0.0, "poisson_zero_mu")
-
-    def test_triangular_all_equal(self):
-        _run_constant_parity(sd.triangular(5, 5, 5), 5.0, "tri_all_equal")
-
-    def test_invnorm_valid(self):
-        _run_constant_parity(sd.invnorm(0.5, 0, 1), 0.0, "invnorm_valid")
 
 
 # ---------------------------------------------------------------------------
@@ -1460,12 +1553,25 @@ class TestParityStochasticBoundary:
 class TestParitySmooth:
     """sd.smooth — exponential smoothing of an input."""
 
-    def test_smooth_step_input(self):
-        model = Model(starttime=0, stoptime=10, dt=0.25, name='smooth_step_par')
+    @pytest.mark.parametrize("starttime, dt", [(0, 0.25), (1, 0.1)])
+    def test_smooth_step_input(self, starttime, dt):
+        model = Model(starttime=starttime, stoptime=10, dt=dt, name='smooth_step_par')
         inp = model.converter('input')
         inp.equation = sd.step(10.0, 3.0)
         out = model.converter('out')
         out.equation = sd.smooth(model, inp, 1.0, 0.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    @pytest.mark.parametrize("stoptime, dt, height, at, averaging_time", [
+        (20, 0.5, 100.0, 5.0, 10.0),    # a long averaging time: the output moves slowly
+        (5, 0.01, 1.0, 1.0, 0.5),       # a very small dt: five hundred steps
+    ], ids=["large_averaging_time", "small_dt"])
+    def test_smooth_of_a_step(self, stoptime, dt, height, at, averaging_time):
+        model = Model(starttime=0, stoptime=stoptime, dt=dt, name='smooth_of_step_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(height, at)
+        out = model.converter('out')
+        out.equation = sd.smooth(model, inp, averaging_time, 0.0)
         run_parity(model, ['out'], atol=1e-9)
 
     def test_smooth_ramp_input(self):
@@ -1489,12 +1595,22 @@ class TestParitySmooth:
 class TestParityTrend:
     """sd.trend — fractional rate of change."""
 
-    def test_trend_step_input(self):
-        model = Model(starttime=1, stoptime=10, dt=0.25, name='trend_step_par')
+    @pytest.mark.parametrize("dt", [0.25, 0.1])
+    def test_trend_step_input(self, dt):
+        model = Model(starttime=1, stoptime=10, dt=dt, name='trend_step_par')
         inp = model.converter('input')
         inp.equation = sd.step(10.0, 3.0)
         out = model.converter('out')
         out.equation = sd.trend(model, inp, 2.0, 5.0)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_trend_large_averaging_time(self):
+        """Slow response to a step."""
+        model = Model(starttime=0, stoptime=20, dt=0.5, name='trend_slow_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(10.0, 5.0)
+        out = model.converter('out')
+        out.equation = sd.trend(model, inp, 8.0, 5.0)
         run_parity(model, ['out'], atol=1e-9)
 
     def test_trend_linear_input(self):
@@ -1505,9 +1621,10 @@ class TestParityTrend:
         out.equation = sd.trend(model, inp, 1.0, 1.0)
         run_parity(model, ['out'], atol=1e-9)
 
-    def test_trend_constant_input(self):
+    @pytest.mark.parametrize("dt", [0.5, 0.1])
+    def test_trend_constant_input(self, dt):
         """Constant input — trend should converge to zero."""
-        model = Model(starttime=0, stoptime=10, dt=0.5, name='trend_const_par')
+        model = Model(starttime=0, stoptime=10, dt=dt, name='trend_const_par')
         inp = model.converter('input')
         inp.equation = 5.0
         out = model.converter('out')
@@ -1524,6 +1641,38 @@ class TestParityDelay:
         b = model.converter('b')
         a.equation = sd.time()
         b.equation = sd.delay(model, a, 3.0, 0.0)
+        _, rust = run_parity(model, ['a', 'b'], atol=1e-10)
+
+        # The initial value until the duration has passed, then a(t - 3)
+        assert [rust['b'][rust_time_key(t)] for t in range(6)] == [0.0, 0.0, 0.0, 0.0, 1.0, 2.0]
+
+    def test_delay_step_input(self):
+        """The step comes out shifted by the duration."""
+        model = Model(starttime=0, stoptime=10, dt=0.5, name='delay_step_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(5.0, 3.0)
+        delayed = model.converter('delayed')
+        delayed.equation = sd.delay(model, inp, 2.0, 0.0)
+        run_parity(model, ['delayed'], atol=1e-10)
+
+    def test_delay_zero_duration(self):
+        """A duration of 0 returns the current value."""
+        model = Model(starttime=0, stoptime=5, dt=1, name='delay_zero_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        a.equation = sd.time()
+        b.equation = sd.delay(model, a, 0.0, 0.0)
+        run_parity(model, ['a', 'b'], atol=1e-10)
+
+    def test_delay_without_an_initial_value_starts_from_the_input_at_the_start(self):
+        """XMILE's DELAY and the Python engine hold the input's value at the start time
+        until the delay has passed. The Rust engine read the input of the current step,
+        so a rising input came out rising from the first step on."""
+        model = Model(starttime=0, stoptime=6, dt=1, name='delay_default_par')
+        a = model.converter('a')
+        b = model.converter('b')
+        a.equation = 10.0 * sd.time() + 5.0
+        b.equation = sd.delay(model, a, 3.0)
         run_parity(model, ['a', 'b'], atol=1e-10)
 
     def test_delay_fractional_dt(self):
@@ -1631,6 +1780,17 @@ class TestParityFloorCeil:
 # or a `delay` (reads memo[step - delay_steps]). These tests pin down which
 # shapes must load and which must stay rejected.
 # ---------------------------------------------------------------------------
+
+def assert_both_engines_reject(model, equation, message):
+    """Both engines refuse the model and name the loop in the same words: Rust when it
+    loads the model, Python when it is first asked for `equation`."""
+    with pytest.raises(ValueError) as rust:
+        RustSdEngine().load_model(model.to_json())
+    with pytest.raises(ValueError) as python:
+        model.evaluate_equation(equation, model.starttime)
+    assert str(rust.value) == message
+    assert str(python.value) == message
+
 
 class TestParityFeedbackLoops:
 
@@ -1757,19 +1917,15 @@ class TestParityFeedbackLoops:
 
     def test_algebraic_loop_is_rejected(self):
         """A loop with no time offset anywhere cannot be evaluated in one pass, and the
-        error names the equations that form it — Python itself can only offer a
-        RecursionError, so this message is the only cycle diagnosis a model author gets.
-        """
+        error names the equations that form it, in the same words on both engines."""
         model = Model(starttime=1, stoptime=5, dt=1, name='loop_algebraic_par')
         a = model.converter('a')
         b = model.converter('b')
         a.equation = b + 1.0
         b.equation = a * 2.0
 
-        with pytest.raises(ValueError) as excinfo:
-            RustSdEngine().load_model(model.to_json())
-        assert str(excinfo.value) == \
-            "Cyclic dependency among non-stock entities: a → b → a"
+        assert_both_engines_reject(
+            model, 'b', "Cyclic dependency among non-stock entities: a → b → a")
 
     def test_cycle_error_names_dotted_module_equations(self):
         """The names are reported verbatim, including Module namespacing — this is what
@@ -1782,12 +1938,10 @@ class TestParityFeedbackLoops:
         making.equation = decision
         sending.equation = making
 
-        with pytest.raises(ValueError) as excinfo:
-            RustSdEngine().load_model(model.to_json())
-        assert str(excinfo.value) == (
+        assert_both_engines_reject(model, 'wholesaler.orderDecision', (
             "Cyclic dependency among non-stock entities: "
             "wholesaler.makingOrders → wholesaler.orderDecision → "
-            "wholesaler.sendingOrders → wholesaler.makingOrders")
+            "wholesaler.sendingOrders → wholesaler.makingOrders"))
 
     def test_loop_closed_by_zero_duration_delay_is_rejected(self):
         """delay(x, 0) reads the *current* step, so it breaks no loop."""
@@ -1797,7 +1951,45 @@ class TestParityFeedbackLoops:
         a.equation = d + 1.0
         d.equation = sd.delay(model, a, 0.0, 0.0)
 
-        with pytest.raises(ValueError) as excinfo:
-            RustSdEngine().load_model(model.to_json())
-        assert str(excinfo.value) == \
-            "Cyclic dependency among non-stock entities: a → d → a"
+        assert_both_engines_reject(
+            model, 'a', "Cyclic dependency among non-stock entities: a → d → a")
+
+    def test_a_delay_that_shrinks_below_half_a_step_inside_its_loop_stops_both(self):
+        """From t=3 the delay reads the step it is in, and the loop has no order there:
+        Python meets it as a cycle, Rust as a delay reading what is not computed yet."""
+        model = Model(starttime=0, stoptime=6, dt=1, name='loop_short_delay_par')
+        a = model.converter('a')
+        d = model.converter('d')
+        duration = model.converter('duration')
+        duration.equation = sd.If(sd.time() >= 3, 0.2, 1.0)
+        a.equation = d + 1.0
+        d.equation = sd.delay(model, a, duration, 0.0)
+
+        assert [model.evaluate_equation('a', t) for t in range(3)] == [1.0, 2.0, 3.0]
+        with pytest.raises(ValueError, match="Cyclic dependency among non-stock entities"):
+            model.evaluate_equation('a', 3)
+        with pytest.raises(RuntimeError,
+                           match="Cyclic dependency among non-stock entities at t=3.0"):
+            RustSdEngine().load_model(model.to_json()).simulate(['a'])
+
+    def test_sub_elements_of_one_array_reading_each_other_are_rejected(self):
+        """Arrays reach the engine one entity per sub-element, and a loop between two
+        of them is a loop like any other."""
+        model = Model(starttime=0, stoptime=3, dt=1, name='loop_array_par')
+        a = model.converter('a')
+        a.setup_vector(2, 0.0)
+        a[0].equation = a[1] + 1.0
+        a[1].equation = a[0] * 2.0
+
+        assert_both_engines_reject(
+            model, 'a[1]', "Cyclic dependency among non-stock entities: a[0] → a[1] → a[0]")
+
+    def test_sub_element_reading_its_neighbour_runs(self):
+        """The same two sub-elements with the dependency in one direction only."""
+        model = Model(starttime=0, stoptime=3, dt=1, name='chain_array_par')
+        a = model.converter('a')
+        a.setup_vector(2, 0.0)
+        a[0].equation = 5.0
+        a[1].equation = a[0] + 1.0
+
+        run_parity(model, ['a[0]', 'a[1]'], atol=1e-10)

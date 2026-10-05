@@ -12,7 +12,6 @@
 import itertools
 import re
 import sys
-import threading
 
 import json
 
@@ -20,18 +19,58 @@ import pandas as pd
 import numpy as np
 import BPTK_Py.config.config as default_config
 import BPTK_Py.logger.logger as logmod
+from .exceptions import RustBackendError
 from .logger import log
 from .scenariomanager import ScenarioManagerFactory
 from .scenariomanager import ScenarioManagerSd
 from .scenariomanager import ScenarioManagerHybrid
 from .scenariorunners import HybridRunner
 from .scenariorunners import SdRunner
+from .scenariorunners.sd_runner import index_equations
 from .util.didyoumean import didyoumean
 from .visualizations import visualizer
 from copy import deepcopy
 
 
-#plt.interactive(True)
+def _as_list(value):
+    """A comma-separated string as the list of names it holds; a list as it is; None,
+    the default of every list parameter, as an empty list."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else value.split(",")
+
+
+def _agent_arguments_valid(agents, agent_states, agent_properties, agent_property_types):
+    """Log an error and return False if an agent argument is given without the one it needs."""
+    if len(agent_states) > 0 and len(agents) == 0:
+        log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
+        return False
+
+    if len(agent_properties) > 0 and len(agents) == 0:
+        log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
+        return False
+
+    if len(agent_properties) > 0 and len(agent_property_types) == 0:
+        log("[ERROR] You must set the relevant property types if you specify an agent_property!")
+        return False
+
+    if len(agent_property_types) > 0 and len(agent_properties) == 0:
+        log(
+            "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+        return False
+
+    return True
+
+
+def _report_not_found(message, name, candidates):
+    """Log `message` as an error, with the nearest of `candidates` as a suggestion."""
+    nearest = didyoumean(name, candidates, 3)
+    if len(nearest) > 0:
+        log("[ERROR] {}! Did you maybe mean one of \"{}\"?".format(message, ", ".join(nearest)))
+    else:
+        log("[ERROR] {}!".format(message))
+
+
 
 class conf:
     def __init__(self):
@@ -162,26 +201,21 @@ class bptk():
         if loglevel in ["WARN", "ERROR", "INFO"]:
             self.config.loglevel = loglevel
         else:
-            log("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: {}".format(
-                str(["INFO", "WARN", "ERROR"])))
+            log("[ERROR] Invalid log level {}, using {} instead. Valid loglevels: {}".format(
+                loglevel, self.config.loglevel, str(["INFO", "WARN", "ERROR"])))
 
         logmod.logmodes = self.config.configuration["log_modes"]
         logmod.loglevel = self.config.loglevel
         logmod.logfile = self.config.configuration["log_file"]
 
-        # Default execution backend for SD step-by-step *sessions*. The value is
+        # Default execution backend for SD scenarios. The value is
         # copied from `configuration` into config.configuration by the generic loop
         # above (default "python", from config.py); validate it here — after logging
         # is configured — so an invalid value is reported through the configured
-        # logger and falls back. An explicit backend on begin_session() or the
-        # /begin-session request body overrides this per session.
-        #
-        # Scope: this default applies ONLY to begin_session() (the long-lived,
-        # configured-instance / server path). It intentionally does NOT change the
-        # default of the ad-hoc run_scenarios()/plot_scenarios()/Model.simulate()
-        # calls — those stay "python" unless backend="rust" is passed explicitly.
-        # Rationale: config is for setting up an instance from scratch; a quick
-        # one-off simulate shouldn't silently switch engine because of instance config.
+        # logger and falls back. Every method of this instance that takes a backend -
+        # run_scenarios(), plot_scenarios(), begin_session() - uses this one unless
+        # it is given another. Model.simulate() is the model's, not the instance's,
+        # and stays "python".
         self.default_backend = self.config.configuration.get("default_backend", "python")
         if self.default_backend not in ("python", "rust"):
             log("[ERROR] Invalid default_backend '{}' — falling back to 'python'".format(self.default_backend))
@@ -213,7 +247,9 @@ class bptk():
         if configuration and isinstance(configuration, dict):
             self.plotting_config.update(configuration)
 
-        self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"], self.config.configuration["set_model_monitor"])
+        self.scenario_manager_factory = ScenarioManagerFactory(self.config.configuration["set_scenario_monitor"],
+                                                               self.config.configuration["set_model_monitor"],
+                                                               self.config.configuration["scenario_storage"])
 
         import sys
         from pathlib import Path
@@ -221,13 +257,13 @@ class bptk():
         base_path = scenario_storage_path.parent
         if str(base_path) not in sys.path:
             sys.path.append(str(base_path))
-        self.scenario_manager_factory.get_scenario_managers(path=self.config.configuration["scenario_storage"]) 
+        self.scenario_manager_factory.get_scenario_managers()
 
         self.visualizer = visualizer(config=self.config, plot_config=self.plotting_config)
         self.session_state = None
 
-    def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
-                          agent_properties=[], agent_property_types=[], series_names=None, return_df=False,
+    def train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=None, agent_states=None,
+                          agent_properties=None, agent_property_types=None, series_names=None, return_df=False,
                           progress_bar=False):
         """Used to run a scenario repeatedly in episodes.
 
@@ -246,15 +282,15 @@ class bptk():
                 The scenario managers to select the scenarios from
             episodes: Integer (Default=1).
                 The number of episodes to run
-            agents: List (Default=[]).
+            agents: List (Default=None).
                 The agents containing the results we want to measure.
-            agent_states: List (Default=[]).
+            agent_states: List (Default=None).
                 The agent state information we are interested in.
-            agent_properties: List (Default=[]).
+            agent_properties: List (Default=None).
                 The agent property information we are interested in.
-            agent_property_types: List (Default=[]).
+            agent_property_types: List (Default=None).
                 The agent property type we are interested in.
-            series_names: Dictionary (Default={}).
+            series_names: Dictionary (Default=None).
                 Allows renaming of variables in the plots
             return_df: Boolean (Default=False).
                 Defines whether to plot the results (default) or return results as a dataframe.
@@ -264,6 +300,10 @@ class bptk():
         Returns:
             dataframe: If return_df is true it returns a dataframe of the results, otherwise the results are plotted directly.
         """
+        agents = [] if agents is None else agents
+        agent_states = [] if agent_states is None else agent_states
+        agent_properties = [] if agent_properties is None else agent_properties
+        agent_property_types = [] if agent_property_types is None else agent_property_types
 
         # Avoid a shared mutable default: series_names is mutated below (renaming
         # rule), so a dict default would leak state across calls.
@@ -271,21 +311,21 @@ class bptk():
 
         log("[INFO] Starting model training")
 
-        progress_widget = None
-        if progress_bar:
-            from .util import ProgressBar, start_or_run
-
-            progress_widget = ProgressBar(description='Running')
-
-            thread = start_or_run(self._train_scenarios, args=(
-            scenarios, scenario_managers, episodes, agents, agent_states, agent_properties, agent_property_types,
-            series_names, return_df, progress_widget))
-            if thread is not None:
-                thread.join()
-            progress_widget.close()
-        else:
+        if not progress_bar:
             return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
                                            agent_properties, agent_property_types, series_names, return_df)
+
+        # Run in the calling thread: the bar updates without one, and a thread would
+        # lose the result and any exception, and plot outside the main thread.
+        from .util import ProgressBar
+
+        progress_widget = ProgressBar(description='Running')
+        try:
+            return self._train_scenarios(scenarios, scenario_managers, episodes, agents, agent_states,
+                                           agent_properties, agent_property_types, series_names, return_df,
+                                           progress_widget)
+        finally:
+            progress_widget.close()
 
     def _set_state(self, state):
         if(state is not None and not "lock" in state.keys()):
@@ -305,8 +345,8 @@ class bptk():
             return self.session_state["lock"]
         return False
 
-    def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=[], agent_states=[],
-                           agent_properties=[], agent_property_types=[], series_names=None, return_df=False,
+    def _train_scenarios(self, scenarios, scenario_managers, episodes=1, agents=None, agent_states=None,
+                           agent_properties=None, agent_property_types=None, series_names=None, return_df=False,
                            progress_widget=None):
         """
         Used to run a simulation repeatedly in episodes. Ensures that the begin_epsiode and end_epsisode methds are called on the underlying model. Currently this method only works on agent-based-models
@@ -326,10 +366,12 @@ class bptk():
         # rule), so a dict default would leak state across calls.
         series_names = series_names if series_names is not None else {}
 
-        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
-        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
-        agents = agents if type(agents) is list else agents.split(",")
-        agent_states = agent_states if type(agent_states) is list else agent_states.split(",")
+        scenarios = _as_list(scenarios)
+        scenario_managers = _as_list(scenario_managers)
+        agents = _as_list(agents)
+        agent_states = _as_list(agent_states)
+        agent_properties = _as_list(agent_properties)
+        agent_property_types = _as_list(agent_property_types)
 
         # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
         if len(scenario_managers) == 1 and len(scenarios) == 1:
@@ -337,22 +379,7 @@ class bptk():
                 for agent in agents:
                     series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + agent] = agent
 
-        # Make sure that agent_states is only used when agent is used!
-        if len(agent_states) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            return None
-
-        if len(agent_properties) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
-            return None
-
-        if len(agent_properties) > 0 and len(agent_property_types) == 0:
-            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
-            return None
-
-        if len(agent_property_types) > 0 and len(agent_properties) == 0:
-            log(
-                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+        if not _agent_arguments_valid(agents, agent_states, agent_properties, agent_property_types):
             return None
 
         dfs = []
@@ -403,10 +430,9 @@ class bptk():
                                         )
 
 
-    def begin_session(self, scenarios, scenario_managers, settings={},agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], individual_agent_properties=[], equations=[],starttime=0.0, dt=1.0,
-                       backend=None, seed=None):
-        """Begins a session to allow stepwise simulation.
+    def begin_session(self, scenarios, scenario_managers, settings=None, equations=None, starttime=0.0, dt=1.0,
+                      backend=None, seed=None):
+        """Begins a session to allow stepwise simulation of System Dynamics scenarios.
 
         This resets the internal session cache, there can only be one session at any time.
 
@@ -423,16 +449,9 @@ class bptk():
                 Names of scenario managers to plot
             settings: Dict.
                 Dictionary of settings that can override default scenario settings
-            agents: List.
-                List of agents to plot (Agent based modelling)
-            agent_states: List.
-                List of agent states to plot, REQUIRES "AGENTS" param
-            agent_properties: List.
-                List of agent properties to plot, REQUIRES "AGENTS" param
-            individual_agent_properties: List.
-                List of individual agent properties
             equations: list.
-                Names of equations to plot (System Dynamics).
+                Names of equations to simulate. A session runs System Dynamics
+                scenarios only; an agent-based model runs with run_scenarios().
             starttime: Float (Default=0.0)
                 Timestep at which to start.
             dt: Dt (Default=1.0)
@@ -443,8 +462,9 @@ class bptk():
                 "python" unless configured otherwise), so an explicit value here
                 always overrides the instance default. When "rust", each scenario
                 lazily initialises a RustSdModel on its first step; if JSON
-                serialisation or any Rust call fails, that scenario falls back to
-                the Python backend for the rest of the session.
+                serialisation or any Rust call fails, the step raises
+                RustBackendError naming the cause - the session does not continue
+                on the Python engine.
             seed: Int (Default=None)
                 Optional RNG seed for the Rust backend. Pinning it makes a
                 stochastic model's trajectory reproducible, which is what lets a
@@ -456,47 +476,21 @@ class bptk():
                 explicit seed. Ignored by the Python backend.
 
         """
+        settings = {} if settings is None else settings
         self.session_state = None
 
         # Resolve the backend: an explicit argument wins, otherwise fall back to
         # the instance default (configurable via configuration["default_backend"]).
         backend = backend if backend is not None else self.default_backend
 
-        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
-        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
-        equations = equations if isinstance(equations, list) else equations.split(",")
+        scenarios = _as_list(scenarios)
+        scenario_managers = _as_list(scenario_managers)
+        equations = _as_list(equations)
         settings = settings if isinstance(settings,dict) else json.loads(settings)
-        agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
-        agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
 
-        agent_property_types = agent_property_types if type(
-        agent_property_types) is list else agent_property_types.split(",")
-
-        if len(agents) == len(equations) == 0:
-            log("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!")
+        if len(equations) == 0:
+            log("[ERROR] begin_session: No equations to simulate given! Aborting!")
             return None
-
-        # Make sure that agent_states is only used when agent is used!
-        if len(agent_states) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            return
-
-        if len(individual_agent_properties) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!")
-            return
-
-        if len(agent_properties) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
-            return
-
-        if len(agent_properties) > 0 and len(agent_property_types) == 0:
-            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
-            return
-
-        if len(agent_property_types) > 0 and len(agent_properties) == 0:
-            log(
-                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
-            return
 
         if len(scenario_managers) == 0:
             log(
@@ -510,31 +504,18 @@ class bptk():
         # for and nothing ever says why.
         known_managers = self.scenario_manager_factory.scenario_managers
         for scenario_manager_name in scenario_managers:
-            if scenario_manager_name in known_managers:
-                continue
-            nearest = didyoumean(scenario_manager_name,
-                                 [name for name in known_managers if name != scenario_manager_name], 3)
-            if len(nearest) > 0:
-                log("[ERROR] begin_session: scenario manager \"{}\" not found! Did you maybe mean one of \"{}\"?".format(
-                    scenario_manager_name, ", ".join(nearest)))
-            else:
-                log("[ERROR] begin_session: scenario manager \"{}\" not found!".format(scenario_manager_name))
+            if scenario_manager_name not in known_managers:
+                _report_not_found("begin_session: scenario manager \"{}\" not found".format(scenario_manager_name),
+                                  scenario_manager_name, known_managers)
 
         #TODO need methods in scenario_manager_factory to make the following easier ...
 
         available_scenarios = self.scenario_manager_factory.get_scenarios(
             scenario_managers=[name for name in scenario_managers if name in known_managers])
         for scenario_name in scenarios:
-            if scenario_name in available_scenarios:
-                continue
-            nearest = didyoumean(scenario_name,
-                                 [name for name in available_scenarios if name != scenario_name], 3)
-            if len(nearest) > 0:
-                log("[ERROR] begin_session: scenario \"{}\" not found in any of the scenario managers given! Did you maybe mean one of \"{}\"?".format(
-                    scenario_name, ", ".join(nearest)))
-            else:
-                log("[ERROR] begin_session: scenario \"{}\" not found in any of the scenario managers given!".format(
-                    scenario_name))
+            if scenario_name not in available_scenarios:
+                _report_not_found("begin_session: scenario \"{}\" not found in any of the scenario managers given".format(
+                    scenario_name), scenario_name, available_scenarios)
 
         # Sessions are System Dynamics only. The cache below asks every scenario for
         # its memo grid, which an agent-based model has no equivalent of, so the call
@@ -547,6 +528,9 @@ class bptk():
             log("[ERROR] begin_session: sessions support System Dynamics scenarios only, and \"{}\" is agent-based. Use run_scenarios() to simulate it.".format(
                 ", ".join(agent_based)))
             return None
+
+        index_equations(equations, {name: sc for name, sc in available_scenarios.items() if name in scenarios},
+                        caller="begin_session")
 
         starttime_ = starttime
         stoptime_ = None
@@ -580,11 +564,6 @@ class bptk():
             "scenarios": scenarios,
             "scenario_managers": scenario_managers,
             "settings": settings,
-            "agents": agents,
-            "agent_states": agent_states,
-            "agent_properties":agent_properties,
-            "agent_property_types":agent_property_types,
-            "individual_agent_properties":individual_agent_properties,
             "equations": equations,
             "step": starttime_,
             "starttime": starttime_,
@@ -612,8 +591,11 @@ class bptk():
                             if getattr(scenario_object, "rust_model", None) is not None:
                                 try:
                                     scenario_object.rust_model.reset()
-                                except Exception:
-                                    pass
+                                except Exception as error:
+                                    # The state is dropped below either way; a failing reset
+                                    # only means there was less to release
+                                    log("[WARN] end_session: releasing the Rust state of {} failed: {}".format(
+                                        scenario, error))
                                 scenario_object.rust_model = None
                                 scenario_object._rust_initial = None
                                 scenario_object._rust_initial_returned = False
@@ -623,9 +605,16 @@ class bptk():
 
 
     def progress(self):
-        """Returns the progress of a simulation as float.
+        """Returns the progress of a session as float: the share of its steps that have run.
+
+        0.0 before the first step, 1.0 once the step at the stop time has run.
         """
-        return float(self.session_state["step"]) / float(self.session_state["stoptime"])
+        starttime = float(self.session_state["starttime"])
+        stoptime = float(self.session_state["stoptime"])
+        dt = float(self.session_state["dt"])
+        steps = round((stoptime - starttime) / dt) + 1
+        done = round((float(self.session_state["step"]) - starttime) / dt)
+        return done / steps
 
 
 
@@ -640,13 +629,8 @@ class bptk():
             return None
 
         scenario_managers = self.session_state["scenario_managers"]
-        agents = self.session_state["agents"]
         scenarios = self.session_state["scenarios"]
         session_settings = self.session_state["settings"]
-        agent_states=self.session_state["agent_states"]
-        agent_properties=self.session_state["agent_properties"]
-        agent_property_types=self.session_state["agent_property_types"]
-        individual_agent_properties=self.session_state["individual_agent_properties"]
         equations = self.session_state["equations"]
         step = self.session_state["step"]
         stoptime = self.session_state["stoptime"]
@@ -680,26 +664,8 @@ class bptk():
 
         for _ , manager in self.scenario_manager_factory.scenario_managers.items():
 
-            # Handle Hybrid scenarios
-            # Unreachable, like its twin further down: begin_session refuses an
-            # agent-based scenario manager, so no session can be standing here with one.
-            if manager.type == "abm" and manager.name in scenario_managers and len(agents) > 0:  # pragma: no cover
-                runner = HybridRunner(self.scenario_manager_factory)
-                simulation_results[manager.name] = runner.run_scenario_step(
-                    step=step,
-                    abm_results_dict={},
-                    return_format='json',
-                    scenarios=[scenario for scenario in manager.scenarios.keys() if scenario in scenarios],
-                    equations=equations,
-                    agents=agents,
-                    scenario_managers=[manager.name],
-                    agent_states=agent_states,
-                    agent_properties=agent_properties,
-                    agent_property_types=agent_property_types,
-                    individual_agent_properties=individual_agent_properties
-                )
-            # Handle SD scenarios and sort by scenarios
-            elif manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
+            # Sessions are System Dynamics only: begin_session refuses anything else
+            if manager.name in scenario_managers and manager.type == "sd" and len(equations) > 0:
                 runner = SdRunner(self.scenario_manager_factory)
 
                 simulation_results[manager.name] = runner.run_scenario_step(
@@ -733,7 +699,7 @@ class bptk():
 
         # For a Rust-backed session, also persist the engine's memo grid so the
         # session can resume by importing it (no per-round replay). export_state()
-        # returns None if the scenario has no live rust_model (e.g. Python fallback).
+        # returns None if the scenario has no live rust_model (it has not run a step yet).
         if self.session_state.get("backend", "python") == "rust":
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
                 if manager.name in scenario_managers and manager.type == "sd":
@@ -779,8 +745,7 @@ class bptk():
            but it is always correct including bit-identical stochastic replay.
 
         This is a no-op when the session is still in memory (each scenario already
-        holds a live ``rust_model``) and for scenarios permanently fallen back to
-        Python. It is self-guarding: once a scenario's ``rust_model`` is rebuilt it
+        holds a live ``rust_model``). It is self-guarding: once a scenario's ``rust_model`` is rebuilt it
         won't be restored again, so calling this on every ``run_step`` is cheap.
 
         The step grid (``starttime`` / ``dt`` / current ``step``) — not the
@@ -850,7 +815,7 @@ class bptk():
                         sc, manager.name, sc_name, equations, blob,
                         folded.get(manager.name, {}).get(sc_name), seed=seed,
                     )
-                except (ValueError, ImportError, AttributeError) as e:
+                except (RustBackendError, ValueError, ImportError, AttributeError) as e:
                     log("[WARN] Rust import_state failed for '{}': {} — replaying instead".format(sc_name, str(e)))
                     sc.rust_model = None
                     sc._rust_initial = None
@@ -892,15 +857,7 @@ class bptk():
 
             for _, manager in self.scenario_manager_factory.scenario_managers.items():
 
-                # Handle Hybrid scenarios
-                # Unreachable: begin_session refuses an agent-based scenario manager, so
-                # no session can be standing here with one. Kept as the place where ABM
-                # sessions would begin if the cache machinery ever grows a memo grid an
-                # agent-based model can supply.
-                if manager.type == "abm" and manager.name in self.session_state["scenario_managers"] and len(self.session_state["agents"]) > 0:  # pragma: no cover
-                    print("run_step currently only supports SD scenarios")
-                    # Handle SD scenarios and sort by scenarios
-                elif manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
+                if manager.name in self.session_state["scenario_managers"] and manager.type == "sd" and len(self.session_state["equations"]) > 0:
                     for scenario in manager.scenarios.keys():
                         if scenario in self.session_state["scenarios"]:
                             for equation in self.session_state["equations"]:
@@ -923,11 +880,11 @@ class bptk():
 
             return results
 
-    def run_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[], series_names=None,
+    def run_scenarios(self, scenarios, scenario_managers, agents=None, agent_states=None, agent_properties=None,
+                       agent_property_types=None, equations=None, series_names=None,
                        progress_bar=False,
                        return_format = "df",
-                       backend = "python"
+                       backend = None
                        ):
 
         """Run a set of scenarios.
@@ -953,25 +910,22 @@ class bptk():
                 Set True if you want to show a progress bar (useful for ABM simulations)
             return_format: String.
                 The data type of the return, which can either be 'df' for dataframe, 'dict' for a dictionary of dataframes or 'json' for a JSON string.
-            backend: String (Default='python').
+            backend: String (Default=None).
                 Execution backend: 'python' or 'rust'. Only applies to SD scenarios.
-                Note: this defaults to 'python' regardless of the instance's
-                ``default_backend`` configuration — that config only governs
-                begin_session() sessions. To run an ad-hoc simulation on Rust, pass
-                backend='rust' explicitly here.
+                None uses the instance's ``default_backend``, which is 'python' unless
+                configured otherwise.
 
         Returns:
             Based on the return_format value, results are returned as df, dict, or a json string
         """
 
-        scenarios = scenarios if isinstance(scenarios,list) else scenarios.split(",")
-        scenario_managers = scenario_managers if isinstance(scenario_managers, list) else scenario_managers.split(",")
-        equations = equations if isinstance(equations, list) else equations.split(",")
-        agent_states = agent_states if isinstance(agent_states, list) else agent_states.split(",")
-        agent_properties = agent_properties if isinstance(agent_properties, list) else agent_properties.split(",")
-
-        agent_property_types = agent_property_types if type(
-            agent_property_types) is list else agent_property_types.split(",")
+        scenarios = _as_list(scenarios)
+        scenario_managers = _as_list(scenario_managers)
+        equations = _as_list(equations)
+        agents = _as_list(agents)
+        agent_states = _as_list(agent_states)
+        agent_properties = _as_list(agent_properties)
+        agent_property_types = _as_list(agent_property_types)
 
 
         if len(agents) == len(equations) == 0:
@@ -982,6 +936,8 @@ class bptk():
         # not to the call, so a renaming rule written into it outlives the call and
         # every bptk() instance in the process.
         series_names = series_names if series_names is not None else {}
+
+        backend = backend if backend is not None else self.default_backend
 
         # MAKE A SERIES RENAMING RULE IN CASE WE ONLY OBSERVER ONE SCENARIO MANAGER AND SCENARIO
         if len(scenario_managers) == 1 and len(scenarios) == 1:
@@ -994,22 +950,7 @@ class bptk():
                     if not scenario_managers[0] + "_" + scenarios[0] + "_" + equation in series_names.keys():
                         series_names[scenario_managers[0] + "_" + scenarios[0] + "_" + equation] = equation
 
-        # Make sure that agent_states is only used when agent is used!
-        if len(agent_states) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!")
-            return
-
-        if len(agent_properties) > 0 and len(agents) == 0:
-            log("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!")
-            return
-
-        if len(agent_properties) > 0 and len(agent_property_types) == 0:
-            log("[ERROR] You must set the relevant property types if you specify an agent_property!")
-            return
-
-        if len(agent_property_types) > 0 and len(agent_properties) == 0:
-            log(
-                "[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!")
+        if not _agent_arguments_valid(agents, agent_states, agent_properties, agent_property_types):
             return
 
         simulation_results = []
@@ -1063,28 +1004,13 @@ class bptk():
         ## Finding the most similar scenarios (managers) for giving hints: "Did you maybe mean one of xyz, abc,..."?
         for scenario_m in scenario_managers:
             if scenario_m not in consumed_scenario_managers:
-                all_managers = [x for x in self.scenario_manager_factory.scenario_managers.keys() if x != scenario_m]
-
-                nearest_managers = didyoumean(scenario_m, all_managers, 3)
-
-                if len(nearest_managers) > 0:
-                    log("[ERROR] Scenario manager \"{}\" not found! Did you maybe mean one of \"{}\"?".format(
-                        scenario_m, ", ".join(nearest_managers)))
-                else:
-                    log("[ERROR] Scenario manager \"{}\" not found!".format(scenario_m))
+                _report_not_found("Scenario manager \"{}\" not found".format(scenario_m),
+                                  scenario_m, self.scenario_manager_factory.scenario_managers)
 
         for scenario in scenarios:
             if scenario not in consumed_scenarios:
-                all_scenarios = [x for x in
-                                 self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers) if
-                                 x != scenario]
-                nearest_scenarios = didyoumean(scenario, all_scenarios, 3)
-                if len(nearest_scenarios) > 0:
-                    log(
-                        "[ERROR] Scenario \"{}\" not found in any scenario manager! Did you maybe mean one of \"{}\"?".format(
-                            scenario, ", ".join(nearest_scenarios)))
-                else:
-                    log("[ERROR] Scenario \"{}\" not found in any scenario manager!".format(scenario))
+                _report_not_found("Scenario \"{}\" not found in any scenario manager".format(scenario), scenario,
+                                  self.scenario_manager_factory.get_scenarios(scenario_managers=scenario_managers))
 
         if len(simulation_results) == 0:
             log("[WARN] No output data produced. Hopefully this was your intention.")
@@ -1111,17 +1037,16 @@ class bptk():
             log("[ERROR] No output data produced.")
             return None
 
-        try:
+        # series_names renames DataFrame columns; the dict and JSON formats keep their names
+        if isinstance(df, pd.DataFrame):
             df = df.rename(columns=series_names)
-        except:
-            pass
 
 
         return df
 
 
-    def plot_scenarios(self, scenarios, scenario_managers, agents=[], agent_states=[], agent_properties=[],
-                       agent_property_types=[], equations=[],
+    def plot_scenarios(self, scenarios, scenario_managers, agents=None, agent_states=None, agent_properties=None,
+                       agent_property_types=None, equations=None,
                        kind=None,
                        alpha=None, stacked=None,
                        freq="D", start_date="", title="", visualize_from_period=0, visualize_to_period=0, x_label="",
@@ -1130,7 +1055,7 @@ class bptk():
                        progress_bar=False,
                        return_df=False,
                        format="plot",
-                       backend="python",
+                       backend=None,
                        matplotlib_rc_settings=None
                       ):
 
@@ -1184,15 +1109,18 @@ class bptk():
                 configuration rather than replacing it. The central configuration - set
                 through the `configuration` argument of the constructor - is left alone,
                 so the next plot is styled centrally again.
-            backend: String (Default='python').
+            backend: String (Default=None).
                 Execution backend: 'python' or 'rust'. Only applies to SD scenarios.
-                Like run_scenarios(), this defaults to 'python' regardless of the
-                instance's ``default_backend`` configuration (that config only governs
-                begin_session() sessions); pass backend='rust' explicitly to use Rust.
+                None uses the instance's ``default_backend``, as run_scenarios() does.
 
         Returns:
             Dataframe with simulation results if return_df=True.
          """
+        agents = [] if agents is None else agents
+        agent_states = [] if agent_states is None else agent_states
+        agent_properties = [] if agent_properties is None else agent_properties
+        agent_property_types = [] if agent_property_types is None else agent_property_types
+        equations = [] if equations is None else equations
 
         # A dict of its own, because `run_scenarios` writes the renaming rule into
         # whatever it is handed and the visualizer below reads it back out. Sharing one
@@ -1301,9 +1229,9 @@ class bptk():
         if not alpha: alpha = self.config.configuration["alpha"]
         if not stacked: stacked = self.config.configuration["stacked"]
 
-        scenarios = scenarios if type(scenarios) is list else scenarios.split(",")
-        scenario_managers = scenario_managers if type(scenario_managers) is list else scenario_managers.split(",")
-        lookup_names = lookup_names if type(lookup_names) is list else lookup_names.split(",")
+        scenarios = _as_list(scenarios)
+        scenario_managers = _as_list(scenario_managers)
+        lookup_names = _as_list(lookup_names)
 
         managers = [manager for name, manager in self.scenario_manager_factory.scenario_managers.items() if
                     name in scenario_managers]
@@ -1388,7 +1316,7 @@ class bptk():
     def reset_scenario(self, scenario_manager, scenario):
         """Reset a scenario
 
-        Reload a scenario from its file. All scenarios for the relevant file are reloaded. NOTE: If the scenario wasn't defined via a file, this removes the scenario from the scenario manager. If you just want to reset the scenario memory, call reset_senario_cache.
+        Reload a scenario from its file. All scenarios for the relevant file are reloaded. NOTE: If the scenario wasn't defined via a file, this removes the scenario from the scenario manager. If you just want to reset the scenario memory, call reset_scenario_cache.
 
         Args:
             scenario_manager: String.
@@ -1405,7 +1333,7 @@ class bptk():
         """
         return self.scenario_manager_factory.reset_all_scenarios()
 
-    def list_scenarios(self, scenario_managers=[], scenario_manager_type=""):
+    def list_scenarios(self, scenario_managers=None, scenario_manager_type=""):
         """ List scenarios for selected scenario managers.
 
         List all scenarios or scenarios from selected scenario managers
@@ -1416,6 +1344,7 @@ class bptk():
             scenario_manager_type: String.
                 The type of scenario manager you want to list your scenarios for ("abm"|"sd"|""), default is an empty string, which returns scenario managers of both types.
         """
+        scenario_managers = [] if scenario_managers is None else scenario_managers
         managers = self.scenario_manager_factory. \
             get_scenario_managers(
             scenario_managers_to_filter=scenario_managers,
@@ -1437,11 +1366,11 @@ class bptk():
                 Name of the scenario.
 
         Returns:
-            For models built using the Model class (ABM, SD DSL, hybrid) this returns the model. For XMILE-models, this returns a SimulationScenario object.
+            For a System Dynamics model - SD DSL or XMILE - a SimulationScenario object, which holds the model. For an agent-based or hybrid model, the model itself.
         """
         return self.scenario_manager_factory.get_scenario(scenario_manager, scenario)
 
-    def get_scenario_names(self, scenario_managers=[], format="list", path=None):
+    def get_scenario_names(self, scenario_managers=None, format="list", path=None):
         """Returns a concatenated list of all the scenario names from a list of scenario managers
 
         Args:
@@ -1454,9 +1383,7 @@ class bptk():
         Returns:
             List of scenario names or a dictionary.
         """
-
-        if not path:
-            path = default_config.configuration["scenario_storage"]
+        scenario_managers = [] if scenario_managers is None else scenario_managers
 
         if format=="list":
             scenarios = []
@@ -1474,7 +1401,7 @@ class bptk():
 
         return []
 
-    def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
+    def get_scenarios(self, scenario_managers=None, scenarios=None, scenario_manager_type=""):
         """Get a dictionary of scenario objects.
 
         The keys of the dictionary are the scenario names, unless more than one scenario manager is passed, in which case the name of the scenario manager is used to prefixes the scenario name (i.e. <scenario_manager>_<scenario>).
@@ -1490,6 +1417,8 @@ class bptk():
         Returns:
                 Dictionary of scenario objects.
         """
+        scenario_managers = [] if scenario_managers is None else scenario_managers
+        scenarios = [] if scenarios is None else scenarios
 
         return self.scenario_manager_factory.get_scenarios(
             scenario_managers=scenario_managers,
@@ -1497,7 +1426,7 @@ class bptk():
             scenario_manager_type=scenario_manager_type
         )
 
-    def list_equations(self, scenario_managers=[], scenarios=[]):
+    def list_equations(self, scenario_managers=None, scenarios=None):
         """  Prints all available equations for the given scenario manager(s) and scenario(s)
 
         Args:
@@ -1509,6 +1438,8 @@ class bptk():
         Returns:
             This method prints the equation(s) and doesn't return anything.
         """
+        scenario_managers = [] if scenario_managers is None else scenario_managers
+        scenarios = [] if scenarios is None else scenarios
 
         result = {}
 
@@ -1690,13 +1621,16 @@ class bptk():
             scenarios: list, default None.
                 List of scenarios to export
             equations: list, default None.
-                List of equations to export.
+                List of equations to export. Required: without it the method raises ValueError.
 
         Returns:
             If passed a filename, then the data is exported to the file and nothing is returned. Else the method returns a dictionary of dataframes.
         """
 
         #TODO it might be better to find a new place for this, closer to the XMILE handling classes
+        if not equations:
+            raise ValueError("export_scenarios needs the equations to export")
+
         # if no scenarios are passed we export all scenarios
         if not scenarios:
             scenarios = self.get_scenario_names(scenario_managers=[scenario_manager])
@@ -1727,9 +1661,9 @@ class bptk():
                     equations=[equation],
                     return_df=True)
                 df.rename(columns={equation: scenario}, inplace=True)
-                if scenario_no is len(scenarios) - 1:
+                if scenario_no == len(scenarios) - 1:
                     df["indicator"] = [equation] * len(df.index)
-                    df["time"] = df.index
+                    df[time_column_name] = df.index
                 scenario_dfs += [df]
 
             # concatenate the indicators for the scenario (i.e. along axis 0)
@@ -1766,7 +1700,7 @@ class bptk():
                 for setting_index, key in enumerate(interactive_settings):
                     df[key] = [setting[setting_index]] * len(df.index)
                 # explicitly set a time column
-                df["time"] = df.index
+                df[time_column_name] = df.index
                 interactive_dfs += [df]
 
             # concatenate the interactive scenarios

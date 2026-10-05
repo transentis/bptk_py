@@ -24,7 +24,7 @@ the first. Deriving guarantees the metadata is identical because it *is* the
 same metadata; only the compiled module and the tags change.
 
 Usage:
-    python scripts/build_any_wheel.py dist/bptk_py-2.4.1-cp311-abi3-macosx_11_0_arm64.whl
+    python scripts/build_any_wheel.py dist/bptk_py-3.3.0-cp312-abi3-macosx_11_0_arm64.whl
     python scripts/build_any_wheel.py dist/bptk_py-*.whl --out dist
 """
 

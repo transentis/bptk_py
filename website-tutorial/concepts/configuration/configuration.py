@@ -121,6 +121,13 @@ def _(mo):
 
     With this setting, log messages are written both to ``test_bptk.log`` and to the console.
 
+    ``loglevel`` decides which messages are logged at all: ``"ERROR"`` lets only errors
+    through, ``"WARN"`` (the default) errors and warnings, and any other value, such as
+    ``"INFO"``, everything.
+
+    Errors are always printed to the console as well, whatever ``"log_modes"`` says - so an
+    invalid argument to a builtin, which logs an error, is seen without any setting.
+
     ## Configure Scenario and Model Monitor
 
     For each ``bptk`` instance you can decide whether changes to scenario files and model files
@@ -147,6 +154,19 @@ def _(mo):
 
     Neither monitor runs in a browser: they need threads that never return, which the browser
     platform does not provide.
+
+    ## Choose the execution engine
+
+    * ``"default_backend"`` — ``"python"`` or ``"rust"``. The engine every call of this
+      instance uses unless it is given a ``backend`` of its own: ``run_scenarios()``,
+      ``plot_scenarios()``, ``begin_session()``. Default: ``"python"``.
+
+    ```python
+    bptk_instance = bptk(configuration={"default_backend": "rust"})
+    ```
+
+    It is read when the instance is created. See [Execution
+    Backends](../execution_backends/execution_backends.md).
 
     ## Configure the path to scenario storage
 
@@ -320,6 +340,10 @@ def _(mo):
     Charts you draw yourself are not affected. The settings are applied around our own
     drawing calls, never written into matplotlib's global `rcParams`, so a figure you
     build with `plt.subplots()` keeps matplotlib's own defaults.
+
+    The default title size is chosen for the default figure width of 20. A different
+    `figsize` scales the title with it, so a narrow plot does not cut its title off; a
+    title size you set yourself with `"axes.titlesize"` is used as it is.
 
     ### Styling a single plot
 

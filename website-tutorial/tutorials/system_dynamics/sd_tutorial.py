@@ -1,5 +1,5 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: A tutorial introduction to System Dynamics with BPTK - stocks, flows, feedback and delay, built up in one model and simulated step by step.
+# description: A tutorial introduction to System Dynamics with BPTK - stocks, flows, converters and feedback, built up in one model step by step.
 # keywords: system dynamics, tutorial, stocks and flows, feedback, bptk, bptk-py, python, business simulation
 import marimo
 
@@ -43,7 +43,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now, let's create the model. It is used to store all stocks, converters and flows. The model runs for 10 years (starttime = 0, stoptime = 10) and we want to analyse the results after each year (dt = 1). In the next steps we are going to add the stocks and flows to the model.
+    First we import what we need. The model itself is created together with its first stock below: it is used to store all stocks, converters and flows. The model runs for 10 years (starttime = 1, stoptime = 10) and we want to analyse the results after each year (dt = 1). In the next steps we are going to add the stocks and flows to the model.
 
     We want to simulate how the population changes in the next ten years under external influences.
     """)
@@ -54,9 +54,7 @@ def _(mo):
 def _():
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
-
-    model = Model(starttime=1.0,stoptime=10.0,dt=1.0,name='Population')
-    return Model, model, sd
+    return Model, sd
 
 
 @app.cell(hide_code=True)
@@ -80,11 +78,12 @@ def _(mo):
 
 
 @app.cell
-def _(model):
+def _(Model):
+    model = Model(starttime=1.0,stoptime=10.0,dt=1.0,name='Population')
     population = model.stock("population")
     population.initial_value = 80000000.0
     population.plot(format="axes")
-    return (population,)
+    return model, population
 
 
 @app.cell(hide_code=True)
@@ -172,41 +171,22 @@ def _(mo):
     and so on...
     ```
 
-    See how easy it is to define this behavior:
+    See how easy it is to define this behavior - and let's check right away whether we
+    obtain the expected results:
     """)
     return
 
 
 @app.cell
-def _(births, deaths, population):
+def _(births, deaths, mo, population):
     population.equation = births - deaths
-    return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    And let's check whether we are able to obtain the expected results:
-    """)
-    return
-
-
-@app.cell
-def _(mo, population):
-    # marimo sends a cell's stdout to the console, not to its output area.
-    # Captured and handed to `mo.plain_text` it comes back as one block.
     with mo.capture_stdout() as output:
         print("population(1): " + str(population(1)))
         print("population(2): " + str(population(2)))
         print("population(3): " + str(population(3)))
 
-    mo.plain_text(output.getvalue())
-    return
-
-
-@app.cell
-def _(population):
-    population.plot(format="axes")
+    mo.vstack([mo.plain_text(output.getvalue()), population.plot(format="axes").figure])
     return
 
 
@@ -238,16 +218,32 @@ def _(mo):
     In the image above, the converters are represented by circles. In Python, we define converters with ``model.converter`` or ``model.constant``. ``constants`` are converters with a constant value (i.e. they never change).
 
     We want to model the birth rate and death rate that are influenced by the food supply.
+
+    The extended model is a model of its own, built from the same stock and flows, so that
+    the first part keeps showing the first part. Its equations below are shown rather than
+    run: they change elements created further up, so an edit to them would not reach the
+    charts. To experiment, change the scenarios further down or the model at the end.
     """)
     return
 
 
 @app.cell
-def _(model):
-    birthRate = model.converter("birthRate")
-    deathRate = model.converter("deathRate")
-    foodAvailablePerPerson = model.converter("foodAvailablePerPerson")
-    foodAvailable = model.constant("foodAvailable")
+def _(Model):
+    model_2 = Model(starttime=1.0, stoptime=10.0, dt=1.0, name="Population")
+    population_2 = model_2.stock("population")
+    population_2.initial_value = 80000000.0
+    births_2 = model_2.flow("births")
+    deaths_2 = model_2.flow("deaths")
+    population_2.equation = births_2 - deaths_2
+    return births_2, deaths_2, model_2, population_2
+
+
+@app.cell
+def _(model_2):
+    birthRate = model_2.converter("birthRate")
+    deathRate = model_2.converter("deathRate")
+    foodAvailablePerPerson = model_2.converter("foodAvailablePerPerson")
+    foodAvailable = model_2.constant("foodAvailable")
     return birthRate, deathRate, foodAvailable, foodAvailablePerPerson
 
 
@@ -260,13 +256,24 @@ def _(mo):
 
     Please note that we do not explicitly model connectors but create the connection by defining equations. Equations are expressive enough to represent interactions between model elements.
 
-    Since `foodAvailable` is a constant, we can initiliaze it with a float value.
+    Since `foodAvailable` is a constant, we can initialize it with a float value.
     """)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    foodAvailable.equation = 80000000.0
+    ```
+    """)
+    return
+
+
+@app.cell(hide_code=True)
 def _(foodAvailable):
+    # Runs the block shown above; keep the two identical.
     foodAvailable.equation = 80000000.0
     return
 
@@ -279,13 +286,28 @@ def _(mo):
     return
 
 
-@app.cell
-def _(birthRate, births, foodAvailable, foodAvailablePerPerson, population):
-    foodAvailablePerPerson.equation = foodAvailable / population
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    foodAvailablePerPerson.equation = foodAvailable / population_2
 
     birthRate.equation = 0.01 * foodAvailablePerPerson
 
-    births.equation = birthRate * population
+    births_2.equation = birthRate * population_2
+    ```
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(birthRate, births_2, foodAvailable, foodAvailablePerPerson, population_2):
+    # Runs the block shown above; keep the two identical.
+    foodAvailablePerPerson.equation = foodAvailable / population_2
+
+    birthRate.equation = 0.01 * foodAvailablePerPerson
+
+    births_2.equation = birthRate * population_2
     return
 
 
@@ -297,9 +319,11 @@ def _(mo):
     return
 
 
-@app.cell
-def _(deathRate, deaths, model, population):
-    model.points["deathRate"] = [
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    model_2.points["deathRate"] = [
         [0.0,1.0],
         [0.1,0.670320046036],
         [0.2,0.449328964117],
@@ -313,7 +337,30 @@ def _(deathRate, deaths, model, population):
         [1.0,0.01]
     ]
 
-    deaths.equation = deathRate * population
+    deaths_2.equation = deathRate * population_2
+    ```
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(deathRate, deaths_2, model_2, population_2):
+    # Runs the block shown above; keep the two identical.
+    model_2.points["deathRate"] = [
+        [0.0,1.0],
+        [0.1,0.670320046036],
+        [0.2,0.449328964117],
+        [0.3,0.301194211912],
+        [0.4,0.201896517995],
+        [0.5,0.135335283237],
+        [0.6,0.0907179532894],
+        [0.7,0.0608100626252],
+        [0.8,0.0407622039784],
+        [0.9,0.025],
+        [1.0,0.01]
+    ]
+
+    deaths_2.equation = deathRate * population_2
     return
 
 
@@ -326,8 +373,8 @@ def _(mo):
 
 
 @app.cell
-def _(model):
-    model.plot_lookup("deathRate", format="axes")
+def _(model_2):
+    model_2.plot_lookup("deathRate", format="axes")
     return
 
 
@@ -339,8 +386,19 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    deathRate.equation = sd.lookup(foodAvailablePerPerson, "deathRate")
+    ```
+    """)
+    return
+
+
+@app.cell(hide_code=True)
 def _(deathRate, foodAvailablePerPerson, sd):
+    # Runs the block shown above; keep the two identical.
     deathRate.equation = sd.lookup(foodAvailablePerPerson, "deathRate")
     return
 
@@ -354,11 +412,11 @@ def _(mo):
 
 
 @app.cell
-def _(model):
+def _(model_2):
     import BPTK_Py
     bptk = BPTK_Py.bptk()
-    bptk.register_model(model)
-    return (bptk,)
+    bptk.register_model(model_2)
+    return BPTK_Py, bptk
 
 
 @app.cell
@@ -402,12 +460,11 @@ def _(mo):
 
 
 @app.cell
-def _(model):
+def _(model_2):
     scenario_manager = {
         "smPopulation":{
-            "model": model,
+            "model": model_2,
             "base_constants": {
-            "population": 80000000.0,
             "foodAvailable": 80000000.0
             },
             "base_points":{
@@ -421,9 +478,10 @@ def _(model):
                 [0.6,0.0907179532894],
                 [0.7,0.0608100626252],
                 [0.8,0.0407622039784],
-                [0.9,0.0273237224473],
-                [1.0,0.0183156388887]]
-            }
+                [0.9,0.025],
+                [1.0,0.01]]
+            },
+            "scenarios": {"base": {}}
         }
     }
     return (scenario_manager,)
@@ -432,28 +490,17 @@ def _(model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The scenario manager has to be registered as follows:
+    The scenario manager has to be registered, and after that we can define and register
+    more scenarios. Let us change `foodAvailable` from 80,000,000 units to 70,000,000 units.
     """)
     return
 
 
 @app.cell
-def _(bptk, scenario_manager):
-    bptk.register_scenario_manager(scenario_manager)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    After registering the scenario mangager, we can define and register more scenarios. Let us change `foodAvailable` from 80,000,000 units to 700,000 units.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.register_scenarios(
+def _(BPTK_Py, scenario_manager):
+    bptk_scenarios = BPTK_Py.bptk()
+    bptk_scenarios.register_scenario_manager(scenario_manager)
+    bptk_scenarios.register_scenarios(
         scenarios ={
             "scenario07": {
                 "constants": {
@@ -462,7 +509,7 @@ def _(bptk):
             }
         },
         scenario_manager="smPopulation")
-    return
+    return (bptk_scenarios,)
 
 
 @app.cell(hide_code=True)
@@ -474,8 +521,8 @@ def _(mo):
 
 
 @app.cell
-def _(bptk):
-    bptk.plot_scenarios(
+def _(bptk_scenarios):
+    bptk_scenarios.plot_scenarios(
         scenarios=["base","scenario07"],
         scenario_managers="smPopulation",
         equations=["population"],
@@ -493,8 +540,8 @@ def _(mo):
 
 
 @app.cell
-def _(bptk):
-    bptk.plot_scenarios(
+def _(bptk_scenarios):
+    bptk_scenarios.plot_scenarios(
         scenarios=["base","scenario07"],
         scenario_managers="smPopulation",
         equations=["deathRate"],
@@ -514,8 +561,8 @@ def _(mo):
 
 
 @app.cell
-def _(bptk):
-    bptk.plot_scenarios(
+def _(bptk_scenarios):
+    bptk_scenarios.plot_scenarios(
         scenarios=["base","scenario07"],
         scenario_managers="smPopulation",
         equations=["population"], 
@@ -529,9 +576,9 @@ def _(mo):
     mo.md(r"""
     ## Try It Yourself
 
-    The tutorial above builds the model one step at a time, and each step's effect shows up
-    in the next diagram. That reads well, but it means editing a step only changes what
-    comes after it once you run that part too.
+    The tutorial above builds the model one step at a time, and the equations of its second
+    part are shown rather than run, because an edit to one step would not reach the charts
+    that come after it.
 
     So here is the finished model in a single cell, with its own name so it cannot collide
     with the one above. Change a number, an equation or a point of the death-rate table and

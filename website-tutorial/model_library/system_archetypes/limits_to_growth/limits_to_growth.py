@@ -55,7 +55,7 @@ def _():
     from BPTK_Py import Model, bptk
     from BPTK_Py import sd_functions as sd
     model = Model(starttime=0.0,stoptime=260.0,dt=1.0,name='Limits_to_growth')
-    # decleare elements
+    # declare elements
     state = model.stock("state")
     change = model.biflow("change")
     adjusted_fractional_change = model.converter("adjusted_fractional_change")
@@ -113,11 +113,6 @@ def _(bptk_1):
         scenario_manager='smLimits_to_growth',
         scenarios={'oscillations': {'constants': {'delay_resource_adequacy': 10.0}}},
     )
-    return
-
-
-@app.cell
-def _(bptk_1):
     bptk_1.plot_scenarios(
         scenario_managers=['smLimits_to_growth'],
         scenarios=['oscillations'],
@@ -172,8 +167,6 @@ def _(bptk_1, change_rate_slider, delay_slider, mo):
         format="axes",
     )
 
-    # Sliders and diagram in one output block: apart, the reader has to scroll
-    # between the control and what it controls.
     mo.vstack([delay_slider, change_rate_slider, _axes.figure])
     return
 

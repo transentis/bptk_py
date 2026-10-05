@@ -28,10 +28,8 @@ class FileAdapter(ExternalStateAdapter):
         """
         state = self._load_instance(instance_uuid)
 
-        # Apply scenario_cache numeric key restoration (no compression, just JSON key conversion fix)
         if(state is not None and state.state is not None):
-            if "scenario_cache" in state.state:
-                state.state["scenario_cache"] = self._restore_numeric_keys(state.state["scenario_cache"])
+            self._restore_time_keys(state.state, instance_uuid)
 
         return state
 
@@ -110,10 +108,8 @@ class FileAdapter(ExternalStateAdapter):
                 uuid = instance_uuid.split(".")[0]
                 instance = self._load_instance(uuid)
                 if instance:
-                    # Apply scenario_cache numeric key restoration (no compression, just JSON key conversion fix)
                     if(instance.state is not None):
-                        if "scenario_cache" in instance.state:
-                            instance.state["scenario_cache"] = self._restore_numeric_keys(instance.state["scenario_cache"])
+                        self._restore_time_keys(instance.state, uuid)
                     instances.append(instance)
 
         return instances

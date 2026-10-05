@@ -16,6 +16,8 @@ import BPTK_Py
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.sddsl import functions as sd
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
+from tests.helpers.log_helpers import clear_log, read_log
+from tests.helpers.arrayed_fixtures import build_workforce_model
 
 
 # ---------------------------------------------------------------------------
@@ -425,393 +427,41 @@ class TestModelSimulate:
         # Ensure same column order before comparison (Rust HashMap is unordered)
         assert_frame_equal(py[sorted(py.columns)], rust[sorted(rust.columns)])
 
-
-# ---------------------------------------------------------------------------
-# Tests: Smooth model
-# ---------------------------------------------------------------------------
-
-class TestSmoothModel:
-    @pytest.fixture
-    def smooth_bptk(self):
-        """Model using sd.smooth() — smooths a step input."""
-        model = Model(starttime=1, stoptime=10, dt=0.1, name="smooth_test")
-
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.step(10.0, 3.0)
-
-        smooth_out = model.converter("smooth_out")
-        smooth_out.equation = sd.smooth(model, input_fn, 1.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"smooth_mgr": {"model": model}})
-        bptk.register_scenarios(
-            scenarios={"base": {}},
-            scenario_manager="smooth_mgr",
-        )
-        return bptk
-
-    def test_smooth_parity(self, smooth_bptk):
-        py, rust = _run_both(smooth_bptk, "smooth_mgr", ["base"], ["smooth_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_smooth_ramp_input(self):
-        """Smooth of a ramp (time()) — smooth lags behind the input."""
-        model = Model(starttime=0, stoptime=10, dt=0.25, name="smooth_ramp")
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.time()
-        smooth_out = model.converter("smooth_out")
-        smooth_out.equation = sd.smooth(model, input_fn, 2.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["smooth_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_smooth_constant_input(self):
-        """Smooth of a constant with matching initial value — output stays constant."""
-        model = Model(starttime=0, stoptime=5, dt=0.5, name="smooth_const")
-        input_fn = model.converter("input_function")
-        input_fn.equation = 42.0
-        smooth_out = model.converter("smooth_out")
-        smooth_out.equation = sd.smooth(model, input_fn, 1.0, 42.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["smooth_out"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_smooth_large_averaging_time(self):
-        """Smooth with large averaging time — output changes very slowly."""
-        model = Model(starttime=0, stoptime=20, dt=0.5, name="smooth_slow")
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.step(100.0, 5.0)
-        smooth_out = model.converter("smooth_out")
-        smooth_out.equation = sd.smooth(model, input_fn, 10.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["smooth_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_smooth_small_dt(self):
-        """Smooth with very small dt — precision test."""
-        model = Model(starttime=0, stoptime=5, dt=0.01, name="smooth_precise")
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.step(1.0, 1.0)
-        smooth_out = model.converter("smooth_out")
-        smooth_out.equation = sd.smooth(model, input_fn, 0.5, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["smooth_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-
-# ---------------------------------------------------------------------------
-# Tests: Trend model
-# ---------------------------------------------------------------------------
-
-class TestTrendModel:
-    @pytest.fixture
-    def trend_bptk(self):
-        """Model using sd.trend() — computes fractional rate of change."""
-        model = Model(starttime=1, stoptime=10, dt=0.1, name="trend_test")
-
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.step(10.0, 3.0)
-
-        trend_out = model.converter("trend_out")
-        trend_out.equation = sd.trend(model, input_fn, 2.0, 5.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"trend_mgr": {"model": model}})
-        bptk.register_scenarios(
-            scenarios={"base": {}},
-            scenario_manager="trend_mgr",
-        )
-        return bptk
-
-    def test_trend_parity(self, trend_bptk):
-        py, rust = _run_both(trend_bptk, "trend_mgr", ["base"], ["trend_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_trend_linear_input(self):
-        """Trend of linear input (time()) — should converge to a positive fractional rate."""
-        model = Model(starttime=1, stoptime=10, dt=0.25, name="trend_linear")
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.time()
-        trend_out = model.converter("trend_out")
-        trend_out.equation = sd.trend(model, input_fn, 1.0, 1.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["trend_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_trend_constant_input(self):
-        """Trend of constant input — trend should approach zero."""
-        model = Model(starttime=0, stoptime=10, dt=0.1, name="trend_const")
-        input_fn = model.converter("input_function")
-        input_fn.equation = 5.0
-        trend_out = model.converter("trend_out")
-        trend_out.equation = sd.trend(model, input_fn, 1.0, 5.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["trend_out"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_trend_large_averaging_time(self):
-        """Trend with large averaging time — slow response to changes."""
-        model = Model(starttime=0, stoptime=20, dt=0.5, name="trend_slow")
-        input_fn = model.converter("input_function")
-        input_fn.equation = sd.step(10.0, 5.0)
-        trend_out = model.converter("trend_out")
-        trend_out.equation = sd.trend(model, input_fn, 8.0, 5.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["trend_out"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-
-# ---------------------------------------------------------------------------
-# Tests: Delay model
-# ---------------------------------------------------------------------------
-
-class TestDelayModel:
-    @pytest.fixture
-    def delay_bptk(self):
-        """Model using sd.delay() — lookback in memo table."""
-        model = Model(starttime=0, stoptime=10, dt=1, name="delay_test")
-
-        a = model.converter("a")
-        b = model.converter("b")
-        a.equation = sd.time()
-        b.equation = sd.delay(model, a, 3.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"delay_mgr": {"model": model}})
-        bptk.register_scenarios(
-            scenarios={"base": {}},
-            scenario_manager="delay_mgr",
-        )
-        return bptk
-
-    def test_delay_parity(self, delay_bptk):
-        py, rust = _run_both(delay_bptk, "delay_mgr", ["base"], ["a", "b"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_delay_before_duration(self, delay_bptk):
-        """Before delay_duration elapses, initial_value (0.0) is returned."""
-        rust = delay_bptk.run_scenarios(
-            scenario_managers=["delay_mgr"],
-            scenarios=["base"],
-            equations=["b"],
-            backend="rust",
-        )
-        # At t=0,1,2: step < delay_steps(3), so b should be 0.0
-        assert rust.iloc[0]["b"] == 0.0
-        assert rust.iloc[1]["b"] == 0.0
-        assert rust.iloc[2]["b"] == 0.0
-
-    def test_delay_after_duration(self, delay_bptk):
-        """After delay_duration, b = a(t - delay). a=time(), delay=3, so b(t) = t-3."""
-        rust = delay_bptk.run_scenarios(
-            scenario_managers=["delay_mgr"],
-            scenarios=["base"],
-            equations=["b"],
-            backend="rust",
-        )
-        # At t=3: b = a(0) = 0.0
-        # At t=4: b = a(1) = 1.0
-        # At t=5: b = a(2) = 2.0
-        assert rust.iloc[3]["b"] == 0.0
-        assert rust.iloc[4]["b"] == 1.0
-        assert rust.iloc[5]["b"] == 2.0
-
-    def test_delay_fractional_dt(self):
-        """Delay with fractional dt — lookback is duration/dt steps."""
-        model = Model(starttime=0, stoptime=8, dt=0.5, name="delay_frac")
-        a = model.converter("a")
-        b = model.converter("b")
-        a.equation = sd.time()
-        b.equation = sd.delay(model, a, 2.0, -1.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["a", "b"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_delay_step_input(self):
-        """Delay of a step function — step appears shifted in time."""
-        model = Model(starttime=0, stoptime=10, dt=0.5, name="delay_step")
-        input_fn = model.converter("input")
-        delayed = model.converter("delayed")
-        input_fn.equation = sd.step(5.0, 3.0)
-        delayed.equation = sd.delay(model, input_fn, 2.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["delayed"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_delay_with_stock(self):
-        """Delay reading from a stock — interaction with Euler integration."""
-        model = Model(starttime=0, stoptime=10, dt=1, name="delay_stock")
-        level = model.stock("level")
-        inflow = model.flow("inflow")
-        delayed_level = model.converter("delayed_level")
-        level.initial_value = 0.0
-        level.equation = inflow
-        inflow.equation = 5.0
-        delayed_level.equation = sd.delay(model, level, 3.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["level", "delayed_level"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_delay_zero_duration(self):
-        """Delay with duration=0 — should return current value."""
-        model = Model(starttime=0, stoptime=5, dt=1, name="delay_zero")
-        a = model.converter("a")
-        b = model.converter("b")
-        a.equation = sd.time()
-        b.equation = sd.delay(model, a, 0.0, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["a", "b"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-
-# ---------------------------------------------------------------------------
-# Tests: biflow support
-# ---------------------------------------------------------------------------
-
-class TestBiflowModel:
-    """Tests that biflows work correctly in the Rust engine."""
-
-    @pytest.fixture
-    def biflow_bptk(self):
-        """Oscillator model using biflows — velocity goes negative."""
-        model = Model(starttime=0, stoptime=10, dt=0.1, name="biflow_test")
-        position = model.stock("position")
-        velocity = model.biflow("velocity")
-        position.initial_value = 10.0
-        position.equation = velocity
-        velocity.equation = -position  # Goes negative — biflow allows this
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-        return bptk
-
-    def test_biflow_parity(self, biflow_bptk):
-        """Rust backend produces same results as Python for biflow model."""
-        py = biflow_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["position", "velocity"], backend="python",
-        )
-        rust = biflow_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["position", "velocity"], backend="rust",
-        )
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_biflow_goes_negative(self, biflow_bptk):
-        """Biflow values go negative — not clamped like regular flows."""
-        rust = biflow_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["velocity"], backend="rust",
-        )
-        # velocity = -position, and position starts at 10 and oscillates
-        # velocity must go negative at some point
-        assert (rust.values < 0).any(), "Biflow values should go negative"
-
-    def test_biflow_constant_negative(self):
-        """Biflow with constant negative equation — stock decreases."""
-        model = Model(starttime=0, stoptime=5, dt=1, name="biflow_const_neg")
-        stock = model.stock("stock")
-        bf = model.biflow("bf")
-        stock.initial_value = 100.0
-        stock.equation = bf
-        bf.equation = -10.0
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["stock", "bf"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_biflow_vs_flow_clamping(self):
-        """Same negative equation — flow clamps to 0, biflow doesn't."""
-        model = Model(starttime=0, stoptime=3, dt=1, name="flow_vs_biflow")
-        stock_f = model.stock("stock_flow")
-        stock_bf = model.stock("stock_biflow")
-        f = model.flow("regular_flow")
-        bf = model.biflow("bi_flow")
-
-        stock_f.initial_value = 100.0
-        stock_bf.initial_value = 100.0
-        stock_f.equation = f
-        stock_bf.equation = bf
-        f.equation = -10.0
-        bf.equation = -10.0
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"],
-                             ["stock_flow", "stock_biflow", "regular_flow", "bi_flow"])
-        assert_frame_equal(py, rust, atol=1e-10, check_dtype=False)
-
-    def test_biflow_spring_mass_oscillator(self):
-        """Two-stock spring-mass system — classic biflow use case with small dt."""
-        model = Model(starttime=0, stoptime=10, dt=0.01, name="spring_mass")
-        position = model.stock("position")
-        velocity = model.stock("velocity")
-        dp = model.biflow("change_in_position")
-        dv = model.biflow("change_in_velocity")
-
-        position.initial_value = 1.0
-        velocity.initial_value = 0.0
-        position.equation = dp
-        velocity.equation = dv
-        dp.equation = velocity
-        dv.equation = -position
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["position", "velocity"])
-        assert_frame_equal(py, rust, atol=1e-6)
+    @pytest.mark.allow_rust_unused
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_simulate_an_unknown_equation_raises(self, backend):
+        """The engine used to drop a name it did not know without a word, while Python
+        raised; both now raise before running, with a suggestion."""
+        model = Model(starttime=0, stoptime=2, dt=1, name="typo")
+        model.converter("rate").equation = 1.0
+
+        with pytest.raises(KeyError, match="has no equation 'rat'. Did you maybe mean one of 'rate'"):
+            model.simulate(["rate", "rat"], backend=backend)
+
+    @pytest.mark.allow_rust_unused
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_simulate_an_arrayed_element_names_its_cells(self, backend):
+        """An arrayed element holds no values beside its cells. Asked for by its own
+        name, Python answered a column of zeros and the engine no column at all."""
+        with pytest.raises(KeyError, match="'headcount' is an array and has no values of its own. "
+                                           "Did you maybe mean one of 'headcount\\[junior\\]', "
+                                           "'headcount\\[mid\\]', 'headcount\\[senior\\]'\\?"):
+            build_workforce_model().simulate(["total_cost", "headcount"], backend=backend)
+
+    @pytest.mark.allow_rust_unused
+    def test_simulate_a_long_array_names_five_cells(self):
+        model = Model(starttime=0, stoptime=1, dt=1, name="long")
+        model.constant("weights").setup_vector(7, 1.0)
+
+        with pytest.raises(KeyError, match="'weights\\[4\\]' and 2 more\\?"):
+            model.simulate(["weights"])
+
+    def test_simulate_an_unknown_equation_in_an_empty_model(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="empty")
+
+        with pytest.raises(KeyError) as error:
+            model.simulate(["rate"])
+        assert "Did you maybe mean" not in str(error.value)
 
     def test_biflow_simulate_api(self):
         """Biflow works through model.simulate() API too."""
@@ -1005,6 +655,9 @@ class TestRustBackendRefusal:
             bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
                                equations=["stock"], backend="rust")
 
+        with pytest.raises(RustBackendError, match="simulated runtime failure"):
+            model.simulate(["stock"], backend="rust")
+
 
 # ---------------------------------------------------------------------------
 # Tests: multiple scenario managers
@@ -1051,226 +704,6 @@ class TestMultipleManagers:
             backend="rust",
         )
         assert_frame_equal(py, rust)
-
-
-# ---------------------------------------------------------------------------
-# ln, log10, floor, ceil — full pipeline parity
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def ln_log10_bptk():
-    """Model using ln and log10 functions."""
-    model = Model(starttime=1, stoptime=10, dt=1, name="ln_log10")
-    inp = model.converter("input")
-    inp.equation = sd.time()
-    fn_ln = model.converter("fn_ln")
-    fn_ln.equation = sd.ln(inp)
-    fn_log10 = model.converter("fn_log10")
-    fn_log10.equation = sd.log10(inp)
-
-    bptk = BPTK_Py.bptk()
-    bptk.register_scenario_manager({"mgr": {"model": model}})
-    bptk.register_scenarios(
-        scenarios={"base": {}},
-        scenario_manager="mgr",
-    )
-    return bptk
-
-
-@pytest.fixture
-def floor_ceil_bptk():
-    """Model using floor and ceil functions."""
-    model = Model(starttime=0, stoptime=10, dt=1, name="floor_ceil")
-    inp = model.converter("input")
-    inp.equation = sd.time() * 1.7 - 3.0
-    fn_floor = model.converter("fn_floor")
-    fn_floor.equation = sd.floor(inp)
-    fn_ceil = model.converter("fn_ceil")
-    fn_ceil.equation = sd.ceil(inp)
-
-    bptk = BPTK_Py.bptk()
-    bptk.register_scenario_manager({"mgr": {"model": model}})
-    bptk.register_scenarios(
-        scenarios={"base": {}},
-        scenario_manager="mgr",
-    )
-    return bptk
-
-
-class TestLnLog10FloorCeilParity:
-    """Full pipeline parity for ln, log10, floor, ceil."""
-
-    def test_ln_log10_parity(self, ln_log10_bptk):
-        py = ln_log10_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["fn_ln", "fn_log10"], backend="python",
-        )
-        for _, mgr in ln_log10_bptk.scenario_manager_factory.scenario_managers.items():
-            if hasattr(mgr, 'model') and mgr.model is not None:
-                mgr.model.reset_cache()
-        rust = ln_log10_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["fn_ln", "fn_log10"], backend="rust",
-        )
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_floor_ceil_parity(self, floor_ceil_bptk):
-        py = floor_ceil_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["fn_floor", "fn_ceil"], backend="python",
-        )
-        for _, mgr in floor_ceil_bptk.scenario_manager_factory.scenario_managers.items():
-            if hasattr(mgr, 'model') and mgr.model is not None:
-                mgr.model.reset_cache()
-        rust = floor_ceil_bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["fn_floor", "fn_ceil"], backend="rust",
-        )
-        assert_frame_equal(py, rust, atol=1e-10)
-
-
-# ---------------------------------------------------------------------------
-# Tests: Combinatorial & special functions
-# ---------------------------------------------------------------------------
-
-class TestCombinatorialFunctions:
-    def test_factorial(self):
-        model = Model(starttime=0, stoptime=5, dt=1, name="factorial")
-        x = model.converter("x")
-        x.equation = sd.factorial(sd.time())
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_combinations(self):
-        model = Model(starttime=0, stoptime=1, dt=1, name="combinations")
-        x = model.converter("x")
-        x.equation = sd.combinations(10, 3)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_permutations(self):
-        model = Model(starttime=0, stoptime=1, dt=1, name="permutations")
-        x = model.converter("x")
-        x.equation = sd.permutations(5, 2)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_factorial_negative(self):
-        """factorial(-5) should return 0 for negative input."""
-        model = Model(starttime=0, stoptime=1, dt=1, name="factorial_neg")
-        x = model.converter("x")
-        x.equation = sd.factorial(-5)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-        assert (py["x"] == 0.0).all()
-
-    def test_combinations_n_less_than_r(self):
-        """combinations(2, 5) should return 0 when n < r."""
-        model = Model(starttime=0, stoptime=1, dt=1, name="comb_n_lt_r")
-        x = model.converter("x")
-        x.equation = sd.combinations(2, 5)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-        assert (py["x"] == 0.0).all()
-
-    def test_permutations_n_less_than_r(self):
-        """permutations(2, 5) should return 0 when n < r."""
-        model = Model(starttime=0, stoptime=1, dt=1, name="perm_n_lt_r")
-        x = model.converter("x")
-        x.equation = sd.permutations(2, 5)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-        assert (py["x"] == 0.0).all()
-
-    def test_gammaln(self):
-        model = Model(starttime=1, stoptime=5, dt=1, name="gammaln")
-        x = model.converter("x")
-        x.equation = sd.gammaln(sd.time())
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_round_with_digits(self):
-        model = Model(starttime=0, stoptime=1, dt=1, name="round_digits")
-        x = model.converter("x")
-        x.equation = sd.round(3.14159, 2)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-
-# ---------------------------------------------------------------------------
-# Tests: Inf and Nan
-# ---------------------------------------------------------------------------
-
-class TestInfNan:
-    def test_inf_parity(self):
-        model = Model(starttime=0, stoptime=5, dt=1, name="inf_backend")
-        t_val = model.converter("t_val")
-        t_val.equation = sd.time()
-        x = model.converter("x")
-        x.equation = sd.min(t_val, sd.Inf())
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["t_val", "x"])
-        assert_frame_equal(py, rust, atol=1e-10)
-
-    def test_nan_produces_nan(self):
-        """NaN values should appear in both backends."""
-        import math
-        model = Model(starttime=0, stoptime=1, dt=1, name="nan_backend")
-        x = model.converter("x")
-        x.equation = sd.nan()
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        # Both DataFrames should have NaN values
-        assert py.isna().all().all(), "Python backend should produce NaN"
-        assert rust.isna().all().all(), "Rust backend should produce NaN"
 
 
 # ---------------------------------------------------------------------------
@@ -1328,31 +761,6 @@ class TestStochasticFunctions:
         values = rust.values.flatten()
         assert all(v in (0.0, 1.0) for v in values), "Montecarlo should produce only 0 or 1"
 
-    def test_invnorm_parity(self):
-        """Deterministic: exact comparison Python vs Rust."""
-        model = Model(starttime=0, stoptime=1, dt=1, name="invnorm")
-        x = model.converter("x")
-        x.equation = sd.invnorm(0.975, 0, 1)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
-
-    def test_normalcdf_parity(self):
-        """Deterministic: exact comparison Python vs Rust."""
-        model = Model(starttime=0, stoptime=1, dt=1, name="normalcdf")
-        x = model.converter("x")
-        x.equation = sd.normalcdf(-1, 1, 0, 1)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        py, rust = _run_both(bptk, "mgr", ["base"], ["x"])
-        assert_frame_equal(py, rust, atol=1e-6)
 
     def test_poisson_non_negative(self):
         model = Model(starttime=0, stoptime=100, dt=1, name="poisson")
@@ -1559,23 +967,6 @@ class TestStochasticFunctions:
         mean = rust.values.mean()
         assert 3.0 < mean < 15.0, f"NegBinomial mean {mean} out of expected range"
 
-    def test_negbinomial_p_zero(self):
-        """p=0 means success is impossible → infinite failures."""
-        model = Model(starttime=0, stoptime=5, dt=1, name="negbinom_p0")
-        x = model.converter("x")
-        x.equation = sd.negbinomial(5, 0.0)
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        rust = bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["x"], backend="rust",
-        )
-        import numpy as np
-        assert (rust.map(lambda v: np.isinf(v))).all().all(), \
-            "NegBinomial with p=0 should return inf"
 
     def test_negbinomial_p_one(self):
         """p=1 means every trial succeeds → zero failures."""
@@ -1593,79 +984,6 @@ class TestStochasticFunctions:
         )
         assert (rust == 0.0).all().all(), \
             "NegBinomial with p=1 should return 0"
-
-
-# ---------------------------------------------------------------------------
-# Stochastic function guards — invalid params should return NaN
-# ---------------------------------------------------------------------------
-
-class TestStochasticGuards:
-    """Invalid parameters return NaN via Rust backend."""
-
-    def _run_nan_check(self, equation, name):
-        import numpy as np
-        model = Model(starttime=0, stoptime=1, dt=1, name=name)
-        x = model.converter("x")
-        x.equation = equation
-
-        bptk = BPTK_Py.bptk()
-        bptk.register_scenario_manager({"mgr": {"model": model}})
-        bptk.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
-
-        rust = bptk.run_scenarios(
-            scenario_managers=["mgr"], scenarios=["base"],
-            equations=["x"], backend="rust",
-        )
-        assert rust.map(lambda v: np.isnan(v)).all().all(), \
-            f"{name}: expected all NaN, got {rust.values}"
-
-    def test_normal_negative_stddev(self):
-        self._run_nan_check(sd.normal(0, -1), "normal_neg_std")
-
-    def test_beta_negative_a(self):
-        self._run_nan_check(sd.beta(-1, 2), "beta_neg_a")
-
-    def test_beta_zero_b(self):
-        self._run_nan_check(sd.beta(2, 0), "beta_zero_b")
-
-    def test_binomial_negative_n(self):
-        self._run_nan_check(sd.binomial(-5, 0.5), "binom_neg_n")
-
-    def test_negbinomial_negative_n(self):
-        self._run_nan_check(sd.negbinomial(-5, 0.5), "negbinom_neg_n")
-
-    def test_poisson_negative_mu(self):
-        self._run_nan_check(sd.poisson(-5), "poisson_neg_mu")
-
-    def test_gamma_negative_shape(self):
-        self._run_nan_check(sd.gamma(-1, 2), "gamma_neg_shape")
-
-    def test_gamma_zero_scale(self):
-        self._run_nan_check(sd.gamma(2, 0), "gamma_zero_scale")
-
-    def test_exprnd_negative_scale(self):
-        self._run_nan_check(sd.exprnd(-1), "exprnd_neg")
-
-    def test_exprnd_zero_scale(self):
-        self._run_nan_check(sd.exprnd(0), "exprnd_zero")
-
-    def test_lognormal_negative_stddev(self):
-        self._run_nan_check(sd.lognormal(0, -1), "lognorm_neg_std")
-
-    def test_logistic_negative_scale(self):
-        self._run_nan_check(sd.logistic(0, -1), "logistic_neg_scale")
-
-    def test_triangular_lower_gt_upper(self):
-        self._run_nan_check(sd.triangular(10, 5, 1), "tri_lower_gt_upper")
-
-    def test_triangular_mode_gt_upper(self):
-        self._run_nan_check(sd.triangular(0, 15, 10), "tri_mode_gt_upper")
-
-    def test_weibull_negative_shape(self):
-        self._run_nan_check(sd.weibull(-1, 2), "weibull_neg_shape")
-
-    def test_weibull_zero_scale(self):
-        self._run_nan_check(sd.weibull(2, 0), "weibull_zero_scale")
 
 
 # ---------------------------------------------------------------------------
@@ -2361,7 +1679,7 @@ class TestRustResume:
         sc.rust_model = None
         sc.constants = {"constant": "not_a_number"}
         runner = SdRunner(b.scenario_manager_factory)
-        with pytest.raises(ValueError):
+        with pytest.raises(RustBackendError, match="non-numeric"):
             runner.restore_scenario_state_rust(sc, "mgr", "base", ["stock", "flow"], blob, None)
         b.end_session()
 
@@ -2673,10 +1991,9 @@ class TestRustResumeThroughAdapters:
 # ---------------------------------------------------------------------------
 # Tests: feedback loops through the bptk layer
 #
-# These are the tests that would have caught the beergame blocker. They rely on
-# the no_silent_rust_fallback guard in conftest.py: without it, a model the engine
-# refuses is computed in Python on *both* runs and the comparison passes for the
-# wrong reason.
+# These are the tests that would have caught the beergame blocker. A model the
+# engine refuses raises RustBackendError, so a comparison cannot pass by running
+# Python twice.
 # ---------------------------------------------------------------------------
 
 class TestDelayFeedbackLoop:
@@ -2906,149 +2223,54 @@ class TestRustFirstStepOverride:
             _assert_step_dicts_equal(single_step, threaded_step, i)
 
 
-# ---------------------------------------------------------------------------
-# Tests: the fallback guard itself
-#
-# conftest.py fails any test during which bptk gave up on the Rust engine, because a
-# parity test that compares "python" against a "rust" run that never happened compares
-# Python with Python and passes for the wrong reason — how the delay-cycle limitation
-# stayed hidden until 2026-08-11. Detection is by log message, so the guard is only as
-# good as its marker list; these tests keep that list honest.
-# ---------------------------------------------------------------------------
+class TestAnArrayedElementAskedForByItsName:
+    """run_scenarios and a session report it with its cells and leave it out, on both
+    engines; they used to answer a column of zeros."""
 
-class TestFallbackGuard:
+    def _bptk(self):
+        instance = BPTK_Py.bptk()
+        instance.register_scenario_manager({"mgr": {"model": build_workforce_model()}})
+        instance.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+        return instance
 
-    # Log sites that mention falling back but do *not* mean "the Rust engine did not
-    # run", each with the reason it is out of the guard's scope.
-    KNOWN_NON_ENGINE_FALLBACKS = {
-        "Invalid default_backend": "configuration validation, no engine involved",
-        "invalid backend": "begin_session argument validation, no engine involved",
-        "will fall back to replay": "Rust did run; only the resume shortcut degrades",
-        "Failed to create Logfire span": "logging concern, unrelated to the backend",
-    }
+    _MESSAGE = '"headcount" is an array and has no values of its own. Did you maybe mean one of ' \
+               '"headcount[junior]", "headcount[mid]", "headcount[senior]"?'
 
-    def _fallback_log_sites(self):
-        """Every log() call in BPTK_Py whose message talks about falling back."""
-        import pathlib
-        import re
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_run_scenarios(self, backend):
+        clear_log()
+        df = self._bptk().run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                                        equations=["headcount", "total_headcount"], backend=backend)
 
-        package_root = pathlib.Path(BPTK_Py.__file__).parent
-        sites = []
-        for path in sorted(package_root.rglob("*.py")):
-            for number, line in enumerate(path.read_text(encoding="UTF-8").splitlines(), 1):
-                if "log(" not in line:
-                    continue
-                if re.search(r"fall(?:ing|s)?\s+back|fallback", line, re.IGNORECASE):
-                    sites.append((path.relative_to(package_root).as_posix(), number, line.strip()))
-        return sites
+        assert list(df.columns) == ["total_headcount"]
+        assert "[ERROR] " + self._MESSAGE in read_log()
 
-    def test_every_fallback_log_site_is_covered(self):
-        """A new fallback path — or a reworded message — must not slip past the guard.
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_a_session(self, backend):
+        clear_log()
+        instance = self._bptk()
+        instance.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                               equations=["headcount", "total_headcount"], backend=backend)
 
-        On failure: add the message to _RUST_FALLBACK_MARKERS in conftest.py, or, if it
-        does not mean "Rust did not run", to KNOWN_NON_ENGINE_FALLBACKS above.
-        """
-        from conftest import _RUST_FALLBACK_MARKERS
+        assert instance.run_step() == {"mgr": {"base": {"total_headcount": {0.0: 155.0}}}}
+        assert "[ERROR] begin_session: " + self._MESSAGE in read_log()
 
-        sites = self._fallback_log_sites()
-        assert sites, "found no fallback log sites at all — has the search pattern rotted?"
 
-        uncovered = []
-        for path, number, line in sites:
-            if any(known in line for known in self.KNOWN_NON_ENGINE_FALLBACKS):
-                continue
-            if not any(marker in line.lower() for marker in _RUST_FALLBACK_MARKERS):
-                uncovered.append("{}:{}: {}".format(path, number, line))
+class TestASessionWithAnUnknownEquation:
+    """A misspelt equation in a session used to vanish: Python logged a `[WARN]` to
+    the log file only, the engine said nothing at all."""
 
-        assert not uncovered, (
-            "these fallback log sites are invisible to the guard in conftest.py:\n  "
-            + "\n  ".join(uncovered))
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_it_is_reported_and_the_known_ones_run(self, backend):
+        clear_log()
+        bptk = _build_simple_bptk()
+        bptk.begin_session(scenarios=["base"], scenario_managers=["mgr"],
+                           equations=["stock", "stok"], backend=backend)
+        result = bptk.run_step()
 
-    def test_known_non_engine_fallbacks_still_exist(self):
-        """The exception list must not outlive the messages it exempts."""
-        lines = "\n".join(line for _, _, line in self._fallback_log_sites())
-        for known, reason in self.KNOWN_NON_ENGINE_FALLBACKS.items():
-            assert known in lines, (
-                "'{}' is exempted from the guard ({}) but no longer appears in BPTK_Py "
-                "— drop it from KNOWN_NON_ENGINE_FALLBACKS".format(known, reason))
-
-    @pytest.mark.allow_rust_fallback
-    def test_the_guard_still_recognises_a_fallback_line(self):
-        """No code path in the library falls back to Python any more - it raises - so the
-        line is written here rather than provoked. The detector stays because a later
-        phase could add a path, and this is what proves it would still be seen. Marked,
-        so the guard does not fail the test that writes the line."""
-        from conftest import _fallback_lines_since, _logfile_size
-        from BPTK_Py.logger import log
-
-        offset = _logfile_size()
-        log("[WARN] Rust engine failed: simulated — falling back to Python")
-
-        assert _fallback_lines_since(offset), (
-            "the guard no longer notices a fallback line — its marker list or the log "
-            "destination has drifted")
-
-    # The branches below are never taken in a green run — the guard only fails a test
-    # when something went wrong — so they are exercised directly.
-
-    def _drive_guard(self, item, appended_line=None):
-        """Run the guard's hook wrapper around a fake test and return its Result."""
-        from pluggy import Result
-        import conftest as guard
-
-        wrapper = guard.pytest_runtest_call(item)
-        next(wrapper)  # the guard snapshots the logfile size here
-        if appended_line:
-            with open(logmod.logfile, "a", encoding="UTF-8") as f:
-                f.write(appended_line + "\n")
-        outcome = Result.from_call(lambda: None)
-        try:
-            wrapper.send(outcome)
-        except StopIteration:
-            pass
-        return outcome
-
-    @pytest.mark.allow_rust_fallback  # writes a probe line into the real logfile
-    def test_guard_turns_a_fallback_into_a_failure(self):
-        """The wiring, not just the detection: a fallback during a test must surface as
-        an AssertionError on the call outcome."""
-        class _UnmarkedItem:
-            def get_closest_marker(self, name):
-                return None
-
-        outcome = self._drive_guard(
-            _UnmarkedItem(),
-            "2026-01-01 00:00:00, [WARN] Rust engine failed: probe — falling back to Python")
-
-        with pytest.raises(AssertionError, match="fell back to Python"):
-            outcome.get_result()
-
-    @pytest.mark.allow_rust_fallback  # writes a probe line into the real logfile
-    def test_guard_respects_the_opt_out_marker(self):
-        """A marked test keeps its result even with a fallback in the log."""
-        class _MarkedItem:
-            def get_closest_marker(self, name):
-                return object() if name == "allow_rust_fallback" else None
-
-        outcome = self._drive_guard(
-            _MarkedItem(),
-            "2026-01-01 00:00:00, [WARN] Rust engine failed: probe — falling back to Python")
-
-        assert outcome.get_result() is None
-
-    def test_guard_survives_a_truncated_or_missing_logfile(self):
-        """Tests that wipe the logfile must not make the guard raise on its own."""
-        from conftest import _fallback_lines_since
-
-        # offset far beyond the current size: the file was truncated meanwhile
-        assert _fallback_lines_since(10 ** 9) == []
-
-        original = logmod.logfile
-        try:
-            logmod.logfile = "does-not-exist.log"
-            assert _fallback_lines_since(0) == []
-        finally:
-            logmod.logfile = original
+        assert 'begin_session: No simulation model containing equation "stok". ' \
+               'Did you maybe mean one of "stock' in read_log()
+        assert list(result["mgr"]["base"].keys()) == ["stock"]
 
 
 # ---------------------------------------------------------------------------
@@ -3061,7 +2283,6 @@ class TestFallbackGuard:
 # round 4 gave 24 instead of 18. That must not be reported as a mere [WARN].
 # ---------------------------------------------------------------------------
 
-@pytest.mark.allow_rust_fallback
 @pytest.mark.allow_rust_unused
 class TestASessionCannotChangeEngines:
     """A session that cannot go on with the engine ends, rather than finishing in Python.
@@ -3112,7 +2333,7 @@ class TestASessionCannotChangeEngines:
 #  sub-element name, the result frames, and the step-by-step cursor.
 # ---------------------------------------------------------------------------
 
-from _arrayed_fixtures import (  # noqa: E402
+from tests.helpers.arrayed_fixtures import (  # noqa: E402
     LEVELS,
     _build_biflow_bptk,
     _build_matrix_bptk,
@@ -3333,13 +2554,11 @@ class TestCustomFunctionsOnRust:
         importlib.reload(logmod)
         logmod.logfire_enabled = False
         logmod.loglevel = "WARN"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         _scaling_model("says_so").simulate(["scaled"], backend="rust")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as logfile:
-            content = logfile.read()
+        content = read_log()
         assert "[WARN]" in content
         assert "'scale'" in content or "scale" in content
         assert "runs on the Rust engine" in content
@@ -3429,6 +2648,22 @@ class TestCustomFunctionRegistration:
 
         with pytest.raises(RuntimeError, match="wordy"):
             rust_model.simulate(["out"])
+
+    def test_a_function_that_raises_while_stepping_is_the_same_error(self):
+        """`simulate`, `init` and `step` report a failing function alike."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="callback_raises_late")
+        model.function("late", lambda model, t: 1.0 if t < 2 else 1 / 0)
+        out = model.converter("out")
+        out.equation = model.functions["late"]()
+
+        from BPTK_Py._rust_engine import RustSdEngine
+        rust_model = RustSdEngine().load_model(model.to_json())
+        model.register_rust_functions(rust_model)
+
+        rust_model.init(["out"])
+        rust_model.step()
+        with pytest.raises(RuntimeError, match="ZeroDivisionError"):
+            rust_model.step()
 
     def test_a_name_without_a_callable_on_the_model_raises(self):
         model, rust_model = self._loaded()

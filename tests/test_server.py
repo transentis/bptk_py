@@ -1,6 +1,7 @@
 from BPTK_Py.server import BptkServer
 from BPTK_Py.server.bptkServer import InstanceManager
 from unittest import mock
+import datetime
 import json
 import sys
 import pytest
@@ -10,6 +11,7 @@ from BPTK_Py import Model
 from BPTK_Py import Agent
 from BPTK_Py import sd_functions as sd
 import BPTK_Py
+from tests.helpers.log_helpers import clear_log, read_log
 
 token="1234" # token for bearer authentication
 
@@ -417,6 +419,9 @@ def test_stream_steps_resource(app, client):
 
     response = client.post('/' + id + '/stream-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200 # checking the status code
+    json.loads(response.data)  # consume the generator; the body is one JSON array
+    # A completed stream releases the instance, or every later call answers "locked"
+    assert not app._instance_manager.get_instance(id).is_locked()
 
     #stream-steps without a JSON body must use the streamer's no-settings
     #branch: it advances the simulation with bare instance.run_step() calls.
@@ -434,11 +439,11 @@ def test_stream_steps_resource(app, client):
     #stream-steps where instance.run_step returns None must emit the
     #per-step "no data" chunk inside the streamed array. We can't simply
     #patch run_step to always return None: progress() relies on run_step
-    #to advance, so the streamer's `while progress() <= 1.0` would loop
+    #to advance, so the streamer's `while progress() < 1.0` would loop
     #forever. Instead, return None on the first call and raise on the
-    #second — the streamer's bare `except` catches the exception, unlocks,
-    #and exits the generator cleanly, leaving the first "no data" chunk
-    #in the response body for us to assert on.
+    #second — the streamer reports the exception as a last element and
+    #closes the array, leaving the first "no data" chunk in the response
+    #body for us to assert on.
     response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     id_no_result = json.loads(response.data)['instance_uuid']
     response = client.post('/' + id_no_result + '/begin-session', data=json.dumps(session), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
@@ -451,7 +456,9 @@ def test_stream_steps_resource(app, client):
                                          headers={"Authorization": f"Bearer {token}"})
         body_no_result = response_no_result.data
     assert response_no_result.status_code == 200
-    assert b'no data was returned from run_step' in body_no_result
+    streamed = json.loads(body_no_result)
+    assert streamed == [{"error": "no data was returned from run_step"}, {"error": "stop streamer"}]
+    assert not instance_no_result.is_locked()
 
 def test_scenarios_resource(app, client, empty_app, empty_client):
     response = client.get('/scenarios',headers={"Authorization": f"Bearer {token}"})
@@ -620,16 +627,8 @@ def test_run_resource_abm(abm_app, abm_client):
 
 
 def test_begin_session_with_agent_body(app, client):
-    """``/begin-session`` body that carries ``agent_states`` /
-    ``agent_properties`` / ``agent_property_types`` / ``individual_agent_properties``
-    on top of an SD scenario exercises the optional-field unpacking branches
-    that the existing tests skip (they only set ``equations``).
-
-    ``begin_session`` itself doesn't support ABM scenarios — its scenario-
-    cache initialisation goes through ``SimulationScenario._get_cache``,
-    which ABM models don't implement. So we cover the endpoint's body-
-    unpacking branches with an SD scenario plus empty agent arrays; the
-    fields still populate from the request and SD execution stays happy."""
+    """Older clients send the agent fields along, empty. They mean nothing in a
+    session, which runs System Dynamics only, and are accepted."""
     timeout = {"timeout": {"minutes": 10}}
     response = client.post('/start-instance', data=json.dumps(timeout),
                            content_type='application/json',
@@ -640,8 +639,6 @@ def test_begin_session_with_agent_body(app, client):
         "scenario_managers": ["firstManager"],
         "scenarios": ["1"],
         "equations": ["stock", "flow", "constant"],
-        # Empty agent fields — exercise the dict-key unpacking branches
-        # without triggering the SD/ABM-mismatch path inside begin_session.
         "agents": [],
         "agent_states": [],
         "agent_properties": [],
@@ -654,6 +651,23 @@ def test_begin_session_with_agent_body(app, client):
                            content_type='application/json',
                            headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
+
+
+def test_begin_session_refuses_agent_fields(app, client):
+    """Sessions run System Dynamics only. An agent field with content is answered 400
+    naming it; it used to be accepted and then never used."""
+    auth = {"Authorization": f"Bearer {token}"}
+    instance_id = json.loads(client.post('/start-instance', headers=auth).data)['instance_uuid']
+    session = {"scenario_managers": ["firstManager"], "scenarios": ["1"], "equations": ["stock"],
+               "agents": ["customer"], "agent_states": ["active"]}
+
+    response = client.post(f'/{instance_id}/begin-session', data=json.dumps(session),
+                           content_type='application/json', headers=auth)
+
+    assert response.status_code == 400
+    assert json.loads(response.data) == {
+        "error": "sessions run System Dynamics scenarios only; agents, agent_states cannot be "
+                 "given. An agent-based model runs with /run."}
 
 
 def test_begin_session_backend_field(app, client):
@@ -934,8 +948,27 @@ def test_full_metrics(app, client):
     assert "step" in data[instance_id]
     assert "startTime" in data[instance_id]
 
-def test_instance_timeouts(app, client):
-    import time
+class _ServerClock:
+    """Stands in for the server's datetime: now() answers what the test set, so a
+    timeout can be passed without waiting for it."""
+
+    def __init__(self):
+        self.now = datetime.datetime(2026, 1, 1)
+
+    def advance(self, seconds):
+        self.now += datetime.timedelta(seconds=seconds)
+
+
+@pytest.fixture
+def server_clock():
+    clock = _ServerClock()
+    clock_datetime = mock.MagicMock(now=lambda: clock.now)
+    with mock.patch("BPTK_Py.server.bptkServer.datetime",
+                    mock.MagicMock(datetime=clock_datetime, timedelta=datetime.timedelta)):
+        yield clock
+
+
+def test_instance_timeouts(app, client, server_clock):
 
     timeout = {
         "timeout": {
@@ -958,13 +991,13 @@ def test_instance_timeouts(app, client):
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
-    time.sleep(6)
+    server_clock.advance(6)
 
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
-    time.sleep(6)
+    server_clock.advance(6)
 
     response = client.get('/full-metrics')
     assert response.status_code == 200
@@ -972,8 +1005,7 @@ def test_instance_timeouts(app, client):
     assert result['instanceCount'] == 0
 
 
-def test_keep_alive(app, client):
-    import time
+def test_keep_alive(app, client, server_clock):
 
     timeout_data = {
         "timeout": {
@@ -1019,7 +1051,7 @@ def test_keep_alive(app, client):
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 4
-    time.sleep(3)
+    server_clock.advance(3)
 
     response = client.post('/' + id + "/keep-alive",headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
@@ -1028,13 +1060,13 @@ def test_keep_alive(app, client):
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 4
-    time.sleep(3)
+    server_clock.advance(3)
 
     response = client.get('/full-metrics')
     assert response.status_code == 200
     result = json.loads(response.data)
     assert result['instanceCount'] == 1
-    time.sleep(3)
+    server_clock.advance(3)
 
     response = client.get('/full-metrics')
     assert response.status_code == 200
@@ -1048,45 +1080,6 @@ def test_keep_alive(app, client):
     assert response_invalid.status_code == 500
     assert b'expecting a valid instance id' in response_invalid.data
 
-
-
-
-def test_instance_timeouts(app, client):
-    import time
-
-    timeout = {
-        "timeout": {
-            "weeks":0,
-            "days":0,
-            "hours":0,
-            "minutes":0,
-            "seconds":10,
-            "milliseconds":0,
-            "microseconds":0
-        }
-    }
-
-
-    response = client.post('/start-instance', data=json.dumps(timeout), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 200
-    id = json.loads(response.data)['instance_uuid']
-
-    response = client.get('/full-metrics')
-    assert response.status_code == 200
-    result = json.loads(response.data)
-    assert result['instanceCount'] == 1
-    time.sleep(6)
-
-    response = client.get('/full-metrics')
-    assert response.status_code == 200
-    result = json.loads(response.data)
-    assert result['instanceCount'] == 1
-    time.sleep(6)
-
-    response = client.get('/full-metrics')
-    assert response.status_code == 200
-    result = json.loads(response.data)
-    assert result['instanceCount'] == 0
 
 
 
@@ -1139,7 +1132,7 @@ def test_run_steps(app, client):
     assert response_with_no_scenario.status_code == 500 # checking the status code    
     assert b'expecting scenarios to be set' in response_with_no_scenario.data
 
-    #error if equations and agents are missing
+    #error if equations are missing
     session_with_missing_equations_and_agents = {
         "scenario_managers": [
             "firstManager"
@@ -1150,7 +1143,7 @@ def test_run_steps(app, client):
     }
     response_with_no_equations_and_agents = client.post('/' + id + '/begin-session', data=json.dumps(session_with_missing_equations_and_agents), content_type='application/json',headers={"Authorization": f"Bearer {token}"})
     assert response_with_no_equations_and_agents.status_code == 500 # checking the status code    
-    assert b'expecting either equations or agents to be set' in response_with_no_equations_and_agents.data
+    assert b'expecting equations to be set' in response_with_no_equations_and_agents.data
 
     session = {
         "scenario_managers": [
@@ -1275,17 +1268,19 @@ def test_run_steps(app, client):
     result = json.loads(response.data)
     assert len(result) == 20
 
-    #run steps: if instance.run_step raises mid-loop, the bare except must
-    #unlock the instance so subsequent calls aren't permanently blocked.
+    #run steps: if instance.run_step raises mid-loop, the answer is an error
+    #rather than a 200, and the instance is unlocked so subsequent calls
+    #aren't permanently blocked.
     instance = app._instance_manager.get_instance(id)
 
     def _raise(*args, **kwargs):
         raise RuntimeError("simulated run_step failure")
 
     with mock.patch.object(instance, "run_step", side_effect=_raise):
-        client.post('/' + id + '/run-steps', data=json.dumps(query),
-                    content_type='application/json',
-                    headers={"Authorization": f"Bearer {token}"})
+        failed = client.post('/' + id + '/run-steps', data=json.dumps(query),
+                             content_type='application/json',
+                             headers={"Authorization": f"Bearer {token}"})
+    assert failed.status_code == 500
     assert not instance.is_locked()
 
     #flat session results: error if instance id does not exist
@@ -1383,15 +1378,25 @@ def test_run_steps_lock(app, client):
     def _run_steps_lock(requests, index):
         requests[index] = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
 
+    # The first request holds the instance until the second has been turned away.
+    # Left to timing, the first could finish before the second arrived.
     import threading
-    import time
-    t1 = threading.Thread(target=_run_steps_lock, daemon=True, args=[thread_results, 0])
-    t2 = threading.Thread(target=_run_steps_lock, daemon=True, args=[thread_results, 1])
-    t1.start()
-    t2.start()
+    instance = app._instance_manager.get_instance(id)
+    inside, release = threading.Event(), threading.Event()
+    run_step = instance.run_step
 
-    t1.join()
-    t2.join()
+    def _held_run_step(*args, **kwargs):
+        inside.set()
+        release.wait(timeout=5)
+        return run_step(*args, **kwargs)
+
+    with mock.patch.object(instance, "run_step", side_effect=_held_run_step):
+        t1 = threading.Thread(target=_run_steps_lock, daemon=True, args=[thread_results, 0])
+        t1.start()
+        assert inside.wait(timeout=5)
+        _run_steps_lock(thread_results, 1)
+        release.set()
+        t1.join()
 
     assert thread_results[0].status_code == 200
     assert thread_results[1].status_code == 500
@@ -1399,7 +1404,6 @@ def test_run_steps_lock(app, client):
     result = json.loads(thread_results[0].data)
     assert len(result) == 20
 
-    time.sleep(1)
     request = client.post('/' + id + '/run-steps', data=json.dumps(query), content_type = 'application/json',headers={"Authorization": f"Bearer {token}"})
     assert request.status_code == 200
     result = json.loads(request.data)
@@ -1817,6 +1821,58 @@ def test_a_session_the_engine_cannot_serve_answers_400():
     assert "total_of" in body["error"]
 
 
+def _unservable_session():
+    """A client and the id of a Rust session on the model the engine cannot take."""
+    server = BptkServer(__name__, _unservable_factory, None, token)
+    client = server.test_client()
+    instance_uuid = json.loads(client.post(
+        '/start-instance',
+        headers={"Authorization": f"Bearer {token}"}).data)["instance_uuid"]
+    started = client.post(
+        f'/{instance_uuid}/begin-session',
+        data=json.dumps({"scenario_managers": ["mgr"], "scenarios": ["base"],
+                         "equations": ["stock"], "backend": "rust"}),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"})
+    assert started.status_code == 200, started.data
+    return server, client, instance_uuid
+
+
+@pytest.mark.allow_rust_unused
+def test_run_steps_the_engine_cannot_serve_answers_400():
+    """run-steps answers as run-step does, instead of a 200 with no steps in it."""
+    server, client, instance_uuid = _unservable_session()
+
+    stepped = client.post(
+        f'/{instance_uuid}/run-steps',
+        data=json.dumps({"numberSteps": 2, "settings": {}}),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"})
+
+    assert stepped.status_code == 400, stepped.data
+    assert "total_of" in json.loads(stepped.data)["error"]
+    assert not server._instance_manager.get_instance(instance_uuid).is_locked()
+
+
+@pytest.mark.allow_rust_unused
+def test_stream_steps_the_engine_cannot_serve_names_the_error_in_the_body():
+    """The 200 is sent before the first step, so the error is the array's last
+    element - and the array is closed, so the body still parses."""
+    server, client, instance_uuid = _unservable_session()
+
+    streamed = client.post(
+        f'/{instance_uuid}/stream-steps',
+        data=json.dumps({"settings": {}}),
+        content_type='application/json',
+        headers={"Authorization": f"Bearer {token}"})
+
+    assert streamed.status_code == 200
+    body = json.loads(streamed.data)
+    assert len(body) == 1
+    assert "total_of" in body[0]["error"]
+    assert not server._instance_manager.get_instance(instance_uuid).is_locked()
+
+
 def test_execute_refuses_a_model_written_with_model_function(empty_app, empty_client):
     """The real shape, not a hand-written node: a model built with `Model.function()`
     and serialized the way a client would serialize it."""
@@ -1874,6 +1930,61 @@ def test_execute_resource_authentication(empty_app, empty_client):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response_ok.status_code == 200
+
+
+def _every_endpoint_once(client):
+    """One request to each route, with the token; returns (request, response) pairs."""
+    auth = {"Authorization": f"Bearer {token}"}
+    run = {"scenario_managers": ["firstManager"], "scenarios": ["1"], "equations": ["stock"]}
+    responses = []
+
+    def call(method, path, body=None):
+        kwargs = {"headers": auth}
+        if body is not None:
+            kwargs.update(data=json.dumps(body), content_type="application/json")
+        responses.append(("{} {}".format(method, path), getattr(client, method.lower())(path, **kwargs)))
+        return responses[-1][1]
+
+    for path in ("/", "/healthy", "/metrics", "/full-metrics", "/scenarios"):
+        call("GET", path)
+    call("POST", "/run", run)
+    call("POST", "/equations", {"scenario_managers": ["firstManager"], "scenarios": ["1"]})
+    call("POST", "/agents", {"scenario_managers": ["firstManager"], "scenarios": ["1"]})
+    call("POST", "/start-instances", {"instances": 1})
+    instance = json.loads(call("POST", "/start-instance").data)["instance_uuid"]
+    call("POST", "/{}/begin-session".format(instance), run)
+    call("POST", "/{}/run-step".format(instance), {"settings": {}})
+    call("POST", "/{}/run-steps".format(instance), {"settings": [{}]})
+    call("POST", "/{}/stream-steps".format(instance), {"settings": [{}]})
+    call("GET", "/{}/session-results".format(instance))
+    call("GET", "/{}/flat-session-results".format(instance))
+    call("POST", "/{}/keep-alive".format(instance))
+    call("POST", "/{}/end-session".format(instance))
+    call("POST", "/{}/stop-instance".format(instance))
+    call("POST", "/never-existed/run-step", {"settings": {}})
+    return responses
+
+
+def test_every_response_may_be_read_from_another_origin(app, client):
+    """/scenarios, /equations, /agents, / and /healthy answered without the CORS
+    header, so a page served from elsewhere could not read them."""
+    for request_line, response in _every_endpoint_once(client):
+        assert response.headers.get("Access-Control-Allow-Origin") == "*", request_line
+
+
+def test_a_missing_or_wrong_token_is_answered_as_json_and_readable(app, client):
+    """A 401 carried neither a JSON content type nor the CORS header: in a browser on
+    another origin it surfaced as a CORS failure, not as 'Unauthorized'."""
+    for headers, message in (({}, "Authentication Token is missing!"),
+                             ({"Authorization": "Bearer wrong"}, "Authentication Token is wrong!")):
+        for path in ("/run", "/scenarios", "/start-instance", "/never-existed/run-step"):
+            method = client.get if path == "/scenarios" else client.post
+            response = method(path, headers=headers)
+
+            assert response.status_code == 401, path
+            assert json.loads(response.data) == {"Unauthorized": message}, path
+            assert response.headers["Content-Type"] == "application/json", path
+            assert response.headers["Access-Control-Allow-Origin"] == "*", path
 
 
 # InstanceManager direct unit tests
@@ -2122,8 +2233,7 @@ def test_cleanup_instance_failure_is_logged():
     """A failure during instance cleanup is caught and logged, never raised."""
     import BPTK_Py.logger.logger as logmod
     logmod.loglevel = "INFO"
-    with open(logmod.logfile, "w", encoding="UTF-8"):
-        pass
+    clear_log()
 
     server = BptkServer(__name__, empty_bptk_factory,
                         external_state_adapter=mock.Mock(),
@@ -2133,8 +2243,7 @@ def test_cleanup_instance_failure_is_logged():
 
     server._cleanup_instance_if_needed("some-uuid")  # must not raise
 
-    with open(logmod.logfile, "r", encoding="UTF-8") as f:
-        content = f.read()
+    content = read_log()
     assert "[ERROR] Cleanup failed for instance some-uuid" in content
 
 
@@ -2157,7 +2266,7 @@ def test_execute_runs_an_arrayed_model(empty_app, empty_client):
     bracketed sub-element names, and the values are compared against the Python
     engine running the same model.
     """
-    from _arrayed_fixtures import build_workforce_model, LEVELS
+    from tests.helpers.arrayed_fixtures import build_workforce_model, LEVELS
 
     model = build_workforce_model(name="execute_workforce")
     equations = ([f"headcount[{level}]" for level in LEVELS]
@@ -2186,7 +2295,7 @@ def test_execute_runs_an_arrayed_model(empty_app, empty_client):
 
 def test_execute_applies_a_constant_override_to_a_bracketed_name(empty_app, empty_client):
     """A scenario constant naming a sub-element must reach that sub-element."""
-    from _arrayed_fixtures import build_workforce_model
+    from tests.helpers.arrayed_fixtures import build_workforce_model
 
     model = build_workforce_model(name="execute_override")
     payload = {

@@ -9,7 +9,7 @@ import BPTK_Py
 import redis
 from dotenv import load_dotenv
 from BPTK_Py import sd_functions as sd
-from tests.test_config import TestConfig, requires_redis
+from tests.helpers.external_state_config import TestConfig, requires_redis
 
 @pytest.fixture(params=[True, False], ids=["externalize_completely", "no_externalize"])
 def externalize_state_completely(request):
@@ -406,3 +406,26 @@ def test_instance_timeouts(file_client_fixture, externalize_state_completely):
   
 
     
+
+
+def test_stream_steps_keeps_its_steps_in_the_external_state(file_client_fixture):
+    """stream-steps computes its steps while the body is sent. Cleaning up - saving the
+    state and dropping the instance - has to wait until the stream has run, or the
+    saved state is the one from before it."""
+    client = file_client_fixture
+    instance_uuid = json.loads(client.post('/start-instance').data)["instance_uuid"]
+    session = {"scenario_managers": ["firstManager"], "scenarios": ["scenario1"],
+               "equations": ["converter", "input"]}
+    response = client.post(f'{instance_uuid}/begin-session', data=json.dumps(session),
+                           content_type='application/json')
+    assert response.status_code == 200
+
+    streamed = client.post(f'{instance_uuid}/stream-steps', data=json.dumps({"settings": {}}),
+                           content_type='application/json')
+    assert len(json.loads(streamed.data)) == 5  # steps 1 to 5
+
+    results = json.loads(client.get(f'{instance_uuid}/session-results').data)
+    steps = results["firstManager"]["scenario1"]["equations"]["converter"]
+    assert sorted(float(t) for t in steps) == [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    client.post(f'{instance_uuid}/stop-instance')

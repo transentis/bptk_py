@@ -1,5 +1,5 @@
 # Front matter the .py format cannot carry; injected on export.
-# keywords: agent baesd modeling, abm, system dynamics,sd dsl, bptk, bptk-py, python, business simulation, enterprise digital twin, dashboard, KPI
+# keywords: agent based modeling, abm, system dynamics,sd dsl, bptk, bptk-py, python, business simulation, enterprise digital twin, dashboard, KPI
 # description: An Enterprise Digital Twin of a Professional Service Firm
 import marimo
 
@@ -91,7 +91,7 @@ def _(mo):
 
     System Dynamics is ideal for this, which is why we decided to build our enterprise digital twin using a hybrid modeling approach: the core simulation is built using Agent-based modling and within that model we embed a separate System Dynamics model that keeps track of the key performance indicators.
 
-    Currently, all interaction between the Agent-based model and the System Dynamics model is via the Controlling agent: From the perspective of the System Dynamics model, the Controlling agent is an exogenous environment that provides data as a time-series. The Controlling Agents reads back the relevant values form the System Dynamics model in order to make them available for the interactive dashboard.
+    Currently, all interaction between the Agent-based model and the System Dynamics model is via the Controlling agent: From the perspective of the System Dynamics model, the Controlling agent is an exogenous environment that provides data as a time-series. The Controlling Agents reads back the relevant values form the System Dynamics model in order to make them available for the charts.
 
     ![Enterprise Digital Twin Model](./images/edt_model.svg)
 
@@ -595,7 +595,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is also reflected in the next chart, which shows the companies utilization rate, both on a monthly basis and as a cumulative "to date" measure. The utilzation rate measures how much of a consultants time is spent working on client projects. Because only the work on client projects genereates revenue, a high utilzation rate is desirable (but don't forget that consultants are also needed to acquire new clients and generate new business, so we should leave time for that).
+    This is also reflected in the next chart, which shows the companies utilization rate, both on a monthly basis and as a cumulative "to date" measure. The utilization rate measures how much of a consultants time is spent working on client projects. Because only the work on client projects genereates revenue, a high utilization rate is desirable (but don't forget that consultants are also needed to acquire new clients and generate new business, so we should leave time for that).
     """)
     return
 
@@ -800,7 +800,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Putting It All Together: Interactive Dashboard
+    ## Putting It All Together
     """)
     return
 
@@ -808,12 +808,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This section used to carry an interactive dashboard built with `ipywidgets`. That widget
-    layer has been removed from BPTK-Py - a marimo notebook does the same job with plain
-    Python - so what follows is the chart itself, produced by `plot_scenarios` against the
-    `interactive` scenario in [`scenarios/interactive.json`](./scenarios/interactive.json)
-    beside this page. The experiments below are done by editing that file and re-running the
-    cell.
+    The chart below is produced by `plot_scenarios` against the `interactive` scenario in
+    [`scenarios/interactive.json`](./scenarios/interactive.json) beside this page. The
+    experiments below are done by editing that file and re-running the cell.
 
     The scenario is calibrated to provide "full" utilization of six consultants via three projects, the simulation runs over 24 months at a granularity of 1 week. The consultants start with zero projects and it takes two weeks for them to become assigned to a project, which is why the company looses a little money in the first month - note how long it takes for the level of cash to break even again.
 
@@ -847,8 +844,6 @@ def _(mo):
 
 @app.cell
 def _():
-    # A fresh import: the cell above rebound the name `bptk` from the class to an
-    # instance, so calling it again raises "'bptk' object is not callable".
     from BPTK_Py.bptk import bptk as Bptk
 
     bptk_1 = Bptk()
@@ -948,7 +943,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The dashboard presented above is useful to experiment with the __Enterprise Digital Twin__ while it is in development. Depending on the setup in your enterprise you could also deploy it for use by an "end user", e.g. by serving the notebook itself or by putting a front end in front of the API server.
+    The chart above is useful to experiment with the __Enterprise Digital Twin__ while it is in development. Depending on the setup in your enterprise you could also deploy it for use by an "end user", e.g. by serving the notebook itself or by putting a front end in front of the API server.
 
     The approach we take at transentis is to separate the frontend presentation logic entirely from the backend - that way we can use "state of the art" technology for the front end and concentrate on the business logic in the backend.
 

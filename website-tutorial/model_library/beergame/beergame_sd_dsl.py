@@ -1,6 +1,6 @@
 # Front matter the .py format cannot carry; injected on export.
 # keywords: system dynamics, sd dsl, bptk, bptk-py, python, business simulation, beer game, beer distribution game
-# description: This notebook explains illustrates how to build a simulation model of the Beer Distribution Game using System Dynamics
+# description: This notebook illustrates how to build a simulation model of the Beer Distribution Game using System Dynamics
 import marimo
 
 __generated_with = "0.23.13"
@@ -206,13 +206,6 @@ def _():
     return (bptk,)
 
 
-@app.cell
-def _():
-    # magic command not supported in marimo; please file an issue to add support
-    # %run src/dashboard/beergame_dashboard_sd_dsl.ipy
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -285,7 +278,7 @@ def _(mo):
 
         def initialize(self, policy_settings):
             # Equations
-            self.sending_orders.equation = 100.0 + sd.If(policy_settings.steady_state_on == 0.0,1.0,0.0)*sd.step(policy_settings.rise_in_consumer_order,1.0)
+            self.sending_orders.equation = 100.0 + sd.If(policy_settings.steady_state_on == 0.0,1.0,0.0)*sd.step(policy_settings.rise_in_consumer_order,2.0)
     ```
 
     All children of `Module` distinguish between the usual `init` constructor and an `initialize` method. The `init` constructor is used to instantiate all elements of a module that will be referenced by other modules (i.e. these are the model elements that are exported by a module). The initialize method is then used to initialize the equations set up by the init method along with the equations that are internal to a module.

@@ -2,12 +2,12 @@ import pytest
 import unittest
 from unittest.mock import patch, MagicMock
 import os
-import time
 import threading
 import BPTK_Py.logger.logger as logmod
 
 
 from BPTK_Py.modelmonitor.file_monitor import FileMonitor 
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestFileMonitor(unittest.TestCase):
 
@@ -17,16 +17,11 @@ class TestFileMonitor(unittest.TestCase):
     @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the constructor's thread
     @patch("os.path.isfile", return_value=True)  # simulates that a file exists
     @patch("os.stat")  # mock for the timestamp
-    @pytest.mark.requires_threads
     def test_monitor_detects_file_change(self, mock_stat, mock_isfile, mock_thread):
         logmod.loglevel = "INFO"
                
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         # simulated timestamp
         mock_stat.return_value.st_mtime = 100
@@ -36,25 +31,16 @@ class TestFileMonitor(unittest.TestCase):
         fileMonitor = FileMonitor(json_file="test.json", update_func= mock_update_func)
         fileMonitor._cached_stamp = 50  # older timestamp
 
-        # start `__monitor` as separate thread
-        monitor_thread = threading.Thread(target=fileMonitor._FileMonitor__monitor)
+        # One pass of the loop, run here rather than in a thread: the patched sleep
+        # at its end stops it. Waiting two seconds for a thread showed nothing more.
         fileMonitor.running = True
-        monitor_thread.start()
-
-        # Wait and let the Thread run
-        time.sleep(2)
-
-        # stop 
-        fileMonitor.running = False
-        monitor_thread.join()
+        with patch("BPTK_Py.modelmonitor.file_monitor.time.sleep",
+                   side_effect=lambda *_: setattr(fileMonitor, "running", False)):
+            fileMonitor._FileMonitor__monitor()
 
         mock_update_func.assert_called_once_with("test.json")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] JSON Monitor: Observed a change to test.json", content)  
         self.assertIn("[INFO] JSON Monitor for test.json: model updated and relaoded scenarios!", content)  
@@ -86,14 +72,17 @@ class TestFileMonitor(unittest.TestCase):
         fileMonitor._cached_stamp = 50  # force a detected change
         fileMonitor.running = True
 
+        clear_log()
+
         # Run exactly one loop iteration, then stop via the (patched) sleep.
         with patch("BPTK_Py.modelmonitor.file_monitor.time.sleep",
                    side_effect=lambda *_: setattr(fileMonitor, "running", False)):
             fileMonitor._FileMonitor__monitor()
 
-        # The exception was swallowed and the loop exited cleanly.
+        # The loop exited cleanly, and the warning says why the reload failed
         self.assertFalse(fileMonitor.running)
         self.assertEqual(fileMonitor._cached_stamp, 100)
+        self.assertIn("Could not reload scenario file test.json: boom", read_log())
 
     @patch("BPTK_Py.modelmonitor.file_monitor.start_or_skip")  # suppress the background thread
     @patch("BPTK_Py.modelmonitor.file_monitor.os.name", "nt")
@@ -128,9 +117,6 @@ class TestFileMonitor(unittest.TestCase):
 
         self.assertFalse(monitor.running)
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class TestFileMonitorIsADaemon(unittest.TestCase):
     """A watcher must not hold the interpreter open after the script is done.
@@ -152,4 +138,3 @@ class TestFileMonitorIsADaemon(unittest.TestCase):
             self.assertTrue(thread.daemon)
         finally:
             monitor.kill()
-

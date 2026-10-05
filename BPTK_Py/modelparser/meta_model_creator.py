@@ -45,7 +45,8 @@ class ModelCreator():
         self.scenarios = {
         }
 
-    def add_scenario(self, name, starttime, stoptime, dt,properties={},datacollector=None):
+    def add_scenario(self, name, starttime, stoptime, dt,properties=None,datacollector=None):
+        properties = {} if properties is None else properties
         self.scenarios[name] = {
             "runspecs": {
                 "starttime": starttime,

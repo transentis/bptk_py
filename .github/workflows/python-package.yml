@@ -1,5 +1,6 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# The library's checks on every push and pull request: the suite on Linux, macOS and Windows
+# for each supported Python version, with Postgres and Redis on Linux, the Rust engine's own
+# tests, and the suite once more in the browser platform (Pyodide under node).
 
 name: Python package
 
@@ -39,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11","3.12","3.13"]
+        python-version: ["3.12","3.13","3.14"]
 
     steps:
     - uses: actions/checkout@v6
@@ -73,9 +74,9 @@ jobs:
         uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
     - name: Build the engine without Python
       # The wheel is a shared library the interpreter loads; the test binaries start by
-      # themselves. Only this step builds the first form without pyo3, so a break that
-      # hits it alone - which is the form the standalone binary and WASM need - shows up
-      # here rather than in a later phase.
+      # themselves. Only this step builds the engine as a plain Rust library, without
+      # pyo3 - the form a WebAssembly build would use - so a break that hits only that
+      # form shows up here.
       run: |
         cargo build --no-default-features
     - name: Run Rust engine tests
@@ -107,7 +108,7 @@ jobs:
         uv run pytest --cov-config=.coveragerc --cov=./
         uv run coverage xml
     - name: Upload coverage to Coveralls
-      if: matrix.python-version == '3.11' && github.repository == 'transentis/bptk_py'
+      if: matrix.python-version == '3.12' && github.repository == 'transentis/bptk_py'
       uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -120,7 +121,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
-        python-version: ["3.11","3.12","3.13"]
+        python-version: ["3.12","3.13","3.14"]
 
     defaults:
       run:
@@ -147,9 +148,9 @@ jobs:
         uv sync --all-extras --group ci --no-group docs --python "$(python -c 'import sys; print(sys.executable)')"
     - name: Build the engine without Python
       # The wheel is a shared library the interpreter loads; the test binaries start by
-      # themselves. Only this step builds the first form without pyo3, so a break that
-      # hits it alone - which is the form the standalone binary and WASM need - shows up
-      # here rather than in a later phase.
+      # themselves. Only this step builds the engine as a plain Rust library, without
+      # pyo3 - the form a WebAssembly build would use - so a break that hits only that
+      # form shows up here.
       run: |
         cargo build --no-default-features
     - name: Run Rust engine tests

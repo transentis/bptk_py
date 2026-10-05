@@ -5,13 +5,10 @@ import os
 
 from BPTK_Py.scenariorunners.hybrid_runner import HybridRunner
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
-import BPTK_Py.logger.logger as logmod
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestHybridRunner(unittest.TestCase):
-    def setUp(self):
-        pass    
-
-    def testHybridRunner_get_df_for_agent(self):
+    def test_get_df_for_agent(self):
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
 
         data = {
@@ -137,28 +134,20 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=[],agent_property_types=["type1"]).equals(pd.DataFrame(data=pd3_data, index=pd_index,columns=pd3_columns)))
         self.assertTrue(hybridRunner.get_df_for_agent(data=data,agent_name="agent1",agent_states=["state1"],agent_properties=["property1"],agent_property_types=[]).equals(pd.DataFrame()))
 
-    def testHybridRunner_run_scenario_invalid(self):
+    def test_run_scenario_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         hybridRunner = HybridRunner(scenario_manager_factory="testScenarioManagerFactory")
 
         self.assertTrue(hybridRunner.run_scenario(abm_results_dict={}, return_format=None, scenarios=[]).equals(pd.DataFrame()))
         hybridRunner.run_scenario(abm_results_dict={},return_format=None,scenarios={"scenario1","scenario2"})
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] No scenario to simulate found", content)
 
-    def testHybriderRunner_run_scenario(self):
+    def test_run_scenario(self):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
 
@@ -208,136 +197,6 @@ class TestHybridRunner(unittest.TestCase):
         self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["total"].
                         equals(pd.DataFrame({"total": [18, 17, 16, 15, 13, 12]})["total"]))
 
-    def testHybriderRunner_run_scenario_step_invalid(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
-
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        sm.get_scenario_managers(path=testDir)        
-        hybridRunner = HybridRunner(scenario_manager_factory=sm)
-
-        self.assertTrue(hybridRunner.run_scenario_step(abm_results_dict={}, step=1,return_format=None, scenarios=[]).equals(pd.DataFrame()))
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-
-        self.assertIn("[ERROR] No scenario to simulate found", content) 
-        self.assertIn("[ERROR] No data to plot found. It seems there is no scenario available. Resetting the scenario cache or model might help if you are trying to rerun a scenario.", content) 
-
-    def testHybriderRunner_run_scenario_step(self):
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        sm.get_scenario_managers(path=testDir)        
-        hybridRunner = HybridRunner(scenario_manager_factory=sm)
-
-        #return format="dict" without agent_properties, without agent_property_types
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=1,
-                                        return_format="dict",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"])
-        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"].
-                        equals(pd.DataFrame({"open": [18]}, index=[1])["open"]))
-
-        #return format="json" without agent_properties, without agent_property_types
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=2,
-                                        return_format="json",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"])
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"],{1: 18, 2: 17})
-
-        #return format="dict" with agent_properties, without agent_property_types
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=3,
-                                        return_format="dict",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"],
-                                        agent_properties=["effort"])
-        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["mean"].
-                        equals(pd.DataFrame({"mean": [1.0, 1.0, 1.0]}, index=[1, 2, 3])["mean"]))
-        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["max"].
-                        equals(pd.DataFrame({"max": [1, 1, 1]}, index=[1, 2, 3])["max"]))
-        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["min"].
-                        equals(pd.DataFrame({"min": [1, 1, 1]}, index=[1, 2, 3])["min"]))
-        self.assertTrue(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["total"].
-                        equals(pd.DataFrame({"total": [18, 17, 16]}, index=[1, 2, 3])["total"]))
-
-        #return format="json" with agent_properties, with agent_property_types
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=4,
-                                        return_format="json",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"],
-                                        agent_properties=["effort"],
-                                        agent_property_types=["min","max","total","mean"])
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["mean"],
-                        {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0})
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["max"],
-                        {1: 1, 2: 1, 3: 1, 4: 1})
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["min"],
-                        {1: 1, 2: 1, 3: 1, 4: 1})
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"]["effort"]["total"],
-                        {1: 18, 2: 17, 3: 16, 4: 15})
-
-        #return format="df" with agent_properties, with agent_property_types
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=5,
-                                        return_format="df",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"],
-                                        agent_properties=["effort"],
-                                        agent_property_types=["total"])
-        self.assertTrue(result.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_open_effort_total": [18, 17, 16, 15, 13]}, index=[1, 2, 3, 4, 5])))
-
-    def testHybriderRunner_run_scenario_step_individual_agent_properties(self):
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        sm.get_scenario_managers(path=testDir)        
-        hybridRunner = HybridRunner(scenario_manager_factory=sm)
-
-        result = hybridRunner.run_scenario_step(abm_results_dict={},
-                                        step=1,
-                                        return_format="json",
-                                        scenarios=["test"],
-                                        scenario_managers=["ABMsmSimpleProjectManagement"],
-                                        agents=["task"],
-                                        agent_states=["open"],
-                                        agent_properties=["effort"],
-                                        agent_property_types=["total"],
-                                        individual_agent_properties={"task": {"effort"}})
-        for i in range(2,21+1):
-            self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["instances"][i],{"effort": {'type': 'Double', 'value': 1}})
-        
-        self.assertEqual(result["ABMsmSimpleProjectManagement"]["test"]["agents"]["task"]["open"]["properties"],{'effort': {'total': {1: 18}}})
-
     def test_train_scenario(self):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_hybrid_runner","scenarios")
@@ -367,7 +226,7 @@ class TestHybridRunner(unittest.TestCase):
 
         self.assertTrue(result2.equals(pd.DataFrame({"ABMsmSimpleProjectManagement_test_task_closed_effort_total": [7, 14, 17, 20, 20]}, index=[0, 1, 2, 3, 4])))
 
-    def testHybridRunner_get_df_for_agent_empty_states(self):
+    def test_get_df_for_agent_empty_states(self):
         """With no agent_states named, every state the agent has is returned.
 
         This test used to pin the opposite: `get_stats_for` stored a bare `0` for the
@@ -394,7 +253,7 @@ class TestHybridRunner(unittest.TestCase):
         sm.get_scenario_managers(path=testDir)
         return HybridRunner(scenario_manager_factory=sm), sm
 
-    def testHybridRunner_run_scenario_skips_unfinished(self):
+    def test_run_scenario_skips_unfinished(self):
         """An unfinished scenario (scheduler.progress < 1.0) is skipped."""
         hybridRunner, sm = self._build_runner()
         scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
@@ -414,13 +273,12 @@ class TestHybridRunner(unittest.TestCase):
         # The only scenario was skipped -> nothing to concatenate -> empty frame.
         self.assertTrue(result.equals(pd.DataFrame()))
 
-    def testHybridRunner_run_scenario_no_data(self):
+    def test_run_scenario_no_data(self):
         """If a finished scenario produces no statistics, an empty frame is returned."""
         hybridRunner, sm = self._build_runner()
         scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
 
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         with patch.object(scenario, "statistics", return_value={}):
             result = hybridRunner.run_scenario(abm_results_dict={}, return_format="df",
@@ -428,11 +286,10 @@ class TestHybridRunner(unittest.TestCase):
                                                agents=["task"], agent_states=["open"], agent_property_types=["total"])
 
         self.assertTrue(result.equals(pd.DataFrame()))
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("[WARN] No output data produced.", content)
 
-    def testHybridRunner_train_scenario_progress_widget(self):
+    def test_train_scenario_progress_widget(self):
         """train_scenario updates a passed-in progress widget each episode."""
         hybridRunner, sm = self._build_runner()
         progress_widget = MagicMock()
@@ -449,24 +306,3 @@ class TestHybridRunner(unittest.TestCase):
 
         # The widget value was written during training; last update is (episodes-1)/episodes.
         self.assertEqual(progress_widget.value, (episodes - 1) / episodes)
-
-    def testHybridRunner_run_scenario_step_no_data(self):
-        """run_scenario_step also returns an empty frame when no statistics exist."""
-        hybridRunner, sm = self._build_runner()
-        scenario = sm.get_scenario("ABMsmSimpleProjectManagement", "test")
-
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
-
-        with patch.object(scenario, "statistics", return_value={}):
-            result = hybridRunner.run_scenario_step(abm_results_dict={}, step=1, return_format="df",
-                                                    scenarios=["test"], scenario_managers=["ABMsmSimpleProjectManagement"],
-                                                    agents=["task"], agent_states=["open"])
-
-        self.assertTrue(result.equals(pd.DataFrame()))
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
-        self.assertIn("[WARN] No output data produced.", content)
-
-if __name__ == '__main__':
-    unittest.main()

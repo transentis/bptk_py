@@ -1,9 +1,9 @@
+import math
 import random
 import os
 import numpy as np
 import pytest
 from scipy.stats import norm
-from BPTK_Py.sdcompiler.compile import compile_xmile
 from BPTK_Py.sddsl.operators import BinaryOperator
 from BPTK_Py.util import timerange
 
@@ -400,7 +400,7 @@ def test_sddsl_functions():
                                "base"], equations=["a", "b", "c"], return_df=True)
 
     for i in timerange(start, stop, dt):
-        if i <= 5:
+        if i < 5:
             assert data.c[i] == 10
             continue
         assert data.c[i] == 20
@@ -423,7 +423,7 @@ def test_sddsl_functions():
                                "base"], equations=["a", "b", "c"], return_df=True)
 
     for i in timerange(start, stop, dt):
-        if i <= 5:
+        if i < 5:
             assert data.c[i] == 5
             continue
         assert data.c[i] == 8
@@ -498,7 +498,7 @@ def test_sddsl_functions():
             assert reached_step_height == False
 
         # before the smooth function reacts to the change in step height it should be equal to the initial value.
-        if i <= step_start + dt:
+        if i <= step_start:
             assert data.smooth[i] == base_value
             continue
 
@@ -551,7 +551,7 @@ def test_sddsl_functions():
     data = step.plot(return_df=True)
 
     for i in timerange(start, stop, dt):
-        if i <= step_timestep:
+        if i < step_timestep:
             assert data.step[i] == 0
             continue
         assert data.step[i] == step_height
@@ -585,7 +585,8 @@ def test_sddsl_functions():
     flow.equation = sd.round(sd.time(), 0)
     data = flow.plot(return_df=True)
     for i in timerange(start, stop, dt):
-        assert data['round'][i] == round(i)
+        # Half away from zero, not Python's half to even: 0.5 -> 1, 2.5 -> 3
+        assert data['round'][i] == math.floor(i + 0.5)
 
     #and/or
     start = 0.0
@@ -923,19 +924,31 @@ def test_sddsl_functions():
     assert len(data) == 91
 
 
+# The array tests draw their values from here. Seeded per test, from its name, so a
+# failure shows the same values on every run - and the same values alone as in the
+# whole suite.
+_RANDOM = random.Random()
+
+
+@pytest.fixture(autouse=True)
+def _seeded_values(request):
+    _RANDOM.seed(request.node.name)
+
+
 def get_random(t):
     if t == 2:
-        return float(random.randrange(1, 2000) * .1)
-    num = float(random.randrange(-2000, 2000) * .1)
+        return float(_RANDOM.randrange(1, 2000) * .1)
+    num = float(_RANDOM.randrange(-2000, 2000) * .1)
     while(num == 0.0):
-        num = float(random.randrange(-2000, 2000) * .1)
+        num = float(_RANDOM.randrange(-2000, 2000) * .1)
     return num
 
 
 def get_element_data(element):
-    data = element.plot(return_df=True)
-    # 2 because it is the first timestep to consider stocks
-    return data[element.name][1]
+    # The value at t=1, the first step at which a stock has moved. Read from the
+    # model directly: going through plot() built a DataFrame for every single value,
+    # thousands per test, and plot() has tests of its own.
+    return element.model.memoize(element.name, 1.0)
 
 
 def setup_vector(element, i, elements, n):
@@ -1092,21 +1105,18 @@ def test_matrix_constant():
                                 test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
 
                 # Dot tests
-                try:
-                    test_element3 = model.converter("test_element_dot" + index)
-                    test_element3.equation = test_element1.dot(
-                        test_element_2_transposed)
+                test_element3 = model.converter("test_element_dot" + index)
+                test_element3.equation = test_element1.dot(
+                    test_element_2_transposed)
 
-                    temp = np.dot(elements1, transposed)
+                temp = np.dot(elements1, transposed)
 
-                    for j in range(i):
-                        for x in range(i):
-                            assert(get_element_data(
-                                test_element3[j][x]) == pytest.approx(temp[j][x]))
-                            assert(get_element_data(
-                                test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
-                except:
-                    assert(n == 1)
+                for j in range(i):
+                    for x in range(i):
+                        assert(get_element_data(
+                            test_element3[j][x]) == pytest.approx(temp[j][x]))
+                        assert(get_element_data(
+                            test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
 
                 # Functions
                 test_element3 = model.converter("test_element_sum" + index)
@@ -1190,25 +1200,29 @@ def test_matrix_constant():
                         test_element4 = model.constant(
                             "test_element4_exc_" + str(j) + "_" + str(x) + index)
                         setup_matrix(test_element4, [j, x], 2.0, n)
-                        try:
-                            # A converter, not a constant: a constant may only hold a
-                            # floating point value, and says so. The target used to be a
-                            # constant here and the error was swallowed, because
-                            # `equation == None` on an operator builds a comparison -
-                            # which is truthy - so the equation silently became None.
+                        # A converter, not a constant: a constant may only hold a
+                        # floating point value, and says so. The target used to be a
+                        # constant here and the error was swallowed, because
+                        # `equation == None` on an operator builds a comparison -
+                        # which is truthy - so the equation silently became None.
+                        if x == i:
                             test_element3 = model.converter("test_element_exc_dot" + str(j) + "_" + str(x) + index)
                             test_element3.equation = test_element4.dot(
                                 test_element2)
-                            assert(x == i)
-                        except:
-                            assert(x != i or n == 1)
+                        else:
+                            with pytest.raises(Exception, match=r"invalid (matrix|vector) (matrix|vector) multiplication"):
+                                test_element3 = model.converter("test_element_exc_dot" + str(j) + "_" + str(x) + index)
+                                test_element3.equation = test_element4.dot(
+                                    test_element2)
 
-                        try:
+                        if n == 1 or (j == i and x == k):
+                            # A named array takes its shape from its labels, so there is no size to get wrong
                             test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
                             setup_matrix(test_element3, [j, x], elements1, n)
-                            assert(j == i and x == k)
-                        except:
-                            assert(not (j == i and x == k))
+                        else:
+                            with pytest.raises(Exception, match=r"same size"):
+                                test_element3 = model.constant("test_element_exc" + str(j) + "_" + str(x) + index)
+                                setup_matrix(test_element3, [j, x], elements1, n)
 
 def test_vector():
     from BPTK_Py import Model
@@ -1318,35 +1332,32 @@ def test_vector():
                     assert(get_element_data(
                         test_element3[j]) != elements1[j] / elements2[j] + 1)
 
-                try:
-                    # Dot tests
-                    test_element3 = get_element(t, model, "test_element_dot")
-                    test_element3.equation = test_element1.dot(test_element2)
+                # Dot tests
+                test_element3 = get_element(t, model, "test_element_dot")
+                test_element3.equation = test_element1.dot(test_element2)
 
-                    assert(get_element_data(test_element3)
-                        == pytest.approx(np.dot(elements1, elements2)))
-                    assert(get_element_data(test_element3) !=
-                        np.dot(elements1, elements2) + 1)
-                        
-                    test_element3 = get_element(t, model, "test_element_dot_val_vec")
-                    test_element3.equation = test_element_val.dot(test_element2)
+                assert(get_element_data(test_element3)
+                    == pytest.approx(np.dot(elements1, elements2)))
+                assert(get_element_data(test_element3) !=
+                    np.dot(elements1, elements2) + 1)
+                    
+                test_element3 = get_element(t, model, "test_element_dot_val_vec")
+                test_element3.equation = test_element_val.dot(test_element2)
 
-                    np_res = np.dot(test_element_val, elements2)
+                np_res = np.dot(test_element_val, elements2)
 
-                    for j in range(i):
-                        assert(get_element_data(test_element3[j]) == np_res[j])
-                        assert(get_element_data(test_element3[j]) != np_res[j] + 1)
+                for j in range(i):
+                    assert(get_element_data(test_element3[j]) == np_res[j])
+                    assert(get_element_data(test_element3[j]) != np_res[j] + 1)
 
-                    test_element3 = get_element(t, model, "test_element_dot_vec_val")
-                    test_element3.equation = test_element2.dot(test_element_val)
+                test_element3 = get_element(t, model, "test_element_dot_vec_val")
+                test_element3.equation = test_element2.dot(test_element_val)
 
-                    np_res = np.dot(elements2, test_element_val)
+                np_res = np.dot(elements2, test_element_val)
 
-                    for j in range(i):
-                        assert(get_element_data(test_element3[j]) == np_res[j])
-                        assert(get_element_data(test_element3[j]) != np_res[j] + 1)
-                except:
-                    assert(n == 1)
+                for j in range(i):
+                    assert(get_element_data(test_element3[j]) == np_res[j])
+                    assert(get_element_data(test_element3[j]) != np_res[j] + 1)
 
                 # Functions
                 test_element3 = get_element(t, model, "test_element_sum")
@@ -1413,24 +1424,32 @@ def test_vector():
                 # Exception testing
                 for j in range(i + 1):
                     test_element4 = get_element(t, model, "test_element4")
+                    if j == 0:
+                        # An array needs at least one element, named or not
+                        with pytest.raises(ValueError, match="at least one element"):
+                            setup_vector(test_element4, j, 2.0, n)
+                        continue
                     setup_vector(test_element4, j, 2.0, n)
 
                     # A target of its own per round: an element the modeller gave a
                     # shape holds no single value, so reusing one across the rounds
                     # would test that rule rather than the shape rules of `dot`.
-                    try:
+                    if j == i:
                         test_element3 = get_element(t, model, "test_element_exc_dot_" + str(j))
                         test_element3.equation = test_element4.dot(test_element2)
-                        assert(j == i)
-                    except:
-                        assert(j != i or n == 1)
+                    else:
+                        with pytest.raises(Exception, match=r"invalid (matrix|vector) (matrix|vector) multiplication"):
+                            test_element3 = get_element(t, model, "test_element_exc_dot_" + str(j))
+                            test_element3.equation = test_element4.dot(test_element2)
 
-                    try:
+                    if n == 1 or j == i:
+                        # A named array takes its shape from its labels, so there is no size to get wrong
                         test_element3 = get_element(t, model, "test_element_exc_" + str(j))
                         setup_vector(test_element3, j, elements1, n)
-                        assert(j == i)
-                    except:
-                        assert(j != i)
+                    else:
+                        with pytest.raises(Exception, match=r"does not match the size"):
+                            test_element3 = get_element(t, model, "test_element_exc_" + str(j))
+                            setup_vector(test_element3, j, elements1, n)
 
                 elements1.append(get_random(t))
                 elements2.append(get_random(t))
@@ -1523,35 +1542,32 @@ def test_vector_constants():
                 assert(get_element_data(
                     test_constant3[j]) != elements1[j] / elements2[j] + 1)
 
-            try:
-                # Dot tests
-                test_constant3 = model.converter("test_constant_dot" + index)
-                test_constant3.equation = test_constant1.dot(test_constant2)
+            # Dot tests
+            test_constant3 = model.converter("test_constant_dot" + index)
+            test_constant3.equation = test_constant1.dot(test_constant2)
 
-                assert(get_element_data(test_constant3)
-                    == pytest.approx(np.dot(elements1, elements2)))
-                assert(get_element_data(test_constant3) !=
-                    np.dot(elements1, elements2) + 1)
+            assert(get_element_data(test_constant3)
+                == pytest.approx(np.dot(elements1, elements2)))
+            assert(get_element_data(test_constant3) !=
+                np.dot(elements1, elements2) + 1)
 
-                test_constant3 = model.converter("test_constant_dot_val_vec" + index)
-                test_constant3.equation = test_constant_val.dot(test_constant2)
+            test_constant3 = model.converter("test_constant_dot_val_vec" + index)
+            test_constant3.equation = test_constant_val.dot(test_constant2)
 
-                np_res = np.dot(test_constant_val, elements2)
+            np_res = np.dot(test_constant_val, elements2)
 
-                for j in range(i):
-                    assert(get_element_data(test_constant3[j]) == np_res[j])
-                    assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
+            for j in range(i):
+                assert(get_element_data(test_constant3[j]) == np_res[j])
+                assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
 
-                test_constant3 = model.converter("test_constant_dot_vec_val" + index)
-                test_constant3.equation = test_constant2.dot(test_constant_val)
+            test_constant3 = model.converter("test_constant_dot_vec_val" + index)
+            test_constant3.equation = test_constant2.dot(test_constant_val)
 
-                np_res = np.dot(elements2, test_constant_val)
+            np_res = np.dot(elements2, test_constant_val)
 
-                for j in range(i):
-                    assert(get_element_data(test_constant3[j]) == np_res[j])
-                    assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
-            except:
-                assert(n == 1)
+            for j in range(i):
+                assert(get_element_data(test_constant3[j]) == np_res[j])
+                assert(get_element_data(test_constant3[j]) != np_res[j] + 1)
 
             # Functions
             test_constant3 = model.converter("test_constant_sum" + index)
@@ -1616,24 +1632,32 @@ def test_vector_constants():
             # Exception testing
             for j in range(i + 1):
                 test_constant4 = model.constant("test_constant4" + index)
+                if j == 0:
+                    # An array needs at least one element, named or not
+                    with pytest.raises(ValueError, match="at least one element"):
+                        setup_vector(test_constant4, j, 2.0, n)
+                    continue
                 setup_vector(test_constant4, j, 2.0, n)
 
                 # A target of its own per round: an element the modeller gave a shape
                 # holds no single value, so reusing one across the rounds would test
                 # that rule rather than the shape rules of `dot`.
-                try:
+                if j == i:
                     test_constant3 = model.converter("test_constant_exc_dot" + str(j) + index)
                     test_constant3.equation = test_constant4.dot(test_constant2)
-                    assert(j == i)
-                except:
-                    assert(j != i or n == 1)
+                else:
+                    with pytest.raises(Exception, match=r"invalid (matrix|vector) (matrix|vector) multiplication"):
+                        test_constant3 = model.converter("test_constant_exc_dot" + str(j) + index)
+                        test_constant3.equation = test_constant4.dot(test_constant2)
 
-                try:
+                if n == 1 or j == i:
+                    # A named array takes its shape from its labels, so there is no size to get wrong
                     test_constant3 = model.converter("test_constant_exc" + str(j) + index)
                     setup_vector(test_constant3, j, elements1, n)
-                    assert(j == i)
-                except:
-                    assert(j != i)
+                else:
+                    with pytest.raises(Exception, match=r"does not match the size"):
+                        test_constant3 = model.converter("test_constant_exc" + str(j) + index)
+                        setup_vector(test_constant3, j, elements1, n)
 
             elements1.append(get_random(0))
             elements2.append(get_random(0))
@@ -1776,23 +1800,20 @@ def test_matrix():
                                     test_element3[j][x]) == elements1[j][x] / elements2[j][x])
                                 assert(get_element_data(
                                     test_element3[j][x]) != elements1[j][x] / elements2[j][x] + 1)
-                    try:
-                        # Dot tests
-                        test_element3 = get_element(t, model, "test_element_dot")
-                        test_element3.equation = test_element1.dot(
-                            test_element_2_transposed)
+                    # Dot tests
+                    test_element3 = get_element(t, model, "test_element_dot")
+                    test_element3.equation = test_element1.dot(
+                        test_element_2_transposed)
 
-                        temp = np.dot(elements1, transposed)
+                    temp = np.dot(elements1, transposed)
 
-                        for j in range(i):
-                            for x in range(i):
-                                assert(get_element_data(
-                                    test_element3[j][x]) == pytest.approx(temp[j][x]))
-                                assert(get_element_data(
-                                    test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
+                    for j in range(i):
+                        for x in range(i):
+                            assert(get_element_data(
+                                test_element3[j][x]) == pytest.approx(temp[j][x]))
+                            assert(get_element_data(
+                                test_element3[j][x]) != pytest.approx(temp[j][x]+1000000.0))
 
-                    except:
-                        assert(n == 1)
                     # Functions
                     test_element3 = get_element(t, model, "test_element_sum")
                     test_element3.equation = test_element1.arr_sum()
@@ -1875,22 +1896,28 @@ def test_matrix():
                             test_element4 = get_element(
                                 t, model, "test_element4_exc_" + str(j) + "_" + str(x))
                             setup_matrix(test_element4, [j, x], 2.0, n)
-                            try:
+                            if x == i:
                                 test_element3 = get_element(
                                     t, model, "test_element3_exc_" + str(j) + "_" + str(x))
                                 test_element3.equation = test_element4.dot(
                                     test_element2)
-                                assert(x == i)
-                            except:
-                                assert(x != i or n == 1)
+                            else:
+                                with pytest.raises(Exception, match=r"invalid (matrix|vector) (matrix|vector) multiplication"):
+                                    test_element3 = get_element(
+                                        t, model, "test_element3_exc_" + str(j) + "_" + str(x))
+                                    test_element3.equation = test_element4.dot(
+                                        test_element2)
 
-                            try:
+                            if n == 1 or (j == i and x == k):
+                                # A named array takes its shape from its labels, so there is no size to get wrong
                                 test_element3 = get_element(
                                     t, model, "test_element_exc_" + str(j) + "_" + str(x))
                                 setup_matrix(test_element3, [j, x], elements1, n)
-                                assert(j == i and x == k)
-                            except:
-                                assert(not (j == i and x == k))
+                            else:
+                                with pytest.raises(Exception, match=r"same size"):
+                                    test_element3 = get_element(
+                                        t, model, "test_element_exc_" + str(j) + "_" + str(x))
+                                    setup_matrix(test_element3, [j, x], elements1, n)
 
 # `test_vector_stock_flow` used to sit here as an empty shell inside a triple-quoted
 # string - never implemented. What it was meant to do, integrating an arrayed stock from
@@ -1899,8 +1926,8 @@ def test_matrix():
 # the max(0, ...) clamp and the arrayed biflow.
 
 
-def test_stochastic_guards_python_backend():
-    """Invalid parameters should return NaN via Python backend."""
+def test_stochastic_guards_python_backend(capsys):
+    """Invalid parameters return NaN via the Python backend, and say so once."""
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
@@ -1935,6 +1962,10 @@ def test_stochastic_guards_python_backend():
         ("ncdf_neg_std", sd.normalcdf(-1, 1, 0, -1)),
         ("ncdf_zero_std", sd.normalcdf(-1, 1, 0, 0)),
         ("invnorm_zero_std", sd.invnorm(0.5, 7, 0)),
+        ("uniform_min_gt_max", sd.uniform(5, 1)),
+        ("geometric_p_zero", sd.geometric(0)),
+        ("geometric_p_gt1", sd.geometric(1.5)),
+        ("negbinom_p_zero", sd.negbinomial(5, 0)),
     ]
 
     for name, equation in cases:
@@ -1952,10 +1983,13 @@ def test_stochastic_guards_python_backend():
         )
         assert result.map(lambda v: np.isnan(v)).all().all(), \
             f"{name}: expected all NaN, got {result.values}"
+        errors = [line for line in capsys.readouterr().out.splitlines() if "[ERROR]" in line]
+        assert len(errors) == 1 and " in 'x' at t=0.0: " in errors[0], (name, errors)
 
 
-def test_stochastic_guards_boundary_python_backend():
-    """Boundary parameter values should return correct constant results via Python backend."""
+def test_stochastic_guards_boundary_python_backend(capsys):
+    """Boundary parameter values return correct constant results via the Python backend,
+    and are valid arguments - nothing is reported."""
     from BPTK_Py import Model
     from BPTK_Py import sd_functions as sd
     from BPTK_Py.bptk import bptk
@@ -1987,3 +2021,24 @@ def test_stochastic_guards_boundary_python_backend():
         )
         assert (abs(result - expected) < 1e-10).all().all(), \
             f"{name}: expected {expected}, got {result.values}"
+        assert "[ERROR]" not in capsys.readouterr().out, name
+
+
+def test_a_distribution_evaluates_each_argument_once():
+    """The check and the draw read the same number: an argument that is itself random,
+    or a function with a cost, is evaluated once per step and not once for each."""
+    from BPTK_Py import Model
+    from BPTK_Py import sd_functions as sd
+
+    calls = []
+
+    def counted(model, t, value):
+        calls.append(t)
+        return value
+
+    model = Model(starttime=0, stoptime=3, dt=1, name="once")
+    spread = model.function("spread", counted)
+    x = model.converter("x")
+    x.equation = sd.normal(0, spread(1.0))
+    model.simulate(["x"], backend="python")
+    assert calls == [0.0, 1.0, 2.0, 3.0]

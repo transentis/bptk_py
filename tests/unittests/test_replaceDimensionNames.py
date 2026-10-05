@@ -20,7 +20,3 @@ class TestReplaceDimensionNames(unittest.TestCase):
              "args": [{"name": "countries", "type": "identifier"}]},
             entity={}, dimensions=self.dimensions)
         self.assertEqual(result, 2)
-
-
-if __name__ == '__main__':
-    unittest.main()

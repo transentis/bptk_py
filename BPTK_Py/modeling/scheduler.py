@@ -55,8 +55,8 @@ class Scheduler:
                 round of simulator
             dt: Integer.
                 Current step of round
-            progress_widget: Widget (default=None)
-                Live instance of FloatProgressBar
+            progress_widget: Object (default=None)
+                Any object with a ``value`` attribute, set from 0.0 to 1.0 as the run advances - BPTK_Py.util.ProgressBar, for one.
             collect_data: Boolean.
                 Flag that indicates whether to collect data.
         """

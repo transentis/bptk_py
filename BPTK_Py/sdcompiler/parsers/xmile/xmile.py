@@ -7,9 +7,7 @@
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
 # Copyright (c) 2019 transentis labs GmbH
-import logging
 import xmltodict
-from collections import OrderedDict
 from copy import deepcopy
 
 try: # Relative imports in case you are using me inside BPTK or any other library

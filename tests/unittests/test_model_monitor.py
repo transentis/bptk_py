@@ -3,13 +3,12 @@ import unittest
 from unittest.mock import patch, MagicMock
 import contextlib
 import io
-import time
 import os
-import threading
 import BPTK_Py.logger.logger as logmod
 
 
 from BPTK_Py.modelmonitor.model_monitor import ModelMonitor
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestModelMonitor(unittest.TestCase):
 
@@ -22,16 +21,11 @@ class TestModelMonitor(unittest.TestCase):
     @patch("os.getcwd", return_value="testDir")  # simulates that a folder exists
     @patch("os.stat")  # mock for the timestamp
     @patch("BPTK_Py.modelmonitor.model_monitor.compile", return_value="testOutput")  # Mock for `compile`
-    @pytest.mark.requires_threads
     def test_monitor_detects_file_change(self, mock_compile, mock_stat, mock_cwd, mock_isfile, mock_thread):
         logmod.loglevel = "INFO"
                
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         # simulated timestamp
         mock_stat.return_value.st_mtime = 100
@@ -41,25 +35,16 @@ class TestModelMonitor(unittest.TestCase):
         modelMonitor = ModelMonitor(source_file="test.itmx", dest="test.py", update_func= mock_update_func)
         modelMonitor._cached_stamp = 50  # older timestamp
 
-        # start `__monitor` as separate thread
-        monitor_thread = threading.Thread(target=modelMonitor._ModelMonitor__monitor)
+        # One pass of the loop, run here rather than in a thread: the patched sleep
+        # at its end stops it. Waiting two seconds for a thread showed nothing more.
         modelMonitor.running = True
-        monitor_thread.start()
-
-        # Wait and let the Thread run
-        time.sleep(2)
-
-        # stop 
-        modelMonitor.running = False
-        monitor_thread.join()
+        with patch("BPTK_Py.modelmonitor.model_monitor.time.sleep",
+                   side_effect=lambda *_: setattr(modelMonitor, "running", False)):
+            modelMonitor._ModelMonitor__monitor()
 
         mock_update_func.assert_called_once_with("test.itmx")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] ABMModel Monitor for test.itmx: Observed a change to the model. Calling the parser", content)  
         self.assertIn("[INFO] ABMModel Monitor for test.itmx: model updated and relaoded scenarios!", content)  
@@ -129,6 +114,3 @@ class TestModelMonitor(unittest.TestCase):
         monitor = ModelMonitor(source_file="model.stmx", dest="model", update_func=MagicMock())
 
         self.assertFalse(monitor.running)
-
-if __name__ == "__main__":
-    unittest.main()

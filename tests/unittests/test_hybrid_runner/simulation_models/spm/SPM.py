@@ -72,5 +72,3 @@ class SPM(Model):
     def schedule_pressure(self):
 
         return self._schedule_pressure
-
-

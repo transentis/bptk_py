@@ -68,7 +68,7 @@ impl SdModel {
         };
 
         // The engine counts steps; the function was written for a model that has a time.
-        let t = self.starttime + step as f64 * self.dt;
+        let t = self.time_at(step);
         let values: Vec<f64> = args
             .iter()
             .map(|a| self.eval_expr(a, state, step))
@@ -120,11 +120,6 @@ fn describe(py: pyo3::Python<'_>, error: &pyo3::PyErr) -> String {
     }
 }
 
-/// Boolean encoding: 0.0 = false, nonzero = true (SD convention).
-fn to_bool(v: f64) -> f64 {
-    if v != 0.0 { 1.0 } else { 0.0 }
-}
-
 fn eval_bin_op(op: BinOp, l: f64, r: f64) -> f64 {
     match op {
         BinOp::Add => l + r,
@@ -142,17 +137,25 @@ fn eval_bin_op(op: BinOp, l: f64, r: f64) -> f64 {
             if r == 0.0 {
                 f64::NAN
             } else {
-                l % r
+                // Floored, as Python's % and XMILE's MOD: the result takes the sign of
+                // the divisor. Rust's % truncates and takes the sign of the dividend.
+                let m = l % r;
+                if m != 0.0 && (m < 0.0) != (r < 0.0) {
+                    m + r
+                } else {
+                    m
+                }
             }
         }
-        BinOp::Gt => to_bool(if l > r { 1.0 } else { 0.0 }),
-        BinOp::Lt => to_bool(if l < r { 1.0 } else { 0.0 }),
-        BinOp::Gte => to_bool(if l >= r { 1.0 } else { 0.0 }),
-        BinOp::Lte => to_bool(if l <= r { 1.0 } else { 0.0 }),
-        BinOp::Eq => to_bool(if l == r { 1.0 } else { 0.0 }),
-        BinOp::Neq => to_bool(if l != r { 1.0 } else { 0.0 }),
-        BinOp::And => to_bool(if l != 0.0 && r != 0.0 { 1.0 } else { 0.0 }),
-        BinOp::Or => to_bool(if l != 0.0 || r != 0.0 { 1.0 } else { 0.0 }),
+        // A comparison answers 1.0 or 0.0; a logical operator reads nonzero as true.
+        BinOp::Gt => f64::from(l > r),
+        BinOp::Lt => f64::from(l < r),
+        BinOp::Gte => f64::from(l >= r),
+        BinOp::Lte => f64::from(l <= r),
+        BinOp::Eq => f64::from(l == r),
+        BinOp::Neq => f64::from(l != r),
+        BinOp::And => f64::from(l != 0.0 && r != 0.0),
+        BinOp::Or => f64::from(l != 0.0 || r != 0.0),
     }
 }
 

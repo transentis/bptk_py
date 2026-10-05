@@ -1,28 +1,12 @@
-use std::collections::HashMap;
+mod common;
 
 use bptk_rust_engine::model::*;
 use bptk_rust_engine::state::SimulationState;
-
-/// Helper: build a minimal SdModel with no entities, just for eval testing.
-fn empty_model() -> SdModel {
-    SdModel {
-        name: String::new(),
-        starttime: 0.0,
-        stoptime: 10.0,
-        dt: 1.0,
-        entities: Vec::new(),
-        entity_index: HashMap::new(),
-        graphical_functions: HashMap::new(),
-        eval_order: Vec::new(),
-        callback_names: Vec::new(),
-        #[cfg(feature = "python")]
-        callbacks: Vec::new(),
-    }
-}
+use common::model_with_specs;
 
 #[test]
 fn test_eval_literal() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
     let expr = Expr::Literal(42.0);
     assert_eq!(model.eval_expr(&expr, &state, 0), 42.0);
@@ -30,7 +14,7 @@ fn test_eval_literal() {
 
 #[test]
 fn test_eval_ref() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let mut state = SimulationState::new(3, 5, None);
     state.memo[1][3] = 99.0;
     let expr = Expr::Ref(1);
@@ -39,7 +23,7 @@ fn test_eval_ref() {
 
 #[test]
 fn test_eval_arithmetic() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
     // 3 + 4 = 7
@@ -89,11 +73,21 @@ fn test_eval_arithmetic() {
         right: Box::new(Expr::Literal(3.0)),
     };
     assert_eq!(model.eval_expr(&modulo, &state, 0), 1.0);
+
+    // Floored, as Python and XMILE: the sign of the divisor
+    for (l, r, expected) in [(-2.0, 3.0, 1.0), (2.0, -3.0, -1.0), (-2.0, -3.0, -2.0), (-3.0, 3.0, 0.0)] {
+        let modulo = Expr::BinaryOp {
+            op: BinOp::Mod,
+            left: Box::new(Expr::Literal(l)),
+            right: Box::new(Expr::Literal(r)),
+        };
+        assert_eq!(model.eval_expr(&modulo, &state, 0), expected, "{} % {}", l, r);
+    }
 }
 
 #[test]
 fn test_eval_division_by_zero() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
     let expr = Expr::BinaryOp {
         op: BinOp::Div,
@@ -105,7 +99,7 @@ fn test_eval_division_by_zero() {
 
 #[test]
 fn test_eval_comparisons() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
     let gt = Expr::BinaryOp {
@@ -160,7 +154,7 @@ fn test_eval_comparisons() {
 
 #[test]
 fn test_eval_logical() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
     // true AND true = true
@@ -198,7 +192,7 @@ fn test_eval_logical() {
 
 #[test]
 fn test_eval_unary() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
     let neg = Expr::UnaryOp {
@@ -222,7 +216,7 @@ fn test_eval_unary() {
 
 #[test]
 fn test_eval_if() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
     // if (1.0) then 10.0 else 20.0 → 10.0
@@ -244,7 +238,7 @@ fn test_eval_if() {
 
 #[test]
 fn test_eval_nested_expression() {
-    let model = empty_model();
+    let model = model_with_specs(0.0, 10.0, 1.0);
     let mut state = SimulationState::new(2, 1, None);
     state.memo[0][0] = 10.0; // entity 0 = "a"
     state.memo[1][0] = 3.0; // entity 1 = "b"

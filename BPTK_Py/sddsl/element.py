@@ -12,10 +12,13 @@
 
 from contextlib import contextmanager
 from functools import wraps
-import logging
-from .operators import *
-
 import pandas as pd
+
+# The namespace an equation's code string is evaluated in (`generate_function`): the
+# operators render terms such as `np.mean(...)`, `math.floor(...)` or
+# `distributions.evaluate(...)`, so these names are used, though nothing here calls them.
+from .operators import *
+from . import distributions
 import numpy as np
 import statistics
 import random
@@ -359,24 +362,13 @@ class Element:
             for(i, element_name) in enumerate(self._elements.equations):
                 element = self._elements[element_name]
 
-                # dict[element_name] = element.plot(
-                #     starttime, stoptime, dt, return_df=True)
-
-                try:
-                    dict[element_name] = {t: element.model.memoize(
-                        element.name, t) for t in timerange(starttime, stoptime+dt, dt)}
-                except:
-                    dict[element_name] = {t: element.model.memoize(element.name, t) for t in timerange(
-                        element.model.starttime, element.model.stoptime+dt, dt)}
+                dict[element_name] = {t: element.model.memoize(
+                    element.name, t) for t in timerange(starttime, stoptime+dt, dt)}
 
             df = pd.DataFrame(dict)
         else:
-            try:
-                df = pd.DataFrame({self.name: {t: self.model.memoize(
-                    self.name, t) for t in timerange(starttime, stoptime+dt, dt)}})
-            except:
-                df = pd.DataFrame({self.name: {t: self.model.memoize(self.name, t) for t in timerange(
-                    self.model.starttime, self.model.stoptime+dt, dt)}})
+            df = pd.DataFrame({self.name: {t: self.model.memoize(
+                self.name, t) for t in timerange(starttime, stoptime+dt, dt)}})
         # ensure column is of float type and not e.g. an integer
 
         if return_df or format == "df":
@@ -561,6 +553,9 @@ class Element:
             default_value: float | List[float] - The default value or values of the vector
             set_stack_equation: bool - If false and the element is a stock, the stock initial value is set.
         """
+        if size < 1:
+            raise ValueError(
+                "A vector needs at least one element; {} was set up with size {}.".format(self.name, size))
         self.arrayed = True
         if isinstance(default_value, (float, int)):
             for i in range(size):
@@ -590,6 +585,8 @@ class Element:
             values: dict(str, int | float) - Names of vectors
             set_stack_equation: bool - If false and the element is a stock, the stock initial value is set.
         """
+        if len(values) == 0:
+            raise ValueError("A vector needs at least one element; {} was set up with no names.".format(self.name))
         self.arrayed = True
         self.named_arrayed = True
         for name in values:
@@ -611,6 +608,9 @@ class Element:
         if isinstance(size, int) or len(size) != 2:
             raise Exception(
                 "Expected two-element size to be passed to setup_matrix. Received size {}!".format(size))
+        if size[0] < 1 or size[1] < 1:
+            raise ValueError(
+                "A matrix needs at least one row and one column; {} was set up with size {}.".format(self.name, size))
 
         self.arrayed = True
         if isinstance(default_value, (float, int)):
@@ -620,7 +620,7 @@ class Element:
         else:
             if len(default_value) != size[0] or len(default_value[0]) != size[1]:
                 raise Exception("Expected passed default_value to have the same size as passed matrix size. Received default_value of size {} and matrix of size {}!".format(
-                    [len(default_value), len(default_value[1])], size))
+                    [len(default_value), len(default_value[0]) if default_value else 0], size))
             self._equation = None
             for i in range(size[0]):
                 self[i] = None
@@ -639,6 +639,9 @@ class Element:
         if not isinstance(names, dict):
             raise Exception(
                 "Expected a dict to be passed to setup_named_matrix. Received {}!".format(names))
+        if len(names) == 0 or any(len(row) == 0 for row in names.values()):
+            raise ValueError(
+                "A matrix needs at least one row and one column; {} was set up with an empty one.".format(self.name))
 
         self.arrayed = True
         self.named_arrayed = True

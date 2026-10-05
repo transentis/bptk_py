@@ -3,10 +3,7 @@ import unittest
 from BPTK_Py.util.floating_point import precision_and_scale
 
 class TestPrecisionAndScale(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testPrecisionAndScale(self):
+    def test_precision_and_scale(self):
         self.assertEqual(precision_and_scale(123456789.5678),(13, 4))
         self.assertEqual(precision_and_scale(1234567890.5678),(14, 4))
         self.assertEqual(precision_and_scale(12345678901.5678),(14, 3))
@@ -22,7 +19,3 @@ class TestPrecisionAndScale(unittest.TestCase):
         self.assertEqual(precision_and_scale(0),(1, 0))
         self.assertEqual(precision_and_scale(0.0),(1, 0))
         self.assertEqual(precision_and_scale(0.01),(3, 2))
-
-
-if __name__ == '__main__':
-    unittest.main()      

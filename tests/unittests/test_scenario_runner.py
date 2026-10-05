@@ -5,10 +5,7 @@ import sys, io
 from BPTK_Py.scenariorunners.scenario_runner import ScenarioRunner
 
 class TestScenarioRunner(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testScenarioRunner_run_scenario(self):
+    def test_run_scenario(self):
         #Redirect the console output
         old_stdout = sys.stdout
         new_stdout = io.StringIO()
@@ -24,23 +21,7 @@ class TestScenarioRunner(unittest.TestCase):
 
         self.assertIn("IMPLEMENT THIS METHOD IN A SUBCLASS", output)  
 
-    def testScenarioRunner_run_scenario_step(self):
-        #Redirect the console output
-        old_stdout = sys.stdout
-        new_stdout = io.StringIO()
-        sys.stdout = new_stdout 
-
-        scenarioRunner = ScenarioRunner(scenario_manager_factory="testScenarioManagerFactory")
-
-        self.assertIsNone(scenarioRunner.run_scenario_step(step=1, settings="testSettings", scenario_manager="testScenarioManager", scenarios="testScenario", equations="testEqation", agents="testAgents"))
-
-        #Remove the redirection of the console output
-        sys.stdout = old_stdout
-        output = new_stdout.getvalue()
-
-        self.assertIn("IMPLEMENT THIS METHOD IN A SUBCLASS", output) 
-
-    def testScenarioRunner_train_scenario(self):
+    def test_train_scenario(self):
         #Redirect the console output
         old_stdout = sys.stdout
         new_stdout = io.StringIO()
@@ -54,7 +35,4 @@ class TestScenarioRunner(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
-        self.assertIn("IMPLEMENT THIS METHOD IN A SUBCLASS", output)                 
-
-if __name__ == '__main__':
-    unittest.main()   
+        self.assertIn("IMPLEMENT THIS METHOD IN A SUBCLASS", output)

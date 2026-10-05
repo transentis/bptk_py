@@ -153,7 +153,7 @@ class Agent:
             if prop_type == "Double":
                 try:
                     value = float(value)
-                except:
+                except (TypeError, ValueError, OverflowError):
                     raise WrongTypeException(
                         "property type for {} says Double but {} is not a floating point number.".format(name, value))
             if prop_type == "String" and not type(value) == str:
@@ -161,7 +161,7 @@ class Agent:
             if prop_type == "Integer":
                 try:
                     value = int(value)
-                except:
+                except (TypeError, ValueError, OverflowError):
                     raise WrongTypeException(
                         "property type for {} says Integer but {} is not an Integer.".format(name, value))
         except KeyError as e:
@@ -194,7 +194,7 @@ class Agent:
         if prop_type == "Double":
             try:
                 value = float(value)
-            except:
+            except (TypeError, ValueError, OverflowError):
                 raise WrongTypeException("property type for {} says Double but {} is not a floating point number.".format(name,value))
         if prop_type == "String" and not type(prop_value) == str:
             raise WrongTypeException("property type for {} says String but {} is not a String.".format(name,value))
@@ -203,7 +203,7 @@ class Agent:
         if prop_type == "Integer":
             try:
                 value = int(value)
-            except:
+            except (TypeError, ValueError, OverflowError):
                 raise WrongTypeException("property type for {} says Integer but {} is not an Integer.".format(name,value))
 
         self.properties[name]["value"] = value

@@ -15,9 +15,12 @@ SD DSL and Rust JSON format, run both engines, and compare results to
 prove the Rust engine matches the Python implementation.
 """
 
+import importlib.metadata
 import math
 import pytest
 from BPTK_Py._rust_engine import RustSdEngine, RustSdModel, version
+from tests.helpers.engine_json import binop, call, if_expr, lit, ref, unop
+from tests.helpers.parity import rust_time_key
 from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
 from BPTK_Py.util import timerange
@@ -33,24 +36,8 @@ def make_engine():
     return RustSdEngine()
 
 
-def lit(value):
-    """Shorthand for a literal expression node."""
-    return {"type": "literal", "value": value}
 
 
-def ref(name):
-    """Shorthand for a reference expression node."""
-    return {"type": "ref", "name": name}
-
-
-def binop(op, left, right):
-    """Shorthand for a binary-op expression node."""
-    return {"type": "binary_op", "op": op, "left": left, "right": right}
-
-
-def call(fn, args):
-    """Shorthand for a function call expression node."""
-    return {"type": "call", "function": fn, "args": args}
 
 
 def build_json(name, specs, entities):
@@ -68,7 +55,7 @@ class TestVersionAndImport:
     def test_version_returns_string(self):
         v = version()
         assert isinstance(v, str)
-        assert v == "0.1.0"
+        assert v == importlib.metadata.version("bptk-py")
 
     def test_engine_creates(self):
         engine = make_engine()
@@ -500,22 +487,7 @@ class TestErrorHandling:
 # Each test builds the same model in both engines and compares results.
 # ===========================================================================
 
-def _rust_time_key(t):
-    """Format time value to match Rust engine's time key format."""
-    if t == int(t):
-        return f"{t:.1f}"
-    else:
-        return str(t)
 
-
-def _if_expr(condition, then, else_):
-    """Shorthand for an if expression node."""
-    return {"type": "if", "condition": condition, "then": then, "else": else_}
-
-
-def _unop(op, operand):
-    """Shorthand for a unary-op expression node."""
-    return {"type": "unary_op", "op": op, "operand": operand}
 
 
 # ---------------------------------------------------------------------------
@@ -579,7 +551,7 @@ class TestParityArithmetic:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -622,17 +594,17 @@ class TestParityComparisons:
             "entities": {
                 "converters": [
                     {"name": "a", "equation": a_expr},
-                    {"name": "cmp_gt", "equation": _if_expr(
+                    {"name": "cmp_gt", "equation": if_expr(
                         binop("gt", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
-                    {"name": "cmp_lt", "equation": _if_expr(
+                    {"name": "cmp_lt", "equation": if_expr(
                         binop("lt", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
-                    {"name": "cmp_gte", "equation": _if_expr(
+                    {"name": "cmp_gte", "equation": if_expr(
                         binop("gte", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
-                    {"name": "cmp_lte", "equation": _if_expr(
+                    {"name": "cmp_lte", "equation": if_expr(
                         binop("lte", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
-                    {"name": "cmp_eq", "equation": _if_expr(
+                    {"name": "cmp_eq", "equation": if_expr(
                         binop("eq", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
-                    {"name": "cmp_neq", "equation": _if_expr(
+                    {"name": "cmp_neq", "equation": if_expr(
                         binop("neq", ref("a"), lit(5.0)), lit(1.0), lit(0.0))},
                 ],
             },
@@ -649,7 +621,7 @@ class TestParityComparisons:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -701,18 +673,18 @@ class TestParityLogical:
                     {"name": "inflow2", "equation": binop("mul", lit(2.0), ref("stock2"))},
                 ],
                 "converters": [
-                    {"name": "x", "equation": _if_expr(
+                    {"name": "x", "equation": if_expr(
                         binop("and",
                               binop("gt", ref("stock1"), lit(4.0)),
                               binop("gt", ref("stock2"), lit(4.0))),
                         lit(1.0), lit(0.0))},
-                    {"name": "y", "equation": _if_expr(
+                    {"name": "y", "equation": if_expr(
                         binop("or",
                               binop("gt", ref("stock1"), lit(4.0)),
                               binop("gt", ref("stock2"), lit(4.0))),
                         lit(1.0), lit(0.0))},
-                    {"name": "z", "equation": _if_expr(
-                        _unop("not", binop("and",
+                    {"name": "z", "equation": if_expr(
+                        unop("not", binop("and",
                               binop("gt", ref("stock1"), lit(4.0)),
                               binop("gt", ref("stock2"), lit(4.0)))),
                         lit(1.0), lit(0.0))},
@@ -727,7 +699,7 @@ class TestParityLogical:
         for eq_name in ["x", "y", "z"]:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -780,7 +752,7 @@ class TestParityMathFunctions:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -817,7 +789,7 @@ class TestParityMathFunctions:
 
         # Compare against Python math directly (converters = no non-negativity)
         for t in timerange(starttime, stoptime, dt):
-            key = _rust_time_key(t)
+            key = rust_time_key(t)
             assert rust_results["fn_sin"][key] == pytest.approx(math.sin(t), abs=1e-10)
             assert rust_results["fn_cos"][key] == pytest.approx(math.cos(t), abs=1e-10)
             assert rust_results["fn_arctan"][key] == pytest.approx(math.atan(t), abs=1e-10)
@@ -850,7 +822,7 @@ class TestParityMathFunctions:
 
         # Both engines should apply max(0, val) since these are flows
         for t in timerange(starttime, stoptime, dt):
-            key = _rust_time_key(t)
+            key = rust_time_key(t)
             py_sin_val = py_sin(t)
             py_cos_val = py_cos(t)
             assert py_sin_val == pytest.approx(rust_results["fn_sin"][key], abs=1e-10), \
@@ -893,7 +865,7 @@ class TestParityStep:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_step(t)
-            rust_val = rust_results["step_val"][_rust_time_key(t)]
+            rust_val = rust_results["step_val"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"step at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -940,7 +912,7 @@ class TestParityPulse:
         rust_results = rust_model.simulate(["stock", "flow"])
 
         for t in timerange(starttime, stoptime, dt):
-            key = _rust_time_key(t)
+            key = rust_time_key(t)
             py_flow_val = py_flow(t)
             rust_flow_val = rust_results["flow"][key]
             assert py_flow_val == pytest.approx(rust_flow_val, abs=1e-10), \
@@ -998,7 +970,7 @@ class TestParityLookup:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_output(t)
-            rust_val = rust_results["output"][_rust_time_key(t)]
+            rust_val = rust_results["output"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"lookup at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1037,7 +1009,7 @@ class TestParitySinwaveCoswave:
         rust_results = rust_model.simulate(["sinwave", "coswave"])
 
         for t in timerange(starttime, stoptime, dt):
-            key = _rust_time_key(t)
+            key = rust_time_key(t)
             py_sin = py_sinwave(t)
             py_cos = py_coswave(t)
             assert py_sin == pytest.approx(rust_results["sinwave"][key], abs=1e-10), \
@@ -1090,7 +1062,7 @@ class TestParitySIR:
             "entities": {
                 "stocks": [
                     {"name": "susceptible", "initial_value": lit(990.0),
-                     "equation": _unop("neg", ref("infection"))},
+                     "equation": unop("neg", ref("infection"))},
                     {"name": "infected", "initial_value": lit(10.0),
                      "equation": binop("sub", ref("infection"), ref("recovery"))},
                     {"name": "recovered", "initial_value": lit(0.0),
@@ -1121,7 +1093,7 @@ class TestParitySIR:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-6), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1180,7 +1152,7 @@ class TestParitySmooth:
         py_elements = {"smooth_out": py_smooth}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["smooth_out"](t)
-            rust_val = rust_results["smooth_out"][_rust_time_key(t)]
+            rust_val = rust_results["smooth_out"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"smooth_out at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1224,7 +1196,7 @@ class TestParitySmooth:
         py_elements = {"smooth_out": py_smooth}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["smooth_out"](t)
-            rust_val = rust_results["smooth_out"][_rust_time_key(t)]
+            rust_val = rust_results["smooth_out"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"smooth_out at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1257,7 +1229,7 @@ class TestParitySmooth:
 
         # When input == initial_value, smooth should stay constant
         for t in timerange(starttime, stoptime, dt):
-            assert rust_results["smooth_stock"][_rust_time_key(t)] == pytest.approx(42.0, abs=1e-10), \
+            assert rust_results["smooth_stock"][rust_time_key(t)] == pytest.approx(42.0, abs=1e-10), \
                 f"smooth_stock at t={t} should be 42.0"
 
 
@@ -1316,7 +1288,7 @@ class TestParityTrend:
         py_elements = {"trend_out": py_trend}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["trend_out"](t)
-            rust_val = rust_results["trend_out"][_rust_time_key(t)]
+            rust_val = rust_results["trend_out"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"trend_out at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1363,7 +1335,7 @@ class TestParityTrend:
         py_elements = {"trend_out": py_trend}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["trend_out"](t)
-            rust_val = rust_results["trend_out"][_rust_time_key(t)]
+            rust_val = rust_results["trend_out"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"trend_out at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1408,7 +1380,7 @@ class TestParityDelay:
         for eq_name in ["a", "b"]:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1441,7 +1413,7 @@ class TestParityDelay:
         py_elements = {"b": py_b}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["b"](t)
-            rust_val = rust_results["b"][_rust_time_key(t)]
+            rust_val = rust_results["b"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"b at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1465,7 +1437,7 @@ class TestParityDelay:
 
         # With delay=0, b should equal a at every step
         for t in timerange(starttime, stoptime, dt):
-            t_str = _rust_time_key(t)
+            t_str = rust_time_key(t)
             assert rust_results["b"][t_str] == pytest.approx(rust_results["a"][t_str], abs=1e-10), \
                 f"delay(0) at t={t}: b should equal a"
 
@@ -1498,7 +1470,7 @@ class TestParityDelay:
         py_elements = {"delayed": py_delayed}
         for t in timerange(starttime, stoptime, dt):
             py_val = py_elements["delayed"](t)
-            rust_val = rust_results["delayed"][_rust_time_key(t)]
+            rust_val = rust_results["delayed"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"delayed at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1542,7 +1514,7 @@ class TestParityDelay:
         for eq_name in ["level", "delayed_level"]:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1581,7 +1553,7 @@ class TestParityBiflow:
                      "equation": ref("velocity")},
                 ],
                 "biflows": [
-                    {"name": "velocity", "equation": _unop("neg", ref("position"))},
+                    {"name": "velocity", "equation": unop("neg", ref("position"))},
                 ],
             },
         })
@@ -1592,7 +1564,7 @@ class TestParityBiflow:
         for eq_name in ["position", "velocity"]:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1690,7 +1662,7 @@ class TestParityBiflow:
                 "biflows": [
                     {"name": "change_in_position", "equation": ref("velocity")},
                     {"name": "change_in_velocity", "equation":
-                        _unop("neg", ref("position"))},
+                        unop("neg", ref("position"))},
                 ],
             },
         })
@@ -1701,7 +1673,7 @@ class TestParityBiflow:
         for eq_name in ["position", "velocity"]:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-6), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1748,7 +1720,7 @@ class TestParityLnLog10FloorCeil:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1788,7 +1760,7 @@ class TestParityLnLog10FloorCeil:
         for eq_name in equations:
             for t in timerange(starttime, stoptime, dt):
                 py_val = py_elements[eq_name](t)
-                rust_val = rust_results[eq_name][_rust_time_key(t)]
+                rust_val = rust_results[eq_name][rust_time_key(t)]
                 assert py_val == pytest.approx(rust_val, abs=1e-10), \
                     f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1818,7 +1790,7 @@ class TestParityLnLog10FloorCeil:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["roundtrip"][_rust_time_key(t)]
+            rust_val = rust_results["roundtrip"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"roundtrip at t={t}: Python={py_val}, Rust={rust_val}"
             assert py_val == pytest.approx(t, abs=1e-10), \
@@ -1856,7 +1828,7 @@ class TestParityCombinatorialFunctions:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"factorial at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1900,7 +1872,7 @@ class TestParityCombinatorialFunctions:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"combinations at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1944,7 +1916,7 @@ class TestParityCombinatorialFunctions:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-6), \
                 f"permutations at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -1972,7 +1944,7 @@ class TestParityCombinatorialFunctions:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"gammaln at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -2024,7 +1996,7 @@ class TestParityInfNan:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == rust_val == float('inf'), \
                 f"inf at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -2052,7 +2024,7 @@ class TestParityInfNan:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert math.isnan(py_val), f"Python nan at t={t}: {py_val}"
             assert math.isnan(rust_val), f"Rust nan at t={t}: {rust_val}"
 
@@ -2082,7 +2054,7 @@ class TestParityInfNan:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"min(t, inf) at t={t}: Python={py_val}, Rust={rust_val}"
             assert py_val == pytest.approx(t, abs=1e-10)
@@ -2127,7 +2099,7 @@ class TestParityInlineLookup:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["output"][_rust_time_key(t)]
+            rust_val = rust_results["output"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"inline lookup at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -2162,7 +2134,7 @@ class TestParityInlineLookup:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["output"][_rust_time_key(t)]
+            rust_val = rust_results["output"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"boundary lookup at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -2199,7 +2171,7 @@ class TestParityRoundDigits:
 
         for t in timerange(starttime, stoptime, dt):
             py_val = py_out(t)
-            rust_val = rust_results["x"][_rust_time_key(t)]
+            rust_val = rust_results["x"][rust_time_key(t)]
             assert py_val == pytest.approx(rust_val, abs=1e-10), \
                 f"round at t={t}: Python={py_val}, Rust={rust_val}"
 
@@ -2422,6 +2394,28 @@ class TestStepByStep:
         with pytest.raises(ValueError, match="set_runspecs.*not allowed after init"):
             model.set_runspecs(0.0, 10.0, 0.5)
 
+    def test_set_runspecs_refuses_specs_that_cannot_run(self):
+        """A dt of 0 used to saturate the step count and abort the process at init."""
+        model = self._load()
+        with pytest.raises(ValueError, match="dt must be positive"):
+            model.set_runspecs(0.0, 10.0, 0.0)
+        with pytest.raises(ValueError, match="stoptime must not be before starttime"):
+            model.set_runspecs(10.0, 0.0, 1.0)
+        # The old specs stay in force.
+        model.init(["level"])
+        assert model.steps_remaining() == 5
+
+    def test_a_model_without_entities_steps(self):
+        """The step count used to be read off the first entity."""
+        empty = RustSdEngine().load_model(json.dumps({
+            "name": "empty", "specs": {"starttime": 0.0, "stoptime": 3.0, "dt": 1.0},
+            "entities": {}}))
+        assert empty.simulate([]) == {}
+        empty.init([])
+        assert empty.steps_remaining() == 3
+        empty.step()
+        assert empty.current_time() == 1.0
+
     def test_set_runspecs_works_again_after_reset(self):
         model = self._load()
         model.init(["level"])
@@ -2473,7 +2467,7 @@ class TestStepByStep:
         assert snap2["level"] == pytest.approx(101.0)
 
     def test_simulate_signature_unchanged(self):
-        """Pre-Phase-4 callers must see no API change on simulate()."""
+        """simulate() keeps its arguments and result shape beside the step-by-step API."""
         engine = RustSdEngine()
         model = engine.load_model(LINEAR_GROWTH_JSON)
         results = model.simulate(["level", "inflow"])
@@ -2519,8 +2513,8 @@ class TestStochasticSmoke:
 
         return run1
 
-    def test_uniform(self):
-        r = self._run(("uniform", [lit(0.0), lit(1.0)]), "uniform_smoke")
+    def test_random(self):
+        r = self._run(("random", [lit(0.0), lit(1.0)]), "random_smoke")
         for v in r["x"].values():
             assert 0.0 <= v <= 1.0
 

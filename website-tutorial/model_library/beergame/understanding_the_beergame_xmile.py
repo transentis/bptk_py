@@ -1,10 +1,10 @@
 # Front matter the .py format cannot carry; injected on export.
 # keywords: system dynamics,sd dsl, bptk, bptk-py, python, business simulation, beer game, beer distribution game
-# description: An analysis of the Beer Distribution Game using System Dynamics and the System Dynamics Domain Specific Language for Python (SD DSL)
+# description: An analysis of the Beer Distribution Game using System Dynamics, BPTK and an XMILE Model built using Stella Architect
 import marimo
 
 __generated_with = "0.23.13"
-app = marimo.App(app_title="The Beer Distribution Game")
+app = marimo.App(app_title="Understanding the Beer Distribution Game (XMILE)")
 
 
 @app.cell
@@ -19,7 +19,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Understanding The Beergame - XMILE Version
+    # Understanding the Beer Distribution Game (XMILE)
     """)
     return
 
@@ -384,13 +384,6 @@ def _(bptk):
              "smBeergameSD_inventoryAdjustmentTime16_performanceControlling.supplyChainCostAcc":"Inventory Adjustment Time 16",
         }, format="axes"
     )
-    return
-
-
-@app.cell
-def _():
-    # magic command not supported in marimo; please file an issue to add support
-    # %run src/dashboard/beergame_dashboard_xmile.ipy
     return
 
 

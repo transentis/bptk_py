@@ -11,6 +11,6 @@ class Consumer(Module):
 
     def initialize(self, policy_settings):
         # Equations
-        self.sending_orders.equation = 100.0 + sd.If(policy_settings.steady_state_on == 0.0,1.0,0.0)*sd.step(policy_settings.rise_in_consumer_order,1.0)
+        self.sending_orders.equation = 100.0 + sd.If(policy_settings.steady_state_on == 0.0,1.0,0.0)*sd.step(policy_settings.rise_in_consumer_order,2.0)
 
 

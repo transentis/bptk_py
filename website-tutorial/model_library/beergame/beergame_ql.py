@@ -1,10 +1,10 @@
 # Front matter the .py format cannot carry; injected on export.
 # keywords: agent-based modeling, reinforcement-learning, beergame, beer distribution game
-# description: Test notebook
+# description: Play the Beer Distribution Game against agents trained by reinforcement learning, using a stored Q-table
 import marimo
 
 __generated_with = "0.23.13"
-app = marimo.App(app_title="Beer Distribution Game Reinforcement Learning")
+app = marimo.App(app_title="Playing the Beer Game Against Trained Agents")
 
 
 @app.cell
@@ -19,7 +19,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Beer Distribution Game Reinforcement Learning
+    # Playing the Beer Game Against Trained Agents
     """)
     return
 
@@ -62,7 +62,6 @@ def _(mo):
 def _(mo):
     from src.abm.q_learning_ob.beergame import BeergameQlOB
 
-    # Captured: marimo sends a cell's stdout to the console, not into the page.
     with mo.capture_stdout() as q_table_counts:
         print("Q-Table Counts")
         print("Brewery: {}".format(BeergameQlOB.brewery_q_table.count()))

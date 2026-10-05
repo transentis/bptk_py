@@ -61,7 +61,7 @@ def _():
     from BPTK_Py import Model, bptk
     from BPTK_Py import sd_functions as sd
     model = Model(starttime=0.0,stoptime=260.0,dt=1.0,name='Balancing')
-    # decleare elements
+    # declare elements
     actual_state = model.stock("actual_state")
     change = model.biflow("change")
     desired_state = model.constant("desired_state")
@@ -132,11 +132,6 @@ def _(bptk_1):
             'action_delay': 4.0,
         }}},
     )
-    return
-
-
-@app.cell
-def _(bptk_1):
     bptk_1.plot_scenarios(
         title='Delays lead to oscillations',
         scenario_managers=['smBalancing'],
@@ -160,7 +155,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Experimeting with the Balancing Feedback Archetype
+    ## Experimenting with the Balancing Feedback Archetype
 
     The dashboard below let's you experiment with different settings for delays and adjustment times.
     """)
@@ -225,7 +220,6 @@ def _(
         format="axes",
     )
 
-    # Sliders and diagram in one output block.
     mo.vstack([
         adjustment_time_slider,
         measurement_delay_slider,

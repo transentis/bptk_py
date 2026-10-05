@@ -13,15 +13,26 @@
 import datetime
 import difflib
 import os
-from threading import Thread
+import re
 
 import numpy as np
 import pandas as pd
 
 from ..logger import log
 
-from ..util import start_or_run, timerange
+from ..util import timerange
 from ..util import floating_point as fp
+
+def requested_element(equation):
+    """The element an equation request names. `stock[1,*]` and `stock[*,*]` ask for the
+    cells of `stock` - a model compiled from XMILE resolves the asterisk when it is
+    evaluated, so the request itself is no equation of the model."""
+    if "*" in equation:
+        search = re.search(r'\[([^)]+)\]', equation)
+        if search:
+            return equation.replace(search.group(0), "")
+    return equation
+
 
 class SdSimulation():
     """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
@@ -47,7 +58,6 @@ class SdSimulation():
         # { 'equation' : {0 : result, 1 : result ... t: result }
         self.results = {}
 
-        self.threads = []  # List of threads for the simulations
 
         # Setting a None object for my result_frame.
         self.result_frame = None
@@ -61,21 +71,21 @@ class SdSimulation():
         self._timed_constants = {}
 
     #rename this to run or to simulate?
-    def start(self, start=None, until=None, dt=None, output=["csv", "frame"], equations=[]):
+    def start(self, start=None, until=None, dt=None, output=("frame",), equations=None):
         """
         start and until parameters only settable for debugging purposes. Do rather configure all these in your model config!
 
         :param start:  start time of simulation (usually t=1)
         :param until:  stpo time
         :param dt:  delta time
-        :param output:  list. possible values: "csv" / "frame"
+        :param output:  list. possible values: "csv" (writes ./results/) / "frame"
         :param equations: equations to simulate
         :return: dataFrame of results if "frame" in output
         """
+        equations = [] if equations is None else equations
         # ensure all internal variables are initialised (important for run_step)
         self.results={}
         self.result_frame = None
-        self.threads=[]
         self.finished_simulations_count = 0
 
         # Take Values from model if not given
@@ -88,8 +98,6 @@ class SdSimulation():
                     self.name))
             return None
 
-        ### Store the simulation threads in a list
-        self.threads = []
         log("[INFO] Starting simulation of model {}. starttime={}, stoptime={}".format(self.name, str(start),
                                                                                        str(until)))
 
@@ -100,10 +108,6 @@ class SdSimulation():
 
         # Starting the simulations equation-wise
         self.__simulate_equations(start=start, until=until, equations=equations)
-
-        # Waiting for the simulation threads to finish before I continue
-        for thread in self.threads:  #
-            thread.join()
 
         ## Results stored in a dataFrame in case the user decided to
 
@@ -120,7 +124,7 @@ class SdSimulation():
             if "frame" in output:
                 return self.result_frame
 
-    def __simulate_equations(self, start=0, until=0, equations=[]):
+    def __simulate_equations(self, start=0, until=0, equations=None):
         """
         Private method that coordinates the equation simulation
         :param start: the model's start time (usually t=1)
@@ -128,35 +132,37 @@ class SdSimulation():
         :param equations: equation(s) to simulate
         :return: None
         """
+        equations = [] if equations is None else equations
         
-        # One thread per equation, where the platform has them at all. Whether that
-        # helps has never been measured, and the equations are usually interdependent,
-        # so most of the work serialises regardless. For speed the answer is the Rust
-        # engine rather than more threads here.
-        for equation in equations:  # Start one thread for each equation
-            t = start_or_run(self.__simulate, args=(equation, until, start))
-            if t is not None:
-                self.threads += [t]
+        # One equation after the other. Threads bought nothing here - the equations
+        # share one memo and mostly depend on each other - and made a stochastic run
+        # depend on which thread drew first. For speed the answer is the Rust engine.
+        for equation in equations:
+            self.__simulate(equation, until, start)
 
     ## Actual Simulation. Simply call the equation in the simulation model!
     def __simulate(self, equation, until, start):
         """
-        This method runs as a thread and simulates
+        Simulates one equation from start to until
         :param equation: equation to simulate
         :param until: stoptime
         :param start: starttime
         :return:
         """
 
+        # A name the model does not have, and an arrayed element, which has no values
+        # beside its cells, are the caller's to report, with suggestions; asking for the
+        # first here would raise, the second would answer zeros. A KeyError from inside
+        # an equation that does exist is a real error and reaches the caller.
+        if equation not in self.mod.equations and requested_element(equation) not in self.mod.equations:
+            return
+        leaves_of = getattr(self.mod, "_arrayed_leaves", None)
+        if leaves_of is not None and leaves_of(equation) is not None:
+            return
+
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in timerange(start, until+self.mod.dt, self.mod.dt):
-            try:
-                result = self.mod.equation(equation, i)
-            except KeyError:
-                log("[WARN] Unable to simulate equation \"{}\". Doesn't seem like it's part of the model.".format(equation))
-
-                break
-                pass
+            result = self.mod.equation(equation, i)
 
             if "*" in equation: # Fix for *: compute the sum
                 result = sum(result)

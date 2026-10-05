@@ -39,11 +39,11 @@ def _(mo):
     The model library contains a number of pages. The key ones are:
 
     * [Understanding the Beer Game](understanding_the_beergame.md). This is the best place to get started - play the Beer Game in single player mode and learn about the dynamics governing the game. This version uses a SD DSL implementation of the Beer Game.
-    * [Simulating the Beer Game](beergame_sd_dsl.md) This notebook introduces a stock and flow model for the Beer Game and discusses an implementation of that model using the SD DSL.
-    * [An Agent-based Approach To Modeling the Beer Game](beergame_abm.md). An agent-based simulation of the Beer Game that can be used to test policies. It is also used as the basis for the reinforcement learning apporach described in the notebook [Training AI to play the Beer Game](training_ai_beergame.md)
-    * [Training AI to play the Beer Game – A Reinforcement Learning Approach](training_ai_beergame.md). This notebook introduces the concept of reinforcement learning and then applies it to training intelligent agents to play the Beer Game.
     * [Understanding the Beer Game (XMILE)](understanding_the_beergame_xmile.md). The same introduction, but driven by the Stella Architect version of the model rather than the SD DSL one.
-    * [Beer Distribution Game Reinforcement Learning](beergame_ql.md). Play against the agents that were trained in the notebook above, using a stored Q-table.
+    * [Simulating the Beer Game](beergame_sd_dsl.md). This notebook introduces a stock and flow model for the Beer Game and discusses an implementation of that model using the SD DSL.
+    * [An Agent-based Approach To Modeling the Beer Game](beergame_abm.md). An agent-based simulation of the Beer Game that can be used to test policies. It is also used as the basis for the reinforcement learning approach described in the notebook [Training AI to play the Beer Game](training_ai_beergame.md)
+    * [Training AI to play the Beer Game – A Reinforcement Learning Approach](training_ai_beergame.md). This notebook introduces the concept of reinforcement learning and then applies it to training intelligent agents to play the Beer Game.
+    * [Playing the Beer Game Against Trained Agents](beergame_ql.md). Play against the agents that were trained in the notebook above, using a stored Q-table.
 
     ### Models
 

@@ -463,8 +463,6 @@ def _(mo):
 
 @app.cell
 def _(closedTasks, deadline):
-    # Each of the three cells sets the deadline it is about. Without that, whichever cell
-    # ran last would leave its value on the element and the other two would report it.
     deadline.equation = 100.0
     closedTasks(80), closedTasks(100), closedTasks(120)
     return
@@ -501,7 +499,8 @@ def _(mo):
 
 
 @app.cell
-def _(closedTasks):
+def _(closedTasks, deadline):
+    deadline.equation = 100.0
     closedTasks.plot(format="axes")
     return
 
@@ -574,16 +573,9 @@ def _(mo):
 
 @app.cell
 def _(bptk, scenario_manager):
-    # Registering a manager whose name already exists leaves the *old* model in place -
-    # `register_scenario_manager` warns and keeps it. Dropping the registry first is what
-    # makes an edit in the model cell above reach the scenario charts below.
     bptk.reset_all_scenarios()
     bptk.register_scenario_manager(scenario_manager)
 
-    # The name is passed on rather than repeated below. `register_scenarios` and
-    # `plot_scenarios` say nothing about what they registered, so a name travelling from
-    # cell to cell is the only honest dependency between them - and it is what makes the
-    # charts redraw when the model above changes.
     manager = "smSimpleProjectManagementDSL"
     return (manager,)
 

@@ -11,7 +11,32 @@ use rand_distr::{
     Triangular as TriangularDist, Weibull as WeibullDist, Pareto as ParetoDist,
 };
 
+/// The largest count a counting distribution is asked for: numpy refuses a Poisson rate
+/// above about 9.22e18, and a count beyond it no longer fits the integers it is drawn as.
+/// The Python side uses the same bound.
+const LARGEST_COUNT: f64 = 9.2e18;
+
 impl SdModel {
+    /// Whether `entity` already holds its value for the step being evaluated: a stock
+    /// does from the step before, anything else if it comes before the entity being
+    /// evaluated now.
+    fn computed_at_this_step(&self, entity: usize, state: &SimulationState) -> bool {
+        if matches!(self.entities[entity].kind, EntityKind::Stock { .. }) {
+            return true;
+        }
+        let position = |idx| self.eval_order.iter().position(|&e| e == idx);
+        match (position(entity), position(state.current_entity())) {
+            (Some(input), Some(current)) => input < current,
+            _ => false,
+        }
+    }
+
+    /// NaN for arguments it does not accept, recorded so that it can be reported.
+    fn rejected(&self, state: &SimulationState, step: usize, builtin: &'static str, values: &[f64]) -> f64 {
+        state.record_invalid(builtin, step, values);
+        f64::NAN
+    }
+
     /// Evaluate a built-in function call.
     pub fn eval_builtin(
         &self,
@@ -20,58 +45,29 @@ impl SdModel {
         state: &SimulationState,
         step: usize,
     ) -> f64 {
+        // A function of its one argument and nothing else.
+        let unary = |math: fn(f64) -> f64| math(self.eval_expr(&args[0], state, step));
         match function {
             // Temporal
-            BuiltinFn::Time => self.starttime + step as f64 * self.dt,
+            BuiltinFn::Time => self.time_at(step),
             BuiltinFn::Dt => self.dt,
             BuiltinFn::Starttime => self.starttime,
             BuiltinFn::Stoptime => self.stoptime,
 
             // Math — single argument
-            BuiltinFn::Abs => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.abs()
-            }
-            BuiltinFn::Sqrt => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.sqrt()
-            }
-            BuiltinFn::Exp => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.exp()
-            }
-            BuiltinFn::Ln => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.ln()
-            }
-            BuiltinFn::Log10 => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.log10()
-            }
-            BuiltinFn::Sin => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.sin()
-            }
-            BuiltinFn::Cos => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.cos()
-            }
-            BuiltinFn::Tan => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.tan()
-            }
-            BuiltinFn::Arcsin => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.asin()
-            }
-            BuiltinFn::Arccos => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.acos()
-            }
-            BuiltinFn::Arctan => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.atan()
-            }
+            BuiltinFn::Abs => unary(f64::abs),
+            BuiltinFn::Sqrt => unary(f64::sqrt),
+            BuiltinFn::Exp => unary(f64::exp),
+            BuiltinFn::Ln => unary(f64::ln),
+            BuiltinFn::Log10 => unary(f64::log10),
+            BuiltinFn::Sin => unary(f64::sin),
+            BuiltinFn::Cos => unary(f64::cos),
+            BuiltinFn::Tan => unary(f64::tan),
+            BuiltinFn::Arcsin => unary(f64::asin),
+            BuiltinFn::Arccos => unary(f64::acos),
+            BuiltinFn::Arctan => unary(f64::atan),
+            BuiltinFn::Floor => unary(f64::floor),
+            BuiltinFn::Ceil => unary(f64::ceil),
             BuiltinFn::Round => {
                 let v = self.eval_expr(&args[0], state, step);
                 if args.len() > 1 {
@@ -81,14 +77,6 @@ impl SdModel {
                 } else {
                     v.round()
                 }
-            }
-            BuiltinFn::Floor => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.floor()
-            }
-            BuiltinFn::Ceil => {
-                let v = self.eval_expr(&args[0], state, step);
-                v.ceil()
             }
 
             // Math — two arguments
@@ -110,7 +98,7 @@ impl SdModel {
             BuiltinFn::Sinwave => {
                 let amplitude = self.eval_expr(&args[0], state, step);
                 let period = self.eval_expr(&args[1], state, step);
-                let t = self.starttime + step as f64 * self.dt;
+                let t = self.time_at(step);
                 amplitude * (2.0 * std::f64::consts::PI / period * (t - self.starttime)).sin()
             }
 
@@ -118,16 +106,16 @@ impl SdModel {
             BuiltinFn::Coswave => {
                 let amplitude = self.eval_expr(&args[0], state, step);
                 let period = self.eval_expr(&args[1], state, step);
-                let t = self.starttime + step as f64 * self.dt;
+                let t = self.time_at(step);
                 amplitude * (2.0 * std::f64::consts::PI / period * (t - self.starttime)).cos()
             }
 
-            // Control — step: returns height when t > timestep, else 0
+            // Control — step: returns height from the timestep on, as XMILE's STEP does
             BuiltinFn::Step => {
                 let height = self.eval_expr(&args[0], state, step);
                 let timestep = self.eval_expr(&args[1], state, step);
-                let t = self.starttime + step as f64 * self.dt;
-                if t > timestep {
+                let t = self.time_at(step);
+                if t >= timestep {
                     height
                 } else {
                     0.0
@@ -148,7 +136,7 @@ impl SdModel {
                 } else {
                     0.0
                 };
-                let t = self.starttime + step as f64 * self.dt;
+                let t = self.time_at(step);
 
                 if interval == 0.0 {
                     // Single pulse at first_pulse
@@ -158,9 +146,11 @@ impl SdModel {
                         0.0
                     }
                 } else {
-                    // Repeating pulse
+                    // Repeating pulse: a whole number of intervals since the first one,
+                    // within a tolerance - a remainder just below the interval counts too
                     let elapsed = t - first_pulse;
-                    if elapsed >= -1e-10 && (elapsed % interval).abs() < 1e-10 {
+                    let intervals = elapsed / interval;
+                    if elapsed >= -1e-10 && (intervals - intervals.round()).abs() < 1e-9 {
                         volume / self.dt
                     } else {
                         0.0
@@ -173,18 +163,43 @@ impl SdModel {
             // args[1] = delay duration expression
             // args[2] = initial value expression
             BuiltinFn::Delay => {
+                // The parser refuses any other first argument; NaN rather than a panic
+                // for an expression built some other way.
                 let entity_idx = match &args[0] {
                     Expr::Ref(idx) => *idx,
-                    _ => panic!("delay: first argument must be an entity reference"),
+                    _ => return f64::NAN,
                 };
                 let delay_duration = self.eval_expr(&args[1], state, step);
                 let delay_steps = (delay_duration / self.dt).round() as usize;
 
+                // Shorter than half a step, the delay reads its input at this very step.
+                // That is only there if the input came earlier in the evaluation order;
+                // a delay that closes a loop does not order its input first, and would
+                // read what the cell held before. The Python engine meets the same case
+                // as a cycle, at the same step.
+                if delay_steps == 0 && !self.computed_at_this_step(entity_idx, state) {
+                    let current = state.current_entity();
+                    state.record_error(format!(
+                        "Cyclic dependency among non-stock entities at t={:?}: the delay in \
+                         '{}' has a duration of {:?}, less than half of dt={:?}, so it reads \
+                         '{}' at the same step, which the loop it closes has not computed yet",
+                        self.time_at(step),
+                        self.entities[current].name,
+                        delay_duration,
+                        self.dt,
+                        self.entities[entity_idx].name
+                    ));
+                    return f64::NAN;
+                }
+
                 if step >= delay_steps {
                     state.memo[entity_idx][step - delay_steps]
                 } else {
-                    // Before enough time has elapsed, return initial value
-                    self.eval_expr(&args[2], state, step)
+                    // Before enough time has elapsed, the initial value - taken at the start
+                    // time, as the Python engine and XMILE's DELAY take it. Without an
+                    // initial value it is the input itself, and read at the current step
+                    // that gave the input of the moment instead of the one at the start.
+                    self.eval_expr(&args[2], state, 0)
                 }
             }
 
@@ -217,69 +232,97 @@ impl SdModel {
             BuiltinFn::Nan => f64::NAN,
 
             // Statistical functions
+            //
+            // Each one: a NaN or infinite argument gives NaN and nothing else - it comes
+            // from upstream, a division by zero or an overflow.
+            // An argument the builtin does not accept gives NaN and is recorded for the
+            // report (`rejected`). The rules are the Python engine's, in
+            // `BPTK_Py/sddsl/distributions.py`, and have to stay the same. A distribution
+            // constructor that still refuses what the rules let through answers NaN rather
+            // than a panic.
             BuiltinFn::Random => {
-                let min_val = self.eval_expr(&args[0], state, step);
-                let max_val = self.eval_expr(&args[1], state, step);
-                state.rng().gen_range(min_val..=max_val)
+                let lo = self.eval_expr(&args[0], state, step);
+                let hi = self.eval_expr(&args[1], state, step);
+                if !lo.is_finite() || !hi.is_finite() {
+                    f64::NAN
+                } else if lo > hi {
+                    self.rejected(state, step, "uniform", &[lo, hi])
+                } else if lo.is_finite() && hi.is_finite() {
+                    state.rng().gen_range(lo..=hi)
+                } else {
+                    lo + (hi - lo) * state.rng().gen::<f64>()
+                }
             }
             BuiltinFn::Normal => {
                 let mean = self.eval_expr(&args[0], state, step);
                 let stddev = self.eval_expr(&args[1], state, step);
-                if stddev < 0.0 {
+                if !mean.is_finite() || !stddev.is_finite() {
                     f64::NAN
+                } else if stddev < 0.0 {
+                    self.rejected(state, step, "normal", &[mean, stddev])
                 } else {
-                    let dist = NormalDist::new(mean, stddev).unwrap();
-                    dist.sample(&mut *state.rng())
+                    NormalDist::new(mean, stddev).map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Beta => {
                 let a = self.eval_expr(&args[0], state, step);
                 let b = self.eval_expr(&args[1], state, step);
-                if a <= 0.0 || b <= 0.0 {
+                if !a.is_finite() || !b.is_finite() {
                     f64::NAN
+                } else if a <= 0.0 || b <= 0.0 {
+                    self.rejected(state, step, "beta", &[a, b])
                 } else {
-                    let dist = BetaDist::new(a, b).unwrap();
-                    dist.sample(&mut *state.rng())
+                    BetaDist::new(a, b).map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Binomial => {
                 let n = self.eval_expr(&args[0], state, step);
                 let p = self.eval_expr(&args[1], state, step);
-                if n < 0.0 || p < 0.0 || p > 1.0 {
+                if !n.is_finite() || !p.is_finite() {
                     f64::NAN
+                } else if n < 0.0 || n > LARGEST_COUNT || p < 0.0 || p > 1.0 {
+                    self.rejected(state, step, "binomial", &[n, p])
                 } else {
-                    let dist = BinomialDist::new(n as u64, p).unwrap();
-                    dist.sample(&mut *state.rng()) as f64
+                    BinomialDist::new(n as u64, p)
+                        .map_or(f64::NAN, |d| d.sample(&mut *state.rng()) as f64)
                 }
             }
             BuiltinFn::NegBinomial => {
                 let n = self.eval_expr(&args[0], state, step);
                 let p = self.eval_expr(&args[1], state, step);
-                if n <= 0.0 || p < 0.0 || p > 1.0 {
+                if !n.is_finite() || !p.is_finite() {
                     f64::NAN
-                } else if p == 0.0 {
-                    // Negative binomial: number of failures before n successes
-                    f64::INFINITY
+                } else if n <= 0.0 || n > LARGEST_COUNT || p <= 0.0 || p > 1.0 {
+                    self.rejected(state, step, "negbinomial", &[n, p])
                 } else if p >= 1.0 {
                     0.0
                 } else {
-                    let n_int = n as u64;
-                    let geom = GeometricDist::new(p).unwrap();
-                    let mut total: u64 = 0;
-                    for _ in 0..n_int {
-                        total += geom.sample(&mut *state.rng());
+                    // Failures before n successes, drawn as a Poisson whose rate is
+                    // Gamma-distributed - the standard mixture, and constant in n where
+                    // adding up n geometric draws took as long as n is large.
+                    match GammaDist::new(n, (1.0 - p) / p) {
+                        Ok(gamma) => {
+                            let rate = gamma.sample(&mut *state.rng());
+                            if rate <= 0.0 {
+                                0.0
+                            } else {
+                                PoissonDist::new(rate)
+                                    .map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
+                            }
+                        }
+                        Err(_) => f64::NAN,
                     }
-                    total as f64
                 }
             }
             BuiltinFn::Exprnd => {
                 // Python: np.random.exponential(scale). scale = 1/rate.
                 let scale = self.eval_expr(&args[0], state, step);
-                if scale <= 0.0 {
+                if !scale.is_finite() {
                     f64::NAN
+                } else if scale <= 0.0 {
+                    self.rejected(state, step, "exprnd", &[scale])
                 } else {
-                    let dist = ExpDist::new(1.0 / scale).unwrap();
-                    dist.sample(&mut *state.rng())
+                    ExpDist::new(1.0 / scale).map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::GammaDist => {
@@ -289,41 +332,48 @@ impl SdModel {
                 } else {
                     1.0
                 };
-                if shape <= 0.0 || scale <= 0.0 {
+                if !shape.is_finite() || !scale.is_finite() {
                     f64::NAN
+                } else if shape <= 0.0 || scale <= 0.0 {
+                    self.rejected(state, step, "gamma", &[shape, scale])
                 } else {
-                    let dist = GammaDist::new(shape, scale).unwrap();
-                    dist.sample(&mut *state.rng())
+                    GammaDist::new(shape, scale).map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Geometric => {
                 let p = self.eval_expr(&args[0], state, step);
-                if p <= 0.0 || p > 1.0 {
-                    1.0
+                if !p.is_finite() {
+                    f64::NAN
+                } else if p <= 0.0 || p > 1.0 {
+                    self.rejected(state, step, "geometric", &[p])
                 } else {
                     // rand_distr::Geometric returns failures before first success (0-based).
                     // numpy.random.geometric returns trial count including success (1-based).
                     // Add 1 to match Python SD DSL behavior.
-                    let dist = GeometricDist::new(p).unwrap();
-                    dist.sample(&mut *state.rng()) as f64 + 1.0
+                    GeometricDist::new(p)
+                        .map_or(f64::NAN, |d| d.sample(&mut *state.rng()) as f64 + 1.0)
                 }
             }
             BuiltinFn::Lognormal => {
                 let mean = self.eval_expr(&args[0], state, step);
                 let stddev = self.eval_expr(&args[1], state, step);
-                if stddev < 0.0 {
+                if !mean.is_finite() || !stddev.is_finite() {
                     f64::NAN
+                } else if stddev < 0.0 {
+                    self.rejected(state, step, "lognormal", &[mean, stddev])
                 } else {
-                    let dist = LogNormalDist::new(mean, stddev).unwrap();
-                    dist.sample(&mut *state.rng())
+                    LogNormalDist::new(mean, stddev)
+                        .map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Logistic => {
                 // Inverse CDF method: mean + scale * ln(u / (1 - u))
                 let mean = self.eval_expr(&args[0], state, step);
                 let scale = self.eval_expr(&args[1], state, step);
-                if scale < 0.0 {
+                if !mean.is_finite() || !scale.is_finite() {
                     f64::NAN
+                } else if scale < 0.0 {
+                    self.rejected(state, step, "logistic", &[mean, scale])
                 } else {
                     let u: f64 = state.rng().gen_range(0.0001..0.9999);
                     mean + scale * (u / (1.0 - u)).ln()
@@ -337,26 +387,29 @@ impl SdModel {
             }
             BuiltinFn::Poisson => {
                 let mu = self.eval_expr(&args[0], state, step);
-                if mu < 0.0 {
+                if !mu.is_finite() {
                     f64::NAN
+                } else if mu < 0.0 || mu > LARGEST_COUNT {
+                    self.rejected(state, step, "poisson", &[mu])
                 } else if mu == 0.0 {
                     0.0
                 } else {
-                    let dist = PoissonDist::new(mu).unwrap();
-                    dist.sample(&mut *state.rng()) as f64
+                    PoissonDist::new(mu).map_or(f64::NAN, |d| d.sample(&mut *state.rng()) as f64)
                 }
             }
             BuiltinFn::Triangular => {
                 let lower = self.eval_expr(&args[0], state, step);
                 let mode = self.eval_expr(&args[1], state, step);
                 let upper = self.eval_expr(&args[2], state, step);
-                if lower == mode && mode == upper {
+                if !lower.is_finite() || !mode.is_finite() || !upper.is_finite() {
+                    f64::NAN
+                } else if lower == mode && mode == upper {
                     lower
                 } else if lower > upper || mode < lower || mode > upper {
-                    f64::NAN
+                    self.rejected(state, step, "triangular", &[lower, mode, upper])
                 } else {
-                    let dist = TriangularDist::new(lower, upper, mode).unwrap();
-                    dist.sample(&mut *state.rng())
+                    TriangularDist::new(lower, upper, mode)
+                        .map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Weibull => {
@@ -364,45 +417,45 @@ impl SdModel {
                 // Rust: Weibull::new(scale, shape) — scale first, shape second
                 let shape = self.eval_expr(&args[0], state, step);
                 let scale = self.eval_expr(&args[1], state, step);
-                if shape <= 0.0 || scale <= 0.0 {
+                if !shape.is_finite() || !scale.is_finite() {
                     f64::NAN
+                } else if shape <= 0.0 || scale <= 0.0 {
+                    self.rejected(state, step, "weibull", &[shape, scale])
                 } else {
-                    let dist = WeibullDist::new(scale, shape).unwrap();
-                    dist.sample(&mut *state.rng())
+                    WeibullDist::new(scale, shape).map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }
             BuiltinFn::Pareto => {
                 let shape = self.eval_expr(&args[0], state, step);
                 let scale = self.eval_expr(&args[1], state, step);
-                if shape <= 0.0 || scale <= 0.0 {
+                if !shape.is_finite() || !scale.is_finite() {
                     f64::NAN
+                } else if shape <= 0.0 || scale <= 0.0 {
+                    self.rejected(state, step, "pareto", &[shape, scale])
                 } else {
                     // rand_distr::Pareto samples from Pareto(xm, alpha) with min=xm.
                     // numpy.random.pareto(a) * scale gives (X-1)*scale where X~Pareto(1,a).
                     // Subtract scale to match Python SD DSL: result = sample - scale.
-                    let dist = ParetoDist::new(scale, shape).unwrap();
-                    dist.sample(&mut *state.rng()) - scale
+                    ParetoDist::new(scale, shape)
+                        .map_or(f64::NAN, |d| d.sample(&mut *state.rng()) - scale)
                 }
             }
             BuiltinFn::Invnorm => {
+                // The serializer sends all three, filling in a mean of 0 and a stddev of
+                // 1 for whichever was left out; the defaults here are for older JSON.
                 let p = self.eval_expr(&args[0], state, step);
-                let (mean, stddev) = if args.len() >= 3 {
-                    (self.eval_expr(&args[1], state, step),
-                     self.eval_expr(&args[2], state, step))
-                } else if args.len() == 2 {
-                    (self.eval_expr(&args[1], state, step), 1.0)
-                } else {
-                    (0.0, 1.0)
-                };
-                if p < 0.0 || p > 1.0 || stddev <= 0.0 {
+                let mean = args.get(1).map_or(0.0, |a| self.eval_expr(a, state, step));
+                let stddev = args.get(2).map_or(1.0, |a| self.eval_expr(a, state, step));
+                if !p.is_finite() || !mean.is_finite() || !stddev.is_finite() {
                     f64::NAN
+                } else if p < 0.0 || p > 1.0 || stddev <= 0.0 {
+                    self.rejected(state, step, "invnorm", &[p, mean, stddev])
                 } else if p == 0.0 {
                     f64::NEG_INFINITY
                 } else if p == 1.0 {
                     f64::INFINITY
                 } else {
-                    let dist = StatrsNormal::new(mean, stddev).unwrap();
-                    dist.inverse_cdf(p)
+                    StatrsNormal::new(mean, stddev).map_or(f64::NAN, |d| d.inverse_cdf(p))
                 }
             }
             BuiltinFn::NormalCDF => {
@@ -410,11 +463,13 @@ impl SdModel {
                 let right = self.eval_expr(&args[1], state, step);
                 let mean = if args.len() > 2 { self.eval_expr(&args[2], state, step) } else { 0.0 };
                 let stddev = if args.len() > 3 { self.eval_expr(&args[3], state, step) } else { 1.0 };
-                if stddev <= 0.0 {
+                if !left.is_finite() || !right.is_finite() || !mean.is_finite() || !stddev.is_finite() {
                     f64::NAN
+                } else if stddev <= 0.0 {
+                    self.rejected(state, step, "normalcdf", &[left, right, mean, stddev])
                 } else {
-                    let dist = StatrsNormal::new(mean, stddev).unwrap();
-                    dist.cdf(right) - dist.cdf(left)
+                    StatrsNormal::new(mean, stddev)
+                        .map_or(f64::NAN, |d| d.cdf(right) - d.cdf(left))
                 }
             }
 

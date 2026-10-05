@@ -6,16 +6,13 @@ from BPTK_Py import DataCollector
 
 
 class TestDataCollector(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testDataCollectorInit(self):
+    def test_data_collector_init(self):
         dataCollector = DataCollector()
 
         self.assertEqual(dataCollector.event_statistics,{})
         self.assertEqual(dataCollector.agent_statistics,{})
 
-    def testDataCollector_record_event(self):
+    def test_record_event(self):
         dataCollector = DataCollector()
         event= Event(name="eventName", sender_id=1, receiver_id=2)
 
@@ -23,7 +20,7 @@ class TestDataCollector(unittest.TestCase):
 
         self.assertEqual(dataCollector.event_statistics,{101: {'eventName': 1}})
 
-    def testDataCollector_collect_agent_statistics(self):
+    def test_collect_agent_statistics(self):
         model = Model()
         dataCollector = DataCollector()
 
@@ -51,7 +48,3 @@ class TestDataCollector(unittest.TestCase):
         self.assertEqual(dataCollector.agent_statistics[1]["testAgent"]["inactive"]["property1"]["min"],30)
         self.assertEqual(dataCollector.agent_statistics[1]["testAgent"]["inactive"]["property1"]["max"],30)
         self.assertEqual(dataCollector.agent_statistics[1]["testAgent"]["inactive"]["property1"]["mean"],30)
-     
-if __name__ == '__main__':
-    unittest.main()
-

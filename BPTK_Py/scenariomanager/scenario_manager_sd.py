@@ -12,14 +12,15 @@
 
 
 import importlib
+from copy import deepcopy
 import os
 from pathlib import Path
 
-import BPTK_Py.config.config as config
 from ..logger import log
 from .scenario_manager import ScenarioManager
 from .scenario import SimulationScenario
 from ..modeling.model import Model
+from ..sddsl.operators import ArrayedEquation
 from BPTK_Py.sdcompiler import compile_xmile as compile
 
 class ScenarioManagerSd(ScenarioManager):
@@ -27,7 +28,7 @@ class ScenarioManagerSd(ScenarioManager):
     This class reads and writes pure sd scenarios and starts the file monitors for each scenario's model
     """
 
-    def __init__(self, base_points={}, base_constants={}, scenarios={}, name="", model=None, source="", filenames=None,
+    def __init__(self, base_points=None, base_constants=None, scenarios=None, name="", model=None, source="", filenames=None,
                  model_file=""):
         """
 
@@ -40,7 +41,9 @@ class ScenarioManagerSd(ScenarioManager):
         """
         super().__init__()
 
-        self.scenarios = scenarios
+        # None rather than {} as defaults: a dict default is one object shared by every
+        # manager created without the argument.
+        self.scenarios = scenarios if scenarios is not None else {}
         self.name = name
         self.model = model
         self.model_file = model_file
@@ -49,22 +52,25 @@ class ScenarioManagerSd(ScenarioManager):
         self.model_module = None
         self.source = source
 
-        self.base_constants = base_constants
-        self.base_points = base_points
+        self.base_constants = base_constants if base_constants is not None else {}
+        self.base_points = base_points if base_points is not None else {}
         # Avoid a shared mutable default: filenames is mutated in place (+=) by the
         # factory, so a list default would leak filenames across manager instances.
         self.filenames = filenames if filenames is not None else []
 
         self.type = "sd"
 
-    def add_scenario(self, scenario):
-        """
-        Adds a scenario to the managers self.scenarios
-        :param scenario: scenario object
-        :return: None
-        """
-        self.scenarios[scenario.name] = scenario
-        self.instantiate_model()
+    def _with_base_values(self, scenario):
+        """A copy of a scenario's dictionary, completed with the manager's base constants
+        and base points wherever the scenario does not set them itself. A copy, because
+        the dictionary belongs to the caller."""
+        scenario = deepcopy(scenario)
+        for key, base in (("constants", self.base_constants), ("points", self.base_points)):
+            if base:
+                values = scenario.setdefault(key, {})
+                for name, value in base.items():
+                    values.setdefault(name, value)
+        return scenario
 
     def load_scenarios(self, scen_dict, model_file, source=None, model_module=None):
         """
@@ -78,25 +84,7 @@ class ScenarioManagerSd(ScenarioManager):
         # Create simulation scenarios from structure
         for scenario_name in scen_dict.keys():
 
-            scenario_dict = scen_dict[scenario_name]
-
-            # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
-            if self.base_constants and len(self.base_constants.keys()) > 0:
-                if not "constants" in scenario_dict.keys():
-                    scenario_dict["constants"] = {}
-
-                for const, value in self.base_constants.items():
-                    if not const in scenario_dict["constants"].keys():
-                        scenario_dict["constants"][const] = value
-
-            # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
-            if self.base_points and len(self.base_points.keys()) > 0:
-                if not "points" in scenario_dict.keys():
-                    scenario_dict["points"] = {}
-
-                for points, value in self.base_points.items():
-                    if not points in scenario_dict["points"].keys():
-                        scenario_dict["points"][points] = value
+            scenario_dict = self._with_base_values(scen_dict[scenario_name])
 
             if scenario_name in self.scenarios.keys():
                 # Check if an update was made to the scenario --> Value equality not given anymore
@@ -104,7 +92,7 @@ class ScenarioManagerSd(ScenarioManager):
                     log("[INFO] Model {} was updated!".format(scenario_name))
                     self.scenarios.pop(scenario_name)
 
-            sce = SimulationScenario(dictionary=scen_dict[scenario_name], name=scenario_name, model=None,
+            sce = SimulationScenario(dictionary=scenario_dict, name=scenario_name, model=None,
                                      scenario_manager_name=self.name)
 
             if not scenario_name in self.scenarios.keys():
@@ -119,26 +107,7 @@ class ScenarioManagerSd(ScenarioManager):
     def add_scenarios(self, scenario_dictionary):
 
         for name, scenario in scenario_dictionary.items():
-
-
-            # ScenarioManager -> "scenarios" -> scenario_name -> "constants" (Update via base_constants)
-            if len(self.base_constants.keys()) > 0:
-                if not "constants" in scenario.keys():
-                    scenario["constants"] = {}
-
-                for const, value in self.base_constants.items():
-                    if not const in scenario["constants"].keys():
-                        scenario["constants"][const] = value
-
-            # ScenarioManager -> "scenarios" -> scenario_name -> "points" (Update via base_points)
-            if len(self.base_points.keys()) > 0:
-                if not "points" in scenario.keys():
-                    scenario["points"] = {}
-
-
-                for points, value in self.base_points.items():
-                    if not points in scenario["points"].keys():
-                        scenario["points"][points] = value
+            scenario = self._with_base_values(scenario)
 
             # A name that is already taken by a *different* definition is a mistake:
             # the later registration silently wins, and then a chart meant to show the
@@ -154,66 +123,49 @@ class ScenarioManagerSd(ScenarioManager):
             self.scenarios[name] = SimulationScenario(dictionary=scenario, name=name, model=self.get_cloned_model(self.model),
                                scenario_manager_name=self.name)
 
+        # Once for all of them: for a model read from a file this imports the module again
+        if scenario_dictionary:
             self.instantiate_model()
 
-    def  get_cloned_model(self, model):
-        #TODO: clones a SimulatiomModel  - in principle this could also be part of SimulationModel
+    # The element kinds a clone copies, as (the model's dict, the method creating one).
+    # Stocks last: that is the order the serializer has always seen them in.
+    _ELEMENT_KINDS = (("constants", "constant"), ("converters", "converter"), ("flows", "flow"),
+                      ("biflows", "biflow"), ("stocks", "stock"))
+
+    def get_cloned_model(self, model):
+        """A model of its own for one scenario, so that its constants and points reach
+        no other scenario and not the model that was registered.
+
+        An arrayed element keeps its shape: the flags, and its own index of the
+        sub-elements, which are looked up in the clone rather than in the original.
+        """
         if not model:
             return None
 
         new_mod = Model(starttime=model.starttime, stoptime=model.stoptime, dt=model.dt, name=model.name)
 
+        for collection, create in self._ELEMENT_KINDS:
+            for element in getattr(model, collection).values():
+                new_element = getattr(new_mod, create)(element.name)
+                new_element._elements = ArrayedEquation(new_element)
+                new_element._elements.equations = list(element._elements.equations)
+                new_element.arrayed = element.arrayed
+                new_element.named_arrayed = element.named_arrayed
+                if hasattr(element, "_shaped_by_setup"):
+                    new_element._shaped_by_setup = element._shaped_by_setup
+                new_element.function_string = element.function_string
+                new_element._equation = element._equation
+                if collection == "stocks":
+                    new_element._Stock__initial_value = element._Stock__initial_value
+                new_element.generate_function()
+                new_mod.memo[element.name] = {}
 
-        for name, constant in model.constants.items():
-            new_const = new_mod.constant(constant.name)
-            new_const._elements = constant._elements
-            new_const.function_string = constant.function_string
-            new_const._equation = constant._equation
-            new_const.generate_function()
-            new_mod.memo[constant.name] = {}
+        for name in model.functions:
+            new_mod.function(name, model.fn[name])
 
-        for name, converter in model.converters.items() :
-            new_converter = new_mod.converter(converter.name)
-            new_converter._elements = converter._elements
-            new_converter.function_string = converter.function_string
-            new_converter._equation = converter._equation
-            new_converter.generate_function()
-            new_mod.memo[converter.name] = {}
-
-        for name, flow in model.flows.items():
-            new_flow = new_mod.flow(flow.name)
-            new_flow._elements = flow._elements
-            new_flow.function_string = flow.function_string
-            new_flow._equation = flow._equation
-            new_flow.generate_function()
-            new_mod.memo[flow.name] = {}
-
-        for name, biflow in model.biflows.items():
-            new_biflow = new_mod.biflow(biflow.name)
-            new_biflow._elements = biflow._elements
-            new_biflow.function_string = biflow.function_string
-            new_biflow._equation = biflow._equation
-            new_biflow.generate_function()
-            new_mod.memo[biflow.name] = {}
-
-        for name, stock in model.stocks.items():
-            new_stock = new_mod.stock(stock.name)
-            new_stock._elements = stock._elements
-            new_stock.function_string = stock.function_string
-            new_stock._equation = stock._equation
-            new_stock._Stock__initial_value = new_mod.constants[stock._Stock__initial_value.name] if type(stock._Stock__initial_value) is str else stock._Stock__initial_value
-            new_stock.generate_function()
-            new_mod.memo[stock.name] = {}
-
-        for name, function in model.functions.items():
-            new_function = new_mod.function(name, model.fn[name])
-
-        new_mod.points = model.points
+        new_mod.points = dict(model.points)
 
         return new_mod
-
-
-
 
     def instantiate_model(self):
         """
@@ -273,7 +225,9 @@ class ScenarioManagerSd(ScenarioManager):
 
             try:
                 mod = importlib.import_module(package_link)
-            except:
+            except ImportError:
+                # "package.module.Class": the last part is the class, not a module. Only an
+                # import failure means that; an error inside the module has to surface.
                 class_link = package_link.split(".")[len(package_link.split(".")) - 1]
                 package_link = ".".join(package_link.split(".")[:-1])
                 mod = importlib.import_module(package_link)

@@ -1,10 +1,10 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: In-depth explanation of agent-based modeling
+# description: How to collect the data of an agent-based simulation in a form of your own, by writing a data collector
 # keywords: agent-based modeling, abm, bptk, python
 import marimo
 
 __generated_with = "0.23.13"
-app = marimo.App(app_title="Choose Data Collector")
+app = marimo.App(app_title="Custom Data Collectors")
 
 
 @app.cell
@@ -202,7 +202,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'

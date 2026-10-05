@@ -3,13 +3,11 @@ import unittest
 from BPTK_Py import Model, Agent
 from BPTK_Py.modelparser.meta_model_creator import ModelCreator, serializable_agent
 from BPTK_Py import DataCollector
+from tests.helpers.log_helpers import clear_log, read_log
 
 
 class TestModelCreator(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testModelCreator_add_scenario(self):
+    def test_add_scenario(self):
         modelCreator = ModelCreator(name="testModelCreator")
 
         dataCollector = DataCollector()
@@ -41,7 +39,7 @@ class TestModelCreator(unittest.TestCase):
         self.assertEqual(modelCreator.scenarios["testScenario"]["properties"]["property2"]["value"],2)
         self.assertEqual(modelCreator.datacollector, dataCollector)
 
-    def testModelCreator_add_agent(self):
+    def test_add_agent(self):
         modelCreator = ModelCreator(name="testModelCreator")
         agent = serializable_agent(name="testAgent", count=1, step=2)        
         modelCreator.add_scenario(name="testScenario",starttime=1, stoptime=10, dt=2)
@@ -52,16 +50,11 @@ class TestModelCreator(unittest.TestCase):
         self.assertEqual(modelCreator.scenarios["testScenario"]["agents"][0].count,1)
         self.assertEqual(modelCreator.scenarios["testScenario"]["agents"][0].step,2)
 
-    def testModelCreator_create_model_standard(self):
-        import BPTK_Py.logger.logger as logmod
+    def test_create_model_standard(self):
         import sys, io
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         #Redirect the console output
         old_stdout = sys.stdout
@@ -79,11 +72,7 @@ class TestModelCreator(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()    
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[WARN] Could not load specific model class. Using standard Model", content)  
         self.assertIn("Empty module name", output)  
@@ -118,7 +107,7 @@ class TestModelCreator(unittest.TestCase):
         self.assertEqual(agent.properties,{})
         self.assertEqual(agent.agent_type,"testAgent")
 
-    def testModelCreator_create_model_sd_returns_json_dict(self):
+    def test_create_model_sd_returns_json_dict(self):
         """For SD/undefined models create_model returns the stored json_dict unchanged."""
         json_dict = {"someManager": {"type": "sd"}}
         modelCreator = ModelCreator(name="sm", type="sd", json_dict=json_dict)
@@ -128,12 +117,12 @@ class TestModelCreator(unittest.TestCase):
         self.assertIsNone(model)
         self.assertEqual(dictionary, json_dict)
 
-    def testModelCreator_short_model_name_gets_package_prefix(self):
+    def test_short_model_name_gets_package_prefix(self):
         """A single-character model name is prefixed with 'model.'."""
         modelCreator = ModelCreator(name="sm", model="m")
         self.assertEqual(modelCreator.model, "model.m")
 
-    def testModelCreator_loads_specific_model_class_without_datacollector(self):
+    def test_loads_specific_model_class_without_datacollector(self):
         """create_model imports and instantiates the configured model class."""
         modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
         modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
@@ -143,7 +132,7 @@ class TestModelCreator(unittest.TestCase):
         self.assertIsInstance(model, Model)
         self.assertIsNone(model.data_collector)
 
-    def testModelCreator_loads_specific_model_class_with_datacollector(self):
+    def test_loads_specific_model_class_with_datacollector(self):
         """The configured model class is instantiated with the data collector."""
         dataCollector = DataCollector()
         modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
@@ -154,7 +143,7 @@ class TestModelCreator(unittest.TestCase):
         self.assertIsInstance(model, Model)
         self.assertEqual(model.data_collector, dataCollector)
 
-    def testModelCreator_falls_back_to_standard_model_with_datacollector(self):
+    def test_falls_back_to_standard_model_with_datacollector(self):
         """An unimportable model class falls back to a standard Model with the collector."""
         import sys, io
 
@@ -172,7 +161,7 @@ class TestModelCreator(unittest.TestCase):
         self.assertIsInstance(model, Model)
         self.assertEqual(model.data_collector, dataCollector)
 
-    def testModelCreator_agent_factory_missing_module_returns_none(self):
+    def test_agent_factory_missing_module_returns_none(self):
         """The generated agent factory returns None if the agent module is missing."""
         modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
         modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
@@ -186,7 +175,7 @@ class TestModelCreator(unittest.TestCase):
 
         self.assertIsNone(result)
 
-    def testModelCreator_agent_factory_missing_class_returns_none(self):
+    def test_agent_factory_missing_class_returns_none(self):
         """The generated agent factory returns None if the class is not in the module."""
         modelCreator = ModelCreator(name="sm", model="BPTK_Py.Model")
         modelCreator.add_scenario(name="s", starttime=1, stoptime=2, dt=1)
@@ -202,10 +191,7 @@ class TestModelCreator(unittest.TestCase):
 
 
 class TestSerializableAgent(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testSerializableAgent_init(self):         
+    def test_init(self):         
         properties = {
             "property1":
             {
@@ -242,7 +228,7 @@ class TestSerializableAgent(unittest.TestCase):
         self.assertEqual(agent2.classname,"testClassName")
         self.assertTrue(agent2.silent)
 
-    def testSerializableAgent_set_previous(self):         
+    def test_set_previous(self):         
         agent = serializable_agent(name="testAgent", count=1, step=2)   
 
         agent.set_previous(name="testNamePrevious")
@@ -250,7 +236,7 @@ class TestSerializableAgent(unittest.TestCase):
         self.assertEqual(agent.properties["previous"]["type"],"String")
         self.assertEqual(agent.properties["previous"]["value"],"testNamePrevious") 
 
-    def testSerializableAgent_set_target(self):         
+    def test_set_target(self):         
         agent = serializable_agent(name="testAgent", count=1, step=2)   
 
         agent.set_target(name="testNameTarget")
@@ -258,7 +244,7 @@ class TestSerializableAgent(unittest.TestCase):
         self.assertEqual(agent.properties["target"]["type"],"String")
         self.assertEqual(agent.properties["target"]["value"],"testNameTarget") 
 
-    def testSerializableAgent_set_property(self):     
+    def test_set_property(self):     
         import sys, io
 
 
@@ -295,7 +281,4 @@ class TestSerializableAgent(unittest.TestCase):
         sys.stdout = old_stdout
         output = new_stdout.getvalue()
 
-        self.assertNotIn("Setting testNamePropertySilent of testAgent2 to 12", output)  
-
-if __name__ == '__main__':
-    unittest.main()    
+        self.assertNotIn("Setting testNamePropertySilent of testAgent2 to 12", output)

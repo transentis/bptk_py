@@ -7,16 +7,13 @@ from BPTK_Py.modeling.datacollectors.agent_datacollector import AgentDataCollect
 import pandas as pd
 
 class TestAgentDataCollector(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testAgentDataCollectorInit(self):
+    def test_agent_data_collector_init(self):
         agentDataCollector = AgentDataCollector()
 
         self.assertEqual(agentDataCollector.event_statistics,{})
         self.assertEqual(agentDataCollector.event_statistics,{})
 
-    def testAgentDataCollector_collect_agent_statistics(self):
+    def test_collect_agent_statistics(self):
         model = Model()
         agent = Agent(agent_id=101, model=model, properties={"name": {"type" : "Integer", "value": 121}},agent_type="testAgent1")
 
@@ -26,7 +23,7 @@ class TestAgentDataCollector(unittest.TestCase):
 
         self.assertEqual(agentDataCollector.agent_statistics,{'testAgent1': {101: {1: {'id': 101, 'time': 1, 'agent_state': 'active', 'agent_type': 'testAgent1', 'name': 121}}}})
 
-    def testAgentDataCollector_get_agent_stats(self):
+    def test_get_agent_stats(self):
         model = Model()
         agent1 = Agent(agent_id=1001, model=model, properties={"agentName": {"type" : "String", "value": "testAgent1"}},agent_type="testAgentType1") 
         agent2 = Agent(agent_id=1002, model=model, properties={"agentName": {"type" : "String", "value": "testAgent2"}},agent_type="testAgentType1")   
@@ -53,7 +50,7 @@ class TestAgentDataCollector(unittest.TestCase):
         self.assertTrue(return_value["testAgentType2"][1003].equals(pd.DataFrame(data=pd3_data, columns=pd_columns)))    
 
     @pytest.mark.requires_extra("plotting")
-    def testAgentDataCollector_plot_agent_stats(self):
+    def test_plot_agent_stats(self):
         import matplotlib.pyplot as plt
 
         model = Model()
@@ -71,6 +68,3 @@ class TestAgentDataCollector(unittest.TestCase):
 
         self.assertIsInstance(result1,plt.Axes)
         self.assertIsInstance(result2,plt.Axes)
-
-if __name__ == '__main__':
-    unittest.main()

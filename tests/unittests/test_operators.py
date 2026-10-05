@@ -11,10 +11,7 @@ from BPTK_Py.sddsl.operators import Delay
 from BPTK_Py.sddsl import functions as sd
 
 class TestArrayedEquation(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testOperatorInit(self):
+    def test_operator_init(self):
 
         model = Model()
         element = Element(model=model,name="testElement",function_string=None)   
@@ -24,7 +21,7 @@ class TestArrayedEquation(unittest.TestCase):
         self.assertEqual(arrayedEquation.equations,[])
         self.assertIs(arrayedEquation._element,element)
 
-    def testOperator_getitem_exception(self):
+    def test_operator_getitem_exception(self):
         model = Model()
         element = Element(model=model,name="testElement",function_string=None)
 
@@ -32,7 +29,7 @@ class TestArrayedEquation(unittest.TestCase):
 
         self.assertRaises(Exception,arrayedEquation.__getitem__,"testKey")
 
-    def testArrayedEquation_matrix_size_non_uniform(self):
+    def test_matrix_size_non_uniform(self):
         """Test that matrix_size raises exception for non-uniform dimensions via setup_named_matrix"""
         model = Model()
 
@@ -51,24 +48,18 @@ class TestArrayedEquation(unittest.TestCase):
         self.assertEqual(str(context.exception), "Matrix does not have uniform dimensions!")   
 
 class TestOperatorError(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testOperatorErrorInit(self):
+    def test_operator_error_init(self):
         operatorError = OperatorError(value="testValue")
 
         self.assertEqual(operatorError.value,"testValue")
 
-    def testOperatorError_str_(self):
+    def test_str_(self):
         operatorError = OperatorError(value=123)        
 
         self.assertEqual(operatorError.__str__(),"123")
     
 class TestOperator(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testOperatorInit(self):
+    def test_operator_init(self):
         operator1= Operator(arrayed=False)        
         operator2= Operator(arrayed=True)
 
@@ -77,13 +68,13 @@ class TestOperator(unittest.TestCase):
         self.assertFalse(operator1.arrayed)
         self.assertTrue(operator2.arrayed)
 
-    def testOperator_term(self):
+    def test_term(self):
         operator = Operator()
         
         return_value = operator.term()
         self.assertIsNone(return_value)
 
-    def testOperator_arrayed_term(self):
+    def test_arrayed_term(self):
         operator = Operator()
 
         operator.index = 2
@@ -93,27 +84,27 @@ class TestOperator(unittest.TestCase):
         self.assertIsNone(return_value)
         self.assertEqual(operator.index,2)
 
-    def testOperator_clone_with_index(self):
+    def test_clone_with_index(self):
         operator = Operator()
 
         self.assertIs(operator.clone_with_index(index=1),operator)
 
-    def testOperator_resolve_dimension(self):
+    def test_resolve_dimension(self):
         operator = Operator()
 
         self.assertEqual(operator.resolve_dimensions(),-1)   
 
-    def testOperator_is_named(self):
+    def test_is_named(self):
         operator = Operator()
 
         self.assertFalse(operator.is_named())
 
-    def testOperator_index_to_string(self):
+    def test_index_to_string(self):
         operator = Operator()
 
         self.assertRaises(Exception,operator.index_to_string,index=1)     
 
-    def testOperator_truediv(self):   
+    def test_truediv(self):   
         operator1 = Operator()
         operator2 = Operator()
 
@@ -123,7 +114,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator1)
         self.assertIs(result_operator.element_2,operator2)
 
-    def testOperator_rtruediv(self):   
+    def test_rtruediv(self):   
         operator1 = Operator()
         operator2 = Operator()
 
@@ -133,7 +124,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator2)
         self.assertIs(result_operator.element_2,operator1)   
 
-    def testOperator_mod(self):   
+    def test_mod(self):   
         operator1 = Operator()
         operator2 = Operator()
 
@@ -143,7 +134,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator1)
         self.assertIs(result_operator.element_2,operator2)               
 
-    def testOperator_rmod(self):
+    def test_rmod(self):
         operator1 = Operator()
         operator2 = Operator()
 
@@ -153,7 +144,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator2)
         self.assertIs(result_operator.element_2,operator1)
 
-    def testOperator_pow(self):   
+    def test_pow(self):   
         operator = Operator()
         
         result_operator = operator**2
@@ -162,7 +153,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element,operator)
         self.assertIs(result_operator.power,2) 
 
-    def testOperator_neg(self):
+    def test_neg(self):
         operator = Operator()
         
         result_operator = -operator
@@ -171,7 +162,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_1,operator)
         self.assertEqual(result_operator.element_2,UnaryOperator(-1.0))
 
-    def testOperator_gt(self):
+    def test_gt(self):
         operator1 = Operator()
         operator2 = Operator()
         
@@ -182,7 +173,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,">")
 
-    def testOperator_lt(self):
+    def test_lt(self):
         operator1 = Operator()
         operator2 = Operator()
         
@@ -193,7 +184,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,"<")
 
-    def testOperator_le(self):
+    def test_le(self):
         operator1 = Operator()
         operator2 = Operator()
         
@@ -204,7 +195,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,"<=")
 
-    def testOperator_ge(self):
+    def test_ge(self):
         operator1 = Operator()
         operator2 = Operator()
         
@@ -215,7 +206,7 @@ class TestOperator(unittest.TestCase):
         self.assertIs(result_operator.element_2,operator2)
         self.assertEqual(result_operator.sign,">=")
 
-    def testOperator_ne(self):
+    def test_ne(self):
         operator1 = Operator()
         operator2 = Operator()
         
@@ -227,10 +218,7 @@ class TestOperator(unittest.TestCase):
         self.assertEqual(result_operator.sign,"!=")
 
 class BinaryOperators(unittest.TestCase):
-    def setUp(self):
-        pass 
-
-    def testAdditionOperator_not_named(self):
+    def test_addition_operator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -282,7 +270,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
 
-    def testAdditionOperator_named(self):
+    def test_addition_operator_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -334,7 +322,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array addition (sizes [2, 2] and [2, 0])")
 
-    def testAdditionOperator_overwrite_stock_vector_not_named(self):
+    def test_addition_operator_overwrite_stock_vector_not_named(self):
         model = Model(starttime=1, stoptime=10, dt=1, name='test')
         stock = model.stock("stock")
         flow1 = model.flow("flow1")
@@ -350,7 +338,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(stock[0](2),12.0)
         self.assertEqual(stock[1](2),15.0)   
 
-    def testAdditionOperator_overwrite_stock_vector_named(self):
+    def test_addition_operator_overwrite_stock_vector_named(self):
         model = Model(starttime=1, stoptime=10, dt=1, name='test')
         stock = model.stock("stock")
         flow1 = model.flow("flow1")
@@ -366,7 +354,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(stock["value1"](2),12.0)
         self.assertEqual(stock["value2"](2),15.0)   
 
-    def testAdditionOperator_overwrite_stock_matrix_not_named(self):
+    def test_addition_operator_overwrite_stock_matrix_not_named(self):
         model = Model(starttime=1, stoptime=10, dt=1, name='test')
         stock = model.stock("stock")
         flow1 = model.flow("flow1")
@@ -386,7 +374,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(stock[1][0](2),21.0)
         self.assertEqual(stock[1][1](2),24.0)
 
-    def testAdditionOperator_overwrite_stock_matrix_named(self):
+    def test_addition_operator_overwrite_stock_matrix_named(self):
         model = Model(starttime=1, stoptime=10, dt=1, name='test')
         stock = model.stock("stock")
         flow1 = model.flow("flow1")
@@ -407,7 +395,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(stock["value2"]["value21"](2),21.0)
         self.assertEqual(stock["value2"]["value22"](2),24.0)
 
-    def testSubtractionOperator_not_named(self):
+    def test_subtraction_operator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -459,7 +447,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 2] and [2, 0])")
 
-    def testSubtractionOperator_named(self):
+    def test_subtraction_operator_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -511,7 +499,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array subtraction (sizes [2, 2] and [2, 0])")
 
-    def testDivisionoperator_not_named(self):
+    def test_divisionoperator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -563,7 +551,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 2] and [2, 0])")
 
-    def testDivisionOperator_named(self):
+    def test_division_operator_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -615,7 +603,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array division (sizes [2, 2] and [2, 0])")
 
-    def testNumericalMultiplicationOperator_not_named(self):
+    def test_numerical_multiplication_operator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -635,7 +623,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(c[1][0](1),-10.0)
         self.assertEqual(c[1][1](1),-20.0) 
 
-    def testNumericalMultiplicationOperator_named(self):
+    def test_numerical_multiplication_operator_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -655,7 +643,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(c["value2"]["value21"](1),-10.0)
         self.assertEqual(c["value2"]["value22"](1),-20.0)         
 
-    def testMultiplicationOperator_not_named(self):
+    def test_multiplication_operator_not_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -707,7 +695,7 @@ class BinaryOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 2] and [2, 0])")
 
-    def testMultiplicationOperator_named(self):
+    def test_multiplication_operator_named(self):
         m = Model()
         a = m.constant("a")
         b = m.constant("b")
@@ -760,10 +748,7 @@ class BinaryOperators(unittest.TestCase):
         self.assertEqual(str(context.exception), "Attempted invalid array multiplication (sizes [2, 2] and [2, 0])")
 
 class TestArrayOperators(unittest.TestCase):
-    def setUp(self):
-        pass    
-
-    def testArrayProductOperator_clone_with_index(self):
+    def test_array_product_operator_clone_with_index(self):
         arrayPO = ArrayProductOperator(element=[1,2,3],dimensions=3)
         copy = arrayPO.clone_with_index(index=2)
 
@@ -771,7 +756,7 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(copy.dimensions,3)
         self.assertEqual(copy.index,2)
 
-    def testArraySumOperator_clone_with_index(self):
+    def test_array_sum_operator_clone_with_index(self):
         arraySO = ArraySumOperator(element=[1,2,3],dimensions=3)
         copy = arraySO.clone_with_index(index=2)
 
@@ -779,14 +764,14 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(copy.dimensions,3)
         self.assertEqual(copy.index,2)
 
-    def testArraySizeOperator_clone_with_index(self):
+    def test_array_size_operator_clone_with_index(self):
         arraySO = ArraySizeOperator(element=[1,2,3])
         copy = arraySO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayRankOperator_clone_with_index(self):
+    def test_array_rank_operator_clone_with_index(self):
         arrayRO = ArrayRankOperator(element=[1,2,3], rank=14)
         copy = arrayRO.clone_with_index(index=2)
 
@@ -794,42 +779,42 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(copy.rank,14)
         self.assertEqual(copy.index,2)
 
-    def testArrayMeanOperator_clone_with_index(self):
+    def test_array_mean_operator_clone_with_index(self):
         arrayMO = ArrayMeanOperator(element=[1,2,3])
         copy = arrayMO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayMaxOperator_clone_with_index(self):
+    def test_array_max_operator_clone_with_index(self):
         arrayMO = ArrayMaxOperator(element=[1,2,3])
         copy = arrayMO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayMinOperator_clone_with_index(self):
+    def test_array_min_operator_clone_with_index(self):
         arrayMO = ArrayMinOperator(element=[1,2,3])
         copy = arrayMO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayMedianOperator_clone_with_index(self):
+    def test_array_median_operator_clone_with_index(self):
         arrayMO = ArrayMedianOperator(element=[1,2,3])
         copy = arrayMO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayStandardDeviationOperator_clone_with_index(self):
+    def test_array_standard_deviation_operator_clone_with_index(self):
         arraySDO = ArrayStandardDeviationOperator(element=[1,2,3])
         copy = arraySDO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
         self.assertEqual(copy.index,2)
 
-    def testArrayOperators_term_for_not_array(self):
+    def test_term_for_not_array(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
 
@@ -853,10 +838,7 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(converter5(1),0.0) 
 
 class TestOtherOperators(unittest.TestCase):
-    def setUp(self):
-        pass    
-
-    def testBinaryOperator_init_invalid(self):
+    def test_binary_operator_init_invalid(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
 
@@ -887,7 +869,7 @@ class TestOtherOperators(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Cannot perform binary operation on arrays with different indices.")              
 
-    def testBinaryOperator_term(self):
+    def test_binary_operator_term(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
 
@@ -897,7 +879,7 @@ class TestOtherOperators(unittest.TestCase):
 
         self.assertIsNone(operator.term())
 
-    def testUnaryOperator_term(self):
+    def test_unary_operator_term(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
 
@@ -907,7 +889,7 @@ class TestOtherOperators(unittest.TestCase):
 
         self.assertEqual(operator.term(1),element.term(1))
 
-    def testComparisonOperator_resolve_dimension(self):
+    def test_comparison_operator_resolve_dimension(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
 
@@ -916,7 +898,7 @@ class TestOtherOperators(unittest.TestCase):
 
         self.assertEqual(operator.resolve_dimensions(),-1)
 
-    def testArrayNumericalMultiplicationOperator_clone_with_index(self):
+    def test_array_numerical_multiplication_operator_clone_with_index(self):
         # A clone addresses the sub-elements, not the parents: it has to be a scalar
         # expression in every rendering, because the JSON serializer has no parent
         # entity to refer to.
@@ -940,9 +922,6 @@ class TestOtherOperators(unittest.TestCase):
         self.assertFalse(copy.arrayed)
 
 class TestDotOperator(unittest.TestCase):
-    def setUp(self):
-        pass    
-
     def test_init_invalid(self):
         from BPTK_Py import Model
         model = Model(starttime=1, stoptime=1, dt=1, name='test')
@@ -1264,10 +1243,6 @@ class TestOperatorArrayedCoverage(unittest.TestCase):
         self.assertIn("else 0.0", term)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class TestGenericArrayProtocol(unittest.TestCase):
     """The array protocol that Operator implements once, over its recorded operands.
 
@@ -1477,4 +1452,3 @@ class TestNaryOperatorRendersItsArgumentsAtTheTimeAsked(unittest.TestCase):
 
         self.assertEqual([direct(t) for t in range(5)],
                          [through_function(t) for t in range(5)])
-

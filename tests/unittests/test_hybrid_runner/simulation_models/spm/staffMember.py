@@ -47,7 +47,3 @@ class StaffMember(Agent):
                 if self.task.state == "closed":
                     self.state = "available"
                     self.task = None
-
-
-
-

@@ -63,7 +63,9 @@ class AgentDataCollector(DataCollector):
                 all_dfs[agent_type][agent_id] = df_agent
         return all_dfs
 
-    def plot_agent_stats(self, agent_ids=[], properties=[], title="Base", agent_type=""):
+    def plot_agent_stats(self, agent_ids=None, properties=None, title="Base", agent_type=""):
+        agent_ids = [] if agent_ids is None else agent_ids
+        properties = [] if properties is None else properties
         df_plot = pd.DataFrame()
         agent_stats = self.get_agent_stats()
         for agent_id in agent_ids:

@@ -170,7 +170,3 @@ class TestStartOrSkip(unittest.TestCase):
         message = logged.call_args[0][0]
         self.assertIn("[WARN]", message)
         self.assertIn("scenario file monitoring", message)
-
-
-if __name__ == "__main__":
-    unittest.main()

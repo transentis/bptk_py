@@ -164,12 +164,76 @@ pub enum BuiltinFn {
     Lookup(String), // graphical function table name
 }
 
+/// The number of timesteps a run over these specs has, starttime and stoptime included,
+/// or why the specs cannot run at all.
+///
+/// Checked where specs come in - the model JSON and `set_runspecs` - so that a dt of 0 is
+/// named there instead of turning into a step count too large to allocate.
+pub fn num_steps_for(starttime: f64, stoptime: f64, dt: f64) -> Result<usize, String> {
+    if !(starttime.is_finite() && stoptime.is_finite() && dt.is_finite()) {
+        return Err(format!(
+            "Invalid run specs: starttime, stoptime and dt must be finite numbers \
+             (starttime={:?}, stoptime={:?}, dt={:?})",
+            starttime, stoptime, dt
+        ));
+    }
+    if dt <= 0.0 {
+        return Err(format!("Invalid run specs: dt must be positive (dt={:?})", dt));
+    }
+    if stoptime < starttime {
+        return Err(format!(
+            "Invalid run specs: stoptime must not be before starttime \
+             (starttime={:?}, stoptime={:?})",
+            starttime, stoptime
+        ));
+    }
+    let steps = ((stoptime - starttime) / dt).round();
+    // One f64 per entity and step: beyond this the memo table cannot even be addressed.
+    if steps >= (isize::MAX as f64) / 8.0 {
+        return Err(format!(
+            "Invalid run specs: {:?} timesteps from starttime={:?} to stoptime={:?} with \
+             dt={:?} are more than a run can hold",
+            steps, starttime, stoptime, dt
+        ));
+    }
+    Ok(steps as usize + 1)
+}
+
+/// The points of a lookup table in the order interpolation needs, or why they are no table.
+///
+/// Sorted by x, because the order a list was written in carries no meaning and the
+/// interpolation reads the first point as the left edge. Two points at the same x are
+/// refused: the table would have two values there, and the engines used to pick different
+/// ones. The same rule holds on the Python side (`BPTK_Py/util/lookup_data.py`).
+pub fn sorted_points(name: &str, mut points: Vec<(f64, f64)>) -> Result<Vec<(f64, f64)>, String> {
+    if points.is_empty() {
+        return Err(format!("Lookup table '{}' has no points", name));
+    }
+    if let Some(&(x, _)) = points.iter().find(|(x, _)| !x.is_finite()) {
+        return Err(format!("Lookup table '{}' has a point at x={:?}; x must be a finite number", name, x));
+    }
+    points.sort_by(|a, b| a.0.total_cmp(&b.0));
+    if let Some(pair) = points.windows(2).find(|pair| pair[0].0 == pair[1].0) {
+        return Err(format!("Lookup table '{}' has two points at x={:?}", name, pair[0].0));
+    }
+    Ok(points)
+}
+
 #[derive(Debug, Clone)]
 pub struct GraphicalFunction {
     pub points: Vec<(f64, f64)>, // sorted by x
 }
 
 impl SdModel {
+    /// The time of a step, on the grid the Python engine uses: `starttime + step * dt`
+    /// rounded to ten decimals. Unrounded, dt = 0.3 gives 0.8999999999999999 for the
+    /// fourth step, and a comparison with 0.9 - `step`, `pulse`, an `If` on the time -
+    /// switches one step later than the Python engine does.
+    pub fn time_at(&self, step: usize) -> f64 {
+        let t = self.starttime + step as f64 * self.dt;
+        (t * 1e10).round() / 1e10
+    }
+
     /// Override a constant's equation to a new literal value.
     pub fn set_constant(&mut self, name: &str, value: f64) -> Result<(), String> {
         let idx = self
@@ -180,20 +244,22 @@ impl SdModel {
         Ok(())
     }
 
-    /// Override the simulation run specifications.
-    pub fn set_runspecs(&mut self, starttime: f64, stoptime: f64, dt: f64) {
+    /// Override the simulation run specifications, refusing specs that cannot run.
+    pub fn set_runspecs(&mut self, starttime: f64, stoptime: f64, dt: f64) -> Result<(), String> {
+        num_steps_for(starttime, stoptime, dt)?;
         self.starttime = starttime;
         self.stoptime = stoptime;
         self.dt = dt;
+        Ok(())
     }
 
-    /// Replace the points of a graphical function.
+    /// Replace the points of a graphical function, sorted by x.
     pub fn set_points(&mut self, name: &str, points: Vec<(f64, f64)>) -> Result<(), String> {
         let gf = self
             .graphical_functions
             .get_mut(name)
             .ok_or_else(|| format!("Unknown graphical function: '{}'", name))?;
-        gf.points = points;
+        gf.points = sorted_points(name, points)?;
         Ok(())
     }
 }

@@ -1,23 +1,8 @@
-use std::collections::HashMap;
+mod common;
 
 use bptk_rust_engine::model::*;
 use bptk_rust_engine::state::SimulationState;
-
-fn model_with_specs(starttime: f64, stoptime: f64, dt: f64) -> SdModel {
-    SdModel {
-        name: String::new(),
-        starttime,
-        stoptime,
-        dt,
-        entities: Vec::new(),
-        entity_index: HashMap::new(),
-        graphical_functions: HashMap::new(),
-        eval_order: Vec::new(),
-        callback_names: Vec::new(),
-        #[cfg(feature = "python")]
-        callbacks: Vec::new(),
-    }
-}
+use common::model_with_specs;
 
 // ── Temporal functions ──────────────────────────────────────────────────
 
@@ -265,12 +250,12 @@ fn test_step_function() {
         args: vec![Expr::Literal(100.0), Expr::Literal(5.0)],
     };
 
-    // t=0..5: should be 0 (t is not > 5)
-    for step in 0..=5 {
+    // t=0..4: should be 0 (t < 5)
+    for step in 0..=4 {
         assert_eq!(model.eval_expr(&expr, &state, step), 0.0, "step={}", step);
     }
-    // t=6..10: should be 100 (t > 5)
-    for step in 6..=10 {
+    // t=5..10: should be 100 - from the timestep on, as XMILE's STEP does
+    for step in 5..=10 {
         assert_eq!(model.eval_expr(&expr, &state, step), 100.0, "step={}", step);
     }
 }
@@ -1122,4 +1107,137 @@ fn test_arr_rank_edge_cases() {
         args: vec![Expr::Literal(1.0)],
     };
     assert_eq!(model.eval_expr(&expr, &state, 0), 0.0);
+}
+
+// ── Invalid arguments ───────────────────────────────────────────────────
+//
+// A builtin that is given arguments it does not accept answers NaN and records where, for
+// the Python side to report. A NaN argument answers NaN and records nothing, and nothing
+// here may panic, whatever the arguments.
+
+fn call(function: BuiltinFn, args: &[f64]) -> Expr {
+    Expr::Call {
+        function,
+        args: args.iter().map(|&v| Expr::Literal(v)).collect(),
+    }
+}
+
+#[test]
+fn test_an_invalid_argument_is_nan_and_recorded_for_the_entity_being_evaluated() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(3, 11, Some(1));
+    state.set_current_entity(2);
+    let value = model.eval_expr(&call(BuiltinFn::Random, &[5.0, 1.0]), &state, 4);
+    assert!(value.is_nan());
+    let recorded = state.take_invalid();
+    assert_eq!(recorded.len(), 1);
+    assert_eq!(recorded[0].entity, 2);
+    assert_eq!(recorded[0].builtin, "uniform");
+    assert_eq!(recorded[0].step, 4);
+    assert_eq!(recorded[0].values, vec![5.0, 1.0]);
+}
+
+#[test]
+fn test_an_entity_is_recorded_once_per_run() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(2, 11, Some(1));
+    state.set_current_entity(0);
+    for step in 0..5 {
+        model.eval_expr(&call(BuiltinFn::Geometric, &[0.0]), &state, step);
+    }
+    assert_eq!(state.take_invalid().len(), 1);
+    // Taken is not forgotten: a later step does not record the same entity again.
+    model.eval_expr(&call(BuiltinFn::Geometric, &[0.0]), &state, 6);
+    assert!(state.take_invalid().is_empty());
+    // Another entity is recorded on its own.
+    state.set_current_entity(1);
+    model.eval_expr(&call(BuiltinFn::Poisson, &[-1.0]), &state, 6);
+    assert_eq!(state.take_invalid().len(), 1);
+}
+
+#[test]
+fn test_a_nan_argument_is_nan_without_a_record() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(1, 11, Some(1));
+    let nan = f64::NAN;
+    let calls = [
+        call(BuiltinFn::Random, &[nan, 1.0]),
+        call(BuiltinFn::Normal, &[10.0, nan]),
+        call(BuiltinFn::Beta, &[nan, 1.0]),
+        call(BuiltinFn::Binomial, &[10.0, nan]),
+        call(BuiltinFn::NegBinomial, &[5.0, nan]),
+        call(BuiltinFn::Exprnd, &[nan]),
+        call(BuiltinFn::GammaDist, &[nan, 1.0]),
+        call(BuiltinFn::Geometric, &[nan]),
+        call(BuiltinFn::Lognormal, &[0.0, nan]),
+        call(BuiltinFn::Logistic, &[0.0, nan]),
+        call(BuiltinFn::Poisson, &[nan]),
+        call(BuiltinFn::Triangular, &[0.0, nan, 1.0]),
+        call(BuiltinFn::Weibull, &[nan, 1.0]),
+        call(BuiltinFn::Pareto, &[nan, 1.0]),
+        call(BuiltinFn::Invnorm, &[nan, 0.0, 1.0]),
+        call(BuiltinFn::NormalCDF, &[0.0, 1.0, 0.0, nan]),
+    ];
+    for expr in &calls {
+        assert!(model.eval_expr(expr, &state, 0).is_nan(), "{:?}", expr);
+    }
+    assert!(state.take_invalid().is_empty());
+}
+
+#[test]
+fn test_an_infinite_argument_is_nan_without_a_record() {
+    // Infinity comes from upstream like NaN - a division by zero, an overflow. Poisson
+    // used to never return for it.
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(1, 11, Some(1));
+    let inf = f64::INFINITY;
+    for expr in [
+        call(BuiltinFn::Random, &[0.0, inf]),
+        call(BuiltinFn::Normal, &[0.0, inf]),
+        call(BuiltinFn::Beta, &[inf, 1.0]),
+        call(BuiltinFn::Binomial, &[inf, 0.5]),
+        call(BuiltinFn::NegBinomial, &[inf, 0.5]),
+        call(BuiltinFn::GammaDist, &[inf, 1.0]),
+        call(BuiltinFn::Lognormal, &[inf, 1.0]),
+        call(BuiltinFn::Poisson, &[inf]),
+        call(BuiltinFn::Triangular, &[0.0, 1.0, inf]),
+        call(BuiltinFn::Weibull, &[inf, 1.0]),
+        call(BuiltinFn::Pareto, &[inf, 1.0]),
+        call(BuiltinFn::Invnorm, &[0.5, -inf, 1.0]),
+        call(BuiltinFn::NormalCDF, &[0.0, 1.0, 0.0, inf]),
+    ] {
+        assert!(model.eval_expr(&expr, &state, 0).is_nan(), "{:?}", expr);
+    }
+    assert!(state.take_invalid().is_empty());
+}
+
+#[test]
+fn test_a_count_too_large_to_draw_is_an_invalid_argument() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    for expr in [
+        call(BuiltinFn::Poisson, &[1e300]),
+        call(BuiltinFn::Binomial, &[1e300, 0.5]),
+        call(BuiltinFn::NegBinomial, &[1e300, 0.5]),
+    ] {
+        let state = SimulationState::new(1, 11, Some(1));
+        assert!(model.eval_expr(&expr, &state, 0).is_nan(), "{:?}", expr);
+        assert_eq!(state.take_invalid().len(), 1, "{:?}", expr);
+    }
+}
+
+#[test]
+fn test_negbinomial_takes_no_longer_for_a_large_n() {
+    // Drawn as a Gamma-Poisson mixture: a large n is one draw, not n of them.
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(1, 11, Some(1));
+    let value = model.eval_expr(&call(BuiltinFn::NegBinomial, &[1e12, 0.5]), &state, 0);
+    assert!(value.is_finite() && value > 0.0, "{}", value);
+}
+
+#[test]
+fn test_invnorm_takes_mean_and_stddev_by_position() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(1, 11, None);
+    let value = model.eval_expr(&call(BuiltinFn::Invnorm, &[0.9, 0.0, 2.0]), &state, 0);
+    assert!((value - 2.0 * 1.2815515655446004).abs() < 1e-12, "{}", value);
 }

@@ -13,5 +13,3 @@ class Controlling(Agent):
     def act(self,time, round_no, step_no):
         self.productivity = self.model.productivity
         self.schedule_pressure = self.model.schedule_pressure
-
-

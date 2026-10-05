@@ -44,16 +44,11 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
     plt.rcParams['savefig.facecolor'] = 'white'
 
-    # How many columns a printed dataframe shows depends on `display.width`, and pandas
-    # guesses it from the terminal. There is no terminal in either place here, and the two
-    # guessed differently: the pre-rendered output on this page showed fewer columns than
-    # the same cell produced when the reader pressed play. Pinned, so both agree.
     import pandas as pd
 
     pd.set_option("display.width", 100)
@@ -88,9 +83,6 @@ def _(mo):
 
 @app.cell
 def _(df, mo):
-    # marimo sends a cell's stdout to the console rather than to its output area.
-    # Captured and handed to `mo.plain_text` it comes back as one block, laid out
-    # the way `print` wrote it.
     with mo.capture_stdout() as output:
         print("***************************")
         print("Properties of the dataFrame")
@@ -126,9 +118,6 @@ def _(df, mo):
     by_year = df["2018-01":"2018-06"]
 
     with mo.capture_stdout() as output_1:
-        # The blank lines belong to the labels rather than being printed on their own:
-        # a bare `print("")` survives into the live output and gets swallowed on the way
-        # into the pre-rendered page, so the two differed by two empty lines.
         print("BY INDEX")
         print(by_index)
 

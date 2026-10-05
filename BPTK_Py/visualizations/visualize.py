@@ -157,10 +157,21 @@ def bptk_style(matplotlib_rc_settings=None, config=None):
     """
     import matplotlib.pyplot as plt
 
+    from BPTK_Py.config import config as default_config
+
     config = config if config is not None else plotting_config
     settings = config.matplotlib_rc_settings
     if matplotlib_rc_settings:
         settings = {**settings, **matplotlib_rc_settings}
+
+    # The default title size is chosen for the default figure width, so a narrower
+    # figure would cut its title off at both ends. A size somebody set is left alone.
+    defaults = default_config.matplotlib_rc_settings
+    if settings.get("axes.titlesize") == defaults["axes.titlesize"] and \
+            "axes.titlesize" not in (matplotlib_rc_settings or {}):
+        width = config.resolved(matplotlib_rc_settings)["figsize"][0]
+        settings = {**settings,
+                    "axes.titlesize": defaults["axes.titlesize"] * width / defaults["figure.figsize"][0]}
 
     with plt.rc_context(settings):
         yield

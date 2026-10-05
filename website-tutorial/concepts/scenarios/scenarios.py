@@ -156,10 +156,6 @@ def _(mo, plt):
         scenario_manager="smSimpleProject_temp", scenarios=scenario_dictionary
     )
 
-    # Registering, listing and plotting belong in one cell. `register_scenarios`
-    # returns nothing, so a separate cell below would depend on the name `bptk`
-    # rather than on the registration — and running it on its own would find a
-    # scenario manager that does not exist yet.
     with mo.capture_stdout() as output:
         bptk.list_scenarios(scenario_managers=["smSimpleProject_temp"])
     mo.vstack([

@@ -30,6 +30,10 @@ def _(mo):
     This is an implementation of the Bass Diffusion model as an agent-based model using the
     BPTK-Py framework. It simulates 10,000 individual customers over 60 timesteps, so the
     chart below is computed when this page is built rather than in your browser.
+
+    The [Quickstart](../../quickstart/quickstart.md) builds the same model four times over -
+    with the SD DSL, as an agent-based model, as a hybrid of the two and in XMILE - and
+    explains each of them.
     """)
     return
 

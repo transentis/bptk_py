@@ -851,7 +851,10 @@ builtins = {
 
     'tan': lambda body: 'math.tan(' + parseExpression(body) + ')',
 
-    'round': lambda body: 'round(' + parseExpression(body) + ')',
+    # Half away from zero, as the SD DSL rounds - not Python's round(), which rounds half
+    # to even. Inline rather than a runtime helper: a helper would change every model's
+    # copy of the runtime
+    'round': lambda body: '(lambda v, d=0: math.copysign(math.floor(abs(v) * 10.0 ** d) + (1.0 if abs(v) * 10.0 ** d - math.floor(abs(v) * 10.0 ** d) >= 0.5 else 0.0), v) / 10.0 ** d)(' + parseExpression(body) + ')',
 
     'arccos' : lambda body: 'np.arccos(' + parseExpression(body) + ')',
 

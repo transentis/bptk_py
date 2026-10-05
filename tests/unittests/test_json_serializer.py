@@ -7,12 +7,17 @@ no else branch, and ``delay()`` without an initial value.
 """
 
 import json
+import threading
 import unittest
+import unittest.mock
+
+import pytest
 
 from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
 from BPTK_Py.sddsl import operators as ops
 from BPTK_Py.sddsl.json_serializer import _expr_to_json, model_to_json
+from tests.helpers.engine_json import add, lit, mul, ref
 
 
 class TestJsonSerializerEdgeCases(unittest.TestCase):
@@ -94,20 +99,8 @@ class TestJsonSerializerEdgeCases(unittest.TestCase):
 
 
 
-def ref(name):
-    return {"type": "ref", "name": name}
 
 
-def lit(value):
-    return {"type": "literal", "value": value}
-
-
-def mul(left, right):
-    return {"type": "binary_op", "op": "mul", "left": left, "right": right}
-
-
-def add(left, right):
-    return {"type": "binary_op", "op": "add", "left": left, "right": right}
 
 
 class TestArrayedSerialization(unittest.TestCase):
@@ -511,5 +504,104 @@ class TestCustomFunctionSerialization(unittest.TestCase):
         self.assertIsNone(json_serializer._current_model)
 
 
-if __name__ == "__main__":
-    unittest.main()
+def _model_with_inline_lookup(name, points):
+    model = Model(starttime=0, stoptime=2, dt=1, name=name)
+    source = model.converter("source")
+    source.equation = 1.0
+    out = model.converter("out")
+    out.equation = sd.lookup(source, points)
+    return model
+
+
+@pytest.mark.requires_threads
+def test_concurrent_serializations_do_not_interleave():
+    """The serialization state is module-wide, so a second thread waits until the first
+    is done. Without that, B's reset would empty A's inline tables half way through."""
+    from BPTK_Py.sddsl import json_serializer
+
+    first = _model_with_inline_lookup("first", [[0, 0], [1, 10]])
+    second = _model_with_inline_lookup("second", [[0, 0], [1, 20]])
+    expected = {"first": model_to_json(first), "second": model_to_json(second)}
+
+    inside, release = threading.Event(), threading.Event()
+    body = json_serializer._model_to_json
+
+    def paused_body(model):
+        if model is first:
+            inside.set()
+            release.wait(timeout=5)
+        return body(model)
+
+    results = {}
+    run = lambda model: results.__setitem__(model.name, model_to_json(model))
+    with unittest.mock.patch.object(json_serializer, "_model_to_json", paused_body):
+        thread_first = threading.Thread(target=run, args=(first,))
+        thread_first.start()
+        assert inside.wait(timeout=5)
+
+        thread_second = threading.Thread(target=run, args=(second,))
+        thread_second.start()
+        thread_second.join(timeout=0.2)
+        # The second one is held at the lock while the first is inside
+        assert thread_second.is_alive()
+
+        release.set()
+        thread_first.join(timeout=5)
+        thread_second.join(timeout=5)
+
+    assert results == expected
+
+
+# Operators the serializer renders with code of their own rather than from one of its
+# tables. A new operator class has to land in a table or here.
+_RENDERED_BY_CODE = {
+    "UnaryOperator", "ArrayRankOperator", "ArraySizeOperator", "DotOperator",
+    "ComparisonOperator", "If", "Not", "Lookup", "Smooth", "Trend", "Delay", "Invnorm",
+    "NaryOperator",
+}
+
+
+def _concrete_operator_classes():
+    """The operator classes of `operators.py` that an expression can hold: the ones no
+    other class derives from, and `UnaryOperator`, which is a base and also the wrapper
+    the DSL puts around a plain number."""
+    classes = {name: cls for name, cls in vars(ops).items()
+               if isinstance(cls, type) and issubclass(cls, ops.Operator)
+               and cls.__module__ == ops.__name__}
+    bases = {base for cls in classes.values() for base in cls.__mro__[1:]}
+    return {name for name, cls in classes.items() if cls not in bases} | {"UnaryOperator"}
+
+
+def _tabled_operators():
+    from BPTK_Py.sddsl import json_serializer as js
+    return {entry[0].__name__ for table in (js._AGGREGATIONS, js._BINARY_OPERATORS, js._CALLS)
+            for entry in table}
+
+
+def test_every_operator_has_a_rendering_for_the_engine():
+    """An operator missing from the serializer used to show only when a model used it,
+    as a RustBackendError. This finds it when it is added."""
+    missing = _concrete_operator_classes() - _tabled_operators() - _RENDERED_BY_CODE
+    assert missing == set(), "no JSON rendering: {}".format(sorted(missing))
+
+
+def test_the_list_of_operators_rendered_by_code_names_only_real_ones():
+    stale = (_RENDERED_BY_CODE | _tabled_operators()) - _concrete_operator_classes()
+    assert stale == set(), "not an operator class any more: {}".format(sorted(stale))
+
+
+def test_every_builtin_the_serializer_writes_is_one_the_engine_reads():
+    """The second and third renderings of an operator have to agree on its name; a
+    misspelt one loads as an unknown function."""
+    import re
+    from pathlib import Path
+    from BPTK_Py.sddsl import json_serializer as js
+
+    parser = Path(__file__).resolve().parents[2] / "src" / "json_parser.rs"
+    if not parser.exists():
+        pytest.skip("the Rust sources are not part of this checkout")
+    known = set(re.findall(r'^\s*"(\w+)" => Ok\(', parser.read_text(), re.MULTILINE))
+
+    written = ({entry[1] for entry in js._AGGREGATIONS + js._BINARY_OPERATORS + js._CALLS}
+               | {"arr_rank", "neg", "not", "delay", "invnorm"} | set(js._COMPARISON_SIGN_MAP.values()))
+    assert written - known == set()

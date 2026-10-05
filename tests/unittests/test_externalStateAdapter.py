@@ -1,7 +1,11 @@
 """
-Tests for external state adapters including PostgresAdapter and RedisAdapter.
-These tests verify the core functionality of state persistence and retrieval.
+Tests for the external state adapters: the base class `ExternalStateAdapter` on its own,
+and the contract every adapter - file, PostgreSQL, Redis - fulfils, against live services
+where they are configured (see tests/README_external_state_tests.md).
 """
+
+import importlib
+from unittest.mock import patch
 
 import pytest
 import unittest
@@ -9,15 +13,14 @@ import datetime
 import uuid
 from abc import ABC, abstractmethod
 
-from BPTK_Py.externalstateadapter.postgres_adapter import PostgresAdapter
-from BPTK_Py.externalstateadapter.redis_adapter import RedisAdapter
 from BPTK_Py.externalstateadapter.externalStateAdapter import ExternalStateAdapter
 from BPTK_Py.externalstateadapter.file_adapter import FileAdapter
 from BPTK_Py.externalstateadapter import InstanceState
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from test_config import TestConfig, requires_postgres, requires_redis
+import BPTK_Py.logger.logger as logmod
+from tests.helpers.external_state_config import TestConfig, requires_postgres, requires_redis
+from tests.helpers.log_helpers import clear_log, read_log
 
 @pytest.fixture(params=[True, False], ids=["compress_true", "compress_false"])
 def compress(request):
@@ -315,181 +318,175 @@ def temp_dir():
 class TestExternalStateConsistency:
     """Test that externalize_state_completely produces consistent results"""
 
-    def test_externalize_state_completely_consistency(self, externalize_state_completely, temp_dir):
+    def test_externalize_state_completely_consistency(self, externalize_state_completely, temp_dir, monkeypatch):
         """Test that externalize_state_completely=True produces same results as False"""
-        try:
-            from BPTK_Py import bptk
+        from BPTK_Py import bptk
 
-            # Add the test_factory_sd_runner path to import the test model
-            test_model_path = os.path.join(os.path.dirname(__file__), 'test_factory_sd_runner')
-            if test_model_path not in sys.path:
-                sys.path.insert(0, test_model_path)
+        # Add the test_factory_sd_runner path to import the test model
+        monkeypatch.syspath_prepend(os.path.join(os.path.dirname(__file__), 'test_factory_sd_runner'))
 
-            # Import and create the test model
-            from simulation_models.simulation_model import simulation_model
-            test_model = simulation_model()
+        # Import and create the test model
+        from simulation_models.simulation_model import simulation_model
+        test_model = simulation_model()
 
-            print(f"Using test model: {test_model.name}")
-            print(f"Model stocks: {list(test_model.stocks.keys())}")
-            print(f"Model flows: {list(test_model.flows.keys())}")
-            print(f"Model constants: {list(test_model.constants.keys())}")
+        print(f"Using test model: {test_model.name}")
+        print(f"Model stocks: {list(test_model.stocks.keys())}")
+        print(f"Model flows: {list(test_model.flows.keys())}")
+        print(f"Model constants: {list(test_model.constants.keys())}")
 
-            # Create BPTK instance and register the test model
-            bptk_instance = bptk()
+        # Create BPTK instance and register the test model
+        bptk_instance = bptk()
 
-            # Register the test model as a scenario manager
-            scenario_manager_name = "test_sm"
-            scenario_name = "test_scenario"
+        # Register the test model as a scenario manager
+        scenario_manager_name = "test_sm"
+        scenario_name = "test_scenario"
 
-            bptk_instance.register_model(
-                model=test_model,
-                scenario_manager=scenario_manager_name,
-                scenario={scenario_name: {}}
-            )
+        bptk_instance.register_model(
+            model=test_model,
+            scenario_manager=scenario_manager_name,
+            scenario={scenario_name: {}}
+        )
 
-            # Define equations to test - use stocks and flows from the test model
-            test_equations = ["totalValue", "interest", "deposit"]
-            print(f"Using equations for testing: {test_equations}")
+        # Define equations to test - use stocks and flows from the test model
+        test_equations = ["totalValue", "interest", "deposit"]
+        print(f"Using equations for testing: {test_equations}")
 
-            # Create file adapter for external state
-            file_adapter = FileAdapter(compress=externalize_state_completely, path=temp_dir)
+        # Create file adapter for external state
+        file_adapter = FileAdapter(compress=externalize_state_completely, path=temp_dir)
 
-            # Test results without external state
-            bptk_instance.begin_session(
-                scenarios=[scenario_name],
-                scenario_managers=[scenario_manager_name],
-                equations=test_equations,
-                starttime=1.0,
-                dt=1.0
-            )
+        # Test results without external state
+        bptk_instance.begin_session(
+            scenarios=[scenario_name],
+            scenario_managers=[scenario_manager_name],
+            equations=test_equations,
+            starttime=1.0,
+            dt=1.0
+        )
 
-            # Run a few steps
-            step_count = 3
-            results_internal = []
-            for i in range(step_count):
-                result = bptk_instance.run_step()
-                if result and not isinstance(result, dict) or "msg" in (result or {}):
-                    break  # Stop if we hit end time or error
-                results_internal.append(result)
+        # Run a few steps
+        step_count = 3
+        results_internal = []
+        for i in range(step_count):
+            result = bptk_instance.run_step()
+            if result and not isinstance(result, dict) or "msg" in (result or {}):
+                break  # Stop if we hit end time or error
+            results_internal.append(result)
 
-            internal_session_results = bptk_instance.session_results(index_by_time=True)
-            bptk_instance.end_session()
+        assert len(results_internal) == step_count, "the model runs the steps asked for"
+        internal_session_results = bptk_instance.session_results(index_by_time=True)
+        bptk_instance.end_session()
 
-            # Test results with external state - simulate externalize_state_completely behavior
-            # Create a second BPTK instance and register the same model
-            bptk_external = bptk()
-            bptk_external.register_model(
-                model=test_model,
-                scenario_manager=scenario_manager_name,
-                scenario={scenario_name: {}}
-            )
+        # Test results with external state - simulate externalize_state_completely behavior
+        # Create a second BPTK instance and register the same model
+        bptk_external = bptk()
+        bptk_external.register_model(
+            model=test_model,
+            scenario_manager=scenario_manager_name,
+            scenario={scenario_name: {}}
+        )
 
-            # Begin session with external state
-            bptk_external.begin_session(
-                scenarios=[scenario_name],
-                scenario_managers=[scenario_manager_name],
-                equations=test_equations,
-                starttime=1.0,
-                dt=1.0
-            )
+        # Begin session with external state
+        bptk_external.begin_session(
+            scenarios=[scenario_name],
+            scenario_managers=[scenario_manager_name],
+            equations=test_equations,
+            starttime=1.0,
+            dt=1.0
+        )
 
-            # Test external state adapter directly by saving/loading state
-            instance_state = InstanceState(
-                state=bptk_external.session_state,
-                instance_id="test_instance",
-                time=datetime.datetime.now(),
-                timeout={"minutes": 15},
-                step=bptk_external.session_state["step"] if bptk_external.session_state else 1
-            )
+        # Test external state adapter directly by saving/loading state
+        instance_state = InstanceState(
+            state=bptk_external.session_state,
+            instance_id="test_instance",
+            time=datetime.datetime.now(),
+            timeout={"minutes": 15},
+            step=bptk_external.session_state["step"] if bptk_external.session_state else 1
+        )
 
-            # Save state to external adapter
-            file_adapter.save_instance(instance_state)
+        # Save state to external adapter
+        file_adapter.save_instance(instance_state)
 
-            # Run same number of steps while saving/loading state each time
-            results_external = []
-            for i in range(step_count):
-                # Load state from external adapter
-                loaded_state = file_adapter.load_instance("test_instance")
-                
+        # Run same number of steps while saving/loading state each time
+        results_external = []
+        for i in range(step_count):
+            # Load state from external adapter
+            # Continue from the loaded state, as a stateless server does
+            loaded_state = file_adapter.load_instance("test_instance")
+            bptk_external._set_state(loaded_state.state)
 
-                result = bptk_external.run_step()
-                if result and isinstance(result, dict) and "msg" in result:
-                    break  # Stop if we hit end time or error
-                results_external.append(result)
+            result = bptk_external.run_step()
+            if result and isinstance(result, dict) and "msg" in result:
+                break  # Stop if we hit end time or error
+            results_external.append(result)
 
-                # Save updated state back to external adapter
-                if bptk_external.session_state:
-                    updated_instance_state = InstanceState(
-                        state=bptk_external.session_state,
-                        instance_id="test_instance",
-                        time=datetime.datetime.now(),
-                        timeout={"minutes": 15},
-                        step=bptk_external.session_state["step"]
-                    )
-                    file_adapter.save_instance(updated_instance_state)
+            # Save updated state back to external adapter
+            if bptk_external.session_state:
+                updated_instance_state = InstanceState(
+                    state=bptk_external.session_state,
+                    instance_id="test_instance",
+                    time=datetime.datetime.now(),
+                    timeout={"minutes": 15},
+                    step=bptk_external.session_state["step"]
+                )
+                file_adapter.save_instance(updated_instance_state)
 
-            external_session_results = bptk_external.session_results(index_by_time=True)
-            bptk_external.end_session()
+        external_session_results = bptk_external.session_results(index_by_time=True)
+        bptk_external.end_session()
 
-            # Compare results
-            assert len(results_internal) == len(results_external), \
-                "Should have same number of step results"
+        # Compare results
+        assert len(results_internal) == len(results_external), \
+            "Should have same number of step results"
 
-            # Compare step-by-step results (allowing for small floating point differences)
-            for i, (internal, external) in enumerate(zip(results_internal, results_external)):
-                # Remove subTest and use direct assertions
-                assert internal is not None, f"Internal result at step {i+1} should not be None"
-                assert external is not None, f"External result at step {i+1} should not be None"
+        # Compare step-by-step results (allowing for small floating point differences)
+        for i, (internal, external) in enumerate(zip(results_internal, results_external)):
+            # Remove subTest and use direct assertions
+            assert internal is not None, f"Internal result at step {i+1} should not be None"
+            assert external is not None, f"External result at step {i+1} should not be None"
 
-                # Compare structure
-                assert set(internal.keys()) == set(external.keys()), \
-                    f"Step {i+1}: Manager keys should match"
+            # Compare structure
+            assert set(internal.keys()) == set(external.keys()), \
+                f"Step {i+1}: Manager keys should match"
 
-                for manager_key in internal.keys():
-                    assert set(internal[manager_key].keys()) == set(external[manager_key].keys()), \
-                        f"Step {i+1}: Scenario keys should match for manager {manager_key}"
+            for manager_key in internal.keys():
+                assert set(internal[manager_key].keys()) == set(external[manager_key].keys()), \
+                    f"Step {i+1}: Scenario keys should match for manager {manager_key}"
 
-                    for scenario_key in internal[manager_key].keys():
-                        internal_equations = internal[manager_key][scenario_key]
-                        external_equations = external[manager_key][scenario_key]
+                for scenario_key in internal[manager_key].keys():
+                    internal_equations = internal[manager_key][scenario_key]
+                    external_equations = external[manager_key][scenario_key]
 
-                        assert set(internal_equations.keys()) == set(external_equations.keys()), \
-                            f"Step {i+1}: Equation keys should match for {scenario_manager_name}.{scenario_name}"
+                    assert set(internal_equations.keys()) == set(external_equations.keys()), \
+                        f"Step {i+1}: Equation keys should match for {scenario_manager_name}.{scenario_name}"
 
-                        # Compare equation values (allowing small float differences)
-                        for eq_key in internal_equations.keys():
-                            internal_val = internal_equations[eq_key]
-                            external_val = external_equations[eq_key]
+                    # Compare equation values (allowing small float differences)
+                    for eq_key in internal_equations.keys():
+                        internal_val = internal_equations[eq_key]
+                        external_val = external_equations[eq_key]
 
-                            # Handle nested time-step structure
-                            if isinstance(internal_val, dict) and isinstance(external_val, dict):
-                                for time_key in internal_val.keys():
-                                    if time_key in external_val:
-                                        internal_time_val = internal_val[time_key]
-                                        external_time_val = external_val[time_key]
+                        # Handle nested time-step structure
+                        if isinstance(internal_val, dict) and isinstance(external_val, dict):
+                            for time_key in internal_val.keys():
+                                if time_key in external_val:
+                                    internal_time_val = internal_val[time_key]
+                                    external_time_val = external_val[time_key]
 
-                                        if isinstance(internal_time_val, (int, float)) and \
-                                           isinstance(external_time_val, (int, float)):
-                                            assert abs(internal_time_val - external_time_val) < 1e-10, \
-                                                f"Step {i+1}: Values should match for {eq_key} at time {time_key}"
+                                    if isinstance(internal_time_val, (int, float)) and \
+                                       isinstance(external_time_val, (int, float)):
+                                        assert abs(internal_time_val - external_time_val) < 1e-10, \
+                                            f"Step {i+1}: Values should match for {eq_key} at time {time_key}"
 
-            # Test that session results are also consistent
-            if internal_session_results and external_session_results:
-                internal_results = internal_session_results
-                external_results = external_session_results
+        # Test that session results are also consistent
+        if internal_session_results and external_session_results:
+            internal_results = internal_session_results
+            external_results = external_session_results
 
-                # Basic structural comparison
-                assert set(internal_results.keys()) == set(external_results.keys()), \
-                    "Session results should have same time steps"
+            # Basic structural comparison
+            # The same keys, and of the same type: the steps before a save used to come
+            # back from the adapter's JSON as strings, the step after it as a float
+            assert set(internal_results.keys()) == set(external_results.keys()), \
+                "Session results should have same time steps"
 
-                print(f"✓ External state consistency test passed for {len(results_internal)} steps")
-
-        except ImportError as e:
-            self.skipTest(f"Required dependencies not available: {e}")
-        except Exception as e:
-            # Log the exception for debugging but don't fail the test suite
-            print(f"Note: External state consistency test encountered an issue: {e}")
-            print("This may be due to test environment setup - skipping consistency check")
+            print(f"✓ External state consistency test passed for {len(results_internal)} steps")
 
 
 @requires_redis
@@ -624,5 +621,107 @@ class TestExternalStateAdapterOptionalImports(unittest.TestCase):
             self._restore_package()
 
 
-if __name__ == '__main__':
-    unittest.main()
+# ── The base class on its own ───────────────────────────────────────────────
+
+class ConcreteExternalStateAdapter(ExternalStateAdapter):
+    def __init__(self, compress):
+        super().__init__(compress)
+            
+    def _save_instance(self, state):
+        return super()._save_instance(state)
+    
+    def _load_instance(self, instance_uuid):
+        return super()._load_instance(instance_uuid)
+    
+    def delete_instance(self, instance_uuid):
+        return super().delete_instance(instance_uuid)
+
+class TestExternalStateAdapter(unittest.TestCase):
+    def setUp(self):
+        importlib.reload(logmod)
+        logmod.loglevel = "INFO"
+        clear_log()
+
+    def test_ExternalStateAdapter_abstract_methods(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)
+
+        self.assertIsNone(externalStateAdapter._save_instance(state="test"))
+        self.assertIsNone(externalStateAdapter._load_instance(instance_uuid="123"))
+        self.assertIsNone(externalStateAdapter.delete_instance(instance_uuid="123")) 
+
+    def test_restore_numeric_keys(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)
+
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=1),1)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=1.0),1.0)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data="String"),"String")
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=True),True)
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data=[1,2,3]),[1,2,3])
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data={1.0: 1.2, 2: 3}),{1.0: 1.2, 2: 3})
+        self.assertEqual(externalStateAdapter._restore_numeric_keys(data={"1.0": "1.2", "2": "3"}),{1.0: "1.2", 2: "3"})
+
+    def test_save_instance(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)
+        instanceState = InstanceState(
+            state={
+                "settings_log": {
+                    "1" : {"scenarioManager" : {"scenario" : {"constants": {"value1" : 1, "value2" : 2}}}},
+                    "1" : {"scenarioManager" : {"scenario" : {"constants": {"value1" : 3, "value2" : 4}}}},
+                },
+                "results_log": {    
+                    "1": {"scenarioManager": {"scenario": {"value3": {"1":11, "value4":{"1":12}}}}},
+                    "2": {"scenarioManager": {"scenario": {"value3": {"2":21, "value4":{"2":22}}}}},
+                }
+            },
+            instance_id="test_save",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={"weeks": 1, "days": 1, "hours": 1, "minutes": 1,
+                     "seconds": 1, "milliseconds": 1, "microseconds": 1},
+            step=4
+        )
+
+        externalStateAdapter.save_instance(instanceState)
+
+        content = read_log()
+        self.assertIn("Saving instance test_save", content)     
+        self.assertIn("Compressing state for instance test_save", content) 
+        self.assertIn("State compression completed for instance test_save", content)  
+        self.assertIn("Instance test_save saved successfully", content) 
+
+    def test_save_instance_exception(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)
+        instanceState = InstanceState(
+            state={"settings_log": {}, "results_log": {}},
+            instance_id="test_exception",
+            time=datetime.datetime(2024, 1, 1, 12, 0, 0),
+            timeout={},
+            step=1
+        )
+
+        with patch.object(externalStateAdapter, "_save_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.save_instance(instanceState)
+
+        content = read_log()
+        self.assertIn("[ERROR] Failed to save instance test_exception", content)
+
+    def test_load_instance_empty(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)  
+
+        state =externalStateAdapter.load_instance("test_empty")
+        
+        self.assertIsNone(state)
+        content = read_log()
+        self.assertIn("Loading instance test_empty", content)     
+        self.assertIn("No state found for instance test_empty", content)
+
+    def test_load_instance_exception(self):
+        externalStateAdapter = ConcreteExternalStateAdapter(compress=True)
+
+        with patch.object(externalStateAdapter, "_load_instance", side_effect=RuntimeError("Simulierter Fehler")):
+            with self.assertRaises(RuntimeError) as cm:
+                externalStateAdapter.load_instance("test_exception")
+
+        content = read_log()
+        self.assertIn("Loading instance test_exception", content)       
+        self.assertIn("Failed to load instance test_exception", content)

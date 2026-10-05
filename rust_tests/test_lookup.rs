@@ -1,27 +1,15 @@
-use std::collections::HashMap;
+mod common;
 
 use bptk_rust_engine::model::*;
 use bptk_rust_engine::state::SimulationState;
+use common::model_with_specs;
 
 fn model_with_lookup(table_name: &str, points: Vec<(f64, f64)>) -> SdModel {
-    let mut graphical_functions = HashMap::new();
-    graphical_functions.insert(
-        table_name.to_string(),
-        GraphicalFunction { points },
-    );
-    SdModel {
-        name: String::new(),
-        starttime: 0.0,
-        stoptime: 10.0,
-        dt: 1.0,
-        entities: Vec::new(),
-        entity_index: HashMap::new(),
-        graphical_functions,
-        eval_order: Vec::new(),
-        callback_names: Vec::new(),
-        #[cfg(feature = "python")]
-        callbacks: Vec::new(),
-    }
+    let mut model = model_with_specs(0.0, 10.0, 1.0);
+    model
+        .graphical_functions
+        .insert(table_name.to_string(), GraphicalFunction { points });
+    model
 }
 
 #[test]

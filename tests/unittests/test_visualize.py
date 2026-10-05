@@ -9,6 +9,7 @@ from BPTK_Py.visualizations.visualize import (visualizer, require_matplotlib,
 import pandas as pd
 import matplotlib.pyplot as plt
 import statistics
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestVisualizer(unittest.TestCase):
     def setUp(self):
@@ -227,6 +228,38 @@ class TestVisualizer(unittest.TestCase):
 
         self.assertEqual(set(plt.get_fignums()), before)
 
+    def _title_of_a_plot(self, configuration, rc_settings=None):
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+        axes = self._configured_bptk("title_size", configuration).plot_scenarios(
+            scenario_managers=["title_size"], scenarios=["base"], equations=["headcount"],
+            title="The portfolio, and its extremes", format="axes",
+            matplotlib_rc_settings=rc_settings)
+        canvas = FigureCanvasAgg(axes.figure)
+        canvas.draw()
+        return axes.title, axes.title.get_window_extent(canvas.get_renderer()), axes.figure.bbox
+
+    def test_the_default_title_size_shrinks_with_a_narrow_figure(self):
+        """At width 6 the title at size 35 started 71 px left of the figure."""
+        title, extent, figure = self._title_of_a_plot({"figsize": (6, 3)})
+
+        self.assertAlmostEqual(title.get_fontsize(), 35 * 6 / 20)
+        self.assertGreaterEqual(extent.x0, figure.x0)
+        self.assertLessEqual(extent.x1, figure.x1)
+
+    def test_the_default_figure_keeps_the_default_title_size(self):
+        title, _, _ = self._title_of_a_plot({"kind": "line"})
+
+        self.assertEqual(title.get_fontsize(), 35)
+
+    def test_a_title_size_somebody_set_is_left_alone(self):
+        title, _, _ = self._title_of_a_plot({"figsize": (6, 3)}, {"axes.titlesize": 35})
+        self.assertEqual(title.get_fontsize(), 35)
+
+        title, _, _ = self._title_of_a_plot(
+            {"matplotlib_rc_settings": {"axes.titlesize": 20, "figure.figsize": (6, 3)}})
+        self.assertEqual(title.get_fontsize(), 20)
+
     def _configured_bptk(self, manager, configuration=None):
         model = Model(starttime=1, stoptime=4, dt=1, name="colours")
         stock = model.stock("headcount")
@@ -358,36 +391,30 @@ class TestVisualizer(unittest.TestCase):
         key naming a manager the call does not use renames nothing and the chart keeps
         its raw column name. Seven such keys sat in the documentation for months.
         """
-        import BPTK_Py.logger.logger as logmod
 
         df = pd.DataFrame({"sm_base_stock": [1.0, 2.0]}, index=[1.0, 2.0])
 
-        with open(logmod.logfile, "w", encoding="UTF-8") as file:
-            pass
+        clear_log()
         self.testBptk.visualizer.plot(
             df=df, return_df=True, visualize_from_period=0, visualize_to_period=0,
             stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
             series_names={"anderer_manager_base_stock": "Stock"},
         )
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn("matched no column", content)
         self.assertIn("anderer_manager_base_stock", content)
 
     def test_series_names_stays_quiet_when_every_key_matches(self):
-        import BPTK_Py.logger.logger as logmod
 
         df = pd.DataFrame({"sm_base_stock": [1.0, 2.0]}, index=[1.0, 2.0])
 
-        with open(logmod.logfile, "w", encoding="UTF-8") as file:
-            pass
+        clear_log()
         result = self.testBptk.visualizer.plot(
             df=df, return_df=True, visualize_from_period=0, visualize_to_period=0,
             stacked=False, kind="line", title="t", alpha=1.0, x_label="", y_label="",
             series_names={"sm_base_stock": "Stock"},
         )
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertNotIn("matched no column", content)
         self.assertIn("Stock", list(result.columns))
 
@@ -449,7 +476,3 @@ class TestPlottingExtraGuard(unittest.TestCase):
                 constant.plot()
 
         self.assertIn("bptk-py[plotting]", str(raised.exception))
-
-
-if __name__ == '__main__':
-    unittest.main()

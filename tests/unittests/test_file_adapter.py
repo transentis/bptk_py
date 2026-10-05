@@ -3,21 +3,20 @@ import unittest, sys, io, datetime, tempfile, importlib, os
 import BPTK_Py.logger.logger as logmod
 from BPTK_Py.externalstateadapter.externalStateAdapter import InstanceState
 from BPTK_Py.externalstateadapter.file_adapter import FileAdapter
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestFileAdapter(unittest.TestCase):
     def setUp(self):
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
     def test_FileAdapter_load_instance_exception(self):
         fileAdapter = FileAdapter(compress=True, path="invalid_path")
 
         return_value = fileAdapter._load_instance(instance_uuid="123")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIsNone(return_value)
         self.assertIn("Error loading instance 123:", content)
         self.assertIn("123.json", content)
@@ -90,8 +89,7 @@ class TestFileAdapter(unittest.TestCase):
         
         tmpdir.cleanup()
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("FileAdapter _save_instance called for instance already-compressed", content)     
         self.assertIn("results_log already compressed for instance already-compressed", content)     
         self.assertIn("FileAdapter _save_instance called for instance already-compressed2", content)
@@ -190,8 +188,7 @@ class TestFileAdapter(unittest.TestCase):
         fileAdapter._save_instance(state=inst2)
         instance2 = fileAdapter.load_instance(instance_uuid=instance_id2)        
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Failed to decompress results_log for instance {instance_id2}", content)     
 
         self.assertIsInstance(instance2, InstanceState)
@@ -237,11 +234,7 @@ class TestFileAdapter(unittest.TestCase):
         with self.assertRaises(OSError):
             fileAdapter.delete_instance(instance_id_delete)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn(f"Error deleting instance {instance_id_delete}", content)  
 
         tmpdir.cleanup()
-
-if __name__ == '__main__':
-    unittest.main()            

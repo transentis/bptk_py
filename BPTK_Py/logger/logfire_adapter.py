@@ -9,7 +9,6 @@
 # Copyright (c) 2024 transentis labs GmbH
 # MIT License
 
-import datetime
 
 try:
     import logfire

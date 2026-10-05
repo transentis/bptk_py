@@ -114,7 +114,6 @@ def _():
     #| echo: false
     from BPTK_Py import bptk
     bptk = bptk()
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
@@ -151,8 +150,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # `list_equations` prints and returns nothing, and marimo sends a cell's stdout to
-    # the console rather than into the page - so it has to be captured to be seen.
     with mo.capture_stdout() as equations:
         bptk.list_equations(scenario_managers=["smWorkingWithXMILE"], scenarios=[])
 

@@ -8,112 +8,86 @@
 #
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
-import logging
-from time import sleep
+import csv
+import os
+
+from ...logger import log
+
 #########################
 ## DATACOLLECTOR CLASS ##
 #########################
 
 
-import csv
-import os
-
 class CSVDataCollector:
     """
-    A datacollector for the agent based simulation.
-    Collects the output data of each agent/event and outputs them to CSV
-    For now it only outputs the agent statistics, not the event statistics
+    A datacollector for the agent based simulation that writes to CSV instead of memory.
+    One file per agent type, one row per agent and timestep, and one file for the events.
     """
 
-    def __init__(self,prefix="csv/"):
-        """
+    EVENT_FILE = "events.csv"
 
-        :param filename: filename of output file
+    def __init__(self, prefix="csv/"):
         """
-        self.agent_statistics = {}
-        self.event_statistics = {}
-
+        :param prefix: directory the files are written to; created if it does not exist
+        """
         self.prefix = prefix
-        if not os.path.isdir(prefix):
-             os.mkdir(prefix)
+        os.makedirs(prefix, exist_ok=True)
 
-        self.cache = {}        
+        # The columns of each file, fixed by the first row written to it. A file not in
+        # here yet is started afresh, so a re-run after reset() does not append to the
+        # results of the run before it.
+        self._columns = {}
 
-        self.observed_ids = []
+    def _filename(self, name):
+        return os.path.join(self.prefix, name + ".csv")
 
-        #Probably not necessary
+    def _write_row(self, filename, row):
+        if filename not in self._columns:
+            self._columns[filename] = list(row.keys())
+            with open(filename, "w", newline="", encoding="UTF-8") as outfile:
+                csv.writer(outfile, delimiter=";").writerow(self._columns[filename])
+        elif set(row.keys()) - set(self._columns[filename]):
+            log("[WARN] CSVDataCollector: {} has no columns for {}; these values are not written".format(
+                filename, sorted(set(row.keys()) - set(self._columns[filename]))))
 
-        self.headlines = None
-
-        self.column_names = None
-
+        with open(filename, "a", newline="", encoding="UTF-8") as outfile:
+            csv.writer(outfile, delimiter=";").writerow(
+                [row.get(column, "") for column in self._columns[filename]])
 
     def record_event(self, time, event):
         """
-        Record an event
+        Append one event to the event file
         :param time: t (int)
         :param event: event instance
         :return: None
         """
-        if time not in self.event_statistics:
-            self.event_statistics[time] = {}
-
-        if event.name not in self.event_statistics[time]:
-            self.event_statistics[time][event.name] = 0
-
-        self.event_statistics[time][event.name] += 1
+        self._write_row(os.path.join(self.prefix, self.EVENT_FILE),
+                        {"time": time, "event": event.name,
+                         "sender_id": event.sender_id, "receiver_id": event.receiver_id})
 
     def reset(self):
-        self.agent_statistics = {}
-        self.event_statistics = {}
-        self.cache = {}
-        self.observed_ids = []
+        """
+        Start every file afresh at the next row written to it
+        """
+        self._columns = {}
 
     def collect_agent_statistics(self, sim_time, agents):
         """
-        Collect agent statistics from agent(s)
+        Append the agents' statistics, one row per agent, to the file of its agent type
         :param sim_time: t (int)
         :param agents: list of Agent
         :return: None
         """
-
         for agent in agents:
-
-            agent_type = agent.agent_type
-            id = agent.id
-
-            stats = {}
-            stats["id"] = agent.id
-            stats["time"] = sim_time
-
-
+            row = {"id": agent.id, "time": sim_time}
             for agent_property_name, agent_property_value in agent.properties.items():
+                row[agent_property_name] = agent_property_value["value"]
 
-                stats[agent_property_name] = agent_property_value['value']
-
-            filename = self.prefix + "/" + str(id) + "_" + str(agent_type) + ".csv"
-            if os.path.isfile(filename):
-                logging.warning("CSVDataCollector: Overwriting '{}'".format(filename))
-                os.remove(filename)
-
-            with open(filename, "a") as outfile:
-
-                if not id in self.observed_ids:
-                    self.observed_ids.append(id)
-                
-                if filename not in self.cache:
-                    self.cache[filename] = []
-                self.cache[filename] += [stats.values()]
-
-                outfile.write(";".join(stats.keys()))
-                outfile.write("\n" + ";".join([str(x) for x in stats.values()]))
+            self._write_row(self._filename(str(agent.agent_type)), row)
 
     def statistics(self):
         """
-        Get the statistics collected
-        :return: Dictionary
+        The results are in the files, not in memory
+        :return: an empty dictionary
         """
-
         return {}
-
-

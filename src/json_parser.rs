@@ -111,6 +111,26 @@ pub enum ParseError {
     /// Carries one readable path per cycle, e.g. `["a → b → a"]`. Empty when the
     /// cycle was detected but not described (the first, cheap sorting pass).
     CyclicDependency(Vec<String>),
+    /// Starttime, stoptime and dt that cannot run; the message says which and why.
+    InvalidRunSpecs(String),
+    /// A function called with a number of arguments it does not take.
+    WrongArgumentCount {
+        function: String,
+        expected: &'static str,
+        got: usize,
+    },
+    /// `delay` reads the past of an element, so its first argument has to name one.
+    DelayInputNotAnEntity,
+    /// Two entities of the same name; the second used to replace the first unnoticed.
+    DuplicateEntity(String),
+    /// A string where a number belongs - only a lookup's table name is a string.
+    StringOutsideLookup(String),
+    /// A `lookup` call without the name of a table as its second argument.
+    LookupWithoutTable,
+    /// A `lookup` of a table the model does not have; it used to read 0.0.
+    UnknownLookupTable(String),
+    /// Points that are no lookup table; the message says why.
+    InvalidLookupPoints(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -135,6 +155,34 @@ impl std::fmt::Display for ParseError {
                 "Cyclic dependency among non-stock entities: {}",
                 cycles.join("; ")
             ),
+            ParseError::InvalidRunSpecs(message) => write!(f, "{}", message),
+            ParseError::WrongArgumentCount { function, expected, got } => write!(
+                f,
+                "Function '{}' takes {} argument(s), and was given {}",
+                function, expected, got
+            ),
+            ParseError::DuplicateEntity(name) => {
+                write!(f, "The model has more than one entity named '{}'", name)
+            }
+            ParseError::StringOutsideLookup(text) => write!(
+                f,
+                "The string \"{}\" stands where a number belongs; only a lookup takes a \
+                 string, the name of its table",
+                text
+            ),
+            ParseError::LookupWithoutTable => write!(
+                f,
+                "Function 'lookup' takes an input and the name of a table"
+            ),
+            ParseError::UnknownLookupTable(name) => {
+                write!(f, "Lookup of a table the model does not have: '{}'", name)
+            }
+            ParseError::InvalidLookupPoints(message) => write!(f, "{}", message),
+            ParseError::DelayInputNotAnEntity => write!(
+                f,
+                "Function 'delay' reads the past of an element, so its first argument has \
+                 to be a reference to one"
+            ),
         }
     }
 }
@@ -149,111 +197,73 @@ impl From<serde_json::Error> for ParseError {
 
 pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
     let jm: JsonModel = serde_json::from_str(json)?;
+    num_steps_for(jm.specs.starttime, jm.specs.stoptime, jm.specs.dt)
+        .map_err(ParseError::InvalidRunSpecs)?;
 
-    // Build entity_index: name → index
-    // Order: stocks first, then flows, converters, constants
+    // Entities are indexed stocks first, then flows, biflows, converters and constants.
+    // The evaluation order is a different thing: the topological sort below decides it.
+    let non_stocks = [
+        (&jm.entities.flows, EntityKind::Flow),
+        (&jm.entities.biflows, EntityKind::Biflow),
+        (&jm.entities.converters, EntityKind::Converter),
+        (&jm.entities.constants, EntityKind::Constant),
+    ];
+
+    // Every name is registered before any expression is resolved, so that an equation
+    // may refer to an entity declared after it.
     let mut entity_index: HashMap<String, usize> = HashMap::new();
     let mut entities: Vec<Entity> = Vec::new();
     // Callback names in the order they are first seen; the slot is the position.
     let mut callbacks = CallbackSlots::default();
 
-    // Stocks
-    for s in &jm.entities.stocks {
-        entity_index.insert(s.name.clone(), entities.len());
+    let declared = jm
+        .entities
+        .stocks
+        .iter()
+        .map(|s| (&s.name, EntityKind::Stock { initial_value: Expr::Literal(0.0) }))
+        .chain(non_stocks.iter().flat_map(|(group, kind)| {
+            group.iter().map(move |entity| (&entity.name, kind.clone()))
+        }));
+    for (name, kind) in declared {
+        insert_entity(&mut entity_index, name, entities.len())?;
         entities.push(Entity {
-            name: s.name.clone(),
-            kind: EntityKind::Stock {
-                initial_value: Expr::Literal(0.0),
-            },
+            name: name.clone(),
+            kind,
             equation: Expr::Literal(0.0),
         });
     }
 
-    // Flows
-    for f in &jm.entities.flows {
-        entity_index.insert(f.name.clone(), entities.len());
-        entities.push(Entity {
-            name: f.name.clone(),
-            kind: EntityKind::Flow,
-            equation: Expr::Literal(0.0),
-        });
-    }
-
-    // Biflows
-    for f in &jm.entities.biflows {
-        entity_index.insert(f.name.clone(), entities.len());
-        entities.push(Entity {
-            name: f.name.clone(),
-            kind: EntityKind::Biflow,
-            equation: Expr::Literal(0.0),
-        });
-    }
-
-    // Converters
-    for c in &jm.entities.converters {
-        entity_index.insert(c.name.clone(), entities.len());
-        entities.push(Entity {
-            name: c.name.clone(),
-            kind: EntityKind::Converter,
-            equation: Expr::Literal(0.0),
-        });
-    }
-
-    // Constants
-    for c in &jm.entities.constants {
-        entity_index.insert(c.name.clone(), entities.len());
-        entities.push(Entity {
-            name: c.name.clone(),
-            kind: EntityKind::Constant,
-            equation: Expr::Literal(0.0),
-        });
-    }
-
-    // Now resolve all expressions with the complete entity_index
-
-    // Stocks: resolve initial_value and equation
-    let mut idx = 0;
-    for s in &jm.entities.stocks {
+    // Now resolve all expressions with the complete entity_index, in the same order.
+    let (stock_entities, non_stock_entities) = entities.split_at_mut(jm.entities.stocks.len());
+    for (entity, s) in stock_entities.iter_mut().zip(&jm.entities.stocks) {
         let initial_value = resolve_expr(&s.initial_value, &entity_index, &mut callbacks)?;
-        let equation = match &s.equation {
+        entity.equation = match &s.equation {
             Some(eq) => resolve_expr(eq, &entity_index, &mut callbacks)?,
             None => Expr::Literal(0.0),
         };
-        entities[idx].kind = EntityKind::Stock { initial_value };
-        entities[idx].equation = equation;
-        idx += 1;
+        entity.kind = EntityKind::Stock { initial_value };
     }
-
-    // Flows
-    for f in &jm.entities.flows {
-        entities[idx].equation = resolve_expr(&f.equation, &entity_index, &mut callbacks)?;
-        idx += 1;
-    }
-
-    // Biflows
-    for f in &jm.entities.biflows {
-        entities[idx].equation = resolve_expr(&f.equation, &entity_index, &mut callbacks)?;
-        idx += 1;
-    }
-
-    // Converters
-    for c in &jm.entities.converters {
-        entities[idx].equation = resolve_expr(&c.equation, &entity_index, &mut callbacks)?;
-        idx += 1;
-    }
-
-    // Constants
-    for c in &jm.entities.constants {
-        entities[idx].equation = resolve_expr(&c.equation, &entity_index, &mut callbacks)?;
-        idx += 1;
+    let non_stock_equations = non_stocks.iter().flat_map(|(group, _)| group.iter());
+    for (entity, f) in non_stock_entities.iter_mut().zip(non_stock_equations) {
+        entity.equation = resolve_expr(&f.equation, &entity_index, &mut callbacks)?;
     }
 
     // Parse graphical functions
-    let graphical_functions: HashMap<String, GraphicalFunction> = jm
-        .graphical_functions
-        .into_iter()
-        .map(|(name, gf)| (name, GraphicalFunction { points: gf.points }))
-        .collect();
+    let mut graphical_functions: HashMap<String, GraphicalFunction> = HashMap::new();
+    for (name, gf) in jm.graphical_functions {
+        let points = sorted_points(&name, gf.points).map_err(ParseError::InvalidLookupPoints)?;
+        graphical_functions.insert(name, GraphicalFunction { points });
+    }
+    for entity in &entities {
+        let mut names = Vec::new();
+        collect_lookup_tables(&entity.equation, &mut names);
+        if let EntityKind::Stock { ref initial_value } = entity.kind {
+            collect_lookup_tables(initial_value, &mut names);
+        }
+        if let Some(name) = names.into_iter().find(|name| !graphical_functions.contains_key(*name)) {
+            return Err(ParseError::UnknownLookupTable(name.clone()));
+        }
+    }
 
     // Topological sort of non-stock entities
     let eval_order = topological_sort(&entities, jm.specs.dt)?;
@@ -272,6 +282,49 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
         callbacks: callbacks.names.iter().map(|_| None).collect(),
         callback_names: callbacks.names,
     })
+}
+
+/// Register an entity's name, refusing one that is taken.
+fn insert_entity(
+    entity_index: &mut HashMap<String, usize>,
+    name: &str,
+    index: usize,
+) -> Result<(), ParseError> {
+    if entity_index.insert(name.to_string(), index).is_some() {
+        return Err(ParseError::DuplicateEntity(name.to_string()));
+    }
+    Ok(())
+}
+
+/// The names of the lookup tables an expression reads.
+fn collect_lookup_tables<'a>(expr: &'a Expr, names: &mut Vec<&'a String>) {
+    match expr {
+        Expr::Literal(_) | Expr::Ref(_) => {}
+        Expr::BinaryOp { left, right, .. } => {
+            collect_lookup_tables(left, names);
+            collect_lookup_tables(right, names);
+        }
+        Expr::UnaryOp { operand, .. } => collect_lookup_tables(operand, names),
+        Expr::Call { function, args } => {
+            if let BuiltinFn::Lookup(name) = function {
+                names.push(name);
+            }
+            for arg in args {
+                collect_lookup_tables(arg, names);
+            }
+        }
+        Expr::If { condition, then, else_ } => {
+            collect_lookup_tables(condition, names);
+            collect_lookup_tables(then, names);
+            collect_lookup_tables(else_, names);
+        }
+        #[cfg(feature = "python")]
+        Expr::PyCallback { args, .. } => {
+            for arg in args {
+                collect_lookup_tables(arg, names);
+            }
+        }
+    }
 }
 
 /// Callback names in first-seen order. The slot an expression carries is the position in
@@ -308,12 +361,9 @@ fn resolve_expr(
     match json_expr {
         JsonExpr::Literal { value } => match value {
             JsonLiteralValue::Number(n) => Ok(Expr::Literal(*n)),
-            JsonLiteralValue::String(_) => {
-                // String literals are only used as lookup table name args —
-                // they shouldn't appear as standalone expressions.
-                // If they do, treat as 0.0 (the Call/Lookup resolution handles the name).
-                Ok(Expr::Literal(0.0))
-            }
+            // A lookup's table name is taken before its arguments are resolved, so a
+            // string that arrives here stands where a number belongs.
+            JsonLiteralValue::String(text) => Err(ParseError::StringOutsideLookup(text.clone())),
         },
         JsonExpr::Ref { name } => {
             let idx = entity_index
@@ -351,14 +401,28 @@ fn resolve_expr(
                 }
             }
 
+            if function == "lookup" {
+                return Err(ParseError::LookupWithoutTable);
+            }
             let builtin = parse_builtin_fn(function)?;
-            let resolved_args: Result<Vec<Expr>, ParseError> = args
+            let (fewest, most, expected) = arity(&builtin);
+            if args.len() < fewest || most.is_some_and(|most| args.len() > most) {
+                return Err(ParseError::WrongArgumentCount {
+                    function: function.clone(),
+                    expected,
+                    got: args.len(),
+                });
+            }
+            let resolved_args: Vec<Expr> = args
                 .iter()
                 .map(|a| resolve_expr(a, entity_index, callbacks))
-                .collect();
+                .collect::<Result<_, _>>()?;
+            if matches!(builtin, BuiltinFn::Delay) && !matches!(resolved_args[0], Expr::Ref(_)) {
+                return Err(ParseError::DelayInputNotAnEntity);
+            }
             Ok(Expr::Call {
                 function: builtin,
-                args: resolved_args?,
+                args: resolved_args,
             })
         }
         JsonExpr::If {
@@ -389,6 +453,31 @@ fn resolve_expr(
                 Err(ParseError::PythonCallbackUnsupported(name.clone()))
             }
         }
+    }
+}
+
+/// How many arguments each builtin takes: the fewest, the most (`None` for no limit), and
+/// the same in words for the error message. The evaluator indexes arguments directly, so
+/// this is what keeps a short argument list from reaching it.
+fn arity(function: &BuiltinFn) -> (usize, Option<usize>, &'static str) {
+    use BuiltinFn::*;
+    match function {
+        Time | Dt | Starttime | Stoptime | Pi | Inf | Nan => (0, Some(0), "no"),
+        Abs | Sqrt | Exp | Ln | Log10 | Sin | Cos | Tan | Arcsin | Arccos | Arctan | Floor
+        | Ceil | Factorial | GammaLN | Exprnd | Geometric | Montecarlo | Poisson
+        | Lookup(_) => (1, Some(1), "1"),
+        Sinwave | Coswave | Max | Min | Step | Combinations | Permutations | Random | Normal
+        | Beta | Binomial | NegBinomial | Lognormal | Logistic | Weibull | Pareto => {
+            (2, Some(2), "2")
+        }
+        Delay | Triangular => (3, Some(3), "3"),
+        Round | GammaDist => (1, Some(2), "1 or 2"),
+        Pulse | Invnorm => (1, Some(3), "1 to 3"),
+        NormalCDF => (2, Some(4), "2 to 4"),
+        ArrSum | ArrProd | ArrMean | ArrMedian | ArrStddev | ArrMax | ArrMin => {
+            (0, None, "any number of")
+        }
+        ArrRank => (2, None, "at least 2"),
     }
 }
 
@@ -456,7 +545,7 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
         "inf" => Ok(BuiltinFn::Inf),
         "nan" => Ok(BuiltinFn::Nan),
         // Statistical
-        "random" | "uniform" => Ok(BuiltinFn::Random),
+        "random" => Ok(BuiltinFn::Random),
         "normal" => Ok(BuiltinFn::Normal),
         "beta" => Ok(BuiltinFn::Beta),
         "binomial" => Ok(BuiltinFn::Binomial),

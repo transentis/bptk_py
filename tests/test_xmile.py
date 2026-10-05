@@ -1,15 +1,43 @@
 import re
+import shutil
+import sys
 from pathlib import Path
 import pytest
 import numpy as np
 from BPTK_Py.sdcompiler.compile import compile_xmile
 
 
+def _forget_compiled_models():
+    for name in [name for name in sys.modules if name == "test_models" or name.startswith("test_models.")]:
+        del sys.modules[name]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def compiled_models(tmp_path_factory):
+    """Every model compiled once, into a package of its own outside the repository.
+
+    The tests import `test_models.<name>`. They used to find what `test_compilation`
+    had written into tests/test_models, so they failed when run without it - alone, or
+    in another order. The package holds the sources as well, so a test that compiles a
+    model itself writes next to them rather than into the repository.
+    """
+    package = tmp_path_factory.mktemp("xmile") / "test_models"
+    package.mkdir()
+    (package / "__init__.py").write_text("")
+    for source in (Path(__file__).resolve().parent / "test_models").glob("*.stmx"):
+        shutil.copy(source, package / source.name)
+        compile_xmile(package / source.name, package / (source.stem + ".py"), "py")
+
+    _forget_compiled_models()
+    sys.path.insert(0, str(package.parent))
+    yield package
+    sys.path.remove(str(package.parent))
+    _forget_compiled_models()
+
+
 @pytest.fixture
-def test_models_path():
-    # Construct the path to the data file dynamically
-    current_directory = Path(__file__).resolve().parent
-    return current_directory / 'test_models'
+def test_models_path(compiled_models):
+    return compiled_models
 
 
 def test_compilation(test_models_path):
@@ -738,6 +766,13 @@ def test_array():
         #assert mod.equation("inflow[1:3,2,1]", t) == 9
 
     assert result == expected_result
+
+    # A request with an asterisk is no key of the compiled model: the model resolves it
+    # when it is evaluated. A run used to leave such a column out without a word.
+    from BPTK_Py.sdsimulation.sd_simulation import SdSimulation
+    frame = SdSimulation(model=simulation_model(), name="array").start(equations=["inflow[*]", "inflow[2]"])
+    assert list(frame.columns) == ["inflow[*]", "inflow[2]"]
+    assert set(frame["inflow[*]"]) == {6}
 
 def test_array_edges():
     """Two array shapes the rest of the corpus does not have.
@@ -1476,6 +1511,3 @@ def test_doublequote(test_models_path):
     for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
         assert sim.equation("converter(perYear)",t) == t
         assert sim.equation("otherconverter(fooBar)",t) == 2*t
-
-
-

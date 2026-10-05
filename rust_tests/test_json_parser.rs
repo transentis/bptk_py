@@ -1,6 +1,9 @@
+mod common;
+
 use bptk_rust_engine::json_parser::parse_json;
 use bptk_rust_engine::json_parser::ParseError;
 use bptk_rust_engine::model::*;
+use common::load_error;
 
 #[test]
 fn test_parse_minimal_model() {
@@ -528,13 +531,6 @@ fn test_loop_with_unary_op_in_the_cycle_parses() {
 // in its hands anyway. Only computed on the definitive failure, so healthy models
 // never pay for it.
 
-fn cycle_message(json: &str) -> String {
-    match parse_json(json) {
-        Ok(_) => panic!("expected the model to be rejected"),
-        Err(e) => e.to_string(),
-    }
-}
-
 #[test]
 fn test_error_names_a_simple_cycle() {
     let json = r#"{
@@ -550,7 +546,7 @@ fn test_error_names_a_simple_cycle() {
         ] }
     }"#;
     assert_eq!(
-        cycle_message(json),
+        load_error(json),
         "Cyclic dependency among non-stock entities: a → b → a");
 }
 
@@ -566,7 +562,7 @@ fn test_error_names_a_self_reference() {
         ] }
     }"#;
     assert_eq!(
-        cycle_message(json),
+        load_error(json),
         "Cyclic dependency among non-stock entities: a → a");
 }
 
@@ -589,7 +585,7 @@ fn test_error_keeps_the_order_of_a_longer_cycle() {
         ] }
     }"#;
     assert_eq!(
-        cycle_message(json),
+        load_error(json),
         "Cyclic dependency among non-stock entities: a → c → b → a");
 }
 
@@ -614,7 +610,7 @@ fn test_error_names_every_independent_cycle() {
         ] }
     }"#;
     assert_eq!(
-        cycle_message(json),
+        load_error(json),
         "Cyclic dependency among non-stock entities: a → b → a; c → d → c");
 }
 
@@ -637,7 +633,7 @@ fn test_error_names_the_shortest_path_and_the_group_size() {
             { "name": "f", "equation": { "type": "ref", "name": "e" } }
         ] }
     }"#;
-    let message = cycle_message(json);
+    let message = load_error(json);
     assert!(message.contains("a → b → a"), "{}", message);
     assert!(message.contains("4 entities involved"), "{}", message);
 }
@@ -647,6 +643,49 @@ fn test_delay_broken_loop_produces_no_cycle_error() {
     // The naming must not fire for models that are fine.
     let json = loop_model_json(r#"{ "type": "literal", "value": 1.0 }"#);
     assert!(parse_json(&json).is_ok());
+}
+
+// An arrayed element reaches the engine as one entity per sub-element, so the sort sees
+// `a[0]` and `a[1]` as two nodes. That is what makes a loop between two of them an
+// error while one of them reading the other is an ordinary dependency.
+
+#[test]
+fn test_error_names_a_cycle_between_sub_elements_of_one_array() {
+    let json = r#"{
+        "name": "array_cycle",
+        "specs": { "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 },
+        "entities": { "converters": [
+            { "name": "a[0]", "equation": { "type": "binary_op", "op": "add",
+                "left": { "type": "ref", "name": "a[1]" },
+                "right": { "type": "literal", "value": 1.0 } } },
+            { "name": "a[1]", "equation": { "type": "binary_op", "op": "mul",
+                "left": { "type": "ref", "name": "a[0]" },
+                "right": { "type": "literal", "value": 2.0 } } }
+        ] }
+    }"#;
+    assert_eq!(
+        load_error(json),
+        "Cyclic dependency among non-stock entities: a[0] → a[1] → a[0]");
+}
+
+#[test]
+fn test_a_sub_element_reading_its_neighbour_is_no_cycle() {
+    let json = r#"{
+        "name": "array_chain",
+        "specs": { "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 },
+        "entities": { "converters": [
+            { "name": "a[0]", "equation": { "type": "literal", "value": 5.0 } },
+            { "name": "a[1]", "equation": { "type": "binary_op", "op": "add",
+                "left": { "type": "ref", "name": "a[0]" },
+                "right": { "type": "literal", "value": 1.0 } } }
+        ] }
+    }"#;
+    let model = parse_json(json).expect("a sub-element reading another is no cycle");
+    let results = model.simulate(&["a[1]".to_string()], None).unwrap();
+    for step in 0..=3 {
+        let t = format!("{:.1}", step as f64);
+        assert_eq!(results["a[1]"][&t], 6.0, "t={}", t);
+    }
 }
 
 // ── Python callbacks ────────────────────────────────────────────────────────
@@ -695,4 +734,162 @@ fn test_a_callback_argument_is_ordered_before_it() {
     let scaled = model.entity_index["scaled"];
     let position = |idx: usize| model.eval_order.iter().position(|&i| i == idx).unwrap();
     assert!(position(source) < position(scaled));
+}
+
+// ── Argument counts ─────────────────────────────────────────────────────────
+
+fn call_model(call: &str) -> String {
+    format!(
+        r#"{{
+        "name": "arity",
+        "specs": {{ "starttime": 0.0, "stoptime": 3.0, "dt": 1.0 }},
+        "entities": {{ "converters": [
+            {{ "name": "src", "equation": {{ "type": "literal", "value": 1.0 }} }},
+            {{ "name": "x", "equation": {} }}
+        ] }}
+    }}"#,
+        call
+    )
+}
+
+fn lit(value: f64) -> String {
+    format!(r#"{{ "type": "literal", "value": {:?} }}"#, value)
+}
+
+fn call_of(function: &str, args: &[String]) -> String {
+    format!(r#"{{ "type": "call", "function": "{}", "args": [{}] }}"#, function, args.join(", "))
+}
+
+#[test]
+fn test_a_call_with_too_few_arguments_is_refused_at_load() {
+    // The evaluator indexes its arguments; a short list used to panic mid-run.
+    for (function, given, expected) in [
+        ("normal", 1, "Function 'normal' takes 2 argument(s), and was given 1"),
+        ("triangular", 2, "Function 'triangular' takes 3 argument(s), and was given 2"),
+        ("sqrt", 0, "Function 'sqrt' takes 1 argument(s), and was given 0"),
+        ("normalcdf", 1, "Function 'normalcdf' takes 2 to 4 argument(s), and was given 1"),
+        ("arr_rank", 1, "Function 'arr_rank' takes at least 2 argument(s), and was given 1"),
+    ] {
+        let args: Vec<String> = (0..given).map(|_| lit(1.0)).collect();
+        let message = match parse_json(&call_model(&call_of(function, &args))) {
+            Ok(_) => panic!("{} with {} arguments loaded", function, given),
+            Err(e) => e.to_string(),
+        };
+        assert_eq!(message, expected);
+    }
+}
+
+#[test]
+fn test_a_call_with_too_many_arguments_is_refused_at_load() {
+    let message = match parse_json(&call_model(&call_of("time", &[lit(1.0)]))) {
+        Ok(_) => panic!("time with an argument loaded"),
+        Err(e) => e.to_string(),
+    };
+    assert_eq!(message, "Function 'time' takes no argument(s), and was given 1");
+}
+
+#[test]
+fn test_optional_arguments_may_be_left_out() {
+    for (function, given) in [("round", 1), ("gamma_dist", 1), ("pulse", 1), ("invnorm", 1),
+                              ("normalcdf", 2), ("arr_sum", 0), ("arr_max", 5)] {
+        let args: Vec<String> = (0..given).map(|_| lit(1.0)).collect();
+        assert!(parse_json(&call_model(&call_of(function, &args))).is_ok(),
+                "{} with {} arguments", function, given);
+    }
+}
+
+#[test]
+fn test_delay_of_something_other_than_an_element_is_refused_at_load() {
+    // The first argument names whose past is read; a literal used to panic mid-run.
+    let delay = call_of("delay", &[lit(1.0), lit(1.0), lit(0.0)]);
+    let message = match parse_json(&call_model(&delay)) {
+        Ok(_) => panic!("a delay of a literal loaded"),
+        Err(e) => e.to_string(),
+    };
+    assert!(message.contains("first argument has to be a reference"), "{}", message);
+    let delay = call_of("delay", &[r#"{ "type": "ref", "name": "src" }"#.to_string(),
+                                   lit(1.0), lit(0.0)]);
+    assert!(parse_json(&call_model(&delay)).is_ok());
+}
+
+// ── Names, strings and lookup tables ─────────────────────────────────────────
+
+#[test]
+fn test_two_entities_of_one_name_are_refused() {
+    // The second used to replace the first in the index without a word.
+    let message = load_error(r#"{
+        "name": "twice",
+        "specs": { "starttime": 0.0, "stoptime": 1.0, "dt": 1.0 },
+        "entities": {
+            "stocks": [ { "name": "a", "initial_value": { "type": "literal", "value": 0.0 } } ],
+            "converters": [ { "name": "a", "equation": { "type": "literal", "value": 1.0 } } ]
+        }
+    }"#);
+    assert_eq!(message, "The model has more than one entity named 'a'");
+}
+
+#[test]
+fn test_a_string_where_a_number_belongs_is_refused() {
+    // It used to be read as 0.0.
+    let message = load_error(&call_model(r#"{ "type": "literal", "value": "ten" }"#));
+    assert!(message.contains("\"ten\" stands where a number belongs"), "{}", message);
+}
+
+fn lookup_model(points: &str, table: &str) -> String {
+    format!(
+        r#"{{
+        "name": "lookup",
+        "specs": {{ "starttime": 0.0, "stoptime": 1.0, "dt": 1.0 }},
+        "entities": {{ "converters": [
+            {{ "name": "x", "equation": {{ "type": "call", "function": "lookup", "args": [
+                {{ "type": "literal", "value": 2.5 }},
+                {{ "type": "literal", "value": "{}" }} ] }} }}
+        ] }},
+        "graphical_functions": {{ "tab": {{ "points": {} }} }}
+    }}"#,
+        table, points
+    )
+}
+
+#[test]
+fn test_a_lookup_of_a_table_the_model_does_not_have_is_refused() {
+    // It used to read 0.0 at every step.
+    let message = load_error(&lookup_model("[[0.0, 0.0], [10.0, 100.0]]", "missing"));
+    assert_eq!(message, "Lookup of a table the model does not have: 'missing'");
+}
+
+#[test]
+fn test_a_lookup_without_a_table_name_is_refused() {
+    let message = load_error(&call_model(&call_of("lookup", &[lit(1.0), lit(2.0)])));
+    assert_eq!(message, "Function 'lookup' takes an input and the name of a table");
+}
+
+#[test]
+fn test_lookup_points_in_any_order_describe_the_same_curve() {
+    let model = parse_json(&lookup_model("[[10.0, 100.0], [0.0, 0.0], [5.0, 50.0]]", "tab")).unwrap();
+    assert_eq!(model.graphical_functions["tab"].points, vec![(0.0, 0.0), (5.0, 50.0), (10.0, 100.0)]);
+    assert_eq!(model.simulate(&["x".to_string()], None).unwrap()["x"]["0.0"], 25.0);
+}
+
+#[test]
+fn test_lookup_points_that_are_no_table_are_refused() {
+    for (points, expected) in [
+        ("[[0.0, 0.0], [5.0, 10.0], [5.0, 90.0]]", "Lookup table 'tab' has two points at x=5.0"),
+        ("[]", "Lookup table 'tab' has no points"),
+    ] {
+        assert_eq!(load_error(&lookup_model(points, "tab")), expected);
+    }
+}
+
+#[test]
+fn test_set_points_sorts_and_refuses_the_same_way() {
+    let mut model = parse_json(&lookup_model("[[0.0, 0.0], [10.0, 100.0]]", "tab")).unwrap();
+    model.set_points("tab", vec![(10.0, 0.0), (0.0, 100.0)]).unwrap();
+    assert_eq!(model.graphical_functions["tab"].points, vec![(0.0, 100.0), (10.0, 0.0)]);
+    let error = model.set_points("tab", vec![(1.0, 0.0), (1.0, 1.0)]).unwrap_err();
+    assert_eq!(error, "Lookup table 'tab' has two points at x=1.0");
+    let error = model.set_points("tab", vec![(f64::NAN, 0.0)]).unwrap_err();
+    assert!(error.contains("x must be a finite number"), "{}", error);
+    // A refused table leaves the one before in place.
+    assert_eq!(model.graphical_functions["tab"].points, vec![(0.0, 100.0), (10.0, 0.0)]);
 }

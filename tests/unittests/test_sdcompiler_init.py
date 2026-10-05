@@ -55,7 +55,3 @@ class TestSdCompilerLazyImport(unittest.TestCase):
 
         pulled = [m for m in sys.modules if m.startswith("BPTK_Py.sdcompiler.")]
         self.assertEqual(pulled, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

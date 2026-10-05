@@ -24,6 +24,3 @@ class Task(Agent):
 
         if self.remaining_effort == 0:
             self.state = "closed"
-
-
-

@@ -7,9 +7,6 @@ from unittest.mock import patch, MagicMock
 import BPTK_Py.logger.logfire_adapter as lf_adapter
 
 class TestLogfireAdapter(unittest.TestCase):
-    def setUp(self):
-        pass    
-
     def test_import(self):
         self.assertTrue(hasattr(lf_adapter, "LOGFIRE_AVAILABLE"))
 
@@ -98,7 +95,3 @@ class TestLoggerWithoutLogfireAdapter(unittest.TestCase):
         finally:
             # Restore the real adapter binding for any later tests.
             importlib.reload(logger_mod)
-
-
-if __name__ == '__main__':
-    unittest.main()

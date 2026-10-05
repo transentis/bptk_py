@@ -33,7 +33,7 @@ def _(mo):
 
     To illustrate agent-based modeling and how to do this with BPTK_PY, we will build an agent-based version of the simple project management model. This model is an illustration of [Parkinson's law](https://en.wikipedia.org/wiki/Parkinson%27s_law), which states that work expands so as to fill the time available for its completion - Parkinson's law is particularly relevant in projects, where we need to set milestones judiciously to ensure that schedule pressure remains at an acceptable rate.
 
-    You can find a discussion of an SD version of the model [here](../../sd-dsl/simple_python_library_sd_dsl/simple_python_library_sd_dsl.ipynb)
+    You can find a discussion of an SD version of the model [here](../../sd-dsl/simple_python_library_sd_dsl/simple_python_library_sd_dsl.md)
     """)
     return
 
@@ -97,7 +97,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'

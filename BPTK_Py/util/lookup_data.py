@@ -1,3 +1,35 @@
+import math
+
+
+def lookup_points(name, points):
+    """The points of lookup table `name` in the order interpolation needs.
+
+    Sorted by x, because the order a list was written in carries no meaning and the
+    interpolation reads the first point as the left edge. A table with no points, a point
+    whose x is not a finite number, or two points at the same x raise `ValueError`: the
+    last has two values at one x, and the engines used to pick different ones. The Rust
+    engine applies the same rule (`sorted_points` in `src/model.rs`).
+
+    Returns `points` itself when it is in order already, which is the usual case and is
+    what makes this cheap enough to call on every lookup.
+    """
+    if len(points) == 0:
+        raise ValueError("Lookup table '{}' has no points".format(name))
+    xs = [point[0] for point in points]
+    for x in xs:
+        if not math.isfinite(x):
+            raise ValueError(
+                "Lookup table '{}' has a point at x={}; x must be a finite number".format(
+                    name, float(x)))
+    if all(a < b for a, b in zip(xs, xs[1:])):
+        return points
+    ordered = sorted(points, key=lambda point: point[0])
+    for a, b in zip(ordered, ordered[1:]):
+        if a[0] == b[0]:
+            raise ValueError("Lookup table '{}' has two points at x={}".format(name, float(a[0])))
+    return ordered
+
+
 def lookup_data(model, names):
     """
     Get interpolated data of lookup function
@@ -5,7 +37,6 @@ def lookup_data(model, names):
     :return: None
     """
 
-    from BPTK_Py import sd_functions as sd
     from scipy.interpolate import interp1d
     import numpy as np
     import pandas as pd
@@ -22,6 +53,8 @@ def lookup_data(model, names):
             points = model.points[name]
         else:
             points = find_lookup(name,model)
+        if points is not None:
+            points = lookup_points(name, points)
 
         try:
             x_vals = np.array([x[0] for x in points])

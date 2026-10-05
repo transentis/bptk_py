@@ -15,6 +15,7 @@ from BPTK_Py import bptk
 from BPTK_Py import Agent, Model
 from BPTK_Py.config import config as default_config
 from BPTK_Py.scenariorunners import HybridRunner
+from tests.helpers.log_helpers import clear_log, read_log
 
 
 class _TrainingAgent(Agent):
@@ -115,10 +116,7 @@ def _build_training_bptk():
 
 
 class TestBptk(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testBptk_init_with_config(self):
+    def test_init_with_config(self):
         matplotlib_via_config = {
             "font.family": "Arial",
             "axes.titlesize": 36,
@@ -141,23 +139,17 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testbptk2.config.loglevel,"WARN")        
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         testbptk3= bptk(loglevel="DEBUG")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
-        self.assertIn("[ERROR] Invalid log level. Not starting up BPTK-Py! Valid loglevels: ['INFO', 'WARN', 'ERROR']", content) 
+        # It starts, so the message says so, and which level it uses
+        self.assertIn("[ERROR] Invalid log level DEBUG, using WARN instead. Valid loglevels: ['INFO', 'WARN', 'ERROR']", content)
+        self.assertEqual(testbptk3.config.loglevel, "WARN")
 
-    def testBptk_set_state(self):
+    def test_set_state(self):
         testbptk1 = bptk()
         testbptk2 = bptk()
 
@@ -168,7 +160,7 @@ class TestBptk(unittest.TestCase):
         self.assertFalse(testbptk1.session_state["lock"])
         self.assertTrue(testbptk2.session_state["lock"])
 
-    def testBptk_is_locked(self):
+    def test_is_locked(self):
         testbptk1 = bptk()
         testbptk2 = bptk()
         testbptk2.session_state = {"testproperty" : "testValue"}
@@ -179,13 +171,9 @@ class TestBptk(unittest.TestCase):
         self.assertFalse(testbptk2.is_locked())
         self.assertTrue(testbptk3.is_locked())
 
-    def testBptk_train_scenario_invalid(self):
+    def test_train_scenario_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         testBptk = bptk()
 
@@ -198,11 +186,7 @@ class TestBptk(unittest.TestCase):
         # because their guards ended in a `sys.exit` that does nothing.
         self.assertIsNone(testBptk._train_scenarios(scenarios=["1"],scenario_managers=["firstManager"]))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!", content)     
         self.assertIn("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!", content)  
@@ -222,55 +206,79 @@ class TestBptk(unittest.TestCase):
         testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="smSession")
         return testBptk
 
-    def testBptk_begin_session_reports_an_unknown_scenario_manager(self):
+    def _progress_through(self, starttime, stoptime):
+        testBptk = bptk()
+        model = Model(starttime=starttime, stoptime=stoptime, dt=1.0, name="progressModel")
+        stock = model.stock("stock")
+        stock.initial_value = 1.0
+        stock.equation = 1.0
+        testBptk.register_scenario_manager({"smProgress": {"model": model}})
+        testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager="smProgress")
+        testBptk.begin_session(scenarios=["base"], scenario_managers=["smProgress"], equations=["stock"])
+
+        seen = [testBptk.progress()]
+        while testBptk.progress() < 1.0:
+            testBptk.run_step()
+            seen.append(testBptk.progress())
+        testBptk.end_session()
+        return seen
+
+    def test_progress_counts_the_steps_of_the_session(self):
+        """progress() used to divide the step by the stop time: a session from 10 to 20
+        started at 50 %, and one that stops at 0 divided by zero."""
+        self.assertEqual(self._progress_through(0.0, 3.0), [0.0, 0.25, 0.5, 0.75, 1.0])
+
+        from_ten = self._progress_through(10.0, 20.0)
+        self.assertEqual(from_ten[0], 0.0)
+        self.assertEqual(len(from_ten), 12)  # eleven steps, 10 to 20
+        self.assertEqual(from_ten[-1], 1.0)
+
+        self.assertEqual(self._progress_through(0.0, 0.0), [0.0, 1.0])
+
+    def test_begin_session_reports_an_unknown_scenario_manager(self):
         """A typo in a manager name used to start a session that carried nothing.
 
         run_scenarios has reported this since 3.0.0, with a suggestion. A session that
         swallows it is worse: the caller steps a session that will never produce the
         scenario they asked for, and nothing ever says why.
         """
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
         testBptk = self._sd_session_bptk()
 
         testBptk.begin_session(scenarios=["base"], scenario_managers=["smSessio"],
                                equations=["stock"])
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn('begin_session: scenario manager "smSessio" not found!', content)
         self.assertIn("smSession", content)
         testBptk.destroy()
 
-    def testBptk_begin_session_reports_an_unknown_scenario(self):
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+    def test_begin_session_reports_an_unknown_scenario(self):
+        clear_log()
         testBptk = self._sd_session_bptk()
 
         testBptk.begin_session(scenarios=["bse"], scenario_managers=["smSession"],
                                equations=["stock"])
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn('begin_session: scenario "bse" not found', content)
         self.assertIn("base", content)
         testBptk.destroy()
 
-    def testBptk_begin_session_stays_quiet_when_every_name_matches(self):
+    def test_begin_session_stays_quiet_when_every_name_matches(self):
         """The guard must not report the ordinary case."""
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
         testBptk = self._sd_session_bptk()
 
         testBptk.begin_session(scenarios=["base"], scenario_managers=["smSession"],
                                equations=["stock"])
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertNotIn("begin_session: scenario", content)
+        self.assertNotIn("No simulation model containing", content)
         testBptk.destroy()
 
-    def testBptk_begin_session_refuses_an_agent_based_manager(self):
+    def test_begin_session_refuses_an_agent_based_manager(self):
         """Sessions are SD-only, and used to say so by crashing.
 
         The cache asks every scenario for its memo grid, which an agent-based model has
@@ -279,23 +287,21 @@ class TestBptk(unittest.TestCase):
         branch in run_step that prints "run_step currently only supports SD scenarios"
         was unreachable for the same reason: no such session ever began.
         """
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
         testBptk = _build_training_bptk()
 
         result = testBptk.begin_session(scenarios=["trainScenario"],
                                         scenario_managers=["trainManager"],
-                                        agents=["learner"])
+                                        equations=["x"])
 
         self.assertIsNone(result)
         self.assertIsNone(testBptk.session_state)
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn("sessions support System Dynamics scenarios only", content)
         self.assertIn("trainManager", content)
         testBptk.destroy()
 
-    def testBptk_version_tuple_stops_at_a_non_numeric_component(self):
+    def test_version_tuple_stops_at_a_non_numeric_component(self):
         """`2.5.0rc1` cuts at the suffix; a component with no digits at all ends the tuple.
 
         The `break` was the one line of `_version_tuple` no test reached, and it is the
@@ -309,7 +315,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(bptk._version_tuple("3.0.dev0"), (3, 0))
         self.assertEqual(bptk._version_tuple("dev"), ())
 
-    def testBptk_logfire_import_error_is_not_swallowed(self):
+    def test_logfire_import_error_is_not_swallowed(self):
         """Asking for Logfire without the extra has to say so.
 
         Every other failure while configuring it is logged and the run continues; an
@@ -328,7 +334,7 @@ class TestBptk(unittest.TestCase):
             testBptk = bptk(configuration=configuration)   # logged, not raised
             testBptk.destroy()
 
-    def testBptk_train_scenarios_without_a_matching_manager(self):
+    def test_train_scenarios_without_a_matching_manager(self):
         """Agents that belong to no registered manager produce no dataframes at all."""
         testBptk = _build_training_bptk()
 
@@ -343,60 +349,49 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(result)
         testBptk.destroy()
 
-    def testBptk_begin_session_reports_a_name_with_nothing_to_suggest(self):
+    def test_begin_session_reports_a_name_with_nothing_to_suggest(self):
         """The other half of the didyoumean branch: no candidates at all.
 
         `didyoumean` offers the nearest name however far it is, so the plain message
         only appears when nothing is registered to compare against - which is exactly
         the case where a reader most needs to be told the name matched nothing.
         """
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
         testBptk = bptk()
 
         testBptk.begin_session(scenarios=["zzzzzzzz"], scenario_managers=["qqqqqqqq"],
                                equations=["stock"])
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn('begin_session: scenario manager "qqqqqqqq" not found!', content)
         self.assertIn('begin_session: scenario "zzzzzzzz" not found', content)
         self.assertNotIn("Did you maybe mean", content)
         testBptk.destroy()
 
-    def testBptk_begin_session_errors(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+    def test_begin_session_errors(self):
+        clear_log()
 
         testBptk = bptk()
 
         self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_states=["active"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],individual_agent_properties=["property"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_properties=["property"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_properties=["property"],agents=["agent1"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=["firstManager","secondManager"],equations=["stock"],agent_property_types=["type"]))
-        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=[],equations=["stock"],agents=["agent1"]))
+        self.assertIsNone(testBptk.begin_session(scenarios=["1","2","3"],scenario_managers=[],equations=["stock"]))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
-        self.assertIn("[ERROR] start_session: Neither any agents nor equations to simulate given! Aborting!", content)  
-        self.assertIn("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!", content)     
-        self.assertIn("[ERROR] You may only use the individual_agent_properties parameter if you also set the agents parameter!", content)  
-        self.assertIn("[ERROR] You may only use the agent_properties parameter if you also set the agents parameter!", content)  
-        self.assertIn("[ERROR] You must set the relevant property types if you specify an agent_property!", content)  
-        self.assertIn("[ERROR] You may only use the agent_property_types parameter if you also set the agent_properties parameter!", content)  
-        self.assertIn("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder:", content)  
+        self.assertIn("[ERROR] begin_session: No equations to simulate given! Aborting!", content)
+        self.assertIn("[ERROR] Did not find any of the scenario manager(s) you specified. Maybe you made a typo or did not store the model in the scenarios folder? Scenario folder:", content)
 
-    def testBptk_run_step(self):
+    def test_begin_session_takes_no_agent_arguments(self):
+        """Sessions run System Dynamics only; the agent parameters they used to accept
+        were checked against each other and then never used."""
+        testBptk = bptk()
+        for argument in ("agents", "agent_states", "agent_properties", "agent_property_types",
+                         "individual_agent_properties"):
+            with self.assertRaises(TypeError):
+                testBptk.begin_session(scenarios=["1"], scenario_managers=["firstManager"],
+                                       equations=["stock"], **{argument: ["x"]})
+
+    def test_run_step(self):
         testBptk = bptk()
 
         self.assertIsNone(testBptk.run_step())     
@@ -427,7 +422,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk2.run_step(flat=False),{'testManager': {'testScenario': {'stock': {0.0: 0.0}, 'flow': {0.0: 2.0}}}})
         self.assertEqual(testBptk2.run_step(flat=True),{'testManager': {'testScenario': {'stock': 1.0, 'flow': 2.0}}})
 
-    def testBptk_run_step_delay_looks_back_at_the_value_set_at_that_step(self):
+    def test_run_step_delay_looks_back_at_the_value_set_at_that_step(self):
         """A constant overridden per step used to lose its history and collapse the delay.
 
         `delay` at step t asks its input for step t-2. A constant set per step used to be
@@ -465,7 +460,7 @@ class TestBptk(unittest.TestCase):
             arrived,
             {1.0: 8.0, 2.0: 8.0, 3.0: 8.0, 4.0: 8.0, 5.0: 8.0, 6.0: 20.0})
 
-    def testBptk_run_step_delay_looks_back_past_a_lost_simulation(self):
+    def test_run_step_delay_looks_back_past_a_lost_simulation(self):
         """A simulation created mid-session gets the overrides of the steps it missed.
 
         That is a session restored into a fresh process, and a session the Rust engine
@@ -526,7 +521,7 @@ class TestBptk(unittest.TestCase):
                                     scenario_manager=manager)
         return testBptk
 
-    def testBptk_run_scenarios_column_names_do_not_depend_on_earlier_runs(self):
+    def test_run_scenarios_column_names_do_not_depend_on_earlier_runs(self):
         """A run for one scenario used to rename a later run's column.
 
         With a single manager and a single scenario the columns are handed back under
@@ -551,7 +546,7 @@ class TestBptk(unittest.TestCase):
         assert sorted(both.columns) == ["shared_manager_base_headcount",
                                         "shared_manager_freeze_headcount"]
 
-    def testBptk_plot_scenarios_column_names_do_not_depend_on_earlier_plots(self):
+    def test_plot_scenarios_column_names_do_not_depend_on_earlier_plots(self):
         """The same leak through the other door: `plot_scenarios` carried its own dict."""
         import matplotlib
         matplotlib.use("Agg")
@@ -591,7 +586,7 @@ class TestBptk(unittest.TestCase):
                                     scenario_manager="testManager")
         return testBptk
 
-    def testBptk_begin_session_backend_default_is_python(self):
+    def test_begin_session_backend_default_is_python(self):
         """When backend is not specified, session_state must record python."""
         testBptk = self._build_simple_step_bptk()
         testBptk.begin_session(scenarios=["testScenario"],
@@ -600,7 +595,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.session_state["backend"], "python")
         testBptk.end_session()
 
-    def testBptk_begin_session_backend_explicit_python(self):
+    def test_begin_session_backend_explicit_python(self):
         testBptk = self._build_simple_step_bptk()
         testBptk.begin_session(scenarios=["testScenario"],
                                scenario_managers=["testManager"],
@@ -608,7 +603,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.session_state["backend"], "python")
         testBptk.end_session()
 
-    def testBptk_begin_session_backend_explicit_rust(self):
+    def test_begin_session_backend_explicit_rust(self):
         testBptk = self._build_simple_step_bptk()
         testBptk.begin_session(scenarios=["testScenario"],
                                scenario_managers=["testManager"],
@@ -616,13 +611,9 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.session_state["backend"], "rust")
         testBptk.end_session()
 
-    def testBptk_begin_session_backend_invalid_falls_back(self):
+    def test_begin_session_backend_invalid_falls_back(self):
         """Invalid backend strings must log an [ERROR] and fall back to python."""
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         testBptk = self._build_simple_step_bptk()
         testBptk.begin_session(scenarios=["testScenario"],
@@ -630,15 +621,11 @@ class TestBptk(unittest.TestCase):
                                equations=["stock"], backend="bogus")
         self.assertEqual(testBptk.session_state["backend"], "python")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
         self.assertIn("[ERROR] begin_session: invalid backend 'bogus'", content)
         testBptk.end_session()
 
-    def testBptk_begin_session_backend_none_uses_default(self):
+    def test_begin_session_backend_none_uses_default(self):
         """backend=None (the default) resolves to the instance default_backend,
         which is 'python' for an unconfigured instance."""
         testBptk = self._build_simple_step_bptk()
@@ -649,7 +636,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.session_state["backend"], "python")
         testBptk.end_session()
 
-    def testBptk_default_backend_rust_used_when_backend_omitted(self):
+    def test_default_backend_rust_used_when_backend_omitted(self):
         """A bptk configured with default_backend='rust' runs sessions
         on Rust when begin_session omits the backend argument; an explicit backend
         still overrides the instance default."""
@@ -671,7 +658,24 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.session_state["backend"], "python")
         testBptk.end_session()
 
-    def testBptk_default_backend_invalid_config_falls_back(self):
+    @pytest.mark.requires_rust
+    def test_default_backend_reaches_run_and_plot_scenarios(self):
+        """Every method that takes a backend uses the instance default unless given one.
+        run_scenarios and plot_scenarios used to stay on 'python' regardless."""
+        from BPTK_Py.scenariorunners.sd_runner import SdRunner
+        testBptk = self._build_simple_step_bptk(
+            configuration={"default_backend": "rust"})
+        call = dict(scenarios=["testScenario"], scenario_managers=["testManager"], equations=["stock"])
+
+        with mock.patch.object(SdRunner, "run_scenario", autospec=True,
+                               side_effect=SdRunner.run_scenario) as run:
+            testBptk.run_scenarios(**call)
+            testBptk.plot_scenarios(return_df=True, **call)
+            testBptk.run_scenarios(backend="python", **call)
+
+        self.assertEqual([c.kwargs["backend"] for c in run.call_args_list], ["rust", "rust", "python"])
+
+    def test_default_backend_invalid_config_falls_back(self):
         """An invalid default_backend in the configuration logs an [ERROR] and
         leaves the instance default at 'python'."""
         testBptk = self._build_simple_step_bptk(
@@ -679,7 +683,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(testBptk.default_backend, "python")
 
     @pytest.mark.requires_rust
-    def testBptk_end_session_clears_rust_state(self):
+    def test_end_session_clears_rust_state(self):
         """After end_session, the Rust fields populated mid-session must all be reset
         on the underlying SimulationScenario."""
         testBptk = self._build_simple_step_bptk()
@@ -702,7 +706,7 @@ class TestBptk(unittest.TestCase):
         self.assertFalse(sc._rust_initial_returned)
         self.assertIsNone(testBptk.session_state)
 
-    def testBptk_end_session_python_session_no_rust_state(self):
+    def test_end_session_python_session_no_rust_state(self):
         """A python-backed session must never populate the Rust fields, and
         end_session must leave them at their defaults."""
         testBptk = self._build_simple_step_bptk()
@@ -721,9 +725,9 @@ class TestBptk(unittest.TestCase):
         self.assertFalse(sc._rust_initial_returned)
 
     @pytest.mark.requires_rust
-    def testBptk_end_session_reset_exception_swallowed(self):
-        """If rust_model.reset() raises, end_session must still complete and
-        leave the scenario in a clean state. The real RustSdModel.reset() is a
+    def test_end_session_reset_exception_logged(self):
+        """If rust_model.reset() raises, end_session must still complete, leave the
+        scenario in a clean state and say what failed. The real RustSdModel.reset() is a
         Rust-defined attribute and can't be monkeypatched, so we swap the
         rust_model handle out for a MagicMock whose reset() raises."""
         testBptk = self._build_simple_step_bptk()
@@ -738,13 +742,15 @@ class TestBptk(unittest.TestCase):
         sc.rust_model = mock.MagicMock()
         sc.rust_model.reset.side_effect = RuntimeError("simulated boom")
 
+        clear_log()
         testBptk.end_session()  # must not raise
 
         self.assertIsNone(sc.rust_model)
         self.assertIsNone(testBptk.session_state)
+        self.assertIn("releasing the Rust state of testScenario failed: simulated boom", read_log())
 
     @pytest.mark.requires_rust
-    def testBptk_run_step_passes_backend_to_runner(self):
+    def test_run_step_passes_backend_to_runner(self):
         """run_step must forward session_state['backend'] to SdRunner.run_scenario_step."""
         from BPTK_Py.scenariorunners.sd_runner import SdRunner
         testBptk = self._build_simple_step_bptk()
@@ -759,7 +765,7 @@ class TestBptk(unittest.TestCase):
             self.assertEqual(mock_run.call_args.kwargs["backend"], "rust")
         testBptk.end_session()
 
-    def testBptk_run_step_defaults_to_python_when_backend_missing(self):
+    def test_run_step_defaults_to_python_when_backend_missing(self):
         """Sessions reconstructed from external state may not carry the
         'backend' key; run_step must default to python rather than KeyError."""
         from BPTK_Py.scenariorunners.sd_runner import SdRunner
@@ -776,7 +782,7 @@ class TestBptk(unittest.TestCase):
             self.assertEqual(mock_run.call_args.kwargs["backend"], "python")
         testBptk.end_session()
 
-    def testBptk_session_results(self):
+    def test_session_results(self):
         testBptk = bptk()
 
         self.assertEqual(testBptk.session_results(),{})   
@@ -844,13 +850,9 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(result2["smPortfolio"]["scenarrioLowInterest"]["equations"]["totalValue"],[1000,2010])
         self.assertEqual(result2["smPortfolio"]["scenarrioLowInterest"]["equations"]["interest"],[10,20.1])
 
-    def testBptk_run_scenarios_invalid(self):
+    def test_run_scenarios_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         testBptk = bptk()
 
@@ -862,11 +864,7 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(testBptk.run_scenarios(scenarios=["1","2","3"],scenario_managers=[],equations=["stock"],agents=["agent1"]))        
         self.assertIsNone(testBptk.run_scenarios(scenarios=["1"], scenario_managers=["firstManager"],equations=["stock"]))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Neither any agents nor equations to simulate given! Aborting!", content) 
         self.assertIn("[ERROR] You may only use the agent_states parameter if you also set the agents parameter!", content)     
@@ -890,16 +888,12 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(testBptk.run_scenarios(scenarios=["base"], scenario_managers=["testManage"],equations=["stock"]))
         self.assertIsNone(testBptk.run_scenarios(scenarios=["bas"], scenario_managers=["testManager"],equations=["stock"]))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Scenario manager \"testManage\" not found! Did you maybe mean one of \"testManager", content) 
         self.assertIn("[ERROR] Scenario \"bas\" not found in any scenario manager! Did you maybe mean one of \"base\"?", content) 
 
-    def testBptk_plot_lookup(self):
+    def test_plot_lookup(self):
         from BPTK_Py import Model
         from BPTK_Py import sd_functions as sd
         model = Model(starttime=0.0,stoptime=5.0,dt=1.0,name='test')     
@@ -930,27 +924,19 @@ class TestBptk(unittest.TestCase):
         import pandas as pd
         self.assertTrue(result.equals(pd.DataFrame(data=data, index=[0.0,0.2,0.4,0.6,0.8,1.0])))
 
-    def testBptk_register_scenarios_error(self):
+    def test_register_scenarios_error(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         testBptk = bptk()  
 
         testBptk.register_scenarios(scenarios={},scenario_manager="testScenarioManager")
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Scenario manager not found. Did you register it?", content) 
 
-    def testBptk_list_scenarios(self):
+    def test_list_scenarios(self):
         from BPTK_Py import Model
         model = Model(starttime=0.0,stoptime=15.0,dt=1.0,name='test')
         stock = model.stock("stock")     
@@ -1000,12 +986,12 @@ class TestBptk(unittest.TestCase):
         #Remove the redirection of the console output
         sys.stdout = old_stdout
 
-    def testBptk_get_scenario_names_empty(self):
+    def test_get_scenario_names_empty(self):
         testBptk = bptk()  
 
         self.assertEqual(testBptk.get_scenario_names(format="invalid"),[])
 
-    def testBptk_get_scenarios(self):
+    def test_get_scenarios(self):
         from BPTK_Py import Model
         model = Model(starttime=0.0,stoptime=15.0,dt=1.0,name='test')
         stock = model.stock("stock")     
@@ -1030,7 +1016,24 @@ class TestBptk(unittest.TestCase):
         self.assertIsInstance(result["testManager2_scenario21"],SimulationScenario)    
         self.assertIsInstance(result["testManager2_scenario22"],SimulationScenario)    
 
-    def testBptk_list_equations_prints_each_kind_once(self):
+    def test_get_scenarios_leaves_the_callers_list_alone(self):
+        """The list passed in used to grow: ["base"] came back as ["base", "base"] with
+        one manager, and with two it gained "mgr_base" and "other_base"."""
+        from BPTK_Py import Model
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="list")
+        model.converter("c").equation = 1.0
+        testBptk = bptk()
+        for manager in ("mgr", "other"):
+            testBptk.register_scenario_manager({manager: {"model": model}})
+            testBptk.register_scenarios(scenarios={"base": {}}, scenario_manager=manager)
+
+        for managers, expected in ((["mgr"], ["base"]), (["mgr", "other"], ["mgr_base", "other_base"])):
+            mine = ["base"]
+            result = testBptk.get_scenarios(scenario_managers=managers, scenarios=mine)
+            self.assertEqual(mine, ["base"])
+            self.assertEqual(sorted(result), expected)
+
+    def test_list_equations_prints_each_kind_once(self):
         """Two flows must not print the converters twice.
 
         Until 3.0.2 the converter and constant loops sat inside the flow loop, so the
@@ -1062,7 +1065,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(output_text.count("\tflow: \t\t\tf1"), 1)
         self.assertEqual(output_text.count("\tflow: \t\t\tf2"), 1)
 
-    def testBptk_list_equations(self):
+    def test_list_equations(self):
         from BPTK_Py import Model
         model = Model(starttime=0.0,stoptime=15.0,dt=1.0,name='test')
         stock = model.stock("testStock")     
@@ -1125,7 +1128,7 @@ class TestBptk(unittest.TestCase):
         finally:
             sys.stdout = old_stdout
 
-    def testBptk_version_is_resolved(self):
+    def test_version_is_resolved(self):
         """BPTK_Py.__version__ resolves to a real version string, not the 'UNAVAILABLE' fallback."""
         from importlib.metadata import PackageNotFoundError, version as _installed
         try:
@@ -1154,7 +1157,7 @@ class TestBptk(unittest.TestCase):
         response.__enter__.return_value = io.StringIO(payload)
         return response
 
-    def testBptk_version_tuple(self):
+    def test_version_tuple(self):
         """Versions compare numerically, and a non-numeric suffix truncates."""
         self.assertEqual(bptk._version_tuple("2.4.1"), (2, 4, 1))
         self.assertEqual(bptk._version_tuple("2.5.0rc1"), (2, 5, 0))
@@ -1162,7 +1165,7 @@ class TestBptk(unittest.TestCase):
         self.assertLess(bptk._version_tuple("2.4.1"), bptk._version_tuple("2.4.2"))
         self.assertFalse(bptk._version_tuple("2.4.1") < bptk._version_tuple("2.4.1"))
 
-    def testBptk_update_already_latest(self):
+    def test_update_already_latest(self):
         """update() prints 'up to date' when the local version matches PyPI."""
         with mock.patch("urllib.request.urlopen",
                         return_value=self._fake_pypi_response(BPTK_Py.__version__)):
@@ -1171,7 +1174,7 @@ class TestBptk(unittest.TestCase):
         self.assertIn("Nothing to do", output)
         self.assertIn(BPTK_Py.__version__, output)
 
-    def testBptk_update_installs_newer_version_terminal(self):
+    def test_update_installs_newer_version_terminal(self):
         """update() pip-installs when PyPI advertises a newer version (terminal flow)."""
         with mock.patch("urllib.request.urlopen",
                         return_value=self._fake_pypi_response("999.0.0")), \
@@ -1185,7 +1188,7 @@ class TestBptk(unittest.TestCase):
         check_call.assert_called_once()
         self.assertIn("BPTK-Py", check_call.call_args[0][0])
 
-    def testBptk_update_pip_failure(self):
+    def test_update_pip_failure(self):
         """update() reports an error when pip exits non-zero."""
         with mock.patch("urllib.request.urlopen",
                         return_value=self._fake_pypi_response("999.0.0")), \
@@ -1196,7 +1199,7 @@ class TestBptk(unittest.TestCase):
 
         self.assertIn("Error Updating", output)
 
-    def testBptk_update_network_error(self):
+    def test_update_network_error(self):
         """A PyPI that cannot be reached is reported, not raised.
 
         This is what the distlib version did wrong: PyPI's XML-RPC search
@@ -1221,25 +1224,25 @@ class TestBptk(unittest.TestCase):
              mock.patch("builtins.get_ipython", create=True, return_value=fake_shell):
             return self._capture_stdout(bptk.update)
 
-    def testBptk_update_notebook_hint(self):
+    def test_update_notebook_hint(self):
         """isnotebook() returns True for a ZMQInteractiveShell - the kernel hint appears."""
         output = self._run_update_with_shell("ZMQInteractiveShell")
         self.assertIn("Update successfully completed", output)
         self.assertIn("Jupyter Notebook", output)
 
-    def testBptk_update_terminal_shell(self):
+    def test_update_terminal_shell(self):
         """isnotebook() returns False for a TerminalInteractiveShell - no notebook hint."""
         output = self._run_update_with_shell("TerminalInteractiveShell")
         self.assertIn("Update successfully completed", output)
         self.assertNotIn("Jupyter Notebook", output)
 
-    def testBptk_update_other_shell(self):
+    def test_update_other_shell(self):
         """isnotebook() returns False for any other shell class - no notebook hint."""
         output = self._run_update_with_shell("SomeOtherShell")
         self.assertIn("Update successfully completed", output)
         self.assertNotIn("Jupyter Notebook", output)
 
-    def testBptk_export_scenarios(self):
+    def test_export_scenarios(self):
         from BPTK_Py import Model
         from BPTK_Py import sd_functions as sd
         model = Model(starttime=0.0,stoptime=3.0,dt=1.0,name='test')
@@ -1326,7 +1329,7 @@ class TestBptk(unittest.TestCase):
         self.assertTrue(result1["interactive"].equals(pd.DataFrame()))
         self.assertTrue(result2["interactive"].equals(pd.DataFrame(data=data_interactive)))
 
-    def testBptk_train_scenarios_learning_curve(self):
+    def test_train_scenarios_learning_curve(self):
         """train_scenarios runs an ABM over episodes and returns one row per
         episode holding the episode's final value (collect_data=False path)."""
         import pandas as pd
@@ -1363,7 +1366,83 @@ class TestBptk(unittest.TestCase):
 
         testBptk.destroy()
 
-    def testBptk_run_scenarios_agents_without_agent_states(self):
+    def test_train_scenarios_takes_comma_strings(self):
+        """agent_properties and agent_property_types were passed on unsplit, so a
+        string was read character by character."""
+        testBptk = _build_training_bptk()
+
+        df = testBptk.train_scenarios(
+            scenarios="trainScenario", scenario_managers="trainManager", episodes=3,
+            agents="learner", agent_states="active", agent_properties="x",
+            agent_property_types="total", return_df=True,
+        )
+
+        self.assertEqual(list(df["learner_active_x_total"]), [10.0, 20.0, 30.0])
+        testBptk.destroy()
+
+    def test_train_scenarios_with_a_progress_bar_returns_the_result(self):
+        """The progress bar used to put the training in a thread, whose result was lost:
+        train_scenarios returned None."""
+        testBptk = _build_training_bptk()
+
+        df = testBptk.train_scenarios(
+            scenarios=["trainScenario"],
+            scenario_managers=["trainManager"],
+            episodes=3,
+            agents=["learner"],
+            agent_states=["active"],
+            agent_properties=["x"],
+            agent_property_types=["total"],
+            return_df=True,
+            progress_bar=True,
+        )
+
+        self.assertEqual(list(df["learner_active_x_total"]), [10.0, 20.0, 30.0])
+
+        testBptk.destroy()
+
+    def test_train_scenarios_with_a_progress_bar_raises_to_the_caller(self):
+        testBptk = _build_training_bptk()
+
+        with mock.patch.object(testBptk, "_train_scenarios", side_effect=RuntimeError("training failed")), \
+                mock.patch("BPTK_Py.util.ProgressBar") as progress_bar:
+            with self.assertRaisesRegex(RuntimeError, "training failed"):
+                testBptk.train_scenarios(scenarios=["trainScenario"], scenario_managers=["trainManager"],
+                                         return_df=True, progress_bar=True)
+
+        # The bar is closed on the way out, error or not
+        progress_bar.return_value.close.assert_called_once()
+
+        testBptk.destroy()
+
+    def test_list_parameters_given_as_comma_strings(self):
+        """Every list parameter also takes a comma string. agents used to be the
+        exception: it was iterated letter by letter, which ended in a KeyError about
+        something else. The coverage report cannot show this - each split is a one-line
+        conditional, counted as covered whichever branch ran."""
+        # Agent-based: every agent parameter as a string
+        testBptk = _build_training_bptk()
+        as_list = testBptk.run_scenarios(
+            scenario_managers=["trainManager"], scenarios=["trainScenario"], agents=["learner"],
+            agent_states=["active"], agent_properties=["x"], agent_property_types=["total"])
+        as_string = testBptk.run_scenarios(
+            scenario_managers="trainManager", scenarios="trainScenario", agents="learner",
+            agent_states="active", agent_properties="x", agent_property_types="total")
+        self.assertEqual(list(as_string.columns), list(as_list.columns))
+        testBptk.destroy()
+
+        # System Dynamics: two equations in one string
+        sdBptk = self._sd_session_bptk()
+        df = sdBptk.run_scenarios(scenario_managers="smSession", scenarios="base", equations="stock,rate")
+        self.assertEqual(sorted(df.columns), ["rate", "stock"])
+
+        # A session keeps lists, whatever it was given. Sessions are System Dynamics only.
+        sdBptk.begin_session(scenario_managers="smSession", scenarios="base", equations="stock,rate")
+        self.assertEqual(sdBptk.session_state["scenario_managers"], ["smSession"])
+        self.assertEqual(sdBptk.session_state["scenarios"], ["base"])
+        self.assertEqual(sdBptk.session_state["equations"], ["stock", "rate"])
+
+    def test_run_scenarios_agents_without_agent_states(self):
         """Naming an agent but no states must return that agent's states, not crash.
 
         `get_stats_for` put a plain `0` into the per-timestep output when no state was
@@ -1387,7 +1466,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(df.iloc[0].iloc[0], 1)
         testBptk.destroy()
 
-    def testBptk_run_scenarios_agents_with_and_without_states_agree(self):
+    def test_run_scenarios_agents_with_and_without_states_agree(self):
         """Asking for the only state the agent has is the same as asking for none."""
         without = _build_training_bptk().run_scenarios(
             scenario_managers=["trainManager"], scenarios=["trainScenario"],
@@ -1398,7 +1477,7 @@ class TestBptk(unittest.TestCase):
 
         self.assertTrue(without.equals(with_state))
 
-    def testBptk_train_scenarios_invalid_arguments_stop_before_training(self):
+    def test_train_scenarios_invalid_arguments_stop_before_training(self):
         """The four argument guards used to log and then train anyway.
 
         Each ended in `sys.exit` without parentheses - an expression with no effect. The
@@ -1425,7 +1504,7 @@ class TestBptk(unittest.TestCase):
         trainer.assert_not_called()
         testBptk.destroy()
 
-    def testBptk_train_scenarios_no_agents_returns_none(self):
+    def test_train_scenarios_no_agents_returns_none(self):
         """Without agents there is nothing to train, so None is returned."""
         testBptk = _build_training_bptk()
 
@@ -1440,7 +1519,7 @@ class TestBptk(unittest.TestCase):
         self.assertIsNone(result)
         testBptk.destroy()
 
-    def testBptk_train_scenarios_accepts_comma_separated_strings(self):
+    def test_train_scenarios_accepts_comma_separated_strings(self):
         """Scenario/manager/agent args may be passed as comma-separated strings."""
         import pandas as pd
 
@@ -1463,7 +1542,7 @@ class TestBptk(unittest.TestCase):
         self.assertEqual(list(df[column_name]), [10.0])
         testBptk.destroy()
 
-    def testBptk_train_scenarios_multiple_managers_join(self):
+    def test_train_scenarios_multiple_managers_join(self):
         """Training across two managers joins their per-episode result frames."""
         import pandas as pd
 
@@ -1511,7 +1590,7 @@ class TestBptk(unittest.TestCase):
     # progress-bar training, lookup/reset/register/export.
     # ------------------------------------------------------------------
 
-    def testBptk_conf_preserves_slider_layout(self):
+    def test_conf_preserves_slider_layout(self):
         """A non-None slider_layout survives the deepcopy (it is popped and restored)."""
         from BPTK_Py.bptk import conf
         from BPTK_Py.config import config as default_config
@@ -1522,21 +1601,21 @@ class TestBptk(unittest.TestCase):
         finally:
             default_config.configuration.pop("slider_layout", None)
 
-    def testBptk_init_configures_logfire(self):
+    def test_init_configures_logfire(self):
         """A logfire_config dict triggers configure_logfire during init."""
         import BPTK_Py.logger.logger as logmod2
         with mock.patch.object(logmod2, "configure_logfire", return_value=True) as cfg:
             bptk(configuration={"logfire_config": {"token": "x"}})
         cfg.assert_called_once()
 
-    def testBptk_init_logfire_failure_is_caught(self):
+    def test_init_logfire_failure_is_caught(self):
         """A failure while configuring logfire is caught, not raised."""
         import BPTK_Py.logger.logger as logmod2
         with mock.patch.object(logmod2, "configure_logfire", side_effect=RuntimeError("boom")):
             testBptk = bptk(configuration={"logfire_config": {"token": "x"}})
         self.assertIsNotNone(testBptk)
 
-    def testBptk_init_appends_scenario_base_path_to_syspath(self):
+    def test_init_appends_scenario_base_path_to_syspath(self):
         """The parent of the scenario storage path is added to sys.path if absent."""
         import sys, tempfile, os
         from pathlib import Path
@@ -1554,28 +1633,7 @@ class TestBptk(unittest.TestCase):
                 sys.path.remove(base_path)
             tmp.cleanup()
 
-    def testBptk_train_scenarios_progress_bar(self):
-        """train_scenarios with progress_bar=True runs training on a worker thread
-        while updating a tqdm progress bar."""
-        testBptk = _build_training_bptk()
-        # return_df=True keeps the worker thread off the GUI plotting path (the
-        # macOS matplotlib backend must not be driven from a non-main thread).
-        # The progress_bar branch itself returns None regardless.
-        result = testBptk.train_scenarios(
-            scenarios=["trainScenario"],
-            scenario_managers=["trainManager"],
-            episodes=2,
-            agents=["learner"],
-            agent_states=["active"],
-            agent_properties=["x"],
-            agent_property_types=["total"],
-            return_df=True,
-            progress_bar=True,
-        )
-        self.assertIsNone(result)
-        testBptk.destroy()
-
-    def testBptk_plot_lookup_single_scenario(self):
+    def test_plot_lookup_single_scenario(self):
         """plot_lookup with a single lookup source hits the single-dataframe branch."""
         from BPTK_Py import Model
         import pandas as pd
@@ -1590,7 +1648,7 @@ class TestBptk(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result.columns), 1)
 
-    def testBptk_plot_scenarios_without_data_returns_none(self):
+    def test_plot_scenarios_without_data_returns_none(self):
         """A run that produced nothing must not reach the visualizer.
 
         run_scenarios() returns None when no scenario matched, and passing that
@@ -1605,7 +1663,7 @@ class TestBptk(unittest.TestCase):
         plot.assert_not_called()
 
     @pytest.mark.requires_extra("plotting")
-    def testBptk_plot_lookup_format_axes(self):
+    def test_plot_lookup_format_axes(self):
         """format="axes" hands the Axes back, as plot_scenarios() already did."""
         import matplotlib.axes
         from BPTK_Py import Model
@@ -1620,7 +1678,7 @@ class TestBptk(unittest.TestCase):
 
         self.assertIsInstance(ax, matplotlib.axes.Axes)
 
-    def testBptk_reset_scenario_delegates_to_factory(self):
+    def test_reset_scenario_delegates_to_factory(self):
         """reset_scenario and reset_all_scenarios delegate to the factory."""
         testBptk = bptk()
         with mock.patch.object(testBptk.scenario_manager_factory, "reset_scenario") as reset_one:
@@ -1631,7 +1689,7 @@ class TestBptk(unittest.TestCase):
             testBptk.reset_all_scenarios()
         reset_all.assert_called_once()
 
-    def testBptk_register_model_from_source_path(self):
+    def test_register_model_from_source_path(self):
         """register_model with a filesystem path registers a manager pointing at that source."""
         import tempfile, os
         tmp = tempfile.NamedTemporaryFile(suffix=".itmx", delete=False)
@@ -1649,7 +1707,7 @@ class TestBptk(unittest.TestCase):
         finally:
             os.unlink(tmp.name)
 
-    def testBptk_export_scenarios_defaults_interactive_and_file(self):
+    def test_export_scenarios_defaults_interactive_and_file(self):
         """export_scenarios: default (all) scenarios, non-empty interactive settings,
         and writing to a spreadsheet file."""
         from BPTK_Py import Model
@@ -1691,23 +1749,34 @@ class TestBptk(unittest.TestCase):
         finally:
             os.unlink(tmp.name)
 
-    def testBptk_register_model_from_source_requires_name(self):
+        # time_column_name names the time column in all three tables
+        renamed = testBptk.export_scenarios(
+            scenario_manager="expManager", equations=["stock"], time_column_name="t",
+            interactive_scenario="base", interactive_equations=["stock"],
+            interactive_settings={"rate": [1.0, 2.0, 1.0]})
+        for table in ("scenario", "indicator", "interactive"):
+            self.assertIn("t", renamed[table].columns, table)
+            self.assertNotIn("time", renamed[table].columns, table)
+
+        # Without equations there is nothing to export: say so, rather than failing inside
+        with self.assertRaisesRegex(ValueError, "needs the equations"):
+            testBptk.export_scenarios(scenario_manager="expManager")
+
+    def test_register_model_from_source_requires_name(self):
         """register_model from a path without a manager name logs an error and aborts."""
         import tempfile, os
         tmp = tempfile.NamedTemporaryFile(suffix=".itmx", delete=False)
         tmp.close()
         try:
-            with open(logmod.logfile, "w", encoding="UTF-8"):
-                pass
+            clear_log()
             testBptk = bptk()
             testBptk.register_model(tmp.name)  # no scenario_manager name
-            with open(logmod.logfile, "r", encoding="UTF-8") as f:
-                content = f.read()
+            content = read_log()
             self.assertIn("[ERROR] Please define a name for the new scenario manager", content)
         finally:
             os.unlink(tmp.name)
 
-    def testBptk_register_scenario_manager_twice_changes_nothing(self):
+    def test_register_scenario_manager_twice_changes_nothing(self):
         """A second registration under the same name is a no-op, not a partial one.
 
         It used to drop the model but still merge the scenarios from the same
@@ -1730,8 +1799,7 @@ class TestBptk(unittest.TestCase):
         testBptk = bptk()
         testBptk.register_scenario_manager({"sm": {"model": model_first, "scenarios": {"base": {}}}})
 
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         testBptk.register_scenario_manager({"sm": {"model": model_second, "scenarios": {"added": {}}}})
 
@@ -1744,8 +1812,7 @@ class TestBptk(unittest.TestCase):
         )
         self.assertEqual(df.iloc[-1].iloc[0], 1.0)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("[ERROR] Scenario manager 'sm' is already registered", content)
         self.assertNotIn("Successfully registered scenario manager sm", content)
 
@@ -1902,10 +1969,6 @@ class TestMatplotlibStyling(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class TestTrainingProgress(unittest.TestCase):
     """The bar tracks the work, not only the episodes.
 
@@ -2039,6 +2102,23 @@ class TestScenarioStorageModelPath(unittest.TestCase):
         os.chdir(self.project)
         self._assert_runs("scenarios/")
 
+    def test_a_file_without_a_parser_beside_the_scenarios_is_skipped(self):
+        """A README among the scenario files used to drop every manager's base
+        constants - growth fell back to the model's 2.0 - and made register_scenarios
+        raise AttributeError."""
+        self._write_project("class")
+        scenario_file = self.project / "scenarios" / "growth.json"
+        scenario_file.write_text(scenario_file.read_text().replace('"growth": 2.0', '"growth": 3.0'))
+        (self.project / "scenarios" / "README.md").write_text("notes")
+        os.chdir(self.project)
+        base, _ = self._run("scenarios/")
+        self.assertEqual(base, [0.0, 3.0, 6.0, 9.0, 12.0])
+
+        instance = bptk(configuration={"scenario_storage": "scenarios/",
+                                       "set_scenario_monitor": False, "set_model_monitor": False})
+        instance.register_scenarios(scenarios={"more": {}}, scenario_manager="smGrowth")
+        self.assertIn("more", instance.scenario_manager_factory.scenario_managers["smGrowth"].scenarios)
+
     def test_relative_storage_from_project_dir_class_notation(self):
         self._write_project("class")
         os.chdir(self.project)
@@ -2077,6 +2157,23 @@ class TestScenarioStorageModelPath(unittest.TestCase):
         self._write_project("class")
         os.chdir(self.project)
         self._assert_runs(str(self.project / "scenarios"))
+
+    # A reset reads the scenarios again from the configured storage, not from ./scenarios.
+
+    def test_reset_reads_from_configured_storage(self):
+        self._write_project("class")
+        os.chdir(self.root / "elsewhere")
+        instance = bptk(configuration={
+            "scenario_storage": str(self.project / "scenarios"),
+            "set_scenario_monitor": False,
+            "set_model_monitor": False,
+        })
+
+        instance.reset_all_scenarios()
+        self.assertEqual(instance.get_scenario_names(), ["base", "fast"])
+
+        instance.reset_scenario(scenario_manager="smGrowth", scenario="fast")
+        self.assertEqual(instance.get_scenario_names(format="dict"), {"smGrowth": ["base", "fast"]})
 
     # Agent-based models go through the hybrid scenario manager, which imports the
     # dotted class as it stands.

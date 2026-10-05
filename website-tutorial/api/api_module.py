@@ -45,7 +45,7 @@ def _(mo):
     name in the Model class and is needed when making calls to bptk.run_scenario or
     bptk.plot_scenario.
 
-    Check the [Beergame](/model_library/beergame/beergame_sd_dsl.ipynb) or [Enterprise Digital Twin](/model_library/enterprise_digital_twin/enterprise_digital_twin.ipynb) models to see the module class in action.
+    Check the [Beergame](/model_library/beergame/beergame_sd_dsl.md) or [Enterprise Digital Twin](/model_library/enterprise_digital_twin/enterprise_digital_twin.md) models to see the module class in action.
     """)
     return
 
@@ -345,8 +345,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # `list_equations` prints and returns nothing, and marimo sends a cell's stdout to
-    # the console rather than into the page - so it has to be captured to be seen.
     with mo.capture_stdout() as equations:
         bptk.list_equations()
 

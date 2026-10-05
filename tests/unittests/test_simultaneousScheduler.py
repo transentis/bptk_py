@@ -136,6 +136,3 @@ class Test_SimultaneousScheduler(unittest.TestCase):
         data_collector.record_event.assert_called_once_with(0.0, event)
         # Default collect_data=True—statistics collected every step.
         data_collector.collect_agent_statistics.assert_called_once()
-
-if __name__ == '__main__':
-    unittest.main()

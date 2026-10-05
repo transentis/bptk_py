@@ -7,10 +7,7 @@ from BPTK_Py import Model
 
 
 class TestAgent(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testAgentInit(self):
+    def test_agent_init(self):
 
         model = Model()
         properties = {}
@@ -33,11 +30,11 @@ class TestAgent(unittest.TestCase):
         self.assertRaises(ValueError, Agent, agent_id=1, model=model, properties="DICT", agent_type="testAgent")
 
 
-    def testAgentSerialize(self):
+    def test_agent_serialize(self):
         model = Model()
         self.assertEqual(Agent(agent_id=1, model=model, properties={"name": {"type" : "String", "value": "testName"}}, agent_type="testAgent").serialize(), {'name': 'testName', 'id': 1, 'state': 'active', 'type': 'testAgent'})
 
-    def testAgentRegister_event_handler(self):
+    def test_agent_register_event_handler(self):
         from BPTK_Py import Event
         model = Model()
         agent = Agent(agent_id=1, model=model, properties={},agent_type="testAgent")
@@ -277,8 +274,4 @@ class TestAgent(unittest.TestCase):
         mock_random.return_value = 0.7
         treshold_value = 0.5
 
-        self.assertFalse(agent.is_event_relevant(treshold_value))  
-
-if __name__ == '__main__':
-    unittest.main()
-
+        self.assertFalse(agent.is_event_relevant(treshold_value))

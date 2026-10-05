@@ -21,9 +21,6 @@ class ArrayedEquation:
 
     def __getitem__(self, key):
         if not str(key) in self.equations:
-            # if isinstance(key, int):
-            #     return self._element.get_arr_equation(self.equations[key])
-            # else:
             raise Exception("Arrayed equation " +
                             str(key) + " does not exist!")
         return self._element.get_arr_equation(str(key))
@@ -701,8 +698,20 @@ class ArrayStandardDeviationOperator(ScalarResultOperator, Operator):
         return a
 
 
+def _check_operand(operand):
+    """An operand is an element, an expression or a number. Anything else used to be
+    accepted here and fail later, as "'NoneType' object has no attribute 'term'"."""
+    if isinstance(operand, (BPTK_Py.sddsl.element.Element, Operator, int, float)):
+        return
+    raise TypeError(
+        "Cannot use {!r} in an equation: an operand has to be an element, an expression "
+        "or a number.".format(operand))
+
+
 class BinaryOperator(Operator):
     def __init__(self, element_1, element_2, index=None, allow_different_sized_arrays=False):
+        _check_operand(element_1)
+        _check_operand(element_2)
         arrayed1 = isinstance(element_1, BPTK_Py.sddsl.element.Element) and element_1._elements.vector_size() > 0
         arrayed2 = isinstance(element_2, BPTK_Py.sddsl.element.Element) and element_2._elements.vector_size() > 0
         super().__init__(arrayed1 or arrayed2)
@@ -1342,7 +1351,10 @@ class Lookup(Function):
         if type(points) is str:
             self.points = "\"" + points + "\""
         else:
-            self.points = points
+            # Inline points are checked where they are written; a named table is checked
+            # where it is read, because a model's tables are set in many places.
+            from ..util.lookup_data import lookup_points
+            self.points = lookup_points("inline", points)
 
     def term(self, time="t"):
         return "model._lookup({},{})".format(self.element, self.points)
@@ -1358,7 +1370,8 @@ class Step(Function):
         self.timestep = UnaryOperator(timestep)
 
     def term(self, time="t"):
-        return "({} if {}>{} else 0.0)".format(self.height.term(time), time, self.timestep.term(time))
+        # From the timestep on, as XMILE's STEP and Stella switch
+        return "({} if {}>={} else 0.0)".format(self.height.term(time), time, self.timestep.term(time))
 
 
 class Pulse(Function):
@@ -1373,10 +1386,15 @@ class Pulse(Function):
         self.interval = UnaryOperator(interval)
 
     def term(self, time="t"):
+        # Times are compared with a tolerance: with dt = 0.1, `0.8 - 0.2` is not exactly
+        # twice 0.3, and an exact comparison skipped that pulse
         if self.interval.element == 0.0:
-            return "(({}/{}) if {}=={} else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse)
+            return "(({}/{}) if abs({}-{}) < 1e-10 else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse)
         else:
-            return "(({volume}/{dt}) if (({time}-{first_pulse}) >= 0 and (({time}-{first_pulse})%({interval}))==0) else 0.0)".format(volume=self.volume.term(time), dt=self.model.dt, time=time, first_pulse=self.first_pulse, interval=self.interval)
+            return ("(({volume}/{dt}) if (({time}-{first_pulse}) >= -1e-10 and "
+                    "abs(({time}-{first_pulse})/({interval}) - round(({time}-{first_pulse})/({interval}))) < 1e-9) "
+                    "else 0.0)").format(volume=self.volume.term(time), dt=self.model.dt, time=time,
+                                        first_pulse=self.first_pulse, interval=self.interval)
 
 
 class Trend(Function):
@@ -1497,7 +1515,16 @@ class Random(Function):
         self.max_value = max_value
 
     def term(self, time="t"):
-        return "(random.uniform({},{}) )".format(extractTerm(self.min_value, time), extractTerm(self.max_value, time))
+        return "distributions.evaluate(model, 'uniform', {}, {}, {})".format(
+            time, extractTerm(self.min_value, time), extractTerm(self.max_value, time))
+
+
+# Half away from zero, as the Rust engine and a spreadsheet round: 2.5 -> 3, -2.5 -> -3.
+# Python's round() rounds half to even (2.5 -> 2). Compared on the fractional part,
+# because floor(x + 0.5) turns 0.49999999999999994 into 1.
+ROUND_HALF_AWAY_FROM_ZERO = (
+    "(lambda v, d=0: math.copysign(math.floor(abs(v) * 10.0 ** d) + (1.0 if abs(v) * 10.0 ** d - math.floor(abs(v) * 10.0 ** d) >= 0.5 else 0.0), v) / 10.0 ** d)"
+)
 
 
 class Round(Function):
@@ -1506,7 +1533,8 @@ class Round(Function):
         self.digits = digits
 
     def term(self, time="t"):
-        return "(round( {}, {} ) )".format(extractTerm(self.operator, time), extractTerm(self.digits, time))
+        return "({}({}, {}))".format(ROUND_HALF_AWAY_FROM_ZERO, extractTerm(self.operator, time),
+                                     extractTerm(self.digits, time))
 
 
 class If(Function):
@@ -1682,8 +1710,9 @@ class Beta(Function):
         self.a = a
         self.b = b
 
-    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.beta({},{}))'.format(
-        extractTerm(self.a, time), extractTerm(self.b, time), extractTerm(self.a, time), extractTerm(self.b, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'beta', {}, {}, {})".format(
+            time, extractTerm(self.a, time), extractTerm(self.b, time))
 
 
 class Binomial(Function):
@@ -1691,8 +1720,9 @@ class Binomial(Function):
         self.n = n
         self.p = p
 
-    def term(self, time="t"): return '(np.nan if ({n} < 0 or {p} < 0 or {p} > 1) else np.random.binomial({n},{p}))'.format(
-        n=extractTerm(self.n, time), p=extractTerm(self.p, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'binomial', {}, {}, {})".format(
+            time, extractTerm(self.n, time), extractTerm(self.p, time))
 
 
 class NegBinomial(Function):
@@ -1700,8 +1730,9 @@ class NegBinomial(Function):
         self.n = n
         self.p = p
 
-    def term(self, time="t"): return '(np.nan if ({n} <= 0 or {p} <= 0 or {p} > 1) else np.random.negative_binomial({n},{p}))'.format(
-        n=extractTerm(self.n, time), p=extractTerm(self.p, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'negbinomial', {}, {}, {})".format(
+            time, extractTerm(self.n, time), extractTerm(self.p, time))
 
 
 class Combinations(Function):
@@ -1720,8 +1751,9 @@ class Exprnd(Function):
     def __init__(self, l):
         self.l = l
 
-    def term(self, time="t"): return '(np.nan if ({} <= 0) else np.random.exponential({}))'.format(
-        extractTerm(self.l, time), extractTerm(self.l, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'exprnd', {}, {})".format(
+            time, extractTerm(self.l, time))
 
 
 class Factorial(Function):
@@ -1737,8 +1769,9 @@ class Gamma(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.gamma({},{}))'.format(
-        extractTerm(self.shape, time), extractTerm(self.scale, time), extractTerm(self.shape, time), extractTerm(self.scale, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'gamma', {}, {}, {})".format(
+            time, extractTerm(self.shape, time), extractTerm(self.scale, time))
 
 
 class GammaLN(Function):
@@ -1753,8 +1786,9 @@ class Geometric(Function):
     def __init__(self, p):
         self.p = p
 
-    def term(self, time="t"): return '(1 if ( {}<=0 or {}>1 ) else (np.random.geometric(max(0, min(1,{})))))'.format(
-        extractTerm(self.p, time), extractTerm(self.p, time), extractTerm(self.p, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'geometric', {}, {})".format(
+            time, extractTerm(self.p, time))
 
 
 class Invnorm(Function):
@@ -1764,11 +1798,11 @@ class Invnorm(Function):
         self.stddev = stddev
 
     def term(self, time="t"):
-        if self.mean is not None and self.stddev is not None:
-            return "(norm.ppf({},{},{} ))".format(extractTerm(self.p, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
-        if self.mean is not None:
-            return "(norm.ppf({},{}) )".format(extractTerm(self.p, time), extractTerm(self.mean, time))
-        return "(norm.ppf({}) )".format(extractTerm(self.p, time))
+        # Either parameter may be left out on its own; the other keeps its default.
+        mean = 0.0 if self.mean is None else self.mean
+        stddev = 1.0 if self.stddev is None else self.stddev
+        return "distributions.evaluate(model, 'invnorm', {}, {}, {}, {})".format(
+            time, extractTerm(self.p, time), extractTerm(mean, time), extractTerm(stddev, time))
 
 
 class Logistic(Function):
@@ -1776,8 +1810,9 @@ class Logistic(Function):
         self.mean = mean
         self.scale = scale
 
-    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.logistic({}, {}))'.format(
-        extractTerm(self.scale, time), extractTerm(self.mean, time), extractTerm(self.scale, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'logistic', {}, {}, {})".format(
+            time, extractTerm(self.mean, time), extractTerm(self.scale, time))
 
 
 class Lognormal(Function):
@@ -1785,8 +1820,9 @@ class Lognormal(Function):
         self.stddev = stddev
         self.mean = mean
 
-    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.lognormal({}, {}))'.format(
-        extractTerm(self.stddev, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'lognormal', {}, {}, {})".format(
+            time, extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class Montecarlo(Function):
@@ -1801,8 +1837,9 @@ class Normal(Function):
         self.mean = mean
         self.stddev = stddev
 
-    def term(self, time="t"): return "(np.nan if ({} < 0) else np.random.normal({},{}))".format(
-        extractTerm(self.stddev, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'normal', {}, {}, {})".format(
+            time, extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class NormalCDF(Function):
@@ -1813,11 +1850,8 @@ class NormalCDF(Function):
         self.stddev = stddev
 
     def term(self, time="t"):
-        right = "scipy.stats.norm(float({}), float({})).cdf(float({}))".format(extractTerm(
-            self.mean, time), extractTerm(self.stddev, time), extractTerm(self.right, time))
-        left = "scipy.stats.norm(float({}), float({})).cdf(float({}))".format(extractTerm(
-            self.mean, time), extractTerm(self.stddev, time), extractTerm(self.left, time))
-        return "({} - {})".format(right, left)
+        return "distributions.evaluate(model, 'normalcdf', {}, {}, {}, {}, {})".format(
+            time, extractTerm(self.left, time), extractTerm(self.right, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class Pareto(Function):
@@ -1825,8 +1859,9 @@ class Pareto(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return '(np.nan if ({shape} <= 0 or {scale} <= 0) else (np.random.pareto({shape}) * {scale}))'.format(
-        shape=extractTerm(self.shape, time), scale=extractTerm(self.scale, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'pareto', {}, {}, {})".format(
+            time, extractTerm(self.shape, time), extractTerm(self.scale, time))
 
 
 class Permutations(Function):
@@ -1844,8 +1879,9 @@ class Poisson(Function):
     def __init__(self, mu):
         self.mu = mu
 
-    def term(self, time="t"): return '(np.nan if ({} < 0) else np.random.poisson({}))'.format(
-        extractTerm(self.mu, time), extractTerm(self.mu, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'poisson', {}, {})".format(
+            time, extractTerm(self.mu, time))
 
 
 class Triangular(Function):
@@ -1854,8 +1890,9 @@ class Triangular(Function):
         self.mode = mode
         self.upper_bound = upper_bound
 
-    def term(self, time="t"): return "({l} if ({l} == {m} == {u}) else (np.nan if ({l} > {u} or {m} < {l} or {m} > {u}) else np.random.triangular({l}, {m}, {u})))".format(
-        l=extractTerm(self.lower_bound, time), m=extractTerm(self.mode, time), u=extractTerm(self.upper_bound, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'triangular', {}, {}, {}, {})".format(
+            time, extractTerm(self.lower_bound, time), extractTerm(self.mode, time), extractTerm(self.upper_bound, time))
 
 
 class Weibull(Function):
@@ -1863,5 +1900,6 @@ class Weibull(Function):
         self.shape = shape
         self.scale = scale
 
-    def term(self, time="t"): return '(np.nan if ({} <= 0 or {} <= 0) else np.random.weibull({}) * {})'.format(
-        extractTerm(self.shape, time), extractTerm(self.scale, time), extractTerm(self.shape, time), extractTerm(self.scale, time))
+    def term(self, time="t"):
+        return "distributions.evaluate(model, 'weibull', {}, {}, {})".format(
+            time, extractTerm(self.shape, time), extractTerm(self.scale, time))

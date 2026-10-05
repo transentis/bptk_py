@@ -2,12 +2,10 @@ import unittest
 
 from BPTK_Py import Model
 from BPTK_Py.scenariomanager.scenario import SimulationScenario
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestScenario(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testScenarioInit(self):
+    def test_scenario_init(self):
         dictionary = {
             "constants": {
                 "constant1": 1.0,
@@ -63,7 +61,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario.name,"scenario")
         self.assertIsNone(scenario.result)
 
-    def testScenario_configure_settings(self):
+    def test_configure_settings(self):
         dictionary = {
             "constants": {
                 "constant1": 3.0,
@@ -99,16 +97,12 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario.constants,{ "constant1": 3.0, "constant2": 4.0 })
         self.assertEqual(scenario.points,{ "point1" :  [  [0.1, 0.1] , [1.1, 0.9] ] , "point2" : [  [1.1, 0.2] , [2.1, 0.8] ] })
 
-    def testScenario_setup_constants(self):
+    def test_setup_constants(self):
         import BPTK_Py.logger.logger as logmod
         logmod.loglevel="INFO"
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()        
+        clear_log()
 
         dictionary1 = {
             "constants": {
@@ -139,11 +133,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario1.model.equations["constant1"](1),101.0)
         self.assertEqual(scenario1.model.equations["constant2"](1),102.0)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] scenarioManagerName1, scenario1: Changed constant constant1 to 101.0", content) 
         self.assertIn("[INFO] scenarioManagerName1, scenario1: Changed constant constant2 to 102.0", content) 
@@ -153,46 +143,30 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario2.model.equations["constant1"](2),103.0)
         self.assertEqual(scenario2.model.equations["constant2"](2),104.0)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] scenarioManagerName2, scenario2: Changed constant constant1 to 103.0", content) 
         self.assertIn("[INFO] scenarioManagerName2, scenario2: Changed constant constant2 to 104.0", content)       
 
         scenario3.setup_constants()
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Invalid type for constant constant1: True", content) 
         self.assertIn("[ERROR] Invalid type for constant constant2: False", content) 
 
         scenario4.setup_constants()
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Attempted to initialize constants of a model before the model is available for Model scenario4", content)         
 
-    def testScenario_setup_points(self):
+    def test_setup_points(self):
         import BPTK_Py.logger.logger as logmod
         logmod.loglevel="INFO"
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()        
+        clear_log()
 
         dictionary1 = {
             "points": {
@@ -229,11 +203,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario1.model.points["point1"],2)
         self.assertEqual(scenario1.model.points["point2"],4)
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] scenarioManagerName1, scenario1: Changed points point1 to 1+1", content)  
         self.assertIn("[INFO] scenarioManagerName1, scenario1: Changed points point2 to 2+2", content)  
@@ -243,37 +213,25 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario2.model.points["point1"],[ [0, 0.1] , [1, 0.9] ])
         self.assertEqual(scenario2.model.points["point2"],[ [0.1, 0.2] , [0.2, 0.8] ])
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[INFO] scenarioManagerName2, scenario2: Changed points point1 to [[0, 0.1], [1, 0.9]]", content)  
         self.assertIn("[INFO] scenarioManagerName2, scenario2: Changed points point2 to [[0.1, 0.2], [0.2, 0.8]]", content) 
 
         scenario3.setup_points()
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] Invalid type for points point1: True", content)          
         self.assertIn("[ERROR] Invalid type for points point2: False", content)          
 
         scenario4.setup_points()
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
-        self.assertIn("[ERROR] Attempted to initialize points of a model before the model is available for ABMModel scenario4", content)         
+        self.assertIn("[ERROR] Attempted to initialize points of a model before the model is available for Model scenario4", content)         
 
-    def testScenario_set_property_value(self):
+    def test_set_property_value(self):
         dictionary = {
             "constants": {
                 "constant1": 201.0,
@@ -287,7 +245,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(scenario.constants["constant1"],301.0)
         self.assertEqual(scenario.constants["constant2"],202.0)
 
-    def testScenario_rust_field_defaults(self):
+    def test_rust_field_defaults(self):
         """The four step-by-step fields must default to safe
         values so step-by-step Rust dispatch sees a clean slate on first call."""
         scenario_empty = SimulationScenario(dictionary={}, name="rustFieldsEmpty",
@@ -307,7 +265,7 @@ class TestScenario(unittest.TestCase):
         self.assertIsNone(scenario_with_dict._rust_initial)
         self.assertFalse(scenario_with_dict._rust_initial_returned)
 
-    def testScenario_get_property_vallue(self):
+    def test_get_property_vallue(self):
         dictionary = {
             "constants": {
                 "constant1": 1201.0,
@@ -317,7 +275,4 @@ class TestScenario(unittest.TestCase):
         scenario = SimulationScenario(dictionary=dictionary,name="scenario", model=Model(), scenario_manager_name="scenarioManagerName")
 
         self.assertEqual(scenario.get_property_value(name="constant1"),1201.0)
-        self.assertEqual(scenario.get_property_value(name="constant2"),1202.0)                
-
-if __name__ == '__main__':
-    unittest.main()        
+        self.assertEqual(scenario.get_property_value(name="constant2"),1202.0)

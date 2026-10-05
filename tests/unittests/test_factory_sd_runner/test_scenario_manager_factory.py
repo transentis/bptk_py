@@ -5,13 +5,10 @@ from BPTK_Py.scenariomanager.scenario_manager_sd import ScenarioManagerSd
 import os, json
 from BPTK_Py import Model
 from  BPTK_Py.scenariomanager.scenario import SimulationScenario
-import BPTK_Py.logger.logger as logmod
+from tests.helpers.log_helpers import clear_log, read_log
 
 
 class TestScenarioManagerFactory(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def test_readScenario_invalid(self):
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
@@ -22,19 +19,11 @@ class TestScenarioManagerFactory(unittest.TestCase):
         testFile = os.path.join(testDir,"invalidFileName")
 
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()        
+        clear_log()
 
         self.assertIsNone(sm._ScenarioManagerFactory__readScenario(filename=testFile))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
 
@@ -63,16 +52,25 @@ class TestScenarioManagerFactory(unittest.TestCase):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
 
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False, scenario_storage=testDir)
 
-        sm.get_scenario_managers(path=testDir)
-        self.assertEqual(sm.scenario_managers["smPortfolio1"].scenarios["scenarioLowInterest"].dictionary["constants"]["interestRate"],0.01)
-        self.assertEqual(sm.scenario_managers["smPortfolio1"].scenarios["scenarioHighInterest"].dictionary["constants"]["interestRate"],0.1)
-        self.assertEqual(sm.scenario_managers["smPortfolio2"].scenarios["scenarioHighInitialValue"].dictionary["constants"]["initialValue"],5000.0)
+        sm.get_scenario_managers()
+        sm.scenario_managers["smPortfolio1"].scenarios["scenarioLowInterest"].dictionary["constants"]["interestRate"] = 0.02
 
+        # The reset reads from the factory's storage, not from the package default
         sm.reset_all_scenarios()
 
-        self.assertEqual(sm.scenario_managers,{})
+        self.assertEqual(set(sm.scenario_managers), {"smPortfolio1", "smPortfolio2"})
+        self.assertEqual(sm.scenario_managers["smPortfolio1"].scenarios["scenarioLowInterest"].dictionary["constants"]["interestRate"],0.01)
+
+    def test_explicit_path_does_not_move_the_storage(self):
+        currentDir = os.path.abspath(os.getcwd())
+        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+
+        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False, scenario_storage=testDir)
+        sm.get_scenario_managers(path=os.path.join(currentDir, "does_not_exist"))
+
+        self.assertEqual(sm.path, testDir)
 
     def test_refresh_scenarios_for_json(self):
         """FileMonitor callback: re-reads every file of managers referencing the changed JSON."""
@@ -137,34 +135,18 @@ class TestScenarioManagerFactory(unittest.TestCase):
             json.dump(scenario_config, f)
 
         #cleanup logfile
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         sm = ScenarioManagerFactory(start_model_monitor=True, start_scenario_monitor=False)
         sm.get_scenario_managers(path=scenariosDir)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
 
         self.assertIn("[ERROR] Scenario monitor: Source model file not found", content)
         self.assertEqual(sm.model_monitors, {})  # no monitor started for a missing file
 
         sm.destroy()
         tmproot.cleanup()
-
-    def test_add_scenario_with_source_starts_monitor(self):
-        """add_scenario with a source registers a ModelMonitor for that source."""
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-        # Pre-populate an existing manager so add_scenario takes the "already existing" branch
-        # and does not try to instantiate a model from disk.
-        sm.scenario_managers["mgr"] = MagicMock()
-
-        with patch("BPTK_Py.scenariomanager.scenario_manager_factory.ModelMonitor") as MockMonitor:
-            sm.add_scenario(scenario=MagicMock(), scenario_manager="mgr",
-                            source="model.itmx", model="out")
-
-        MockMonitor.assert_called_once()
-        self.assertIn("model.itmx", sm.model_monitors)
 
     def test_get_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
@@ -182,145 +164,22 @@ class TestScenarioManagerFactory(unittest.TestCase):
         self.assertEqual(sm.get_scenarios(scenario_managers=["smPortfolio1"], scenarios=["scenarioHighInitialValue"]),{})          
 
 
-    def test_add_scenario_existing_manager(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
-
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
+    def test_base_values_skip_what_has_no_parser(self):
+        """A file without a parser used to make the whole lookup return None: the base
+        values of every other file were lost, and add_scenarios raised on the None."""
+        clear_log()
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
 
-        sm.get_scenario_managers(path=testDir)  
+        testDir = os.path.join(os.path.abspath(os.getcwd()), "tests", "unittests", "test_factory_sd_runner", "scenarios")
+        invalidFile = os.path.join(testDir, "invalidFileName")
+        dictionaries = sm._ScenarioManagerFactory__parse_scenario_files(
+            [invalidFile, testDir, os.path.join(testDir, "scenario.json")])
 
-        dictionary = {
-            "constants": {
-                "interestRate": 0.99
-            }            
-        }
-
-        addScenario = SimulationScenario(dictionary=dictionary,name="addScenario", model=Model(), scenario_manager_name="smPortfolio1")    
-
-        sm.add_scenario(scenario=addScenario,scenario_manager="smPortfolio1")  
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-
-        self.assertIn("[WARN] Model Manager already existing. Not overwriting the model!", content)  
-        self.assertEqual(sm.scenario_managers["smPortfolio1"].scenarios["addScenario"].get_property_value(name="interestRate"),0.99)    
-
-    def test_add_scenario_not_existing_manager(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
-
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        sm.get_scenario_managers(path=testDir)  
-
-        dictionary = {
-            "constants": {
-                "interestRate": 0.99
-            }            
-        }
-
-        currentDir = os.path.abspath(os.getcwd())
-        modelFile = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","simulation_models","simulation_model")        
-
-        addScenario = SimulationScenario(dictionary=dictionary,name="addScenario", model=Model(), scenario_manager_name="addManager")    
-
-        sm.add_scenario(scenario=addScenario,scenario_manager="addManager", model=modelFile)  
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-
-        self.assertNotIn("[WARN] Model Manager already existing. Not overwriting the model!", content)  
-        self.assertEqual(sm.scenario_managers["addManager"].scenarios["addScenario"].get_property_value(name="interestRate"),0.99)   
-
-    def test_create_scenario(self):
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        test_filename = "test.json"
-        test_data = {
-            "constants": {
-                "interestRate": 0.001
-            }            
-        }
-
-        mock_file = mock_open()
-
-        with patch("builtins.open", mock_file):
-            sm.create_scenario(filename=test_filename, dictionary=test_data)
-
-            mock_file.assert_called_once_with(test_filename, "w", encoding="utf-8")
-
-            content = "".join(call.args[0] for call in mock_file().write.call_args_list)
-
-            self.assertEqual(json.loads(content),test_data)
-
-    def test_get_all_base_constants_invalid(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()     
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
-        testFile = os.path.join(testDir,"invalidFileName")
-
-        self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_constants(scenario_manager="smPortfolio1", filenames=[testFile]))
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-
-        self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
-
-    def test_get_all_base_constants_points(self):
-        #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()     
-
-        sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
-
-        currentDir = os.path.abspath(os.getcwd())
-        testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
-        testFile = os.path.join(testDir,"invalidFileName")
-
-        self.assertIsNone(sm._ScenarioManagerFactory__get_all_base_points(scenario_manager="smPortfolio1", filenames=[testFile]))
-
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
-
-        self.assertIn(f"[ERROR] No parser available for file {testFile}. Skipping!", content)  
-
-if __name__ == '__main__':
-    unittest.main()   
+        self.assertEqual(len(dictionaries), 1)
+        self.assertEqual(sm._ScenarioManagerFactory__base_values("smPortfolio1", dictionaries, "base_constants"),
+                         {"initialValue": 1000.0, "interestRate": 0.05, "depositRate": 1000.0})
+        self.assertEqual(sm._ScenarioManagerFactory__base_values("smPortfolio1", dictionaries, "base_points"),
+                         {"testBasePoint": [[0.0, 0.1], [1.0, 0.9]]})
+        self.assertEqual(sm._ScenarioManagerFactory__base_values("unknown", dictionaries, "base_points"), {})
+        self.assertIn(f"[ERROR] No parser available for file {invalidFile}. Skipping!", read_log())

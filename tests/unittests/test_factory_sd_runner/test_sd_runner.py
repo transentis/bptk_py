@@ -6,14 +6,11 @@ import pytest
 from BPTK_Py.scenariomanager.scenario_manager_factory import ScenarioManagerFactory
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
 from BPTK_Py import RustBackendError
-import BPTK_Py.logger.logger as logmod
 import os
 import pandas as pd
+from tests.helpers.log_helpers import clear_log, read_log
 
 class TestSdRunner(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def test_run_scenario_step(self):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
@@ -42,32 +39,20 @@ class TestSdRunner(unittest.TestCase):
 
     def test_run_scenario_step_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
         sdRunner = SdRunner(scenario_manager_factory=sm)
 
         self.assertEqual(sdRunner.run_scenario_step(step=1, settings=[], scenario_manager="testManager", scenarios=["testScenario"], equations=[]),{})
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] No scenarios found for scenario manager \"testManager\" and scenarios \"testScenario\"", content)  
 
     def test_run_scenario_did_you_mean(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
@@ -79,11 +64,7 @@ class TestSdRunner(unittest.TestCase):
 
         self.assertEqual(sdRunner.run_scenario(sd_results_dict={},return_format="json", scenario_managers=["smPortfolio1"], scenarios=["scenarioLowInterest"], equations=["totalValu"]),{})        
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] No simulation model containing equation \"totalValu\". Did you maybe mean one of \"totalValue", content)
 
@@ -95,8 +76,7 @@ class TestSdRunner(unittest.TestCase):
         from BPTK_Py.scenariomanager.scenario_manager_sd import ScenarioManagerSd
 
         #cleanup logfile
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
 
         # A model with no equations -> all_equations is empty, so didyoumean returns nothing.
         model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="empty")
@@ -116,50 +96,33 @@ class TestSdRunner(unittest.TestCase):
 
         self.assertEqual(result, {})
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as file:
-            content = file.read()
+        content = read_log()
         self.assertIn("[ERROR] No simulation model containing equation \"stock[*]\"", content)
         self.assertIn("[ERROR] No simulation model containing equation \"foo*\"", content)
 
     def test_run_scenario_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
         sdRunner = SdRunner(scenario_manager_factory=sm)
 
         self.assertIsNone(sdRunner.run_scenario(sd_results_dict={}, return_format="json", scenario_managers=["testManager"], scenarios=["testScenario"], equations=[]))
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] No scenario found for scenario_managers=[\'testManager\'] and scenario_names=[\'testScenario\']. Cancelling", content)  
 
     def test_run_scenarios_invalid(self):
         #cleanup logfile
-        try:
-            with open(logmod.logfile, "w", encoding="UTF-8") as file:
-                pass
-        except FileNotFoundError:
-            self.fail()
+        clear_log()
 
         sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
         sdRunner = SdRunner(scenario_manager_factory=sm)
 
         self.assertEqual(sdRunner._run_scenarios(scenario_managers=["testManager"], scenarios=["testScenario"], equations=[]),{})
 
-        try:
-            with open(logmod.logfile, "r", encoding="UTF-8") as file:
-                content = file.read()
-        except FileNotFoundError:
-            self.fail()
+        content = read_log()
 
         self.assertIn("[ERROR] No scenarios found for scenario managers \"testManager\" and scenarios \"testScenario\"", content)  
 
@@ -426,17 +389,17 @@ class TestSdRunner(unittest.TestCase):
 
     @pytest.mark.requires_rust
     def test_run_scenario_step_rust_non_numeric_constant_raises(self):
-        """A non-numeric value in sc.constants must raise ValueError so the
-        runner can fall back to Python."""
+        """A non-numeric value in sc.constants has no place in the Rust engine; the
+        error names the constant rather than running the scenario without it."""
         runner, sc = self._build_runner_and_scenario()
         sc.constants["interestRate"] = "lambda t: t + 1"  # non-numeric override
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(RustBackendError) as ctx:
             runner._run_scenario_step_rust(sc, step=0, settings=None,
                                            scenario_manager="smPortfolio1",
                                            scenario="scenarioLowInterest",
                                            equations=["totalValue"])
-        self.assertIn("Non-numeric constant", str(ctx.exception))
+        self.assertIn("non-numeric", str(ctx.exception))
 
     def test_run_scenario_step_python_first_call_creates_simulation(self):
         runner, sc = self._build_runner_and_scenario()
@@ -498,7 +461,3 @@ class TestSdRunner(unittest.TestCase):
         self.assertEqual(list(sc.result.index), [1.0])
         # stock(1.0) = integral of constant=1.0 from 0 to 1.0 = 1.0
         self.assertAlmostEqual(sc.result.loc[1.0, "stock"], 1.0)
-
-
-if __name__ == '__main__':
-    unittest.main()

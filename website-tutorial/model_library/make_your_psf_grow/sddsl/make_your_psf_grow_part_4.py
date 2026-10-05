@@ -216,7 +216,16 @@ def _(as_table, bptk):
     as_table(bptk.plot_scenarios(
         scenario_managers=["psf"],
         scenarios=['growth515Person'], 
-        equations=["cash.cash","cash.cashFlow"],
+        equations=[
+            "cash.cash",
+            "cash.cashFlow",
+            "staff.professionalStaff",
+            "staff.hiringRate",
+            "staff.businessDevelopmentAllocation%",
+            "projects.deliveringProjects",
+            "revenue.makingRevenue",
+            "revenue.collectingRevenue",
+        ],
         title="Professional Staff",
         x_label="Months",
         y_label="k€",
@@ -450,13 +459,12 @@ def _(bptk):
                      "staff.steadyGrowthRate%":2,
                      "kpi.steadyGrowthPolicyOn":1
                      }
-
                  },
                  "steadyGrowth2PctMinBusDev":{
                      "constants":{
                      "staff.steadyGrowthRate%":2,
                      "kpi.steadyGrowthPolicyOn":1,
-                     "kpi.minimumBusDevAllocationOn":1
+                         "kpi.minimumBusDevAllocationOn":1
                      }
              
                  }

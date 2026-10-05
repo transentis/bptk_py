@@ -2,20 +2,31 @@
 //!
 //! The engine itself is Python-free. Keeping the binding in one module is what lets
 //! `--no-default-features` build a crate in which pyo3 is not merely unused but absent -
-//! which the standalone binary needs, and WASM requires, since pyo3 links against
-//! CPython and there is no CPython in a browser.
+//! which is how `cargo test` runs the engine without an interpreter.
 
 use std::collections::HashMap;
 
 use pyo3::prelude::*;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 
+use crate::sim::StepError;
 use crate::{json_parser, model, state};
 
-/// Returns the version of the Rust SD engine.
+/// Returns the version of the Rust SD engine, which is the version of the package.
 #[pyfunction]
 fn version() -> &'static str {
-    "0.1.0"
+    env!("CARGO_PKG_VERSION")
+}
+
+/// A step that ran into a stoptime is a misuse of the stepping API, a `ValueError` like
+/// a step without `init()`. Anything else failed while the model was running - a Python
+/// function that raised, specs whose results do not fit in memory - and is a
+/// `RuntimeError`, whichever of `simulate`, `init` and `step` met it.
+fn step_error(error: StepError) -> PyErr {
+    match error {
+        StepError::PastStoptime => PyValueError::new_err(error.to_string()),
+        StepError::Callback(_) | StepError::Specs(_) => PyRuntimeError::new_err(error.to_string()),
+    }
 }
 
 #[pyclass]
@@ -43,9 +54,10 @@ impl RustSdEngine {
 // Deliberately NOT `unsendable`: a threaded WSGI server (Flask's dev server, uwsgi
 // with threads) serves consecutive requests on different threads, and the runner
 // caches this handle on the Scenario across requests — so the handle really does
-// travel between threads. PyO3 requires `Send` here, not `Sync`; `RefCell<StdRng>`
-// is `Send` because `StdRng` is, so no lock is needed. The GIL still serializes
-// access, and PyO3's borrow flags still prevent overlapping `&mut self`.
+// travel between threads. PyO3 requires such a class to be `Send` and `Sync`, which is
+// why `SimulationState` keeps its interior mutability behind `Mutex`es and atomics
+// rather than `RefCell`s. The GIL still serializes access, and PyO3's borrow flags
+// still prevent overlapping `&mut self`.
 #[pyclass]
 pub struct RustSdModel {
     model: model::SdModel,
@@ -109,15 +121,18 @@ impl RustSdModel {
     #[pyo3(signature = (equations, seed=None))]
     fn simulate(
         &mut self,
+        py: Python<'_>,
         equations: Vec<String>,
         seed: Option<u64>,
     ) -> PyResult<HashMap<String, HashMap<String, f64>>> {
         self.check_functions_registered()?;
         self.state = None;
         self.requested_equations.clear();
-        self.model
-            .simulate(&equations, seed)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))
+        let mut state = self.model.init(seed).map_err(step_error)?;
+        let run = self.model.run_to_end(&mut state);
+        self.report_invalid_arguments(py, &state)?;
+        run.map_err(step_error)?;
+        Ok(self.model.extract_results(&state, &equations))
     }
 
     /// Initialise for step-by-step execution. Pre-allocates the memo table,
@@ -128,14 +143,13 @@ impl RustSdModel {
     #[pyo3(signature = (equations, seed=None))]
     fn init(
         &mut self,
+        py: Python<'_>,
         equations: Vec<String>,
         seed: Option<u64>,
     ) -> PyResult<HashMap<String, f64>> {
         self.check_functions_registered()?;
-        let state = self
-            .model
-            .init(seed)
-            .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        let state = self.model.init(seed).map_err(step_error)?;
+        self.report_invalid_arguments(py, &state)?;
         self.state = Some(state);
         self.requested_equations = equations;
         Ok(self.snapshot_current())
@@ -145,8 +159,9 @@ impl RustSdModel {
     /// `init()` at the new `t`.
     ///
     /// Errors with `ValueError` if `init()` was never called, or if the
-    /// simulation has already reached `stoptime`.
-    fn step(&mut self) -> PyResult<HashMap<String, f64>> {
+    /// simulation has already reached `stoptime`, and with `RuntimeError` if the
+    /// step itself fails - as `simulate()` and `init()` do.
+    fn step(&mut self, py: Python<'_>) -> PyResult<HashMap<String, f64>> {
         // Scoped mutation so the &mut borrow of self.state ends before we
         // call the &self snapshot helper.
         {
@@ -154,9 +169,10 @@ impl RustSdModel {
                 .state
                 .as_mut()
                 .ok_or_else(|| PyValueError::new_err("step() called without init()"))?;
-            self.model
-                .step(state)
-                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            let stepped = self.model.step(state);
+            let state = self.state.as_ref().expect("the state was there a moment ago");
+            self.report_invalid_arguments(py, state)?;
+            stepped.map_err(step_error)?;
         }
         Ok(self.snapshot_current())
     }
@@ -177,10 +193,7 @@ impl RustSdModel {
             .state
             .as_ref()
             .ok_or_else(|| PyValueError::new_err("steps_remaining() called without init()"))?;
-        // memo is indexed [entity][step]; outer length matches num_entities,
-        // and num_steps is the length of any inner vector (model must have ≥1 entity).
-        let num_steps = state.memo[0].len();
-        Ok(num_steps - 1 - state.current_step)
+        Ok(state.num_steps - 1 - state.current_step)
     }
 
     /// Discard the stepping state. After `reset()`, `simulate()` is safe again
@@ -208,8 +221,9 @@ impl RustSdModel {
                 "set_runspecs() not allowed after init() — call reset() first",
             ));
         }
-        self.model.set_runspecs(starttime, stoptime, dt);
-        Ok(())
+        self.model
+            .set_runspecs(starttime, stoptime, dt)
+            .map_err(PyValueError::new_err)
     }
 
     /// Replace the points of a graphical function (lookup table).
@@ -239,7 +253,7 @@ impl RustSdModel {
         // the following step reads it. Non-stock columns at C+1 are stale but get
         // overwritten by the next `eval_step` before they are read, so exporting
         // them is harmless. Capped at the last step for the end-of-run case.
-        let num_steps = state.memo[0].len();
+        let num_steps = state.num_steps;
         let hi = (step + 1).min(num_steps - 1);
         let mut memo = HashMap::with_capacity(self.model.entities.len());
         for (idx, entity) in self.model.entities.iter().enumerate() {
@@ -268,7 +282,8 @@ impl RustSdModel {
     ) -> PyResult<()> {
         self.check_functions_registered()?;
         let num_steps =
-            ((self.model.stoptime - self.model.starttime) / self.model.dt).round() as usize + 1;
+            model::num_steps_for(self.model.starttime, self.model.stoptime, self.model.dt)
+                .map_err(PyValueError::new_err)?;
         if current_step >= num_steps {
             return Err(PyValueError::new_err(format!(
                 "import_state: current_step {} out of range for {} steps",
@@ -302,6 +317,24 @@ impl RustSdModel {
 }
 
 impl RustSdModel {
+    /// Hand what the builtins recorded as invalid arguments to the Python side, which
+    /// words and logs it - the same function the Python engine reports through.
+    fn report_invalid_arguments(&self, py: Python<'_>, state: &state::SimulationState) -> PyResult<()> {
+        let reports = state.take_invalid();
+        if reports.is_empty() {
+            return Ok(());
+        }
+        let report = py
+            .import("BPTK_Py.sddsl.distributions")?
+            .getattr("report_from_engine")?;
+        for invalid in reports {
+            let t = self.model.starttime + invalid.step as f64 * self.model.dt;
+            let element = self.model.entities[invalid.entity].name.clone();
+            report.call1((invalid.builtin, element, t, invalid.values))?;
+        }
+        Ok(())
+    }
+
     /// Refuse before doing any work if a function this model calls has no callable.
     ///
     /// Without this the model would run until the first callback and fail there, at a

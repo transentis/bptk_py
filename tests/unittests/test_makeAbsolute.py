@@ -54,7 +54,3 @@ class TestMakeAbsoluteStandaloneImport(unittest.TestCase):
             sys.path[:] = saved_path
             for name in set(sys.modules) - saved_modules:
                 del sys.modules[name]
-
-
-if __name__ == '__main__':
-    unittest.main()

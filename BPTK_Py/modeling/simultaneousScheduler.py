@@ -12,7 +12,6 @@
 
 from .scheduler import Scheduler
 from ..logger import log
-from .event import DelayedEvent
 
 #################################
 ## SIMULTANEOUSSCHEDULER CLASS ##
@@ -30,8 +29,8 @@ class SimultaneousScheduler(Scheduler):
         Parameters:
             model: Model instance.
                 Instance of the model this is a scheduler for.
-            progress_widget: FloatBarProgress instance.
-                Used to display progress of the scheduler.
+            progress_widget: Object (default=None).
+                Any object with a ``value`` attribute, set from 0.0 to 1.0 as the run advances - BPTK_Py.util.ProgressBar, for one.
         """
 
         self.progress = 0
@@ -61,9 +60,8 @@ class SimultaneousScheduler(Scheduler):
             sim_round: simulator round.
             dt: step of round.
             model: Model instance.
-            progress_widget: FloatBarProgress instance.
-                Progress bar to report into, or None. tqdm-backed since 3.0.0;
-                the ipywidgets element it used to be was removed with the widget layer.
+            progress_widget: Object (default=None).
+                Any object with a ``value`` attribute, set from 0.0 to 1.0 as the run advances - BPTK_Py.util.ProgressBar, for one.
         """
         self.current_round = sim_round
 

@@ -179,7 +179,6 @@ def _(advertising_success, bptk, mo, referral_free_months, referral_program_adop
         )
         return axes.figure
 
-    # Sliders and diagram in one output block.
     mo.vstack([
         advertising_success,
         referral_program_adoption,
@@ -321,9 +320,6 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    # `IPython.display.IFrame` takes a fixed pixel width - 933 px here - which overflows
-    # the column on anything narrower. A wrapper that keeps the aspect ratio and scales to
-    # the column does the same job at any width.
     mo.Html(
         """
         <div style="position:relative;width:100%;padding-top:75%;overflow:hidden">

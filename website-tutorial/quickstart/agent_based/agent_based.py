@@ -131,9 +131,6 @@ def _(mo):
 
 @app.cell
 def _(Company, Consumer, DataCollector, SimultaneousScheduler):
-    # Imported here rather than taken from the cell above: there `Model` shares a
-    # cell with the SD model, so every edit to that model would re-run this whole
-    # section as well.
     from BPTK_Py import Model as AbmModel
 
     class CustomerAcquisitionAbm(AbmModel):
@@ -232,8 +229,6 @@ def _(mo):
 def _(BPTK_Py, CustomerAcquisitionAbm, DataCollector, SimultaneousScheduler):
     bptk_1 = BPTK_Py.bptk()
 
-    # A scenario manager gets its own model instance: the one above was run by hand
-    # and carries that run's results, and a scenario manager owns the model it runs.
     customer_acquisition_abm_scenarios = CustomerAcquisitionAbm(
         1, 60, dt=1, name="Customer Acquisition Agent-based Model",
         scheduler=SimultaneousScheduler(), data_collector=DataCollector()

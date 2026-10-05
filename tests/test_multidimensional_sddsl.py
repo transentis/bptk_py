@@ -3,7 +3,7 @@
 Organised by **operand combination**, which is the axis the existing array tests lack.
 `tests/test_sddsl.py` already sweeps naming mode x element type x size for
 `arrayed op arrayed` and checks all seven aggregations against numpy; those are not
-repeated here. `tests/unittests/test_operator.py` covers `clone_with_index` per operator
+repeated here. `tests/unittests/test_operators.py` covers `clone_with_index` per operator
 class. What nobody covered before this file: an array meeting a *scalar*, an array inside
 a function, an array in a comparison or conditional, an arrayed stock integrating over
 time, and the arrayed biflow.
@@ -1392,7 +1392,7 @@ class TestABareArrayedElementAsEquation:
 class TestNoSilentScalar:
     """The invariant: an arrayed input never yields a silent scalar.
 
-    Every bug the 2026-09-08 audit found violates exactly this, and no test stated it.
+    Every arrayed-expression bug found so far violated exactly this, and no test stated it.
     A construct may propagate, or it may raise - what it must not do is return a
     plausible number that quietly ignores the array. This class is the reason the file
     exists; if only one test survives a refactor, keep this one.
@@ -1471,13 +1471,13 @@ class TestNoSilentScalar:
 # ---------------------------------------------------------------------------
 # The flagship model
 #
-# `tests/_arrayed_fixtures.py` holds the arrayed models the parity suite and the
+# `tests/helpers/arrayed_fixtures.py` holds the arrayed models the parity suite and the
 # documentation are built around. Nothing else in the test run executes them, so a
 # regression in one would pass unnoticed - `.coveragerc` omits `tests/*`, so coverage
 # would not notice either. These tests close that gap.
 # ---------------------------------------------------------------------------
 
-from _arrayed_fixtures import (  # noqa: E402  - after the shape helpers on purpose
+from tests.helpers.arrayed_fixtures import (  # noqa: E402  - after the shape helpers on purpose
     LEVELS,
     build_matrix_model,
     build_workforce_model,
@@ -1771,4 +1771,3 @@ class TestCustomFunctionsOverArrays:
 
         assert target(1) == pytest.approx(12.0)
         assert target._elements.vector_size() == 0
-

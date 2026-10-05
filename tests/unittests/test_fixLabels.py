@@ -17,7 +17,3 @@ class TestFixLabels(unittest.TestCase):
             result = resolve(circular, entity)
 
         self.assertIsInstance(result, dict)
-
-
-if __name__ == '__main__':
-    unittest.main()

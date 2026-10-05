@@ -197,8 +197,6 @@ def _(anteil, bptk, einstellung, monate):
             }
         },
     )
-    # `register_scenarios` returns nothing, so this name is what gives the two charts a
-    # dependency on the sliders. Without it they have none and nothing redraws.
     mein_plan = f"{anteil.value} % selling, {einstellung.value} hired"
     return (mein_plan,)
 
@@ -229,8 +227,6 @@ def _(mo):
         0, 60, step=5, value=20, label="Business development allocation from month 4 (%)"
     )
     einstellung = mo.ui.slider(0, 400, step=50, value=0, label="Staff hired in month 7")
-    # Created and shown here, read in the next cell: marimo forbids reading a UI
-    # element's value in the cell that created it.
     mo.vstack([anteil, einstellung])
     return anteil, einstellung
 

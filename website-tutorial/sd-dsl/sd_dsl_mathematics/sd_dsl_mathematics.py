@@ -1,10 +1,10 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: A closer look at the mathematics underlying the System Dynamics libary
+# description: A closer look at the mathematics underlying the System Dynamics library
 # keywords: system dynamics, systemdynamics, sd dsl, bptk, bptk-py, python, business simulation
 import marimo
 
 __generated_with = "0.23.13"
-app = marimo.App(app_title="The Mathematics Underlying The System Dynamics Libary")
+app = marimo.App(app_title="The Mathematics Underlying The System Dynamics Library")
 
 
 @app.cell
@@ -291,9 +291,6 @@ def _(model):
 
     bptk = bptk()
 
-    # Registering a model whose scenario manager already exists leaves the *old* model in
-    # place - `register_scenario_manager` warns and keeps it. Drop the registry first, or
-    # an edit above will be plotted against the model you started with.
     bptk.reset_all_scenarios()
     bptk.register_model(model)
 

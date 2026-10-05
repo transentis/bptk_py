@@ -22,7 +22,6 @@ from ..logger import log
 from ..modelmonitor import ModelMonitor
 from ..scenariomanager import ScenarioManagerHybrid
 
-from .scenario import SimulationScenario
 from .scenario_manager_sd import ScenarioManagerSd
 
 
@@ -36,9 +35,11 @@ class ScenarioManagerFactory():
     This class manages all scenario of all scenario managers and exposes methods to look them up, read from filesystem and flush them
     """
 
-    def __init__(self, start_scenario_monitor: bool, start_model_monitor: bool):
+    def __init__(self, start_scenario_monitor: bool, start_model_monitor: bool, scenario_storage=None):
         """
         Initialize object and reserve namespaces for scenario managers, monitors, scenarios and JSON file path (scenario storage)
+        :param scenario_storage: folder the scenario files are read from, and read again on a reset. Defaults to the
+            package configuration's "scenario_storage"
         """
 
         self.scenario_managers = {}
@@ -46,7 +47,7 @@ class ScenarioManagerFactory():
         self.scenarios = {}
         self.model_monitors = {}
         self.file_monitors = {}
-        self.path = ""
+        self.path = scenario_storage if scenario_storage else config.configuration["scenario_storage"]
         self.scenario_files = []
 
         self.start_scenario_monitor = start_scenario_monitor
@@ -84,6 +85,7 @@ class ScenarioManagerFactory():
         if "type" in model_dictionary.keys():
             model_dictionary.pop("type")
 
+        base_dictionaries = None
         for scenario_manager_name in model_dictionary.keys():
 
             # HANDLE Hybrid SCENARIOS
@@ -113,9 +115,12 @@ class ScenarioManagerFactory():
                 if filename not in manager.filenames:
                     manager.filenames += [filename]
 
-                # Lookup base constants across all json files with the scenarios/ directory
-                manager.base_constants = self.__get_all_base_constants(scenario_manager_name, self.scenario_files)
-                manager.base_points = self.__get_all_base_points(scenario_manager_name, self.scenario_files)
+                # Lookup base constants across all json files with the scenarios/ directory,
+                # parsing each of them once per file read rather than once per manager
+                if base_dictionaries is None:
+                    base_dictionaries = self.__parse_scenario_files(self.scenario_files)
+                manager.base_constants = self.__base_values(scenario_manager_name, base_dictionaries, "base_constants")
+                manager.base_points = self.__base_values(scenario_manager_name, base_dictionaries, "base_points")
 
                 # ScenarioManager -> "scenarios" ->
                 scen_dict = model_dictionary[scenario_manager_name]["scenarios"]
@@ -155,17 +160,20 @@ class ScenarioManagerFactory():
 
         return self.scenario_managers
 
-    def get_scenario_managers(self, path=config.configuration["scenario_storage"], scenario_managers_to_filter=[],
+    def get_scenario_managers(self, path=None, scenario_managers_to_filter=None,
                               scenario_manager_type=""):
         """
         If self.scenario_managers is empty, this method attempts to load all scenario managers from disk in the specified path
-        :param path: path to look for JSON files containing scenario managers and scenarios
+        :param path: path to look for JSON files containing scenario managers and scenarios. Defaults to the factory's
+            scenario storage, which is also where a reset reads from
         :param scenario_managers_to_filter: only look for certain scenario managers
         :param scenario_manager_type: only look for scenario managers of a given type
         :return: self.scenario_managers, a dictionary
         """
+        scenario_managers_to_filter = [] if scenario_managers_to_filter is None else scenario_managers_to_filter
 
-        self.path = path
+        if not path:
+            path = self.path
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
@@ -222,7 +230,7 @@ class ScenarioManagerFactory():
         """
         return self.scenario_managers[scenario_manager].scenarios[scenario]
 
-    def get_scenarios(self, scenario_managers=[], scenarios=[], scenario_manager_type=""):
+    def get_scenarios(self, scenario_managers=None, scenarios=None, scenario_manager_type=""):
         """
         Get an arbitrary amount of scenario objects, depending on the arguements:
 
@@ -237,8 +245,14 @@ class ScenarioManagerFactory():
         Returns:
             Dictionary of scenario objects, indexed by the scenario name. If there is more then one manager, the scenario name is prefixed by the scenario manager name.
         """
+        scenario_managers = [] if scenario_managers is None else scenario_managers
+        scenarios = [] if scenarios is None else scenarios
 
         managers = self.get_scenario_managers(scenario_managers_to_filter=scenario_managers, scenario_manager_type=scenario_manager_type)
+
+        # A list of its own: the prefixed names are added to it below, and the caller's
+        # list used to grow with them on every call
+        scenarios = list(scenarios)
 
         scenarios_objects = {}
         if len(managers) > 1:
@@ -267,28 +281,6 @@ class ScenarioManagerFactory():
 
         return scenarios_objects
 
-    def add_scenario(self, scenario, scenario_manager, source="", model=None):
-        """
-        Add a scenario object during runtime
-        :param scenario: scenario object to add
-        :param scenario_manager: scenario_manager's name to add scenario to
-        :param source: source file of the itmx file (optional)
-        :param model: model name of the python file containing the python code for the model
-        :return: None
-        """
-        if scenario_manager not in self.get_scenario_managers().keys():
-            self.scenario_managers[scenario_manager] = ScenarioManagerSd(scenarios={scenario.name: scenario},
-                                                                         name=scenario_manager,
-                                                                         model_file=model)
-            self.scenario_managers[scenario_manager].instantiate_model()
-
-        else:
-            log("[WARN] Model Manager already existing. Not overwriting the model!")
-            self.scenario_managers[scenario_manager].add_scenario(scenario)
-
-        if len(source) > 0:
-            self.__add_monitor(source, model)
-
     def __add_monitor(self, source, model):
         """
         Add a file monitor for a source model
@@ -316,18 +308,6 @@ class ScenarioManagerFactory():
 
         self.model_monitors = {}
         self.file_monitors = {}
-
-    def create_scenario(self, filename="",
-                        dictionary={}):
-        """
-        Method for writing scenarios to JSON file
-        :param filename: filename to write to
-        :param dictionary: dictionary to parse to JSON
-        :return:
-        """
-
-        with open(filename, 'w', encoding="utf-8") as outfile:
-            json.dump(dictionary, outfile, indent=4)
 
     def _refresh_scenarios_for_source_model(self, filename):
         """
@@ -363,72 +343,40 @@ class ScenarioManagerFactory():
                 for json_file in manager.filenames:
                     self.__readScenario(json_file)
 
-    def __get_all_base_constants(self, scenario_manager, filenames):
+    def __parse_scenario_files(self, filenames):
+        """The dictionaries of all files a parser can read, in the order given.
+
+        A file without a parser - a README beside the scenario files - is skipped, and
+        only that file: the others still count.
         """
-        This method loads all base constants for a given scenario manager. It looks them up in all the files given
-        If a scenario manager spreads over multiple files and you define base constants in different files for the same
-        manager, just don't! You will definitely lose data!!
-        :param scenario_manager:
-        :param filenames:
-        :return: Base constants, merged from multiple files into one dict!
-        """
-        base_constants = {}
+        from ..modelparser import ParserFactory
+
+        dictionaries = []
         for filename in filenames:
-            if not os.path.isdir(filename):
-                from ..modelparser import ParserFactory
+            if os.path.isdir(filename):
+                continue
 
-                parser_class = ParserFactory(filename)
+            parser_class = ParserFactory(filename)
+            if not parser_class:
+                log("[ERROR] No parser available for file {}. Skipping!".format(filename))
+                continue
 
-                if parser_class:
-                    meta_model = parser_class().parse_model(filename, silent=True)
-                    model, model_dictionary = meta_model.create_model()
+            meta_model = parser_class().parse_model(filename, silent=True)
+            _, model_dictionary = meta_model.create_model()
+            dictionaries.append(model_dictionary)
 
-                else:
-                    log("[ERROR] No parser available for file {}. Skipping!".format(filename))
-                    return None
+        return dictionaries
 
-                if scenario_manager in model_dictionary.keys():
-                    scenario_manager_dict = model_dictionary[scenario_manager]
+    @staticmethod
+    def __base_values(scenario_manager, dictionaries, key):
+        """A scenario manager's `base_constants` or `base_points`, merged over all files.
 
-                    if "base_constants" in scenario_manager_dict.keys():
-                        for key, value in scenario_manager_dict["base_constants"].items():
-                            log("[INFO] Updated base constants of {}: {} = {}".format(scenario_manager, key, value))
-                            base_constants[key] = value
-
-        return base_constants
-
-    def __get_all_base_points(self, scenario_manager, filenames):
+        If a scenario manager spreads over multiple files and you define base values in
+        different files for the same manager, just don't! The later file wins.
         """
-        This method loads all base points for a given scenario manager. It looks them up in all the files given
-        If a scenario manager spreads over multiple files and you define base constants in different files for the same
-        manager, just don't! You will definitely lose data!!
-        :param scenario_manager:
-        :param filenames:
-        :return: Base constants, merged from multiple files into one dict!
-        """
-        base_points = {}
-        for filename in filenames:
-            if not os.path.isdir(filename):
-
-                from ..modelparser import ParserFactory
-
-                parser_class = ParserFactory(filename)
-
-                if parser_class:
-
-                    meta_model = parser_class().parse_model(filename, silent=True)
-                    model, model_dictionary = meta_model.create_model()
-
-                else:
-                    log("[ERROR] No parser available for file {}. Skipping!".format(filename))
-                    return None
-
-                if scenario_manager in model_dictionary.keys():
-                    scenario_manager_dict = model_dictionary[scenario_manager]
-
-                    if "base_points" in scenario_manager_dict.keys():
-                        for key, value in scenario_manager_dict["base_points"].items():
-                            log("[INFO] Updated base points of {}: {} = {}".format(scenario_manager, key, value))
-                            base_points[key] = value
-
-        return base_points
+        values = {}
+        for model_dictionary in dictionaries:
+            for name, value in model_dictionary.get(scenario_manager, {}).get(key, {}).items():
+                log("[INFO] Updated {} of {}: {} = {}".format(key.replace("_", " "), scenario_manager, name, value))
+                values[name] = value
+        return values

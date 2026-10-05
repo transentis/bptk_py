@@ -11,10 +11,7 @@ from BPTK_Py.sddsl.operators import ArrayedEquation
 import pandas as pd
 
 class TestElement(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testElementInit(self):
+    def test_element_init(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string=None)
@@ -32,7 +29,7 @@ class TestElement(unittest.TestCase):
         self.assertFalse(element.arrayed)
         self.assertFalse(element.named_arrayed)
 
-    def testElementInit_with_function_string(self):
+    def test_element_init_with_function_string(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string="1+1")
@@ -50,7 +47,7 @@ class TestElement(unittest.TestCase):
         self.assertFalse(element.arrayed)
         self.assertFalse(element.named_arrayed)                
 
-    def testElement_add_arr_equation_raises(self):
+    def test_add_arr_equation_raises(self):
         # The base hooks used to be no-op `pass`, so an element type that forgot to
         # override them swallowed arrayed setup without a word - which is how the
         # arrayed Biflow reported success while registering nothing.
@@ -62,7 +59,7 @@ class TestElement(unittest.TestCase):
             element.add_arr_equation(name="testName",value=1)
         self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-    def testElement_add_arr_empty_raises(self):
+    def test_add_arr_empty_raises(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string=None)
@@ -71,7 +68,7 @@ class TestElement(unittest.TestCase):
             element.add_arr_empty(name="testName")
         self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-    def testElement_get_arr_equation_raises(self):
+    def test_get_arr_equation_raises(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string=None)
@@ -80,7 +77,7 @@ class TestElement(unittest.TestCase):
             element.get_arr_equation(name="testName")
         self.assertIn("Element does not support arrayed equations", str(context.exception))
 
-    def testElement_setup_vector_on_the_base_element_raises(self):
+    def test_setup_vector_on_the_base_element_raises(self):
         # The loud failure the three tests above buy: arrayed setup on an element type
         # without the hooks stops instead of reporting success.
         model = Model()
@@ -90,21 +87,21 @@ class TestElement(unittest.TestCase):
         with self.assertRaises(ElementError):
             element.setup_vector(size=2,default_value=1.0)
 
-    def testElement_get_item_unarrayed(self):
+    def test_get_item_unarrayed(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string=None)   
 
         self.assertRaises(Exception,element.__getitem__,"testKey")        
 
-    def testElement_set_item_unarrayed(self):
+    def test_set_item_unarrayed(self):
         model = Model()
 
         element = Element(model=model,name="testElement",function_string=None)   
 
         self.assertRaises(Exception,element.__setitem__,"testKey","testValue")   
 
-    def testElement_setup_vector_single_value(self):
+    def test_setup_vector_single_value(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")
@@ -115,7 +112,7 @@ class TestElement(unittest.TestCase):
             #self[i] = None can not be tested
             self.assertEqual(stock[i].initial_value,1.0)
 
-    def testElement_setup_vector_multiple_value(self):
+    def test_setup_vector_multiple_value(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")
@@ -125,14 +122,14 @@ class TestElement(unittest.TestCase):
         self.assertEqual(stock[0].initial_value,2.0)
         self.assertEqual(stock[1].initial_value,3.0)
 
-    def testElement_setup_vector_execption(self):
+    def test_setup_vector_execption(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")
 
         self.assertRaises(Exception,stock.setup_vector,size=2,default_value=["testString"],set_stack_equation=False)    
 
-    def testElement_setup_named_vector(self):
+    def test_setup_named_vector(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")
@@ -143,7 +140,7 @@ class TestElement(unittest.TestCase):
         self.assertEqual(stock[1].initial_value,4.0)
         self.assertEqual(stock[2].initial_value,5.0)      
 
-    def testElement_setup_matrix_exception(self):
+    def test_setup_matrix_exception(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")
@@ -152,7 +149,7 @@ class TestElement(unittest.TestCase):
         self.assertRaises(Exception,stock.setup_matrix,size=[1],default_value=0.0)         
         self.assertRaises(Exception,stock.setup_matrix,size=[1,2,3],default_value=0.0)         
         
-    def testElement_setup_named_matrix_exception(self):
+    def test_setup_named_matrix_exception(self):
         model = Model()
 
         stock = Stock(model=model,name="testElement")    
@@ -164,7 +161,7 @@ class TestElement(unittest.TestCase):
 
     #Check these tests again from functional perspective
 
-    def testElement_handle_arrayed_named(self):
+    def test_handle_arrayed_named(self):
         model = Model()
 
         stock1 = Stock(model=model,name="testStock1")
@@ -179,7 +176,7 @@ class TestElement(unittest.TestCase):
         self.assertEqual(stock1._elements[1].equation,stock2._elements[1])
         self.assertEqual(stock1._elements[2].equation,stock2._elements[2])
 
-    def testElement_handle_arrayed_not_named(self):
+    def test_handle_arrayed_not_named(self):
         model = Model()
 
         stock1 = Stock(model=model,name="testStock1")
@@ -194,7 +191,7 @@ class TestElement(unittest.TestCase):
         self.assertEqual(stock1._elements[0].equation,stock2._elements[0])
         self.assertEqual(stock1._elements[1].equation,stock2._elements[1])        
 
-    def testElement_handle_arrayed_exception(self):
+    def test_handle_arrayed_exception(self):
         model = Model()
 
         stock1 = Stock(model=model,name="testStock1")
@@ -206,7 +203,7 @@ class TestElement(unittest.TestCase):
         self.assertRaises(Exception,stock1._handle_arrayed,equation=stock2)  
 
     @pytest.mark.requires_extra("plotting")
-    def testElement_plot(self):
+    def test_plot(self):
         model = Model(starttime = 0.0, stoptime= 5.0, dt= 1.0, name="TestModel")
         
         vector = model.constant("vector")
@@ -227,36 +224,75 @@ class TestElement(unittest.TestCase):
         self.assertTrue(dataframe.equals(pd.DataFrame({"value1": [1.0, 5.0, 9.0], "value2": [1.0, 7.0, 13.0]}, index=[0.0, 1.0, 2.0])))
         self.assertIsNone(result.plot(starttime=0,stoptime=2,dt=1,return_df=False))
 
-    def test_plot_falls_back_to_model_runspecs_on_error(self):
-        """If building the frame for the passed range fails, plot retries with the
-        model's own runspecs."""
+    def test_plot_raises_what_the_equation_raises(self):
+        """plot used to retry a failing range with the model's own runspecs, and so hid
+        the error - a loop, a missing element - or answered for a range nobody asked for."""
         model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="TestModel")
 
-        scalar = model.constant("scalar")
+        scalar = model.converter("scalar")
         scalar.equation = 1.0
-
-        vector = model.constant("vector")
+        vector = model.converter("vector")
         vector.setup_vector(2, [3.0, 4.0])
 
-        # timerange raises on every first (odd) call so the try fails and the except
-        # succeeds on the following (even) call - for both the scalar and arrayed paths.
-        calls = {"n": 0}
+        # Fails once, then answers: the old retry would have swallowed the failure
+        def fails_once():
+            calls = {"n": 0}
 
-        def flaky_timerange(*_args):
-            calls["n"] += 1
-            if calls["n"] % 2 == 1:
-                raise RuntimeError("boom")
-            return [model.starttime, model.starttime + model.dt]
+            def memoize(*_args):
+                calls["n"] += 1
+                if calls["n"] == 1:
+                    raise RuntimeError("boom")
+                return 0.0
+            return memoize
 
-        with patch("BPTK_Py.sddsl.element.timerange", side_effect=flaky_timerange):
-            scalar_df = scalar.plot(return_df=True)   # non-arrayed except (263-264)
+        with patch.object(model, "memoize", side_effect=fails_once()):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                scalar.plot(return_df=True)
+        with patch.object(model, "memoize", side_effect=fails_once()):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                vector.plot(return_df=True)
 
-        calls["n"] = 0
-        with patch("BPTK_Py.sddsl.element.timerange", side_effect=flaky_timerange):
-            vector_df = vector.plot(return_df=True)    # arrayed except (254-255)
+        # And the range that was asked for is the range that comes back
+        self.assertEqual(list(scalar.plot(starttime=1.0, stoptime=2.0, return_df=True).index), [1.0, 2.0])
 
-        self.assertEqual(list(scalar_df.columns), ["scalar"])
-        self.assertEqual(len(vector_df.columns), 2)
+    def test_an_operand_has_to_be_an_element_an_expression_or_a_number(self):
+        """None or a string used to be accepted and fail at evaluation, as "'NoneType'
+        object has no attribute 'term'"."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="TestModel")
+        vector = model.converter("vector")
+        vector.setup_vector(3, [1.0, 2.0, 3.0])
+
+        for operand in (None, "x"):
+            with self.assertRaisesRegex(TypeError, "operand has to be an element, an expression or a number"):
+                vector.dot(operand)
+            with self.assertRaisesRegex(TypeError, "operand has to be"):
+                vector * operand
+
+        # A number still scales, zero included
+        scaled = model.converter("scaled")
+        scaled.equation = vector.dot(0)
+        self.assertEqual(scaled.plot(return_df=True).iloc[0].to_dict(), {"0": 0.0, "1": 0.0, "2": 0.0})
+
+    def test_an_array_needs_at_least_one_element(self):
+        """An empty vector used to be accepted, and then behaved as nothing at all:
+        dotted with a vector of three it gave three zeros."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="TestModel")
+
+        with self.assertRaisesRegex(ValueError, "at least one element"):
+            model.converter("v").setup_vector(0, 2.0)
+        with self.assertRaisesRegex(ValueError, "at least one element"):
+            model.converter("nv").setup_named_vector({})
+        with self.assertRaisesRegex(ValueError, "at least one row and one column"):
+            model.converter("m").setup_matrix([2, 0], 1.0)
+        with self.assertRaisesRegex(ValueError, "at least one row and one column"):
+            model.converter("nm").setup_named_matrix({"a": {}})
+
+    def test_a_matrix_of_the_wrong_size_is_named_even_with_one_row(self):
+        """The message read the second row, so a one-row matrix raised IndexError instead."""
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="TestModel")
+
+        with self.assertRaisesRegex(Exception, r"same size.*\[1, 2\].*\[2, 2\]"):
+            model.converter("m").setup_matrix([2, 2], [[1.0, 2.0]])
 
     def _plot_model(self):
         model = Model(starttime=0.0, stoptime=3.0, dt=1.0, name="TestModel")
@@ -265,7 +301,7 @@ class TestElement(unittest.TestCase):
         return constant
 
     @pytest.mark.requires_extra("plotting")
-    def testElement_plot_format_axes(self):
+    def test_plot_format_axes(self):
         """format="axes" returns the Axes, the way visualizer.plot() does.
 
         Without a return value the method only ever produced output as a side
@@ -279,7 +315,7 @@ class TestElement(unittest.TestCase):
         self.assertIsInstance(ax, matplotlib.axes.Axes)
         self.assertEqual(ax.get_title(), "constant")
 
-    def testElement_plot_format_df(self):
+    def test_plot_format_df(self):
         """format="df" is the same thing return_df=True does."""
         constant = self._plot_model()
 
@@ -289,19 +325,19 @@ class TestElement(unittest.TestCase):
         self.assertIsInstance(by_format, pd.DataFrame)
         self.assertTrue(by_format.equals(by_flag))
 
-    def testElement_plot_return_df_overrides_format(self):
+    def test_plot_return_df_overrides_format(self):
         """The older flag keeps working even when format says otherwise."""
         result = self._plot_model().plot(return_df=True, format="axes")
 
         self.assertIsInstance(result, pd.DataFrame)
 
     @pytest.mark.requires_extra("plotting")
-    def testElement_plot_default_returns_nothing(self):
+    def test_plot_default_returns_nothing(self):
         """The default stays as it was - drawing, with no return value."""
         self.assertIsNone(self._plot_model().plot())
 
     @pytest.mark.requires_extra("plotting")
-    def testElement_plot_format_axes_registers_no_figure(self):
+    def test_plot_format_axes_registers_no_figure(self):
         """format="axes" must not leave a figure in pyplot's global registry.
 
         `df.plot()` without an `ax` goes through pyplot, which holds every figure it
@@ -322,7 +358,7 @@ class TestElement(unittest.TestCase):
         self.assertEqual(set(plt.get_fignums()), before)
 
     @pytest.mark.requires_extra("plotting")
-    def testElement_plot_default_keeps_using_pyplot(self):
+    def test_plot_default_keeps_using_pyplot(self):
         """The default path must stay registered - that is how a notebook shows it.
 
         The guard above is only correct if it is narrow: a Jupyter cell renders the
@@ -340,19 +376,12 @@ class TestElement(unittest.TestCase):
         plt.close("all")
 
 class TestElementError(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def testElementErrorInit(self):
+    def test_element_error_init(self):
         elementError = ElementError(value="testValue")
 
         self.assertEqual(elementError.value,"testValue")
 
-    def testElementError_str_(self):
+    def test_str_(self):
         elementError = ElementError(value=123)        
 
         self.assertEqual(elementError.__str__(),"123")
-
-if __name__ == '__main__':
-    unittest.main()
-

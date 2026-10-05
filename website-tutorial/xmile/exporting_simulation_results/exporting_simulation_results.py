@@ -69,9 +69,6 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    # `IPython.display.IFrame` takes a fixed pixel width, which overflows the page on
-    # anything narrower than the 933 px it asked for. A wrapper that keeps the aspect
-    # ratio and scales to the column does the same job at any width.
     mo.Html(
         """
         <div style="position:relative;width:100%;padding-top:75%;overflow:hidden">
@@ -108,7 +105,6 @@ def _():
     ## Load the BPTK Package
     from BPTK_Py.bptk import bptk 
     bptk = bptk()
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
@@ -260,8 +256,6 @@ def _(mo):
 
 @app.cell
 def _(bptk, mo):
-    # `list_scenarios` prints and returns nothing, and marimo sends a cell's stdout to the
-    # console rather than into the page - so it has to be captured to be seen.
     with mo.capture_stdout() as before:
         # these are the scenarios initially defined
         bptk.list_scenarios(["smCustomerAcquisition"])
@@ -273,9 +267,7 @@ def _(bptk, mo):
 @app.cell
 def _(bptk, mo):
     # A new scenario, which will act as the base for generating the data an interactive
-    # dashboard needs. The listing has to happen in this same cell: `register_scenarios`
-    # returns nothing, so a cell below it would have no dependency on the registration and
-    # marimo would see no reason to re-run it.
+    # dashboard needs.
     bptk.register_scenarios(
         scenario_manager="smCustomerAcquisition",
         scenarios={
@@ -308,7 +300,7 @@ def _(mo):
 @app.cell
 def _():
     # for each parameter we define the range of settings - e.g. referrals ranges from 0 to twelve, with a step of one: 1,2, 3... 12.
-    # advertisingSuccessPct ranges from 0 to 0.2, with a steop of 0.01: 0, 0.01, 0.02,....
+    # advertisingSuccessPct ranges from 0 to 0.2, with a step of 0.01: 0, 0.01, 0.02,....
     interactive_settings= {
         "advertisingSuccessPct":(0,0.2,0.01),
         "referralFreeMonths":(0,40,10),

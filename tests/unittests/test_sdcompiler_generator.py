@@ -374,7 +374,3 @@ class TestGeneratorHelpers(unittest.TestCase):
                                     "args": ["self.memoize('idx', t)"]})
 
         self.assertIn("self.memoize('idx', t)", rendered)
-
-
-if __name__ == '__main__':
-    unittest.main()

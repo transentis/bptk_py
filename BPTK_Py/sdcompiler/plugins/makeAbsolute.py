@@ -1,4 +1,3 @@
-from copy import deepcopy
 try:
     from .sanitizeNames import sanitizeName
 except:

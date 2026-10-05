@@ -1,4 +1,3 @@
-from copy import deepcopy
 import re
 
 def resolve(expression, entity, dimensions):

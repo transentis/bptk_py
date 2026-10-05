@@ -33,7 +33,6 @@ def _():
     #| echo: false
     from BPTK_Py import bptk
     bptk = bptk()
-    # '%matplotlib inline' command supported automatically in marimo
     import matplotlib.pyplot as plt
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'

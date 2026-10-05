@@ -10,9 +10,6 @@ from BPTK_Py.sddsl.functions import pulse, trend, smooth, delay
 from BPTK_Py.sddsl.operators import OperatorError, Trend, And, Ln, Log10, Floor, Ceil
 
 class TestFunctions(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def test_pulse_errors(self):
         model = Model()
         with self.assertRaisesRegex(OperatorError, "The volume must be a model element or a floating point value"):
@@ -138,7 +135,3 @@ class TestLnLog10FloorCeil(unittest.TestCase):
         self.assertIsInstance(Log10(1.0), Log10)
         self.assertIsInstance(Floor(1.0), Floor)
         self.assertIsInstance(Ceil(1.0), Ceil)
-
-
-if __name__ == '__main__':
-    unittest.main()

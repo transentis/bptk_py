@@ -3,9 +3,6 @@ import unittest
 from BPTK_Py.sdcompiler.plugins.expandArrays import cartesian_product, arrayed_identifiers, alter_identifier
 
 class TestExpandArrays(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def test_cartestian_procuct(self):
         self.assertEqual(cartesian_product([[0,1,2]]),[0,1,2])
         self.assertEqual(cartesian_product([[0,1],[1,2]]),[(0,1),(0,2),(1,1),(1,2)])
@@ -125,7 +122,3 @@ class TestExpandArrays(unittest.TestCase):
         """
         self.assertEqual(cartesian_product([["A"], ["X"]]), ("A", "X"))
         self.assertEqual(cartesian_product([["A"], ["X"], ["1"]]), ("A", "X", "1"))
-
-
-if __name__ == '__main__':
-    unittest.main()           

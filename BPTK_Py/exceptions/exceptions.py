@@ -14,6 +14,15 @@ class NoSuchEquationException(Exception):
 
 class NoDataProducedException(Exception):
     pass
+class CyclicDependencyError(ValueError):
+    """Elements that read one another within the same timestep, so none can go first.
+
+    A stock or a `delay` reads an earlier step and breaks such a loop; without one, the
+    model has no order to evaluate in. The message names the loop in the words the Rust
+    engine uses for the same model, and is a `ValueError` for the same reason.
+    """
+    pass
+
 class RustBackendError(Exception):
     """The Rust backend was asked for and cannot run this model.
 

@@ -164,7 +164,7 @@ def _(another_model_function, model):
     another_converter = model.converter("another_converter")
     another_converter.equation = another_model_function(input_function, multiplier)
     another_converter.plot(format="axes")
-    return
+    return (another_converter,)
 
 
 @app.cell(hide_code=True)
@@ -183,14 +183,11 @@ def _(mo):
 
 
 @app.cell
-def _(mo, model):
+def _(another_converter, mo, model):
     from BPTK_Py.bptk import bptk
 
     bptk = bptk()
 
-    # Registering a model whose scenario manager already exists leaves the *old* model in
-    # place - `register_scenario_manager` warns and keeps it. Drop the registry first, or
-    # editing this cell plots the model you started with rather than the one you changed.
     bptk.reset_all_scenarios()
     bptk.register_model(model)
 
@@ -203,16 +200,14 @@ def _(mo, model):
         scenario_manager="smTestmodel",
     )
 
-    # The names the plot below draws. Naming them here is what gives that cell a
-    # dependency on this one: `register_scenarios` returns nothing, so without a name
-    # passing between the two cells marimo would see no reason to redraw the chart.
     scenarios_to_plot = ["base", "multiplier5", "multiplier10", "multiplier15"]
+    equations_to_plot = [another_converter.name]
 
     with mo.capture_stdout() as registered:
         bptk.list_scenarios(scenario_managers=["smTestmodel"])
 
     mo.plain_text(registered.getvalue())
-    return bptk, scenarios_to_plot
+    return bptk, equations_to_plot, scenarios_to_plot
 
 
 @app.cell(hide_code=True)
@@ -224,11 +219,11 @@ def _(mo):
 
 
 @app.cell
-def _(bptk, scenarios_to_plot):
+def _(bptk, equations_to_plot, scenarios_to_plot):
     bptk.plot_scenarios(
         scenario_managers=["smTestmodel"],
         scenarios=scenarios_to_plot,
-        equations=["another_converter"],
+        equations=equations_to_plot,
         format="axes",
     )
     return
@@ -326,7 +321,7 @@ def _(mo):
 
     ## Which functions run on the Rust engine
 
-    Since 3.2.0 a model with user-defined functions runs on the [Rust
+    A model with user-defined functions runs on the [Rust
     engine](../../concepts/execution_backends/execution_backends.md). The engine evaluates
     the model and calls back into Python at those nodes, once per node and timestep, so
     the function you wrote is the function that runs.

@@ -10,7 +10,7 @@
 # MIT License
 
 
-from .element import ArrayedEquation, Element
+from .element import Element
 from .element import ElementError
 
 

@@ -30,8 +30,8 @@ def _(mo):
 
     ## Contents
 
-    - [Agent-based Modeling With BPTK-Py](./agent_based_modeling/agent_based_modeling.ipynb)
-    - [Custom Data Collectors](./custom_datacollectors/custom_datacollectors.ipynb)
+    - [Agent-based Modeling With BPTK-Py](./agent_based_modeling/agent_based_modeling.md)
+    - [Custom Data Collectors](./custom_datacollectors/custom_datacollectors.md)
     """)
     return
 

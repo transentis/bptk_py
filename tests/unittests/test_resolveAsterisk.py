@@ -128,7 +128,3 @@ class TestRemoveAserisk(unittest.TestCase):
 
     def test_an_expression_that_is_neither_a_dict_nor_a_list_comes_back_unchanged(self):
         self.assertEqual(resolve(7, "SalesData", self.IR), 7)
-
-
-if __name__ == '__main__':
-    unittest.main()    

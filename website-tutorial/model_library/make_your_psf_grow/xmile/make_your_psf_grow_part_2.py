@@ -79,7 +79,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    > The model explained here was built using Stella Architect from isee systems, i.e. in the XMILE format. This repository also contains a version of the model built natively in Python using the BPTK SD DSL. If you are more interested in that variant, please check this [notebeook](../sddsl/make_your_psf_grow_part_2.ipynb)
+    > The model explained here was built using Stella Architect from isee systems, i.e. in the XMILE format. This repository also contains a version of the model built natively in Python using the BPTK SD DSL. If you are more interested in that variant, please check this [notebeook](../sddsl/make_your_psf_grow_part_2.md)
     """)
     return
 

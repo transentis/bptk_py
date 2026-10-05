@@ -10,7 +10,6 @@
 # MIT License
 
 import datetime
-import logging
 
 # Configuration variables
 loglevel = "WARN"

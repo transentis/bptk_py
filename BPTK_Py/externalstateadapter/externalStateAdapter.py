@@ -96,18 +96,27 @@ class ExternalStateAdapter(metaclass=ABCMeta):
                 self._decompress_logs(state.state)
                 log(f"[INFO] State decompression completed for instance {instance_uuid}")
 
-            # Always restore numeric keys in scenario_cache (no compression, just JSON key conversion fix)
             if(state.state is not None):
-                if "scenario_cache" in state.state:
-                    log(f"[INFO] Restoring numeric keys in scenario_cache for instance {instance_uuid}")
-                    state.state["scenario_cache"] = self._restore_numeric_keys(state.state["scenario_cache"])
-                    log(f"[INFO] Numeric keys restored for instance {instance_uuid}")
+                self._restore_time_keys(state.state, instance_uuid)
 
             log(f"[INFO] Instance {instance_uuid} loaded successfully")
             return state
         except Exception as e:
             log(f"[ERROR] Failed to load instance {instance_uuid}: {str(e)}")
             raise
+
+    # The parts of a session state keyed by time. JSON turns those keys into strings, so
+    # a state read back from storage gets them back as numbers - otherwise the steps
+    # before a save and the steps after it are keyed differently.
+    _TIME_KEYED = ("scenario_cache", "results_log")
+
+    def _restore_time_keys(self, state, instance_uuid):
+        """Restore the numeric keys of every time-keyed part of a loaded session state."""
+        for part in self._TIME_KEYED:
+            if part in state:
+                log(f"[INFO] Restoring numeric keys in {part} for instance {instance_uuid}")
+                state[part] = self._restore_numeric_keys(state[part])
+        log(f"[INFO] Numeric keys restored for instance {instance_uuid}")
 
     def _restore_numeric_keys(self, data):
         """

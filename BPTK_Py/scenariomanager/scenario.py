@@ -40,7 +40,10 @@ class SimulationScenario():
     def __init__(self, dictionary, name, model, scenario_manager_name):
         
 
-        self.dictionary = dictionary
+        # A copy, and the constants and points below are copies of their own: settings
+        # applied to the scenario would otherwise change the caller's dict, and this one
+        # is what a reload compares the scenario file against.
+        self.dictionary = deepcopy(dictionary)
         self.scenario_manager = scenario_manager_name
         self.model = model
         self.sd_simulation = None # stores a live simulation when running a session
@@ -62,45 +65,68 @@ class SimulationScenario():
  
         if "constants" in dictionary:
             # Overwrite base constants (if any)
-            self.constants = dictionary["constants"]
+            self.constants = deepcopy(dictionary["constants"])
         else:
             self.constants = {}
 
         if "points" in dictionary:
-            self.points = dictionary["points"]
+            self.points = deepcopy(dictionary["points"])
             if model is not None:
-                self.model.points = self.points
+                # Merged into a dict of the model's own: the scenario names the tables it
+                # changes, and every other table of the model stays. Replacing the dict
+                # dropped them, and a model shared with other scenarios is not written to.
+                self.model.points = {**self.model.points, **self.points}
         else:
             self.points = {}
 
-        if "runspecs" in dictionary:
-            if "starttime" in dictionary["runspecs"]:
-                self.starttime = dictionary["runspecs"]["starttime"]
-            if "stoptime" in dictionary["runspecs"]:
-                self.stoptime = dictionary["runspecs"]["stoptime"]
-            if "dt" in dictionary["runspecs"]:
-                self.dt = dictionary["runspecs"]["dt"]
+        self._apply_runspecs(dictionary)
 
         self.name = name
         self.result = None  # Stores the result of a simulation run
+
+        self._refuse_stocks_among_constants()
+
+    def _refuse_stocks_among_constants(self):
+        """Raise when a constant of this scenario names a stock of its model.
+
+        A constant replaces an element's equation, and a stock's equation is what moves
+        it: set as a constant, the stock stayed at that value for the whole run, with no
+        error and no warning. What was meant is almost always the start value, which a
+        scenario sets through a constant the stock's `initial_value` refers to.
+        """
+        if self.model is None:
+            return
+        stocks = set(getattr(self.model, "stocks", None) or ())
+        named = sorted(name for name in self.constants if name in stocks)
+        if named:
+            raise ValueError(
+                "Scenario '{}' of '{}' sets the stock{} {} as a constant. A constant "
+                "replaces the equation, so the stock would not move at all. To start it "
+                "from another value, make its initial value a constant - "
+                "stock.initial_value = model.constant(...) - and set that one.".format(
+                    self.name, self.scenario_manager, "s" if len(named) > 1 else "",
+                    ", ".join("'{}'".format(name) for name in named)))
+
+    def _apply_runspecs(self, dictionary):
+        """Take starttime, stoptime and dt from the dictionary's runspecs, where it has them."""
+        for spec in ("starttime", "stoptime", "dt"):
+            if spec in dictionary.get("runspecs", {}):
+                setattr(self, spec, dictionary["runspecs"][spec])
 
     def configure_settings(self, dictionary):
         if "constants" in dictionary:
             # Overwrite base constants (if any)
             for key, value in dictionary["constants"].items():
                 self.constants[key] = value
+            self._refuse_stocks_among_constants()
 
         if "points" in dictionary:
             for key, value in dictionary["points"].items():
                 self.points[key] = value
+                if self.model is not None:
+                    self.model.points[key] = value
 
-        if "runspecs" in dictionary:
-            if "starttime" in dictionary["runspecs"]:
-                self.starttime = dictionary["runspecs"]["starttime"]
-            if "stoptime" in dictionary["runspecs"]:
-                self.stoptime = dictionary["runspecs"]["stoptime"]
-            if "dt" in dictionary["runspecs"]:
-                self.dt = dictionary["runspecs"]["dt"]
+        self._apply_runspecs(dictionary)
 
 
 
@@ -120,6 +146,8 @@ class SimulationScenario():
 
     def _set_cache(self,cache):
         self.model.memo = cache
+        # A restored cache holds values, which the next reset has to clear
+        self.model._memo_filled = True
 
     def _get_cache(self):
         return self.model.memo
@@ -131,6 +159,7 @@ class SimulationScenario():
         """
 
         if self.model is not None:
+            self._refuse_stocks_among_constants()
 
             for constant, value in self.constants.items():
                 if type(value) == str:
@@ -169,7 +198,7 @@ class SimulationScenario():
 
         else:
             log(
-                "[ERROR] Attempted to initialize points of a model before the model is available for ABMModel {}".format(
+                "[ERROR] Attempted to initialize points of a model before the model is available for Model {}".format(
                     self.name))
 
     # needed to provide interface compatibility with abm scenarios (i.e. abm model class)

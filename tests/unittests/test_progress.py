@@ -93,7 +93,3 @@ class TestProgressBar(unittest.TestCase):
         with ProgressBar(description="test") as bar:
             bar.value = 1
             self.assertEqual(bar.value, 1.0)
-
-
-if __name__ == "__main__":
-    unittest.main()

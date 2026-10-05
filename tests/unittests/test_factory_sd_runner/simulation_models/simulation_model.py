@@ -35,6 +35,3 @@ class simulation_model(Model):
         deposit.equation = depositRate
 
         totalValue.equation = interest + deposit
-
-
-        

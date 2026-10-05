@@ -38,7 +38,3 @@ class TestPackageInit(unittest.TestCase):
     def test_an_attribute_the_package_does_not_have_raises(self):
         with self.assertRaises(AttributeError):
             BPTK_Py.no_such_attribute
-
-
-if __name__ == '__main__':
-    unittest.main()

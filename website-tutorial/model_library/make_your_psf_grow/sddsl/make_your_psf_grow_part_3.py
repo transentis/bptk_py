@@ -705,7 +705,7 @@ def _(mo):
     * What does the staff size in your projects depend on?
     * Could you design your services such that you can work in parallel better (and thus deliver results faster)?
 
-    In tne next chapter, we will tackle the [_expert cash target_](make_your_psf_grow_part_4.ipynb)
+    In the next chapter, we will tackle the [_expert cash target_](make_your_psf_grow_part_4.md)
     """)
     return
 

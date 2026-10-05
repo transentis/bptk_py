@@ -98,11 +98,6 @@ def _():
 
 @app.cell
 def _(customers, plt):
-    # `Element.plot()` draws through pyplot, which keeps every figure it makes in a
-    # global registry - and the reader is invited to edit this cell and run it again.
-    # Closing the previous run's figures keeps the browser's heap bounded; they have
-    # been rendered by then. `bptk.plot_scenarios()` does not need this: since 3.0.2
-    # its `format="axes"` builds a figure of its own, outside the registry.
     plt.close("all")
     customers.plot(format="axes")
     return
@@ -253,8 +248,6 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    # Not `word_of_mouth_success`: the model already binds that name, and marimo
-    # forbids one name in two cells.
     word_of_mouth_slider = mo.ui.slider(
         start=0.001, stop=0.1, step=0.001, value=0.01, show_value=True,
         label="Word Of Mouth Success"
@@ -300,8 +293,6 @@ def _(bptk, mo, plt, word_of_mouth_slider):
         format="axes",
     )
 
-    # Slider and diagram in one output block: apart, the reader has to scroll
-    # between the control and what it controls.
     mo.vstack([
         word_of_mouth_slider,
         mo.ui.tabs({

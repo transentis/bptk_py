@@ -5,6 +5,7 @@ import BPTK_Py.logger.logger as logmod
 from unittest.mock import MagicMock
 from BPTK_Py.externalstateadapter.redis_adapter import RedisAdapter, InstanceState
 from BPTK_Py.util.statecompression import is_compressed
+from tests.helpers.log_helpers import clear_log, read_log
 
 encode = lambda obj: jsonpickle.encode(obj, make_refs=False)
 decode = jsonpickle.decode
@@ -35,8 +36,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.mock_redis = MagicMock(spec=redis.Redis)
         importlib.reload(logmod)
         logmod.loglevel = "INFO"
-        with open(logmod.logfile, "w", encoding="UTF-8"):
-            pass
+        clear_log()
         
     def test_init(self):
         adapter1 = RedisAdapter(redis_client=self.mock_redis)
@@ -49,8 +49,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.assertTrue(adapter1.compress)
         self.assertFalse(adapter2.compress)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("RedisAdapter initialized with key_prefix: bptk:state, compression: True", content)     
         self.assertIn("RedisAdapter initialized with key_prefix: custom:prefix, compression: False", content)     
 
@@ -91,8 +90,7 @@ class TestRedisAdapter(unittest.TestCase):
         expected_key = f"testprefix:{instance_id}"
         self.mock_redis.get.assert_called_once_with(expected_key)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Loading instance abc123 from Redis key: testprefix:abc123", content)     
         self.assertIn("Data retrieved from Redis for instance abc123", content)  
         self.assertIn("Decoding instance data for abc123", content)  
@@ -105,8 +103,7 @@ class TestRedisAdapter(unittest.TestCase):
         result = self.adapter._load_instance(instance_id2)
         self.assertIsNone(result)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Loading instance missing from Redis key: testprefix:missing", content)     
         self.assertIn("No data found in Redis for instance missing", content)  
 
@@ -118,8 +115,7 @@ class TestRedisAdapter(unittest.TestCase):
         res = self.adapter._load_instance(instance_id3)
         self.assertIsNone(res)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Loading instance test_error from Redis key: testprefix:test_error", content)     
         self.assertIn("Failed to load instance test_error from Redis", content)
 
@@ -130,8 +126,7 @@ class TestRedisAdapter(unittest.TestCase):
         res = self.adapter._load_instance(instance_id4)
         self.assertIsNone(res)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Loading instance test_exception from Redis key: testprefix:test_exception", content)     
         self.assertIn("Unexpected error loading instance test_exception from Redis", content)
 
@@ -172,8 +167,7 @@ class TestRedisAdapter(unittest.TestCase):
             "unchanged": "keep"
         })
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Restoring numeric keys in scenario_cache for instance test123abc", content)     
         self.assertIn("Numeric keys restored for instance test123abc", content)
 
@@ -207,8 +201,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.assertEqual(key, "testtest:test_save")
         self.assertEqual(timoutSeconds,(1*7*24*3600)+(1*24*3600)+(1*3600)+(1*60)+1)
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("_save_instance called for instance test_save", content)     
         self.assertIn("Preparing data for Redis storage for instance test_save", content)
         self.assertIn("Storing instance test_save to Redis key: testtest:test_save", content)
@@ -229,8 +222,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testtest")
         self.adapter._save_instance(inst_wo_id)     
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Cannot save instance: instance_state or instance_id is None", content)  
 
         #Exception (simulated client failure)
@@ -239,8 +231,7 @@ class TestRedisAdapter(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.adapter._save_instance(inst)  
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Error saving instance test_save to Redis", content)  
 
     def test_save_instance(self):
@@ -256,8 +247,7 @@ class TestRedisAdapter(unittest.TestCase):
         self.adapter = RedisAdapter(redis_client=self.mock_redis, key_prefix="testtest")
         self.adapter.save_instance(inst)        
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("RedisAdapter saving instance test_save123", content) 
 
     def _session_state(self):
@@ -314,7 +304,8 @@ class TestRedisAdapter(unittest.TestCase):
         self.assertEqual(written["settings_log"], state["settings_log"])
 
     def test_round_trip_through_redis_keeps_the_steps(self):
-        """Save and load back: the logs have to come out the way they went in."""
+        """Save and load back: the logs have to come out the way they went in - the
+        results keyed by number, as a running session keys them."""
         state = self._session_state()
         adapter = RedisAdapter(redis_client=self.mock_redis)
         adapter.save_instance(InstanceState(state=state, instance_id="roundtrip",
@@ -325,7 +316,7 @@ class TestRedisAdapter(unittest.TestCase):
         loaded = adapter.load_instance("roundtrip")
 
         self.assertEqual(loaded.state["settings_log"], state["settings_log"])
-        self.assertEqual(loaded.state["results_log"], state["results_log"])
+        self.assertEqual(loaded.state["results_log"], adapter._restore_numeric_keys(state["results_log"]))
 
     def test_load_instance_leaves_an_uncompressed_log_alone(self):
         """An instance written while the flag was off must still read correctly."""
@@ -347,8 +338,7 @@ class TestRedisAdapter(unittest.TestCase):
 
         self.adapter.delete_instance("abc123")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Deleting instance abc123 from Redis key: test_delete:abc123", content)
         self.assertIn("Instance abc123 deleted successfully from Redis", content)
 
@@ -357,8 +347,7 @@ class TestRedisAdapter(unittest.TestCase):
 
         self.adapter.delete_instance("def456")
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Deleting instance def456 from Redis key: test_delete:def456", content)
         self.assertIn("Instance def456 not found in Redis", content)
 
@@ -368,10 +357,6 @@ class TestRedisAdapter(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.adapter.delete_instance("ghi789") 
 
-        with open(logmod.logfile, "r", encoding="UTF-8") as f:
-            content = f.read()
+        content = read_log()
         self.assertIn("Deleting instance ghi789 from Redis key: test_delete:ghi789", content)
         self.assertIn("Failed to delete instance ghi789 from Redis", content)
-
-if __name__ == '__main__':
-    unittest.main()         
