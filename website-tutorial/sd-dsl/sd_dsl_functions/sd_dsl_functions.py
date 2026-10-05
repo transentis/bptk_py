@@ -1004,7 +1004,7 @@ def _(Model, sd):
     #| echo: true
     m_6 = Model(starttime=0, stoptime=10, dt=0.1)
     f_5 = m_6.flow(name='exprnd')
-    mean = sd.time()
+    mean = sd.time() + 1
     f_5.equation = sd.exprnd(mean)
     f_5.plot(format="axes")
     return
@@ -1049,7 +1049,7 @@ def _(Model, sd):
     m_8 = Model(starttime=0, stoptime=10, dt=0.1)
     f_7 = m_8.biflow(name='gamma')
     shape = 10
-    scale = sd.time()
+    scale = sd.time() + 1
     f_7.equation = sd.gamma(shape, scale)
     f_7.plot(format="axes")
     return
