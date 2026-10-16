@@ -1,6 +1,6 @@
 [package]
 name = "bptk_rust_engine"
-version = "3.4.0"
+version = "3.4.1"
 edition = "2021"
 
 [lib]

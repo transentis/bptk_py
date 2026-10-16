@@ -74,6 +74,11 @@ For any questions or suggestions you have regarding BPTK, please contact us at: 
 
 ## Changelog
 
+### 3.4.1
+
+* Bugfixes:
+    * `arr_mean`, `arr_max`, `arr_min`, `arr_median` and `arr_stddev` return a Python float, as the other aggregations do - they returned a numpy scalar
+
 ### 3.4.0
 
 * Breaking: `sd.trend(model, input, averaging_time, initial_trend=0.0)` - the third argument is now the trend the function starts with, as in XMILE; it used to be the starting value of the internal average, so a model that passes one gets different results

@@ -835,7 +835,21 @@ class TestArrayOperators(unittest.TestCase):
 
         converter5 = model.converter("converter5")
         converter5.equation = converter1.arr_stddev()
-        self.assertEqual(converter5(1),0.0) 
+        self.assertEqual(converter5(1),0.0)
+
+    def test_aggregations_return_a_python_float(self):
+        model = Model(starttime=1, stoptime=1, dt=1, name='test')
+        sales = model.converter("sales")
+        sales.setup_named_matrix({'boston': {'q1': 10.0, 'q2': 20.0}, 'nyc': {'q1': 30.0, 'q2': 40.0}})
+
+        for name in ["arr_sum", "arr_prod", "arr_mean", "arr_max", "arr_min", "arr_median", "arr_stddev"]:
+            whole = model.converter(name + "_whole")
+            whole.equation = getattr(sales, name)()
+            per_quarter = model.converter(name + "_per_quarter")
+            per_quarter.equation = getattr(sales, name)(over=0)
+
+            self.assertIs(type(whole(1)), float, name)
+            self.assertIs(type(per_quarter["q1"](1)), float, name)
 
 class TestOtherOperators(unittest.TestCase):
     def test_binary_operator_init_invalid(self):

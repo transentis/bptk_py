@@ -858,7 +858,7 @@ class ArrayMeanOperator(ScalarResultOperator, Operator):
 
         string_term = _matrix_element_to_string(self.element, time)
 
-        return "np.mean({arr})".format(arr=string_term)
+        return "float(np.mean({arr}))".format(arr=string_term)
 
     def clone_with_index(self, index):
         a = ArrayMeanOperator(self.element)
@@ -881,7 +881,7 @@ class ArrayMaxOperator(ScalarResultOperator, Operator):
 
         string_term = _matrix_element_to_string(self.element, time)
 
-        return "np.max({arr})".format(arr=string_term)
+        return "float(np.max({arr}))".format(arr=string_term)
 
     def clone_with_index(self, index):
         a = ArrayMaxOperator(self.element)
@@ -904,7 +904,7 @@ class ArrayMinOperator(ScalarResultOperator, Operator):
 
         string_term = _matrix_element_to_string(self.element, time)
 
-        return "np.min({arr})".format(arr=string_term)
+        return "float(np.min({arr}))".format(arr=string_term)
 
     def clone_with_index(self, index):
         a = ArrayMinOperator(self.element)
@@ -927,7 +927,7 @@ class ArrayMedianOperator(ScalarResultOperator, Operator):
 
         string_term = _matrix_element_to_string(self.element, time)
 
-        return "np.median({arr})".format(arr=string_term)
+        return "float(np.median({arr}))".format(arr=string_term)
 
     def clone_with_index(self, index):
         a = ArrayMedianOperator(self.element)
@@ -950,7 +950,7 @@ class ArrayStandardDeviationOperator(ScalarResultOperator, Operator):
 
         string_term = _matrix_element_to_string(self.element, time)
 
-        return "np.std({arr})".format(arr=string_term)
+        return "float(np.std({arr}))".format(arr=string_term)
 
     def clone_with_index(self, index):
         a = ArrayStandardDeviationOperator(self.element)
