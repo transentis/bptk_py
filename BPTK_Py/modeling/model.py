@@ -41,8 +41,8 @@ from .agent import Agent
 from .event import Event
 from ..logger import log
 from ..exceptions import CyclicDependencyError, RustBackendError, rust_backend_error
-from ..sddsl import Constant, Converter, Flow, Biflow, NaryOperator, Stock
-from ..sddsl.distributions import invalid_argument_message
+from ..sddsl import Constant, Converter, Conveyor, Flow, Biflow, NaryOperator, Stock
+from ..sddsl.sddsl_builtins import invalid_argument_message
 from ..util.lookup_data import lookup_points
 
 
@@ -109,6 +109,10 @@ class Model:
 
     # The default for a subclass that does not call Model.__init__
     _memo_filled = False
+    # Counts the calls to reset_cache(), which every new equation makes. What is derived
+    # from the model's structure - the order a non-negative stock serves its outflows in -
+    # is worked out again once the count has moved.
+    _structure_version = 0
 
 
     def __init__(self, starttime=0.0, stoptime=0.0, dt=1.0,name="", scheduler=None,data_collector=None):
@@ -897,12 +901,7 @@ class Model:
 
         #This is used internally by SD DSL lookup function / the Lookup operator.
 
-        if type(points) is str:
-            if points not in self.points:
-                raise ValueError("Lookup of a table the model does not have: '{}'".format(points))
-            points = lookup_points(points, self.points[points])
-        else:
-            points = lookup_points("inline", points)
+        points = self._lookup_table(points)
 
         x_vals = np.array([x[0] for x in points])
         y_vals = np.array([x[1] for x in points])
@@ -916,6 +915,13 @@ class Model:
         f = interp1d(x_vals, y_vals)
         return float(f(x))
 
+    def _lookup_table(self, points):
+        # A table named in the model, or one written inline - in the order interpolation needs
+        if type(points) is str:
+            if points not in self.points:
+                raise ValueError("Lookup of a table the model does not have: '{}'".format(points))
+            return lookup_points(points, self.points[points])
+        return lookup_points("inline", points)
 
     def plot_lookup(self,lookup_names,config=None,format="plot",matplotlib_rc_settings=None):
         """
@@ -1160,6 +1166,25 @@ class Model:
             self.stocks[name] = stock
             return stock
 
+    def conveyor(self, name):
+        """Create a System Dynamics conveyor: a stock that works like a conveyor belt.
+
+        Args:
+            name: String.
+                Name of the conveyor.
+
+        Returns:
+            The conveyor object.
+        """
+        if name in self.stocks:
+            existing = self.stocks[name]
+            if not isinstance(existing, Conveyor):
+                raise ValueError("'{}' is already a stock of the model, not a conveyor.".format(name))
+            return existing
+        conveyor = Conveyor(self, name)
+        self.stocks[name] = conveyor
+        return conveyor
+
     def function(self, name, fn, elementwise=True):
         """Create a user defined function for System Dynamics.
 
@@ -1313,6 +1338,7 @@ class Model:
             self._memo_filled = False
 
         self.invalid_arguments_reported = set()
+        self._structure_version += 1
 
 
 

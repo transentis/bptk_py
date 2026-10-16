@@ -1037,7 +1037,7 @@ class BptkServer(Flask):
 
         A 400 rather than a 500 because the caller chose the engine - in the session's
         `backend` field, or by the server's default - and asking for the other one is the
-        fix. The message names which of the four causes it is.
+        fix. The message names the cause.
         """
         resp = self._json_response(json.dumps({"error": str(error)}), 400)
         return resp

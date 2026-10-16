@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>test_math_rounding</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months">
+		<start>0</start>
+		<stop>5</stop>
+		<dt>0.5</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="arccos_value">
+				<eqn>ARCCOS(0.5)</eqn>
+			</aux>
+			<aux name="arcsin_value">
+				<eqn>ARCSIN(0.5)</eqn>
+			</aux>
+			<aux name="arctan_value">
+				<eqn>ARCTAN(1)</eqn>
+			</aux>
+			<aux name="int_value">
+				<eqn>INT(-2.5)</eqn>
+			</aux>
+			<aux name="mod_value">
+				<eqn>7 MOD 3</eqn>
+			</aux>
+			<aux name="round_half">
+				<eqn>ROUND(2.5)</eqn>
+			</aux>
+			<aux name="round_digits">
+				<eqn>ROUND(3.14159, 2)</eqn>
+			</aux>
+		</variables>
+	</model>
+</xmile>

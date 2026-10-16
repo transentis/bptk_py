@@ -472,10 +472,11 @@ def test_sddsl_functions():
 
     step_start = 3.0
     step_height = 10.0
-    input_function = model.converter("input_function")
-    input_function.equation = sd.step(step_height, step_start)
-
     base_value = 9.0
+    # The input starts where the smooth does, so the smooth stays there until the step
+    input_function = model.converter("input_function")
+    input_function.equation = base_value + sd.step(step_height - base_value, step_start)
+
     smooth = model.converter("smooth")
     smooth.equation = sd.smooth(model, input_function, 1.0, base_value)
 
@@ -654,13 +655,15 @@ def test_sddsl_functions():
     sinwave = m.flow(name="sinwave")
     coswave = m.flow(name="coswave")
     x = sd.time()
+    # arcsin and arccos are defined on [-1, 1]: time / stop stays inside it.
+    within = sd.time() / stop
 
     sin.equation = sd.sin(x)
     tan.equation = sd.tan(x)
     cos.equation = sd.cos(x)
-    arcsin.equation = sd.arcsin(x)
+    arcsin.equation = sd.arcsin(within)
     arctan.equation = sd.arctan(x)
-    arccos.equation = sd.arccos(x)
+    arccos.equation = sd.arccos(within)
     sinwave.equation = sd.sinwave(amplitude=2, period=4)
     coswave.equation = sd.coswave(amplitude=8, period=16)
 
@@ -679,12 +682,8 @@ def test_sddsl_functions():
         assert data_arctan.arctan[i] == pytest.approx(max(math.atan(i), 0.0))
         assert data_sinwave.sinwave[i] == pytest.approx(max(2*math.sin(2*math.pi*i/4),0.0))
         assert data_coswave.coswave[i] == pytest.approx(max(8*math.cos(2*math.pi*i/16),0.0))
-        if i <=1:
-            assert data_arcsin.arcsin[i] == pytest.approx(max(math.asin(i), 0.0))
-            assert data_arccos.arccos[i] == pytest.approx(max(math.acos(i), 0.0))
-        else:
-            assert data_arcsin.arcsin[i] == 0
-            assert data_arccos.arccos[i] == 0
+        assert data_arcsin.arcsin[i] == pytest.approx(math.asin(i / stop))
+        assert data_arccos.arccos[i] == pytest.approx(math.acos(i / stop))
 
     # beta
     # only tests if it runs
@@ -810,7 +809,7 @@ def test_sddsl_functions():
     m = Model(starttime=0, stoptime=10, dt=0.1)
     f = m.flow(name="lognormal")
 
-    mean = 0
+    mean = 1
     stdev = 1
     f.equation = sd.lognormal(mean, stdev)
     data = f.plot(return_df=True)
@@ -1945,7 +1944,8 @@ def test_stochastic_guards_python_backend(capsys):
         ("gamma_zero_scale", sd.gamma(2, 0)),
         ("exprnd_neg", sd.exprnd(-1)),
         ("exprnd_zero", sd.exprnd(0)),
-        ("lognorm_neg_std", sd.lognormal(0, -1)),
+        ("lognorm_neg_std", sd.lognormal(1, -1)),
+        ("lognorm_zero_mean", sd.lognormal(0, 1)),
         ("logistic_neg_scale", sd.logistic(0, -1)),
         ("tri_lower_gt_upper", sd.triangular(10, 5, 1)),
         ("tri_mode_gt_upper", sd.triangular(0, 15, 10)),
@@ -1996,7 +1996,7 @@ def test_stochastic_guards_boundary_python_backend(capsys):
 
     cases = [
         ("normal_zero_std", sd.normal(5, 0), 5.0),
-        ("lognorm_zero_std", sd.lognormal(0, 0), 1.0),
+        ("lognorm_zero_std", sd.lognormal(2, 0), 2.0),
         ("logistic_zero_scale", sd.logistic(5, 0), 5.0),
         ("binom_zero_n", sd.binomial(0, 0.5), 0.0),
         ("binom_p_zero", sd.binomial(10, 0), 0.0),

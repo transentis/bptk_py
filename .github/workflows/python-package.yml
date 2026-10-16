@@ -181,6 +181,23 @@ jobs:
   # The Rust engine is absent by construction and tests/conftest.py handles the
   # rest - it drops what the platform cannot do (threads, subprocesses, the
   # compiled engine) and skips nothing on any other platform.
+  audit:
+    # What `just audit` does: every dependency in uv.lock against the advisory
+    # databases. Here, so a vulnerable pin fails in this repository rather than
+    # surfacing as a Dependabot alert in the public one.
+    name: Audit the locked dependencies
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
+    - name: Audit
+      # `shell: bash` adds pipefail, without which a failed export reads as a clean audit
+      shell: bash
+      run: |
+        uv export --frozen --all-extras --all-groups --no-emit-project --no-hashes -q \
+          | uvx pip-audit --no-deps --disable-pip --progress-spinner off -r /dev/stdin
+
   browser:
     name: Test (Browser, Pyodide)
     runs-on: ubuntu-latest

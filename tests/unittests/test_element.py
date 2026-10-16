@@ -385,3 +385,17 @@ class TestElementError(unittest.TestCase):
         elementError = ElementError(value=123)        
 
         self.assertEqual(elementError.__str__(),"123")
+
+
+class TestElementIdentity(unittest.TestCase):
+    def test_an_element_is_a_key_by_identity(self):
+        from BPTK_Py import Model
+        model = Model()
+        first = model.flow("first")
+        second = model.flow("second")
+
+        keys = {first: 1, second: 2}
+
+        self.assertEqual(keys[first], 1)
+        self.assertEqual(keys[second], 2)
+        self.assertNotEqual(hash(first), hash(second))

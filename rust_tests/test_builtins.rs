@@ -224,6 +224,13 @@ fn test_round_floor_ceil() {
         args: vec![Expr::Literal(3.2)],
     };
     assert_eq!(model.eval_expr(&ceil_expr, &state, 0), 4.0);
+
+    // Towards zero, where floor goes down: they differ for a negative number
+    let trunc_expr = Expr::Call {
+        function: BuiltinFn::Trunc,
+        args: vec![Expr::Literal(-2.5)],
+    };
+    assert_eq!(model.eval_expr(&trunc_expr, &state, 0), -2.0);
 }
 
 #[test]
@@ -581,7 +588,19 @@ fn test_lognormal_negative_stddev() {
     let state = SimulationState::new(0, 1, Some(42));
     let expr = Expr::Call {
         function: BuiltinFn::Lognormal,
-        args: vec![Expr::Literal(0.0), Expr::Literal(-1.0)],
+        args: vec![Expr::Literal(1.0), Expr::Literal(-1.0)],
+    };
+    assert!(model.eval_expr(&expr, &state, 0).is_nan());
+}
+
+#[test]
+fn test_lognormal_mean_not_positive() {
+    // The mean of a lognormal distribution is positive
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 1, Some(42));
+    let expr = Expr::Call {
+        function: BuiltinFn::Lognormal,
+        args: vec![Expr::Literal(0.0), Expr::Literal(1.0)],
     };
     assert!(model.eval_expr(&expr, &state, 0).is_nan());
 }
@@ -656,14 +675,14 @@ fn test_normal_zero_stddev() {
 
 #[test]
 fn test_lognormal_zero_stddev() {
-    // stddev=0 is valid — returns exp(mean) deterministically
+    // stddev=0 is valid — returns the mean deterministically
     let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, Some(42));
     let expr = Expr::Call {
         function: BuiltinFn::Lognormal,
-        args: vec![Expr::Literal(0.0), Expr::Literal(0.0)],
+        args: vec![Expr::Literal(2.0), Expr::Literal(0.0)],
     };
-    assert!((model.eval_expr(&expr, &state, 0) - 1.0).abs() < 1e-10);
+    assert!((model.eval_expr(&expr, &state, 0) - 2.0).abs() < 1e-10);
 }
 
 #[test]

@@ -464,7 +464,7 @@ fn arity(function: &BuiltinFn) -> (usize, Option<usize>, &'static str) {
     match function {
         Time | Dt | Starttime | Stoptime | Pi | Inf | Nan => (0, Some(0), "no"),
         Abs | Sqrt | Exp | Ln | Log10 | Sin | Cos | Tan | Arcsin | Arccos | Arctan | Floor
-        | Ceil | Factorial | GammaLN | Exprnd | Geometric | Montecarlo | Poisson
+        | Ceil | Trunc | Factorial | GammaLN | Exprnd | Geometric | Montecarlo | Poisson
         | Lookup(_) => (1, Some(1), "1"),
         Sinwave | Coswave | Max | Min | Step | Combinations | Permutations | Random | Normal
         | Beta | Binomial | NegBinomial | Lognormal | Logistic | Weibull | Pareto => {
@@ -533,6 +533,7 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
         "round" => Ok(BuiltinFn::Round),
         "floor" => Ok(BuiltinFn::Floor),
         "ceil" => Ok(BuiltinFn::Ceil),
+        "trunc" => Ok(BuiltinFn::Trunc),
         "pi" => Ok(BuiltinFn::Pi),
         "step" => Ok(BuiltinFn::Step),
         "pulse" => Ok(BuiltinFn::Pulse),

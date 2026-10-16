@@ -250,6 +250,7 @@ FUNCTIONS = {
     "abs": lambda v: sd.abs(-v),
     "floor": lambda v: sd.floor(v / 7.0),
     "ceil": lambda v: sd.ceil(v / 7.0),
+    "trunc": lambda v: sd.trunc(v / 7.0 - 5.0),
     "round": lambda v: sd.round(v / 7.0, 2),
     "sinwave": lambda v: sd.sinwave(v, 4.0),
     "coswave": lambda v: sd.coswave(v, 4.0),
@@ -393,6 +394,46 @@ class TestStatefulFunctions:
     @pytest.mark.parametrize("shape", SHAPES)
     def test_smooth(self, shape):
         check(shape, lambda v, s, w: sd.smooth(v.model, v, 3.0, 1.0))
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_smooth_without_initial_value(self, shape):
+        check(shape, lambda v, s, w: sd.smooth(v.model, v, 3.0))
+
+    @pytest.mark.parametrize("name, build", [
+        ("smooth3", lambda v: sd.smooth3(v.model, v, 3.0)),
+        ("smoothn", lambda v: sd.smoothn(v.model, v, 3.0, 4, 1.0)),
+        ("delay1", lambda v: sd.delay1(v.model, v, 3.0)),
+        ("delay3", lambda v: sd.delay3(v.model, v, 3.0, 1.0)),
+        ("delayn", lambda v: sd.delayn(v.model, v, 3.0, 4)),
+        ("forecast", lambda v: sd.forecast(v.model, v, 3.0, 2.0)),
+        ("npv", lambda v: sd.npv(v.model, v, 0.1)),
+    ])
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_xmile_cascades(self, shape, name, build):
+        check(shape, lambda v, s, w: build(v))
+
+    @pytest.mark.parametrize("name, build", [
+        ("max", lambda v: sd.max(v, 2.0, 3.0)),
+        ("safediv", lambda v: sd.safediv(10.0, v - 2.0)),
+        ("rootn", lambda v: sd.rootn(v - 3.0, 3.0)),
+        ("percent", lambda v: sd.percent(v)),
+        ("pmt", lambda v: sd.pmt(0.05, 10.0, v)),
+        ("cgrowth", lambda v: sd.cgrowth(v.model, v)),
+        ("ramp", lambda v: sd.ramp(v, 2.0)),
+    ])
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_stateless_builtins(self, shape, name, build):
+        check(shape, lambda v, s, w: build(v))
+
+    @pytest.mark.parametrize("name, build", [
+        ("init", lambda v: sd.init(v.model, v)),
+        ("previous", lambda v: sd.previous(v.model, v, 0.0)),
+        ("history", lambda v: sd.history(v.model, v, 1.0)),
+        ("derivn", lambda v: sd.derivn(v.model, v * v, 1)),
+    ])
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_builtins_over_the_past(self, shape, name, build):
+        check(shape, lambda v, s, w: build(v))
 
     @pytest.mark.parametrize("shape", SHAPES)
     def test_trend(self, shape):
@@ -876,3 +917,80 @@ class TestStochasticOverArrays:
             for t in frame.index:
                 assert lower <= frame[name][t] <= lower * 2.0, (
                     f"{name} at t={t} left [{lower}, {lower * 2.0}]")
+
+
+# ---------------------------------------------------------------------------
+# Parts of arrays, transposition and aggregation along one dimension
+#
+# All of these are spread over cells or walked leaf by leaf before the model reaches
+# the engine, so the engine runs them unchanged.
+# ---------------------------------------------------------------------------
+
+class TestPartsOfArrays:
+    @pytest.mark.parametrize("shape", VECTORS)
+    def test_a_range_of_a_vector(self, shape):
+        check(shape, lambda v, s, w: v[1:2] * s)
+
+    @pytest.mark.parametrize("shape", VECTORS)
+    def test_a_range_reaching_beyond_the_vector(self, shape):
+        check(shape, lambda v, s, w: v[1:9] + 1.0)
+
+    def test_a_range_of_labels(self):
+        check("named_vector", lambda v, s, w: v["mid":"senior"] * 2.0)
+
+    def test_a_row_and_a_column(self):
+        # Of a square unnamed matrix: a named one labels its rows and its columns apart.
+        check("unnamed_matrix", lambda v, s, w: v[0, :] + v[:, 1])
+
+    @pytest.mark.parametrize("shape", MATRICES)
+    def test_a_transpose(self, shape):
+        check(shape, lambda v, s, w: v.transpose() * s)
+
+    def test_a_matrix_plus_its_transpose(self):
+        check("unnamed_matrix", lambda v, s, w: v + v.transpose())
+
+    @pytest.mark.parametrize("shape", MATRICES)
+    def test_a_single_cell_by_position(self, shape):
+        check_scalar(shape, lambda v, s, w: v[1, 0] * s)
+
+
+class TestAggregatingAlongADimension:
+    @pytest.mark.parametrize("shape", MATRICES)
+    @pytest.mark.parametrize("over", (0, 1))
+    @pytest.mark.parametrize("aggregation", ("arr_sum", "arr_prod", "arr_mean", "arr_median",
+                                             "arr_stddev", "arr_max", "arr_min", "arr_size"))
+    def test_each_line(self, shape, over, aggregation):
+        check(shape, lambda v, s, w: getattr(v, aggregation)(over=over))
+
+    @pytest.mark.parametrize("shape", MATRICES)
+    def test_lines_in_an_expression(self, shape):
+        check(shape, lambda v, s, w: v.arr_sum(over=1) * s + 1.0)
+
+
+class TestAggregatingExpressions:
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_the_sum_of_a_product(self, shape):
+        check_scalar(shape, lambda v, s, w: (v * w).arr_sum(), second=True)
+
+    @pytest.mark.parametrize("shape", VECTORS)
+    def test_the_mean_of_a_range(self, shape):
+        check_scalar(shape, lambda v, s, w: v[0:1].arr_mean())
+
+    @pytest.mark.parametrize("shape", MATRICES)
+    def test_the_maximum_of_a_column(self, shape):
+        check_scalar(shape, lambda v, s, w: (v[:, 0] * s).arr_max())
+
+
+@pytest.mark.parametrize("shape", SHAPES)
+def test_an_aggregation_in_a_stock_reads_its_cells_one_step_back(shape):
+    """The Python engine read the cells of an aggregation at t in a stock's equation,
+    where everything else is read at t - dt."""
+    model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="aggregation_in_a_stock")
+    v = model.converter("v")
+    setup(v, shape)
+    for leaf in leaf_names(v):
+        model.converters[leaf].equation = sd.time() + 1.0
+    total = model.stock("total")
+    total.equation = v.arr_sum()
+
+    run_parity(model, ["total"])

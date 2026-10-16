@@ -74,6 +74,27 @@ For any questions or suggestions you have regarding BPTK, please contact us at: 
 
 ## Changelog
 
+### 3.4.0
+
+* Breaking: `sd.trend(model, input, averaging_time, initial_trend=0.0)` - the third argument is now the trend the function starts with, as in XMILE; it used to be the starting value of the internal average, so a model that passes one gets different results
+* Breaking: `sd.lognormal(mean, stddev)` - mean and stddev are those of the numbers drawn, as in XMILE, and the mean has to be positive; they used to be those of the normal distribution underneath, so `sd.lognormal(10, 1)` drew numbers around 36,000
+* Feature: more XMILE and Stella builtins in the SD DSL - `delay1`, `delay3`, `delayn`, `smooth3`, `smoothn`, `forecast` (FORCST), `npv`, `ramp` (with Stella's optional end time), `safediv`, `rootn`, `percent`, `counter`, `cgrowth`, `pmt`, `fv`, `pv` (signed as in a spreadsheet), `init`, `previous`, `history`, `derivn`, `lookupinv`, `lookuparea` and `irr` (the last three on the Python engine only for now), and `trunc`; `max` and `min` take any number of arguments, and `smooth` starts at the input when no initial value is given
+* Feature: non-negative stocks in the SD DSL - `stock.inflows` and `stock.outflows` write the equation, and `stock.non_negative = True` cuts the outflows back in list order - and biflows while they drain it - so the stock stops at zero, as in Stella (Python engine only for now)
+* Feature: conveyors in the SD DSL - `model.conveyor()` carries material for a transit time, with linear or exponential leakage, FIFO or not, and `sd.agecount` (Python engine only for now)
+* Feature: arrays as in XMILE - ranges and parts with `a[0:2]`, `a[:, "b"]`, `a.transpose()`, aggregation along one dimension with `over=` and over any array expression, and `sd.rank` (XMILE's RANK) and `sd.interpolate` (the last two on the Python engine only for now)
+* Feature: every random function of the SD DSL takes a `seed` - the same seed draws the same numbers on every run, whatever else the model draws (Python engine only for now)
+* Feature: `sd.delay` and `sd.pulse` take an expression in every argument, and the smooths, the delays, `sd.trend`, `sd.forecast` and `sd.npv` one as initial value or trend, as XMILE does
+* Upgraded urllib3 from 2.7.0 to 2.8.0 and werkzeug from 3.1.8 to 3.1.9
+* Bugfixes:
+    * `sd.smooth` and `sd.trend` follow an input that falls - they stayed where they were
+    * The Python engine computes `a - (b + c)` and `(a + b) ** (c - d)` as written - it dropped the parentheses
+    * The Python engine reads every argument in a stock's equation one step back, as the Rust engine does - an element passed to a function, the cells of an aggregation, the input of `sd.lookup`; `sd.dt`, `sd.starttime`, `sd.stoptime`, `sd.pulse` and `sd.delay` follow run specs set after the equation
+    * The Python engine: `sd.sinwave` and `sd.coswave` compute an expression as amplitude or period as written
+    * The Python engine: `sd.delay` with a duration off the dt grid reads its input from the start on, as the Rust engine does - it took the initial value for one step longer
+    * The Rust engine runs a stock whose equation holds a delay shorter than half a dt, such as `sd.history` at the time it asks for - it reported a cycle
+    * XMILE: a condition in parentheses works beside `AND`, `OR` and `NOT`, and `NOT` without parentheses - such equations did not compile; `INIT` reads its whole argument at the start time, `TIME` included
+    * XMILE: `SAFEDIV` of an expression, `RAMP` with an end time, `PREVIOUS` and `NPV` with an initial value of 0, `HISTORY` before the start, `NPV` of a changing stream, `FV`, `PV` and `PMT` with all four arguments, `LOOKUPAREA`, `INVNORM` and `NORMALCDF` compute as Stella does - they gave other numbers without a word
+
 ### 3.3.0
 
 * Breaking: Python 3.12 or later is required; tested on 3.12, 3.13 and 3.14

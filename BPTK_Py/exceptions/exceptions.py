@@ -42,7 +42,7 @@ class RustBackendError(Exception):
 
 
 def rust_backend_error(error):
-    """Build a `RustBackendError` whose message says which of the four cases this is.
+    """Build a `RustBackendError` whose message names the cause.
 
     The caller passes what actually went wrong; the wording is here so that the three
     places that run a model on the engine cannot drift apart.

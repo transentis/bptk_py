@@ -754,5 +754,97 @@ def _(mo, smoothed):
     mo.plain_text(captured_stateful.getvalue())
     return
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Parts of an Array
+
+    Square brackets take more than a single key. Positions count from 0 and a range **includes its end**, as in Stella - `a[1:2]` is the second and the third entry. A range reaching beyond the array stops at its edge. Labels select by name, and `:` alone takes a whole dimension:
+    """)
+    return
+
+@app.cell
+def _(model):
+    part_vector = model.converter('part_vector')
+    part_vector.setup_named_vector({'q1': 10.0, 'q2': 20.0, 'q3': 30.0, 'q4': 40.0})
+    part_matrix = model.converter('part_matrix')
+    part_matrix.setup_named_matrix({'boston': {'a': 1.0, 'b': 2.0}, 'nyc': {'a': 3.0, 'b': 4.0}})
+
+    second_half = model.converter('second_half')
+    second_half.equation = part_vector['q3':'q4'] * 2.0
+    column_b = model.converter('column_b')
+    column_b.equation = part_matrix[:, 'b']
+    return column_b, second_half
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{aligned}
+    2 \cdot \text{part\_vector}[\text{'q3'}:\text{'q4'}] & = \begin{pmatrix} \text{'q3'}: & 60.0 \\ \text{'q4'}: & 80.0 \end{pmatrix} \\[1ex]
+    \text{part\_matrix}[:, \text{'b'}] & = \begin{pmatrix} \text{'boston'}: & 2.0 \\ \text{'nyc'}: & 4.0 \end{pmatrix}
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+@app.cell
+def _(column_b, mo, second_half):
+    with mo.capture_stdout() as captured_parts:
+        print("second_half:", [second_half[key](1) for key in ('q3', 'q4')])
+        print("column_b:   ", [column_b[key](1) for key in ('boston', 'nyc')])
+
+    mo.plain_text(captured_parts.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `part_matrix['nyc', 'a']` or `part_matrix[1, 0]` is a single cell. A part of an array is an expression like any other, so it can be computed with, aggregated or given to an arrayed element of its size - but arrays combined in one equation need the same labels: a row of `part_matrix` is labelled `a`, `b`, a column `boston`, `nyc`, and the two do not add up.
+
+    ## Transposing a Matrix
+
+    `transpose()` swaps the rows and the columns of a matrix:
+    """)
+    return
+
+@app.cell
+def _(model):
+    flows_by_region = model.converter('flows_by_region')
+    flows_by_region.setup_matrix([2, 3], [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    flows_by_product = model.converter('flows_by_product')
+    flows_by_product.equation = flows_by_region.transpose()
+    return (flows_by_product,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{pmatrix} 1.0 & 2.0 & 3.0 \\ 4.0 & 5.0 & 6.0 \end{pmatrix}^{T}
+    = \begin{pmatrix} 1.0 & 4.0 \\ 2.0 & 5.0 \\ 3.0 & 6.0 \end{pmatrix}
+    \end{equation*}
+    """)
+    return
+
+@app.cell
+def _(flows_by_product, mo):
+    with mo.capture_stdout() as captured_transpose:
+        for _row in range(3):
+            print([flows_by_product[_row][_column](1) for _column in range(2)])
+
+    mo.plain_text(captured_transpose.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    XMILE can also transpose by naming dimensions in a new order, and refer to the dimensions of the variable being defined with `@1`, `@2`. Arrays in the SD DSL have labels but no named dimensions, so `transpose()` is the one form.
+    """)
+    return
+
 if __name__ == "__main__":
     app.run()

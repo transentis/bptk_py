@@ -122,9 +122,17 @@ source ./venv_temp/bin/activate
 # serve it yet - or is down - lets the resolver take the newest release from real
 # PyPI instead, and every check below then passes against the wrong package.
 VERSION="$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)"
-uv pip install --index-url https://test.pypi.org/simple/ \
-    "bptk_py[test]==${VERSION}" \
-    --extra-index-url https://pypi.org/simple
+#
+# In two steps, because uv takes a package only from the first index that knows it.
+# With Test PyPI as the extra index beside PyPI, PyPI came first, knew bptk-py and
+# had no such version - the rehearsal of 3.3.0 failed there. The other way round,
+# every dependency would come from Test PyPI, which carries numpy, pandas and scipy
+# too, as development builds. So the wheel alone comes from Test PyPI, and everything
+# it needs from PyPI.
+TEST_WHEELS="$(mktemp -d)"
+uv run --no-project --with pip python -m pip download --no-deps \
+    --index-url https://test.pypi.org/simple/ "bptk_py==${VERSION}" -d "$TEST_WHEELS"
+uv pip install --find-links "$TEST_WHEELS" "bptk_py[test]==${VERSION}"
 
 # Both checks below run from a temporary directory on purpose. The checkout is
 # sys.path[0] here, so from the repo root `import BPTK_Py` finds the working tree

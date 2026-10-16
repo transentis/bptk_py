@@ -553,6 +553,63 @@ class TestRustBackendRefusal:
             _run_session_history(bptk, ["mgr"], ["base"], ["stock", "flow"],
                                  steps=3, backend="rust")
 
+    def test_a_function_the_engine_does_not_run_yet_raises(self, monkeypatch):
+        from BPTK_Py.sddsl import json_serializer
+        from BPTK_Py.sddsl.operators import Function
+
+        class Pending(Function):
+            def term(self, time="t"):
+                return "0.0"
+
+        monkeypatch.setattr(json_serializer, "_NOT_ON_THE_ENGINE", ((Pending, "pending"),))
+        model = Model(starttime=0, stoptime=5, dt=1, name="not_on_the_engine")
+        out = model.converter("out")
+        out.equation = Pending()
+
+        with pytest.raises(RustBackendError, match="pending"):
+            model.simulate(["out"], backend="rust")
+
+    @pytest.mark.parametrize("name, build", [
+        ("lookupinv", lambda source: sd.lookupinv(source, [[0, 0], [10, 10]])),
+        ("lookuparea", lambda source: sd.lookuparea([[0, 0], [10, 10]], 0.0, source)),
+        ("irr", lambda source: sd.irr(source.model, source)),
+    ])
+    def test_a_builtin_the_engine_does_not_have_yet_raises(self, name, build):
+        model = Model(starttime=0, stoptime=5, dt=1, name="not_on_the_engine")
+        source = model.converter("source")
+        source.equation = 2.5
+        model.converter("out").equation = build(source)
+
+        with pytest.raises(RustBackendError, match=name):
+            model.simulate(["out"], backend="rust")
+
+    def test_a_conveyor_raises(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name="conveyor")
+        belt = model.conveyor("belt")
+        belt.transit_time = 2
+        belt.outflows = [model.flow("out")]
+
+        with pytest.raises(RustBackendError, match="'belt' is a conveyor"):
+            model.simulate(["belt"], backend="rust")
+
+    def test_a_random_function_with_a_seed_raises(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name="seeded")
+        model.converter("draw").equation = sd.poisson(4.0, seed=3)
+
+        with pytest.raises(RustBackendError, match="'poisson' with a seed"):
+            model.simulate(["draw"], backend="rust")
+
+    def test_a_non_negative_stock_raises(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name="non_negative")
+        stock = model.stock("store")
+        outflow = model.flow("sales")
+        outflow.equation = 1.0
+        stock.outflows = [outflow]
+        stock.non_negative = True
+
+        with pytest.raises(RustBackendError, match="Stock 'store' is non-negative"):
+            model.simulate(["store"], backend="rust")
+
     def test_a_non_numeric_constant_raises(self):
         model = Model(starttime=0, stoptime=5, dt=1, name="non_numeric_const")
         stock = model.stock("stock")
@@ -857,7 +914,7 @@ class TestStochasticFunctions:
     def test_lognormal_positive(self):
         model = Model(starttime=0, stoptime=100, dt=1, name="lognormal")
         x = model.converter("x")
-        x.equation = sd.lognormal(0, 1)
+        x.equation = sd.lognormal(1, 1)
 
         bptk = BPTK_Py.bptk()
         bptk.register_scenario_manager({"mgr": {"model": model}})
@@ -1234,9 +1291,9 @@ class TestRunStepFeatureParity:
         def build():
             model = Model(starttime=1, stoptime=10, dt=0.1, name="trend_step")
             inp = model.converter("input_function")
-            inp.equation = sd.step(10.0, 3.0)
+            inp.equation = 5.0 + sd.step(10.0, 3.0)
             out = model.converter("trend_out")
-            out.equation = sd.trend(model, inp, 2.0, 5.0)
+            out.equation = sd.trend(model, inp, 2.0, 0.1)
             b = BPTK_Py.bptk()
             b.register_scenario_manager({"trend_mgr": {"model": model}})
             b.register_scenarios(scenarios={"base": {}}, scenario_manager="trend_mgr")

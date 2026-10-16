@@ -313,6 +313,27 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Model.conveyor
+
+    **conveyor(name)**
+
+    Returns a [Conveyor](./api_conveyor.md) object with the given name - if a conveyor with the given name already exists within the model, this one is returned, else a new Conveyor object is created, stored among the stocks and returned. A stock of that name that is no conveyor raises `ValueError`.
+
+    * **Parameters**
+
+        **name** – String.
+        Name of the conveyor.
+
+    * **Returns**
+
+        The Conveyor object.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## Model.create_agent
 
     **create_agent(agent_type, agent_properties)**
@@ -971,6 +992,27 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Model.stock
+
+    **stock(name)**
+
+    Returns a [Stock](./api_stock.md) object with the given name - if a Stock with the given name already exists within the model, this one is returned, else a new Stock object is created, stored and returned.
+
+    * **Parameters**
+
+        **name** – String.
+        Name of the stock.
+
+    * **Returns**
+
+        The Stock object.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## Model.to_json
 
     **to_json()**
@@ -994,27 +1036,6 @@ def _(mo):
         by calling back into Python. In a run, that `ValueError` becomes a
         `RustBackendError`; see
         [Execution Backends](../concepts/execution_backends/execution_backends.md).
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Model.stock
-
-    **stock(name)**
-
-    Returns a [Stock](./api_flow.md) object with the given name - if a Stock with the given name already exists within the model, this one is returned, else a new Stock object is created, stored and returned.
-
-    * **Parameters**
-
-        **name** – String.
-        Name of the stock.
-
-    * **Returns**
-
-        The Stock object.
     """)
     return
 

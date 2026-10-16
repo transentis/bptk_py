@@ -968,7 +968,9 @@ def test_counter_his():
     result_counter = []
     for t in np.arange(starttime, stoptime + dt, dt):
         result_counter += [sim.equation("ctr", t)]
-        assert sim.equation("ctrtarget",t-dt) == sim.equation("his",t)
+        # HISTORY of a time before the start is 0, as in Stella
+        past = sim.equation("ctrtarget", t - dt) if t - dt >= starttime else 0
+        assert sim.equation("his", t) == past
 
     assert result_counter == counter_expected_result
 
@@ -1156,9 +1158,11 @@ def test_lookuparea():
     results = []
 
     for t in np.arange(starttime, stoptime + dt, dt):
-        results += [round(sim.equation('area', t), 3)]
+        results += [sim.equation('area', t)]
 
-    assert results == expected_results
+    # The expected values are rounded to three digits, half up: 281.0625 is 281.063, which
+    # Python rounds to 281.062
+    assert results == pytest.approx(expected_results, abs=1e-3)
 
 
 def test_poisson():
@@ -1453,7 +1457,8 @@ def test_normalcdf(test_models_path):
     for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
         results += [sim.equation("cdf", t)]
 
-    assert expected_results == results
+    # The expected values are rounded to three digits, the function is not
+    assert results == pytest.approx(expected_results, abs=1e-3)
 
 
 def test_invnorm(test_models_path):
@@ -1511,3 +1516,42 @@ def test_doublequote(test_models_path):
     for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
         assert sim.equation("converter(perYear)",t) == t
         assert sim.equation("otherconverter(fooBar)",t) == 2*t
+
+
+def test_logic_with_parenthesised_conditions():
+    # A condition in parentheses could not stand beside AND or OR, and NOT took only
+    # NOT(a > b) without a space
+    from test_models.test_logic import simulation_model
+    sim = simulation_model()
+    for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
+        outside = 1.0 if t > 3 or t < 1 else 0.0
+        for name in ("parenOr", "parenLeft", "parenRight", "parenOuter"):
+            assert sim.equation(name, t) == outside, (name, t)
+        assert sim.equation("parenAnd", t) == (1.0 if 1 < t < 3 else 0.0)
+        assert sim.equation("notPlain", t) == (0.0 if t > 3 else 1.0)
+        assert sim.equation("notParen", t) == (0.0 if t > 3 else 1.0)
+        assert sim.equation("notCompound", t) == 1.0 - outside
+        assert sim.equation("arithmeticLeft", t) == (1.0 if (t + 1) * 2 > 5 else 0.0)
+
+
+def test_init():
+    # INIT reads its whole argument at the start time, TIME included
+    from test_models.test_init import simulation_model
+    sim = simulation_model()
+    for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
+        assert sim.equation("initTime", t) == 1.0
+        assert sim.equation("initVariable", t) == 30.0
+        assert sim.equation("initInExpression", t) == t
+
+
+def test_math_rounding():
+    from test_models.test_math_rounding import simulation_model
+    sim = simulation_model()
+    for t in np.arange(sim.starttime, sim.stoptime + sim.dt, sim.dt):
+        assert sim.equation("arccosValue", t) == pytest.approx(np.pi / 3)
+        assert sim.equation("arcsinValue", t) == pytest.approx(np.pi / 6)
+        assert sim.equation("arctanValue", t) == pytest.approx(np.pi / 4)
+        assert sim.equation("intValue", t) == -3
+        assert sim.equation("modValue", t) == 1
+        assert sim.equation("roundHalf", t) == 3
+        assert sim.equation("roundDigits", t) == pytest.approx(3.14)

@@ -82,9 +82,11 @@ def _(mo):
 
     * **Two dimensions is the limit.** `setup_matrix` takes exactly two sizes, and there
       is no three-dimensional array.
-    * **A named matrix in a `dot` needs the same column labels in every row.** Such a
-      matrix is legal everywhere else - a `dot` is the one operation that sums over an
-      axis and therefore needs a single set of column labels to sum over.
+    * **Some operations need the same column labels in every row of a named matrix:**
+      `dot`, taking a part of it, `transpose()` and aggregating with `over=0`. Each works
+      across the rows and so needs a single set of column labels; for a matrix whose rows
+      carry different labels the error names the operation. Arithmetic on such a matrix
+      works.
     * **A `dot` cannot mix a named array with an unnamed one.** There is nothing for the
       labels to line up against, so it raises.
     * **There is no aggregation over a single dimension.** `arr_sum` and `arr_prod` take

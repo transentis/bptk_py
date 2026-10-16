@@ -31,6 +31,17 @@ test-engine-python:
 test: dev
     uv run --all-extras pytest ./
 
+# Look up every locked dependency in the advisory databases, and fail on a known
+# vulnerability. pip-audit runs ephemerally through uvx, so it never enters uv.lock.
+# The export is already resolved and pinned: --no-deps keeps pip-audit from resolving it
+# a second time, --disable-pip from needing a pip at all. pipefail, or a failed export
+# hands pip-audit nothing and reads as "no known vulnerabilities".
+audit:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv export --frozen --all-extras --all-groups --no-emit-project --no-hashes -q \
+        | uvx pip-audit --no-deps --disable-pip --progress-spinner off -r /dev/stdin
+
 # Build a wheel for the current platform
 build:
     uv run maturin build --release --out dist

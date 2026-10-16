@@ -55,18 +55,19 @@ def _(mo):
         the way back. Recommended: it reduces the size of an instance considerably.
 
 
-    ## ExternalStateAdapter._save_instance
+    ## ExternalStateAdapter.delete_instance
 
-    **\_save_instance(state)**
+    **delete_instance(instance_uuid)**
 
-    Write one instance to your storage. Abstract - a subclass must implement it. Called
-    through `save_instance` every time an instance step has run.
+    Remove one instance from your storage. Abstract. Called when the `stop-instance`
+    endpoint is called, and after every use when the server runs with
+    `externalize_state_completely=True`.
 
 
     * **Parameters**
 
-        **state** – InstanceState.
-        The instance to write.
+        **instance_uuid** – String.
+        The id of the instance to remove.
 
 
     ## ExternalStateAdapter._load_instance
@@ -84,19 +85,26 @@ def _(mo):
         The id of the instance to read.
 
 
-    ## ExternalStateAdapter.delete_instance
+    ## ExternalStateAdapter.load_instance
 
-    **delete_instance(instance_uuid)**
+    **load_instance(instance_uuid)**
 
-    Remove one instance from your storage. Abstract. Called when the `stop-instance`
-    endpoint is called, and after every use when the server runs with
-    `externalize_state_completely=True`.
+    Provided by the base class, the counterpart of `save_instance`: it calls your
+    `_load_instance` and decompresses what comes back.
+
+
+    ## ExternalStateAdapter._save_instance
+
+    **\_save_instance(state)**
+
+    Write one instance to your storage. Abstract - a subclass must implement it. Called
+    through `save_instance` every time an instance step has run.
 
 
     * **Parameters**
 
-        **instance_uuid** – String.
-        The id of the instance to remove.
+        **state** – InstanceState.
+        The instance to write.
 
 
     ## ExternalStateAdapter.save_instance
@@ -106,14 +114,6 @@ def _(mo):
     Provided by the base class, and what `BptkServer` actually calls: it compresses the
     state when compression is on and then calls your `_save_instance`. Override it only if
     your adapter needs to handle compression itself - `FileAdapter` does.
-
-
-    ## ExternalStateAdapter.load_instance
-
-    **load_instance(instance_uuid)**
-
-    Provided by the base class, the counterpart of `save_instance`: it calls your
-    `_load_instance` and decompresses what comes back.
 
 
     ## InstanceState

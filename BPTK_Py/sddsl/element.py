@@ -16,9 +16,9 @@ import pandas as pd
 
 # The namespace an equation's code string is evaluated in (`generate_function`): the
 # operators render terms such as `np.mean(...)`, `math.floor(...)` or
-# `distributions.evaluate(...)`, so these names are used, though nothing here calls them.
+# `sddsl_builtins.evaluate(...)`, so these names are used, though nothing here calls them.
 from .operators import *
-from . import distributions
+from . import sddsl_builtins
 import numpy as np
 import statistics
 import random
@@ -64,7 +64,7 @@ def _while_reshaping(method):
     return wrapper
 
 
-class Element:
+class Element(ArrayMethods):
     """Generic element in a SD DSL model.
 
     Concrete elements are Biflows, Flows, Constants and Converters.
@@ -112,6 +112,9 @@ class Element:
     def __getitem__(self, key):
         if(not self.arrayed):
             raise Exception("Element is not arrayed")
+        if isinstance(key, (tuple, slice)):
+            # A range or a pair - A[0:2], A[:, 1], A["north", :] - selects cells.
+            return select(self, key)
         return self._elements[key]
 
     def __setitem__(self, key, value):
@@ -419,46 +422,6 @@ class Element:
         if format == "axes":
             return ax
 
-    def arr_sum(self, dimension="*"):
-        """Element-wise sum of vector/matrix."""
-        return ArraySumOperator(self, dimension)
-
-    def arr_prod(self, dimension="*"):
-        """Element-wise product of vector/matrix."""
-        return ArrayProductOperator(self, dimension)
-
-    def arr_rank(self, rank):
-        """Returns the rank'th highest element."""
-        return ArrayRankOperator(self, rank)
-
-    def arr_mean(self):
-        """Mean of vector/matrix."""
-        return ArrayMeanOperator(self)
-
-    def arr_median(self):
-        """Median of vector/matrix."""
-        return ArrayMedianOperator(self)
-
-    def arr_stddev(self):
-        """Standard deviation of vector/matrix."""
-        return ArrayStandardDeviationOperator(self)
-
-    def arr_max(self):
-        """Largest element of vector/matrix."""
-        return ArrayMaxOperator(self)
-
-    def arr_min(self):
-        """Smallest element of vector/matrix."""
-        return ArrayMinOperator(self)
-
-    def arr_size(self):
-        """Vector size of array."""
-        return ArraySizeOperator(self)
-
-    def dot(self, other):
-        """Dot product (matrix/vector multiplication)."""
-        return DotOperator(self, other)
-
     # Operator overrides
     def __str__(self):
         """Returns the term."""
@@ -538,6 +501,12 @@ class Element:
     def __ne__(self, other):
         """Not equal to another operator"""
         return ComparisonOperator(self, other, "!=")
+
+    # Defining __eq__ takes the hash away. An element is identified by itself, so it gets
+    # the identity hash back: it can then be a key, as in a conveyor's leaks. A dict
+    # compares keys with == only when their hashes are equal, which for distinct elements
+    # they never are.
+    __hash__ = object.__hash__
 
     def __pow__(self, power):
         "Power Operator"

@@ -51,7 +51,11 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    Stock(t)=Stock(t-dt)+dt \times \sum_{Inflows}Inflow(t-dt)-dt \times \sum_{Outflows}Outflow(t-dt)
+    \begin{aligned}
+    Stock(t) = {} & Stock(t-dt) \\
+    & + dt \times \sum_{Inflows}Inflow(t-dt) \\
+    & - dt \times \sum_{Outflows}Outflow(t-dt)
+    \end{aligned}
     \end{equation*}
     """)
     return

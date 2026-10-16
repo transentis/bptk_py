@@ -146,6 +146,10 @@ class ScenarioManagerSd(ScenarioManager):
 
         for collection, create in self._ELEMENT_KINDS:
             for element in getattr(model, collection).values():
+                if getattr(element, "_is_conveyor", False):
+                    create = "conveyor"
+                elif collection == "stocks":
+                    create = "stock"
                 new_element = getattr(new_mod, create)(element.name)
                 new_element._elements = ArrayedEquation(new_element)
                 new_element._elements.equations = list(element._elements.equations)
@@ -157,6 +161,23 @@ class ScenarioManagerSd(ScenarioManager):
                 new_element._equation = element._equation
                 if collection == "stocks":
                     new_element._Stock__initial_value = element._Stock__initial_value
+                    new_element._non_negative = element._non_negative
+                    # The flows were cloned before the stocks, so the lists name the clone's.
+                    clone_of = lambda flow: getattr(new_mod, flow.type.lower() + "s")[flow.name]
+                    new_element._inflows = [clone_of(flow) for flow in element._inflows]
+                    new_element._outflows = [clone_of(flow) for flow in element._outflows]
+                    new_element._cut = getattr(element, "_cut", None)
+                    if getattr(element, "_is_conveyor", False):
+                        # The plan names flows and compiles terms that look elements up
+                        # by name, so the clone runs it against its own model as it is.
+                        for attribute in ("_transit", "_initial", "_initial_set", "_exponential",
+                                          "_fifo", "_plan_source", "_plan"):
+                            if hasattr(element, attribute):
+                                setattr(new_element, attribute, getattr(element, attribute))
+                        new_element._leaks = [(clone_of(flow), fraction) for flow, fraction in element._leaks]
+                if collection in ("flows", "biflows"):
+                    new_element._constraint = getattr(element, "_constraint", None)
+                    new_element._driven_by = getattr(element, "_driven_by", None)
                 new_element.generate_function()
                 new_mod.memo[element.name] = {}
 

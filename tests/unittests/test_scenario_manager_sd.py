@@ -365,6 +365,56 @@ class TestGetClonedModel(unittest.TestCase):
     def _clone(self, model):
         return ScenarioManagerSd().get_cloned_model(model)
 
+    def test_a_non_negative_stock_keeps_its_flows_and_its_cut(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="non_negative")
+        stock = model.stock("store")
+        stock.initial_value = 2.0
+        inflow = model.flow("delivery")
+        inflow.equation = 1.0
+        outflow = model.flow("sales")
+        outflow.equation = 5.0
+        stock.inflows = [inflow]
+        stock.outflows = [outflow]
+        stock.non_negative = True
+
+        clone = self._clone(model)
+
+        cloned = clone.stocks["store"]
+        self.assertTrue(cloned.non_negative)
+        self.assertIs(cloned.inflows[0], clone.flows["delivery"])
+        self.assertIs(cloned.outflows[0], clone.flows["sales"])
+        self.assertEqual(clone.evaluate_equation("sales", 0.0), 3.0)
+        self.assertEqual(clone.evaluate_equation("store", 1.0), 0.0)
+
+    def test_an_arrayed_non_negative_stock_is_cut_back_in_the_clone(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="arrayed_non_negative")
+        stock = model.stock("store")
+        stock.setup_vector(2, [10.0, 1.0])
+        outflow = model.flow("sales")
+        outflow.setup_vector(2, [4.0, 4.0])
+        stock.outflows = [outflow]
+        stock.non_negative = True
+
+        clone = self._clone(model)
+
+        self.assertEqual(clone.evaluate_equation("sales[0]", 0.0), 4.0)
+        self.assertEqual(clone.evaluate_equation("sales[1]", 0.0), 1.0)
+        self.assertEqual(clone.evaluate_equation("store[1]", 1.0), 0.0)
+
+    def test_a_biflow_of_a_non_negative_stock_is_cut_back_in_the_clone(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="biflow_non_negative")
+        stock = model.stock("store")
+        stock.initial_value = 2.0
+        exchange = model.biflow("exchange")
+        exchange.equation = -5.0
+        stock.inflows = [exchange]
+        stock.non_negative = True
+
+        clone = self._clone(model)
+
+        self.assertEqual(clone.evaluate_equation("exchange", 0.0), -2.0)
+        self.assertEqual(clone.evaluate_equation("store", 1.0), 0.0)
+
     def test_every_element_kind_is_copied_under_its_name(self):
         model = _every_kind_model()
         clone = self._clone(model)

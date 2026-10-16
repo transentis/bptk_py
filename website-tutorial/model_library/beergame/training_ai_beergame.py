@@ -417,13 +417,19 @@ def _(mo):
     For our MDPs, we can define $v_\pi$ by:
 
     \begin{equation*}
-    v_\pi (s) \doteq \mathbb{E}_{\pi}\lbrack G_t \mid S_t=s \rbrack = \mathbb{E}_{\pi}\lbrack \sum_{k=0}^\infty \gamma^k R_{t+k+1} \mid S_t=s \rbrack, \forall s \in S
+    \begin{aligned}
+    v_\pi (s) & \doteq \mathbb{E}_{\pi}\lbrack G_t \mid S_t=s \rbrack \\
+    & = \mathbb{E}_{\pi}\lbrack \sum_{k=0}^\infty \gamma^k R_{t+k+1} \mid S_t=s \rbrack, \forall s \in S
+    \end{aligned}
     \end{equation*}
 
     We can then define value of taking action $a$ in state $s$ under a policy $\pi$ as follows:
 
     \begin{equation*}
-    q_\pi (s,a) \doteq \mathbb{E}_{\pi}\lbrack G_t \mid S_t=s, A_t=a \rbrack = \mathbb{E}_{\pi}\lbrack \sum_{k=0}^\infty \gamma^k R_{t+k+1} \mid S_t=s, A_t=a \rbrack, \forall s \in S, a \in A
+    \begin{aligned}
+    q_\pi (s,a) & \doteq \mathbb{E}_{\pi}\lbrack G_t \mid S_t=s, A_t=a \rbrack \\
+    & = \mathbb{E}_{\pi}\lbrack \sum_{k=0}^\infty \gamma^k R_{t+k+1} \mid S_t=s, A_t=a \rbrack, \forall s \in S, a \in A
+    \end{aligned}
     \end{equation*}
 
     $q_\pi$ is called the _action value function for policy $\pi$_. It represents the expected value of our policy if we start in state $s$, then take action $a$ and follow the policy $\pi$ thereafter. The important point here is that $q_\pi$ not only captures the immediate reward we get for our next action, but also the expected reward the agent will get thereafter.
@@ -453,7 +459,10 @@ def _(mo):
     The second part is slightly more complicated – it defines the expected lifetime reward from time $t+1$ but starting at time $t$ in state $s$. To calculate this we need to calculate the value function for each potential future state $s'$, weighted by the probability of actually getting to that state:
 
     \begin{equation*}
-    \mathbb{E}_{\pi}\lbrack G_{t+1} \mid S_t=s \rbrack  = \sum_{s'} v_\pi (s')  p_\pi (s' \mid s) = \sum_{s'} v_\pi (s') \sum_a \pi(a \mid s) \sum_{r} p\left(s',r \mid s,a\right)
+    \begin{aligned}
+    \mathbb{E}_{\pi}\lbrack G_{t+1} \mid S_t=s \rbrack & = \sum_{s'} v_\pi (s')  p_\pi (s' \mid s) \\
+    & = \sum_{s'} v_\pi (s') \sum_a \pi(a \mid s) \sum_{r} p\left(s',r \mid s,a\right)
+    \end{aligned}
     \end{equation*}
 
     The second part of the equation is visualized in the diagram below.

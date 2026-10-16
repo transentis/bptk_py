@@ -9,6 +9,7 @@
 # Copyright (c) 2018 transentis labs GmbH
 # MIT License
 import functools
+import zlib
 
 import BPTK_Py.sddsl.element
 
@@ -52,7 +53,73 @@ class OperatorError(Exception):
         return repr(self.value)
 
 
-class Operator:
+class ArrayMethods:
+    """The aggregations, slicing and transposition, shared by arrayed elements and array
+    expressions."""
+
+    def arr_sum(self, dimension="*", over=None):
+        """Element-wise sum of vector/matrix, or with `over` the sums along one dimension."""
+        return self._aggregate("arr_sum", over, lambda array: ArraySumOperator(array, dimension))
+
+    def arr_prod(self, dimension="*", over=None):
+        """Element-wise product of vector/matrix, or with `over` the products along one dimension."""
+        return self._aggregate("arr_prod", over, lambda array: ArrayProductOperator(array, dimension))
+
+    def arr_rank(self, rank):
+        """Returns the rank'th highest element."""
+        return ArrayRankOperator(self, rank)
+
+    def arr_mean(self, over=None):
+        """Mean of vector/matrix."""
+        return self._aggregate("arr_mean", over, ArrayMeanOperator)
+
+    def arr_median(self, over=None):
+        """Median of vector/matrix."""
+        return self._aggregate("arr_median", over, ArrayMedianOperator)
+
+    def arr_stddev(self, over=None):
+        """Standard deviation of vector/matrix."""
+        return self._aggregate("arr_stddev", over, ArrayStandardDeviationOperator)
+
+    def arr_max(self, over=None):
+        """Largest element of vector/matrix."""
+        return self._aggregate("arr_max", over, ArrayMaxOperator)
+
+    def arr_min(self, over=None):
+        """Smallest element of vector/matrix."""
+        return self._aggregate("arr_min", over, ArrayMinOperator)
+
+    def arr_size(self, over=None):
+        """Vector size of array."""
+        return self._aggregate("arr_size", over, ArraySizeOperator)
+
+    def dot(self, other):
+        """Dot product (matrix/vector multiplication)."""
+        return DotOperator(self, other)
+
+    def transpose(self):
+        """The matrix with its rows and columns swapped."""
+        return transpose(self)
+
+    def _aggregate(self, name, over, build):
+        """The aggregation over the whole array, or with `over` along one dimension:
+        `over=1` aggregates each row of a matrix, `over=0` each column - a vector."""
+        if over is None:
+            return build(self)
+        if over not in (0, 1):
+            raise OperatorError("over is 0 or 1, the dimension {} runs along; it was {}.".format(name, over))
+        shape = _get_element_dimensions(self)
+        if shape == -1:
+            raise OperatorError("{} along a dimension needs an array.".format(name))
+        if shape[1] <= 0:
+            if over == 1:
+                raise OperatorError("A vector has no dimension 1 to aggregate along.")
+            return build(self)
+        lines = self if over == 1 else transpose(self, "for {}(over=0)".format(name))
+        return ArrayLines([(key, build(line)) for key, line in _lines(lines)], _is_named_operand(lines))
+
+
+class Operator(ArrayMethods):
     """
         Genereric SD DSL Operator
     """
@@ -213,6 +280,12 @@ class Operator:
         """
         return self.term()
 
+    def __getitem__(self, key):
+        """A cell, a row or a part of an array expression: `(a * 2)[0]`, `a.transpose()[:, 1]`."""
+        if not is_array(self):
+            raise OperatorError("Only an array can be indexed; this expression is a single value.")
+        return select(self, key)
+
     def __truediv__(self, other):
         return DivisionOperator(self, other)
 
@@ -334,10 +407,11 @@ def _is_named_operand(operand):
             and operand.is_named())
 
 
-def _axis_keys(operand, axis):
+def _axis_keys(operand, axis, operation="for a dot product"):
     """
         The keys addressing one axis of an operand: positions when it is unnamed,
-        labels when it is named. Axis 0 is the rows, axis 1 the columns.
+        labels when it is named. Axis 0 is the rows, axis 1 the columns. `operation`
+        completes the error message for a named matrix whose rows differ in their labels.
 
         This is where the two renderings of an index - `element[0][1]` and
         `element["north"]["a"]` - meet, so that a product over an axis can be written
@@ -370,9 +444,9 @@ def _axis_keys(operand, axis):
             # A plain Exception, like every other error the dot product raises:
             # OperatorError renders its message through repr().
             raise Exception(
-                "A named matrix in a dot product needs the same column labels in every row: "
+                "A named matrix needs the same column labels in every row {}: "
                 "row '{}' has {} where row '{}' has {}.".format(
-                    row, sorted(operand[row]._elements.equations),
+                    operation, row, sorted(operand[row]._elements.equations),
                     rows[0], sorted(columns)))
     return columns
 
@@ -396,31 +470,43 @@ def _leaf_term(operand, keys, time):
     return operand.arrayed_term(list(keys), time)
 
 
-def _array_resolve(operator, element, time, dimensions):
-    """
-    Converts an array element to a string.
+def is_array(operand):
+    """True for an arrayed element and for an expression that is an array."""
+    if _is_arrayed_element(operand):
+        return True
+    return isinstance(operand, Operator) and operand.index is None and operand.is_any_subelement_arrayed()
 
-    Parameters:
-        operator: string - The operator used to concatenate elements.
-        element: sddsl.Element
-        time
-        dimensions: int - The dimensions to resolve. An array with dimensions [2,5,6] and passed dimensions parameter 2 will resolve elements [2,5]
-    """
-    def rec_resolve(element, index):
-        if(element._elements.vector_size() == 0):
-            if isinstance(element.equation, (float, int)):
-                return str(element)
-            return "{}".format(extractTerm(element, time))
-        # No cut-off by dimension here: `_check_aggregation_dimensions` has already
-        # rejected anything short of the full depth, which is what used to cut the
-        # recursion short and leave an empty term behind.
-        string_term = ""
-        for a in element._elements.equations:
-            string_term_cur = rec_resolve(element[a], index + 1)
-            if(string_term_cur != ""):
-                string_term += string_term_cur + operator
-        return string_term[:-len(operator)]
-    return rec_resolve(element, 0)
+
+def array_leaves(operand):
+    """The scalar cells of an array - an element or an expression - row by row; a scalar
+    is its own single leaf. Every aggregation reads its operand through this, on both
+    engines, so the order is part of the contract: `arr_rank` and `arr_median` sort."""
+    if isinstance(operand, BPTK_Py.sddsl.element.Element):
+        if operand._elements.vector_size() == 0:
+            return [operand]
+        leaves = []
+        for key in operand._elements.equations:
+            leaves.extend(array_leaves(operand[key]))
+        return leaves
+    if not is_array(operand):
+        return [operand]
+    dimensions = operand.resolve_dimensions()
+    rows = _axis_keys(operand, 0)
+    if dimensions[1] <= 0:
+        return [operand.clone_with_index([row]) for row in rows]
+    columns = _axis_keys(operand, 1, "to aggregate it")
+    return [operand.clone_with_index([row, column]) for row in rows for column in columns]
+
+
+def _leaf_at(leaf, time):
+    """A leaf's term at `time`. An element is read at it too: in a stock's equation that
+    is one step back, and reading the cells at `t` used to give the next step's value."""
+    return leaf.term(time)
+
+
+def _array_resolve(operator, element, time, dimensions):
+    """The leaves of an array joined by `operator`: `a+b+c` for a sum."""
+    return operator.join(_leaf_at(leaf, time) for leaf in array_leaves(element))
 
 
 def _check_aggregation_dimensions(name, element, dimensions):
@@ -438,7 +524,8 @@ def _check_aggregation_dimensions(name, element, dimensions):
     if dimensions == "*":
         return
 
-    depth = 1 if element._elements.matrix_size()[1] <= 0 else 2
+    shape = _get_element_dimensions(element)
+    depth = 2 if shape != -1 and shape[1] > 0 else 1
     if dimensions != depth:
         raise OperatorError(
             "{} aggregates over every dimension of an array. Pass \"*\" (the default) "
@@ -447,31 +534,155 @@ def _check_aggregation_dimensions(name, element, dimensions):
 
 
 def _matrix_element_to_string(element, time, flat=False):
-    """
-    Converts an array element to a string.
+    """The leaves of an array as a Python list: `[a,b,c]`, a matrix flattened row by row."""
+    return "[" + ",".join(_leaf_at(leaf, time) for leaf in array_leaves(element)) + "]"
 
-    Parameters:
-        operator: string - The operator used to concatenate elements.
-        element: sddsl.Element
-        time
-        dimensions: int - The dimensions to resolve. An array with dimensions [2,5,6] and passed dimensions parameter 2 will resolve elements [2,5]
-    """
-    def rec_resolve(element, index):
-        if(element._elements.vector_size() == 0):
-            if isinstance(element.equation, (float, int)):
-                return str(element)
-            return "{}".format(extractTerm(element, time))
-        string_term = ""
-        for a in element._elements.equations:
-            string_term_cur = rec_resolve(element[a], index + 1)
-            if(string_term_cur != ""):
-                string_term += string_term_cur + ","
-        if not flat:
-            return "[" + string_term[:-1] + "]"
-        return string_term[:-1]
-    if not flat:
-        return rec_resolve(element, 0)
-    return "[" + rec_resolve(element, 0) + "]"
+
+def _range(keys, part, what):
+    """The keys a range picks, its end included, as in Stella: positions counting from 0,
+    cut at the edges of the array, or labels."""
+    if part.step is not None:
+        raise OperatorError("A range of {} takes no step.".format(what))
+    if isinstance(part.start, str) or isinstance(part.stop, str):
+        for label in (part.start, part.stop):
+            if label is not None and label not in keys:
+                raise OperatorError("There is no {} '{}'.".format(what, label))
+        first = 0 if part.start is None else keys.index(part.start)
+        last = len(keys) - 1 if part.stop is None else keys.index(part.stop)
+    else:
+        first = 0 if part.start is None else max(0, int(part.start))
+        last = len(keys) - 1 if part.stop is None else min(len(keys) - 1, int(part.stop))
+    return keys[first:last + 1]
+
+
+def _key(keys, key, what):
+    """One key: a label, or a position counting from 0."""
+    if isinstance(key, str):
+        if key not in keys:
+            raise OperatorError("There is no {} '{}'.".format(what, key))
+        return key
+    if not 0 <= int(key) < len(keys):
+        raise OperatorError("There is no {} at position {}.".format(what, key))
+    return keys[int(key)]
+
+
+def _cell(operand, keys):
+    """The cell of an array - an element or an expression - at the given keys."""
+    if isinstance(operand, BPTK_Py.sddsl.element.Element):
+        current = operand
+        for key in keys:
+            current = current[key]
+        return current
+    return operand.clone_with_index(list(keys))
+
+
+def select(operand, key):
+    """`operand[key]` for a range or a pair of keys: a cell, or an array expression."""
+    parts = key if isinstance(key, tuple) else (key,)
+    if len(parts) > 2:
+        raise OperatorError("An array has at most two dimensions; {} keys were given.".format(len(parts)))
+    shape = _get_element_dimensions(operand)
+    is_matrix = shape != -1 and shape[1] > 0
+    if len(parts) == 2 and not is_matrix:
+        raise OperatorError("A vector has one dimension; two keys were given.")
+    rows = _axis_keys(operand, 0)
+    named = _is_named_operand(operand)
+    row_part = parts[0]
+    picked = _range(rows, row_part, "row" if is_matrix else "cell") if isinstance(row_part, slice) else None
+
+    if len(parts) == 1 and not is_matrix:
+        if picked is None:
+            return _cell(operand, [_key(rows, row_part, "cell")])
+        return ArrayLines(_arranged(picked, named, [_cell(operand, [row]) for row in picked]), named)
+
+    columns = _axis_keys(operand, 1, "to take a part of it")
+    column_part = parts[1] if len(parts) == 2 else slice(None)
+    if isinstance(column_part, slice):
+        chosen = _range(columns, column_part, "column")
+        line = lambda row: ArrayLines(_arranged(chosen, named, [_cell(operand, [row, column]) for column in chosen]), named)
+    else:
+        column = _key(columns, column_part, "column")
+        line = lambda row: _cell(operand, [row, column])
+    if picked is None:
+        return line(_key(rows, row_part, "row"))
+    return ArrayLines(_arranged(picked, named, [line(row) for row in picked]), named)
+
+
+def _arranged(keys, named, cells):
+    """Cells under their labels for a named array, renumbered from 0 for an unnamed one,
+    so that a part of an array lines up with an array of its own size."""
+    return list(zip(keys if named else range(len(keys)), cells))
+
+
+class ArrayLines(Operator):
+    """An array put together from cells: a range or a column of another array, its
+    transpose, or one aggregate per row. Each entry is a key and a cell - an element or
+    an expression - or, for a matrix, a key and a row that is itself an ArrayLines."""
+
+    def __init__(self, entries, named):
+        super().__init__()
+        self.entries = entries
+        self.named = named
+
+    def is_any_subelement_arrayed(self) -> bool:
+        return self.index is None
+
+    def resolve_dimensions(self):
+        first = self.entries[0][1] if self.entries else None
+        columns = len(first.entries) if isinstance(first, ArrayLines) else 0
+        return [len(self.entries), columns]
+
+    def is_named(self) -> bool:
+        return self.named
+
+    def index_to_string(self, index):
+        positions = index if isinstance(index, (list, tuple)) else [index]
+        current = self
+        for position in positions[:-1]:
+            current = current.entries[position][1]
+        return current.entries[positions[-1]][0]
+
+    def clone_with_index(self, index):
+        keys = index if isinstance(index, (list, tuple)) else [index]
+        current = self
+        for key in keys:
+            entries = dict(current.entries)
+            if key in entries:
+                current = entries[key]
+            elif isinstance(key, int) and 0 <= key < len(current.entries):
+                current = current.entries[key][1]
+            else:
+                raise OperatorError(
+                    "This array has no cell '{}'; it has {}. Arrays combined in one "
+                    "equation need the same labels.".format(key, [entry[0] for entry in current.entries]))
+        return current
+
+    def term(self, time="t"):
+        raise OperatorError(
+            "This is an array of {} cells and has no single value: aggregate it, as in "
+            ".arr_sum(), or give it an arrayed element of its own.".format(len(array_leaves(self))))
+
+
+def transpose(operand, operation="to transpose it"):
+    """A matrix with its rows and columns swapped. `operation` names what asked for it in
+    the error message, since aggregating along dimension 0 transposes first."""
+    shape = _get_element_dimensions(operand)
+    if shape == -1 or shape[1] <= 0:
+        raise OperatorError("Only a matrix can be transposed.")
+    rows = _axis_keys(operand, 0)
+    columns = _axis_keys(operand, 1, operation)
+    named = _is_named_operand(operand)
+    return ArrayLines(
+        _arranged(columns, named, [ArrayLines(_arranged(rows, named, [_cell(operand, [row, column]) for row in rows]), named)
+                                   for column in columns]), named)
+
+
+def _lines(array):
+    """The rows of a matrix - an element or an expression - each with its key."""
+    if isinstance(array, ArrayLines):
+        return list(array.entries)
+    return [(key, array[key] if isinstance(array, BPTK_Py.sddsl.element.Element) else select(array, (key, slice(None))))
+            for key in _axis_keys(array, 0)]
 
 
 class ScalarResultOperator:
@@ -488,6 +699,59 @@ class ScalarResultOperator:
 
     def resolve_dimensions(self):
         return -1
+
+
+def _vector_of(array, name):
+    shape = _get_element_dimensions(array)
+    if shape == -1 or shape[1] > 0:
+        raise OperatorError(
+            "{} takes a vector; for a matrix give it a row or a column, as in a[0, :].".format(name))
+
+
+class Rank(ScalarResultOperator, Operator):
+    """XMILE's RANK: the position, counting from 0, of the `rank`-th smallest element of a
+    vector. Equal values are ordered by `tiebreak`, a vector of the same size, then by
+    position."""
+
+    def __init__(self, array, rank, tiebreak=None):
+        super().__init__()
+        _vector_of(array, "rank")
+        if tiebreak is not None:
+            _vector_of(tiebreak, "rank's tiebreak")
+            if len(array_leaves(tiebreak)) != len(array_leaves(array)):
+                raise OperatorError("rank's tiebreak has to be as long as the array it ranks.")
+        self.array = array
+        self.rank = rank
+        self.tiebreak = tiebreak
+
+    def term(self, time="t"):
+        tiebreak = "None" if self.tiebreak is None else _matrix_element_to_string(self.tiebreak, time)
+        return "sddsl_builtins.rank(model, {}, {}, {}, {})".format(
+            time, _matrix_element_to_string(self.array, time), extractTerm(self.rank, time), tiebreak)
+
+
+class Interpolate(ScalarResultOperator, Operator):
+    """Stella's INTERPOLATE: a value between the elements of an array, by one weight
+    between 0 and 1 per dimension - 0 the first element, 1 the last."""
+
+    def __init__(self, array, *weights):
+        super().__init__()
+        shape = _get_element_dimensions(array)
+        if shape == -1:
+            raise OperatorError("interpolate takes an array.")
+        depth = 2 if shape[1] > 0 else 1
+        if len(weights) != depth:
+            raise OperatorError(
+                "interpolate takes one weight per dimension: {} for this array, {} were "
+                "given.".format(depth, len(weights)))
+        self.array = array
+        self.weights = weights
+
+    def term(self, time="t"):
+        shape = _get_element_dimensions(self.array)
+        return "sddsl_builtins.interpolate({}, {}, {})".format(
+            _matrix_element_to_string(self.array, time), max(shape[1], 0),
+            ", ".join(str(extractTerm(weight, time)) for weight in self.weights))
 
 
 class ArrayProductOperator(ScalarResultOperator, Operator):
@@ -543,10 +807,9 @@ class ArraySizeOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        vector_size = self.element._elements.vector_size()
-        if vector_size == 0:
+        if not is_array(self.element):
             return "0.0"
-        return str(vector_size)
+        return str(_get_element_dimensions(self.element)[0])
 
     def clone_with_index(self, index):
         a = ArraySizeOperator(self.element)
@@ -566,16 +829,13 @@ class ArrayRankOperator(ScalarResultOperator, Operator):
         self.rank = rank
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time, True)
+        count = len(array_leaves(self.element))
 
-        matrix_size = self.element._elements.matrix_size()
-        if matrix_size[1] <= 0:
-            matrix_size[1] = 1
-
-        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=matrix_size[0] * matrix_size[1])
+        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=count)
 
     def clone_with_index(self, index):
         a = ArrayRankOperator(self.element, self.rank)
@@ -593,7 +853,7 @@ class ArrayMeanOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time)
@@ -616,7 +876,7 @@ class ArrayMaxOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time)
@@ -639,7 +899,7 @@ class ArrayMinOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time)
@@ -662,7 +922,7 @@ class ArrayMedianOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time)
@@ -685,7 +945,7 @@ class ArrayStandardDeviationOperator(ScalarResultOperator, Operator):
         self.element = element
 
     def term(self, time="t"):
-        if self.element._elements.vector_size() == 0:
+        if not is_array(self.element):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time)
@@ -774,7 +1034,9 @@ class PowerOperator(Operator):
         element = extractTerm(self.element, time)
         power = extractTerm(self.power, time)
 
-        return "({} ** {} )".format(element, power)
+        # Both sides in parentheses: the terms of + and - carry none, and ** binds tighter
+        # than either, so (1 + r) ** (t - s) rendered as 1 + r ** t - s.
+        return "(({}) ** ({}))".format(element, power)
 
 
 class ComparisonOperator(BinaryOperator):
@@ -894,7 +1156,8 @@ class SubtractionOperator(BinaryOperator):
             # expands it index by index instead, and each of those clones addresses
             # sub-elements, so it renders through the line below.
             return "0.0"
-        return self.element_1.term(time) + "-" + self.element_2.term(time)
+        # The right side in parentheses: a - (b + c) rendered as a - b + c without them
+        return self.element_1.term(time) + "-(" + self.element_2.term(time) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1300,7 +1563,8 @@ class DT(Function):
         self.model = model
 
     def term(self, time="t"):
-        return "{}".format(self.model.dt)
+        # Read when the equation runs, not when it is written: a scenario may change dt
+        return "model.dt"
 
 
 class Starttime(Function):
@@ -1312,7 +1576,7 @@ class Starttime(Function):
         self.model = model
 
     def term(self, time="t"):
-        return "{}".format(self.model.starttime)
+        return "model.starttime"
 
 
 class Stoptime(Function):
@@ -1324,7 +1588,7 @@ class Stoptime(Function):
         self.model = model
 
     def term(self, time="t"):
-        return "{}".format(self.model.stoptime)
+        return "model.stoptime"
 
 
 class Time(Function):
@@ -1357,7 +1621,60 @@ class Lookup(Function):
             self.points = lookup_points("inline", points)
 
     def term(self, time="t"):
-        return "model._lookup({},{})".format(self.element, self.points)
+        # At the time asked about: written straight into a stock's equation, the input is
+        # read one step back, and str() of the element always read it at t.
+        element = self.element.term(time) if hasattr(self.element, "term") else self.element
+        return "model._lookup({},{})".format(element, self.points)
+
+
+class Irr(Function):
+    """Stella's IRR over the history of a stream element."""
+
+    def __init__(self, stream, missing=None):
+        self.stream = stream
+        self.missing = missing
+
+    def term(self, time="t"):
+        missing = "np.nan" if self.missing is None else extractTerm(self.missing, time)
+        return "sddsl_builtins.irr(model, '{}', {}, {})".format(self.stream.name, time, missing)
+
+
+class LookupInverse(Function):
+    """Stella's LOOKUPINV: the x at which a lookup table reaches a value."""
+
+    def __init__(self, value, points):
+        self.value = value
+        self.points = Lookup(0.0, points).points
+
+    def term(self, time="t"):
+        return "sddsl_builtins.lookup_inverse(model, {}, {})".format(extractTerm(self.value, time), self.points)
+
+
+class LookupArea(Function):
+    """Stella's LOOKUPAREA: the area under a lookup table between two x values."""
+
+    def __init__(self, points, from_x=None, to_x=None):
+        self.points = Lookup(0.0, points).points
+        self.from_x = from_x
+        self.to_x = to_x
+
+    def term(self, time="t"):
+        return "sddsl_builtins.lookup_area(model, {}, {}, {})".format(
+            self.points, extractTerm(self.from_x, time), extractTerm(self.to_x, time))
+
+
+class AgeCount(Function):
+    """Stella's AGECOUNT: the material on a conveyor that has been on it for at least
+    `minimum` and less than `maximum` time units."""
+
+    def __init__(self, conveyor, minimum, maximum):
+        self.conveyor = conveyor
+        self.minimum = minimum
+        self.maximum = maximum
+
+    def term(self, time="t"):
+        return "model.stocks['{}']._agecount({}, {}, {})".format(
+            self.conveyor.name, time, extractTerm(self.minimum, time), extractTerm(self.maximum, time))
 
 
 class Step(Function):
@@ -1387,14 +1704,15 @@ class Pulse(Function):
 
     def term(self, time="t"):
         # Times are compared with a tolerance: with dt = 0.1, `0.8 - 0.2` is not exactly
-        # twice 0.3, and an exact comparison skipped that pulse
-        if self.interval.element == 0.0:
-            return "(({}/{}) if abs({}-{}) < 1e-10 else 0.0)".format(self.volume.term(time), self.model.dt, time, self.first_pulse)
-        else:
-            return ("(({volume}/{dt}) if (({time}-{first_pulse}) >= -1e-10 and "
-                    "abs(({time}-{first_pulse})/({interval}) - round(({time}-{first_pulse})/({interval}))) < 1e-9) "
-                    "else 0.0)").format(volume=self.volume.term(time), dt=self.model.dt, time=time,
-                                        first_pulse=self.first_pulse, interval=self.interval)
+        # twice 0.3, and an exact comparison skipped that pulse.
+        # An interval of 0 means a single pulse, decided at run time: the interval can be
+        # an expression, read every step as the engine reads it.
+        elapsed = "(({}) - ({}))".format(time, self.first_pulse.term(time))
+        interval = "({})".format(self.interval.term(time))
+        return ("(((({volume})/{dt}) if ((abs({elapsed}) < 1e-10) if {interval} == 0.0 else "
+                "({elapsed} >= -1e-10 and abs({elapsed}/{interval} - round({elapsed}/{interval})) < 1e-9)) "
+                "else 0.0))").format(volume=self.volume.term(time), dt="model.dt", elapsed=elapsed,
+                                     interval=interval)
 
 
 class Trend(Function):
@@ -1408,16 +1726,16 @@ class Trend(Function):
     which evaluates to nothing and cannot be serialized.
     """
 
-    def __init__(self, model, input_function, averaging_time, initial_value):
+    def __init__(self, model, input_function, averaging_time, initial_trend=0.0):
         self.id = model.equation_prefix
         self.trend = None
         if (_is_arrayed_operand(input_function)
                 or _is_arrayed_operand(averaging_time)
-                or _is_arrayed_operand(initial_value)):
+                or _is_arrayed_operand(initial_trend)):
             self.model = model
             self.input_function = input_function
             self.averaging_time = averaging_time
-            self.initial_value = initial_value
+            self.initial_trend = initial_trend
             return
 
         self.averaging_time = model.converter(self.id + "averaging_time")
@@ -1425,8 +1743,11 @@ class Trend(Function):
         self.exponential_average = model.stock(self.id + "exponential_average")
         self.input_function = model.converter(self.id + "input_function")
         self.input_function.equation = input_function
-        self.exponential_average.initial_value = initial_value
-        self.change_in_average = model.flow(self.id + "change_in_average")
+        # XMILE's TREND takes the trend it starts with, not the average: the average starts
+        # where that trend comes out of the definition below, input / (1 + trend * time).
+        self.exponential_average.initial_value = self.input_function / (
+            1.0 + initial_trend * self.averaging_time)
+        self.change_in_average = model.biflow(self.id + "change_in_average")
         self.change_in_average.equation = (
             self.input_function - self.exponential_average) / self.averaging_time
         self.exponential_average.equation = self.change_in_average
@@ -1451,7 +1772,7 @@ class Smooth(Function):
     sub-element carries its own history.
     """
 
-    def __init__(self, model, input_function, averaging_time, initial_value):
+    def __init__(self, model, input_function, averaging_time, initial_value=None):
         self.id = model.equation_prefix
         self.smooth = None
         if (_is_arrayed_operand(input_function)
@@ -1468,8 +1789,9 @@ class Smooth(Function):
         self.smooth = model.stock(self.id + "smooth")
         self.input_function = model.converter(self.id + "input_function")
         self.input_function.equation = input_function
-        self.smooth.initial_value = initial_value
-        self.change_in_smooth = model.flow(self.id + "change_in_smooth")
+        self.smooth.initial_value = (
+            self.input_function if initial_value is None else initial_value)
+        self.change_in_smooth = model.biflow(self.id + "change_in_smooth")
         self.change_in_smooth.equation = (
             self.input_function - self.smooth) / self.averaging_time
         self.smooth.equation = self.change_in_smooth
@@ -1478,6 +1800,181 @@ class Smooth(Function):
         if self.smooth is None:
             return "0.0"
         return self.smooth.term(time)
+
+
+class SmoothN(Function):
+    """
+    SMTH3 and SMTHN: a cascade of first-order exponential smooths, each with the
+    averaging time divided by the order. Built from stocks and biflows like `Smooth`,
+    and a template when an operand is arrayed, like `Smooth`.
+
+    With `floor_at_dt` a stage is never shorter than dt, which lengthens the whole smooth
+    to order * dt - Stella's SMTHN does that to stay stable, its SMTH3 does not.
+    """
+
+    def __init__(self, model, input_function, averaging_time, order, initial_value=None,
+                 floor_at_dt=False):
+        self.id = model.equation_prefix
+        self.output = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(averaging_time)
+                or _is_arrayed_operand(initial_value)):
+            self.model = model
+            self.input_function = input_function
+            self.averaging_time = averaging_time
+            self.initial_value = initial_value
+            return
+
+        self.input_function = model.converter(self.id + "input_function")
+        self.input_function.equation = input_function
+        self.averaging_time = model.converter(self.id + "averaging_time")
+        self.averaging_time.equation = averaging_time
+        stage_time = _stage_time(model, self.id, self.averaging_time, order, floor_at_dt)
+
+        upstream = self.input_function
+        for stage in range(1, order + 1):
+            smooth = model.stock("{}smooth_{}".format(self.id, stage))
+            smooth.initial_value = (
+                self.input_function if initial_value is None else initial_value)
+            change = model.biflow("{}change_in_smooth_{}".format(self.id, stage))
+            change.equation = (upstream - smooth) / stage_time
+            smooth.equation = change
+            upstream = smooth
+        self.output = upstream
+
+    def term(self, time="t"):
+        if self.output is None:
+            return "0.0"
+        return self.output.term(time)
+
+
+class MaterialDelay(Function):
+    """
+    DELAY1, DELAY3 and DELAYN: a cascade of first-order material delays, each with the
+    delay time divided by the order. Unlike the smooths it conserves material when the
+    delay time changes, because what leaves a stage is its content over the stage time,
+    not a step towards a target. The result is the outflow of the last stage.
+
+    Every stage starts in equilibrium with the initial value - content = initial value *
+    stage time - and `floor_at_dt` keeps a stage from being shorter than dt, as Stella's
+    DELAYN does.
+    """
+
+    def __init__(self, model, input_function, delay_time, order, initial_value=None,
+                 floor_at_dt=False):
+        self.id = model.equation_prefix
+        self.output = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(delay_time)
+                or _is_arrayed_operand(initial_value)):
+            self.model = model
+            self.input_function = input_function
+            self.delay_time = delay_time
+            self.initial_value = initial_value
+            return
+
+        self.input_function = model.converter(self.id + "input_function")
+        self.input_function.equation = input_function
+        self.delay_time = model.converter(self.id + "delay_time")
+        self.delay_time.equation = delay_time
+        stage_time = _stage_time(model, self.id, self.delay_time, order, floor_at_dt)
+        start = self.input_function if initial_value is None else initial_value
+
+        inflow = model.biflow(self.id + "inflow")
+        inflow.equation = self.input_function
+        for stage in range(1, order + 1):
+            content = model.stock("{}stage_{}".format(self.id, stage))
+            content.initial_value = start * stage_time
+            outflow = model.biflow("{}outflow_{}".format(self.id, stage))
+            outflow.equation = content / stage_time
+            content.equation = inflow - outflow
+            inflow = outflow
+        self.output = inflow
+
+    def term(self, time="t"):
+        if self.output is None:
+            return "0.0"
+        return self.output.term(time)
+
+
+def _stage_time(model, prefix, total_time, order, floor_at_dt):
+    stage_time = model.converter(prefix + "stage_time")
+    stage_time.equation = (MaxOperator(total_time / order, DT(model)) if floor_at_dt
+                           else total_time / order)
+    return stage_time
+
+
+class Forecast(Function):
+    """
+    FORCST: the input extrapolated over a horizon with its trend,
+    input * (1 + TREND(input, averaging time, initial trend) * horizon).
+    """
+
+    def __init__(self, model, input_function, averaging_time, horizon, initial_trend=0.0):
+        self.id = model.equation_prefix
+        self.output = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(averaging_time)
+                or _is_arrayed_operand(horizon)
+                or _is_arrayed_operand(initial_trend)):
+            self.model = model
+            self.input_function = input_function
+            self.averaging_time = averaging_time
+            self.horizon = horizon
+            self.initial_trend = initial_trend
+            return
+
+        self.input_function = model.converter(self.id + "input_function")
+        self.input_function.equation = input_function
+        self.horizon = model.converter(self.id + "horizon")
+        self.horizon.equation = horizon
+        trend = Trend(model, self.input_function, averaging_time, initial_trend)
+        self.output = model.converter(self.id + "forecast")
+        self.output.equation = self.input_function * (1.0 + trend * self.horizon)
+
+    def term(self, time="t"):
+        if self.output is None:
+            return "0.0"
+        return self.output.term(time)
+
+
+class Npv(Function):
+    """
+    NPV: the net present value of a stream, accumulated in a stock. What flows in at
+    each step is the input discounted by 1 / (1 + rate)^(TIME - STARTTIME + DT); the stock
+    starts at the initial value, or at the input when none is given, as Stella's does.
+    """
+
+    def __init__(self, model, input_function, rate, initial_value=None):
+        self.id = model.equation_prefix
+        self.output = None
+        if (_is_arrayed_operand(input_function)
+                or _is_arrayed_operand(rate)
+                or _is_arrayed_operand(initial_value)):
+            self.model = model
+            self.input_function = input_function
+            self.rate = rate
+            self.initial_value = initial_value
+            return
+
+        self.input_function = model.converter(self.id + "input_function")
+        self.input_function.equation = input_function
+        self.rate = model.converter(self.id + "rate")
+        self.rate.equation = rate
+        discount = model.converter(self.id + "discount_factor")
+        discount.equation = 1.0 / (
+            (1.0 + self.rate) ** (Time() - Starttime(model) + DT(model)))
+        change = model.biflow(self.id + "change_in_npv")
+        change.equation = self.input_function * discount
+        self.output = model.stock(self.id + "npv")
+        self.output.initial_value = (
+            self.input_function if initial_value is None else initial_value)
+        self.output.equation = change
+
+    def term(self, time="t"):
+        if self.output is None:
+            return "0.0"
+        return self.output.term(time)
 
 
 class Delay(Function):
@@ -1494,29 +1991,54 @@ class Delay(Function):
         # start made a variable duration have no effect at all, and described a different
         # system from the Rust engine and from a compiled XMILE model, which both read it
         # every step.
-        delayed_time = "{} - {}".format(str(time),
-                                        self.delay_duration.term(str(time)))
+        # The duration in parentheses: a compound one, t - (t - 3), lost them as t - t - 3
+        # The input is read at the nearest step, so the start counts as reached half a dt
+        # before it - as on the engine, which rounds the duration to whole steps first.
+        delayed_time = "{} - ({})".format(str(time),
+                                          self.delay_duration.term(str(time)))
         return "({} if {}>={} else {})".format(
             self.input_function.term(delayed_time),
             delayed_time,
-            str(self.model.starttime),
-            self.initial_value.term(str(self.model.starttime)) if self.initial_value is not None else self.input_function.term(
-                str(self.model.starttime))
+            "model.starttime - model.dt / 2",
+            self.initial_value.term("model.starttime") if self.initial_value is not None else self.input_function.term(
+                "model.starttime")
         )
 
 
 def extractTerm(obj, time):
-    return obj.term(time) if isinstance(obj, Operator) else obj
+    """The term of an argument at `time`. An element too is read at the time asked: in a
+    stock's equation that is one step back, and an element passed as it was used to be
+    read at `t`."""
+    if isinstance(obj, (Operator, BPTK_Py.sddsl.element.Element)):
+        return obj.term(time)
+    return obj
+
+
+def _cell_key(index):
+    """The position of an arrayed clone as whole numbers, a label by a stable checksum."""
+    if index is None:
+        return []
+    keys = index if isinstance(index, (list, tuple)) else [index]
+    return [key if isinstance(key, int) else zlib.crc32(str(key).encode()) for key in keys]
+
+
+def _draw_term(function, name, time, *arguments):
+    """The term of a draw from the distribution `name` - from the seed, if it has one."""
+    rendered = ", ".join(str(extractTerm(argument, time)) for argument in arguments)
+    if function.seed is None:
+        return "sddsl_builtins.evaluate(model, '{}', {}, {})".format(name, time, rendered)
+    return "sddsl_builtins.evaluate_seeded(model, '{}', {}, {}, {}, {})".format(
+        name, time, extractTerm(function.seed, time), _cell_key(function.index), rendered)
 
 
 class Random(Function):
-    def __init__(self, min_value=0, max_value=1):
+    def __init__(self, min_value=0, max_value=1, seed=None):
         self.min_value = min_value
         self.max_value = max_value
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'uniform', {}, {}, {})".format(
-            time, extractTerm(self.min_value, time), extractTerm(self.max_value, time))
+        return _draw_term(self, 'uniform', time, self.min_value, self.max_value)
 
 
 # Half away from zero, as the Rust engine and a spreadsheet round: 2.5 -> 3, -2.5 -> -3.
@@ -1671,6 +2193,17 @@ class Floor(Function):
         extractTerm(self.x, time))
 
 
+class Trunc(Function):
+    """Cuts off the fractional part, towards zero. `Floor` - XMILE's INT - rounds down
+    instead, and the two differ for negative numbers."""
+
+    def __init__(self, x):
+        self.x = x
+
+    def term(self, time="t"): return "( np.trunc({}) )".format(
+        extractTerm(self.x, time))
+
+
 class Ceil(Function):
     def __init__(self, x):
         self.x = x
@@ -1684,8 +2217,8 @@ class Sinwave(Function):
         self.amplitude = amplitude
         self.period = period
 
-    def term(self, time="t"): return "( np.sin(2*np.pi / {} * (t-model.starttime) ) * {} )".format(
-        extractTerm(self.period, time), extractTerm(self.amplitude, time))
+    def term(self, time="t"): return "( np.sin(2*np.pi / ({}) * (({})-model.starttime) ) * ({}) )".format(
+        extractTerm(self.period, time), time, extractTerm(self.amplitude, time))
 
 
 class Coswave(Function):
@@ -1693,8 +2226,8 @@ class Coswave(Function):
         self.amplitude = amplitude
         self.period = period
 
-    def term(self, time="t"): return "( np.cos(2*np.pi / {} * (t-model.starttime) ) * {} )".format(
-        extractTerm(self.period, time), extractTerm(self.amplitude, time))
+    def term(self, time="t"): return "( np.cos(2*np.pi / ({}) * (({})-model.starttime) ) * ({}) )".format(
+        extractTerm(self.period, time), time, extractTerm(self.amplitude, time))
 
 
 class Inf(Function):
@@ -1706,33 +2239,33 @@ class Pi(Function):
 
 
 class Beta(Function):
-    def __init__(self, a, b):
+    def __init__(self, a, b, seed=None):
         self.a = a
         self.b = b
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'beta', {}, {}, {})".format(
-            time, extractTerm(self.a, time), extractTerm(self.b, time))
+        return _draw_term(self, 'beta', time, self.a, self.b)
 
 
 class Binomial(Function):
-    def __init__(self, n, p):
+    def __init__(self, n, p, seed=None):
         self.n = n
         self.p = p
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'binomial', {}, {}, {})".format(
-            time, extractTerm(self.n, time), extractTerm(self.p, time))
+        return _draw_term(self, 'binomial', time, self.n, self.p)
 
 
 class NegBinomial(Function):
-    def __init__(self, n, p):
+    def __init__(self, n, p, seed=None):
         self.n = n
         self.p = p
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'negbinomial', {}, {}, {})".format(
-            time, extractTerm(self.n, time), extractTerm(self.p, time))
+        return _draw_term(self, 'negbinomial', time, self.n, self.p)
 
 
 class Combinations(Function):
@@ -1748,12 +2281,12 @@ class Combinations(Function):
 
 
 class Exprnd(Function):
-    def __init__(self, l):
+    def __init__(self, l, seed=None):
         self.l = l
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'exprnd', {}, {})".format(
-            time, extractTerm(self.l, time))
+        return _draw_term(self, 'exprnd', time, self.l)
 
 
 class Factorial(Function):
@@ -1765,13 +2298,13 @@ class Factorial(Function):
 
 
 class Gamma(Function):
-    def __init__(self, shape, scale=1):
+    def __init__(self, shape, scale=1, seed=None):
         self.shape = shape
         self.scale = scale
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'gamma', {}, {}, {})".format(
-            time, extractTerm(self.shape, time), extractTerm(self.scale, time))
+        return _draw_term(self, 'gamma', time, self.shape, self.scale)
 
 
 class GammaLN(Function):
@@ -1783,12 +2316,12 @@ class GammaLN(Function):
 
 
 class Geometric(Function):
-    def __init__(self, p):
+    def __init__(self, p, seed=None):
         self.p = p
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'geometric', {}, {})".format(
-            time, extractTerm(self.p, time))
+        return _draw_term(self, 'geometric', time, self.p)
 
 
 class Invnorm(Function):
@@ -1801,45 +2334,50 @@ class Invnorm(Function):
         # Either parameter may be left out on its own; the other keeps its default.
         mean = 0.0 if self.mean is None else self.mean
         stddev = 1.0 if self.stddev is None else self.stddev
-        return "distributions.evaluate(model, 'invnorm', {}, {}, {}, {})".format(
+        return "sddsl_builtins.evaluate(model, 'invnorm', {}, {}, {}, {})".format(
             time, extractTerm(self.p, time), extractTerm(mean, time), extractTerm(stddev, time))
 
 
 class Logistic(Function):
-    def __init__(self, mean, scale):
+    def __init__(self, mean, scale, seed=None):
         self.mean = mean
         self.scale = scale
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'logistic', {}, {}, {})".format(
-            time, extractTerm(self.mean, time), extractTerm(self.scale, time))
+        return _draw_term(self, 'logistic', time, self.mean, self.scale)
 
 
 class Lognormal(Function):
-    def __init__(self, mean, stddev):
+    def __init__(self, mean, stddev, seed=None):
         self.stddev = stddev
         self.mean = mean
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'lognormal', {}, {}, {})".format(
-            time, extractTerm(self.mean, time), extractTerm(self.stddev, time))
+        return _draw_term(self, 'lognormal', time, self.mean, self.stddev)
 
 
 class Montecarlo(Function):
-    def __init__(self, p):
+    def __init__(self, p, seed=None):
         self.p = p
+        self.seed = seed
 
-    def term(self, time="t"): return "(1 if random.uniform(0,100) < ({}*model.dt) else 0)".format(extractTerm(self.p, time))
+    def term(self, time="t"):
+        if self.seed is None:
+            return "(1 if random.uniform(0,100) < ({}*model.dt) else 0)".format(extractTerm(self.p, time))
+        return "sddsl_builtins.montecarlo_seeded(model, {}, {}, {}, {})".format(
+            time, extractTerm(self.seed, time), _cell_key(self.index), extractTerm(self.p, time))
 
 
 class Normal(Function):
-    def __init__(self, mean, stddev):
+    def __init__(self, mean, stddev, seed=None):
         self.mean = mean
         self.stddev = stddev
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'normal', {}, {}, {})".format(
-            time, extractTerm(self.mean, time), extractTerm(self.stddev, time))
+        return _draw_term(self, 'normal', time, self.mean, self.stddev)
 
 
 class NormalCDF(Function):
@@ -1850,18 +2388,18 @@ class NormalCDF(Function):
         self.stddev = stddev
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'normalcdf', {}, {}, {}, {}, {})".format(
+        return "sddsl_builtins.evaluate(model, 'normalcdf', {}, {}, {}, {}, {})".format(
             time, extractTerm(self.left, time), extractTerm(self.right, time), extractTerm(self.mean, time), extractTerm(self.stddev, time))
 
 
 class Pareto(Function):
-    def __init__(self, shape, scale):
+    def __init__(self, shape, scale, seed=None):
         self.shape = shape
         self.scale = scale
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'pareto', {}, {}, {})".format(
-            time, extractTerm(self.shape, time), extractTerm(self.scale, time))
+        return _draw_term(self, 'pareto', time, self.shape, self.scale)
 
 
 class Permutations(Function):
@@ -1876,30 +2414,30 @@ class Permutations(Function):
 
 
 class Poisson(Function):
-    def __init__(self, mu):
+    def __init__(self, mu, seed=None):
         self.mu = mu
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'poisson', {}, {})".format(
-            time, extractTerm(self.mu, time))
+        return _draw_term(self, 'poisson', time, self.mu)
 
 
 class Triangular(Function):
-    def __init__(self, lower_bound, mode, upper_bound):
+    def __init__(self, lower_bound, mode, upper_bound, seed=None):
         self.lower_bound = lower_bound
         self.mode = mode
         self.upper_bound = upper_bound
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'triangular', {}, {}, {}, {})".format(
-            time, extractTerm(self.lower_bound, time), extractTerm(self.mode, time), extractTerm(self.upper_bound, time))
+        return _draw_term(self, 'triangular', time, self.lower_bound, self.mode, self.upper_bound)
 
 
 class Weibull(Function):
-    def __init__(self, shape, scale):
+    def __init__(self, shape, scale, seed=None):
         self.shape = shape
         self.scale = scale
+        self.seed = seed
 
     def term(self, time="t"):
-        return "distributions.evaluate(model, 'weibull', {}, {}, {})".format(
-            time, extractTerm(self.shape, time), extractTerm(self.scale, time))
+        return _draw_term(self, 'weibull', time, self.shape, self.scale)

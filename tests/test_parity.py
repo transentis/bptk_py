@@ -7,12 +7,16 @@ Python SD DSL for all supported features.
 """
 
 import contextlib
+import inspect
 import io
 import math
 import numpy as np
+import operator
 import pytest
 from BPTK_Py import Model
 from BPTK_Py import sd_functions as sd
+from BPTK_Py.sddsl import json_serializer
+from BPTK_Py.sddsl import operators as ops
 from BPTK_Py.util import timerange
 from BPTK_Py._rust_engine import RustSdEngine
 from tests.helpers.parity import run_parity, rust_time_key
@@ -1233,13 +1237,9 @@ class TestParityStochastic:
                                mean_tol=1.0, var_tol=3.0, name="geometric")
 
     def test_lognormal(self):
-        # lognormal(mean=0, stddev=1): mean=exp(0.5)≈1.649, var=(exp(1)-1)*exp(1)≈4.671
-        import math
-        mu, sigma = 0.0, 1.0
-        _run_stochastic_parity(sd.lognormal(mu, sigma),
-                               math.exp(mu + sigma ** 2 / 2),
-                               (math.exp(sigma ** 2) - 1) * math.exp(2 * mu + sigma ** 2),
-                               mean_tol=0.3, var_tol=3.0, name="lognormal")
+        # XMILE: the arguments are the mean and stddev of the lognormal distribution itself
+        _run_stochastic_parity(sd.lognormal(2.0, 1.0), 2.0, 1.0,
+                               mean_tol=0.3, var_tol=1.0, name="lognormal")
 
     def test_poisson(self):
         # poisson(mu=5): mean=5, var=5
@@ -1340,7 +1340,8 @@ class TestParityStochasticGuards:
         pytest.param(sd.gamma(2, 0), "gamma_zero_scale", id="gamma_zero_scale"),
         pytest.param(sd.exprnd(-1), "exprnd_neg", id="exprnd_negative_scale"),
         pytest.param(sd.exprnd(0), "exprnd_zero", id="exprnd_zero_scale"),
-        pytest.param(sd.lognormal(0, -1), "lognorm_neg_std", id="lognormal_negative_stddev"),
+        pytest.param(sd.lognormal(1, -1), "lognorm_neg_std", id="lognormal_negative_stddev"),
+        pytest.param(sd.lognormal(0, 1), "lognorm_zero_mean", id="lognormal_zero_mean"),
         pytest.param(sd.logistic(0, -1), "logistic_neg_scale", id="logistic_negative_scale"),
         pytest.param(sd.triangular(10, 5, 1), "tri_lower_gt_upper", id="triangular_lower_gt_upper"),
         pytest.param(sd.triangular(0, 15, 10), "tri_mode_gt_upper", id="triangular_mode_gt_upper"),
@@ -1530,7 +1531,7 @@ class TestParityStochasticBoundary:
 
     @pytest.mark.parametrize("equation, expected, name", [
         pytest.param(sd.normal(5, 0), 5.0, "normal_zero_std", id="normal_zero_stddev"),
-        pytest.param(sd.lognormal(0, 0), 1.0, "lognorm_zero_std", id="lognormal_zero_stddev"),
+        pytest.param(sd.lognormal(2, 0), 2.0, "lognorm_zero_std", id="lognormal_zero_stddev"),
         pytest.param(sd.logistic(5, 0), 5.0, "logistic_zero_scale", id="logistic_zero_scale"),
         pytest.param(sd.binomial(0, 0.5), 0.0, "binom_zero_n", id="binomial_zero_n"),
         pytest.param(sd.binomial(10, 0), 0.0, "binom_p_zero", id="binomial_p_zero"),
@@ -1582,6 +1583,15 @@ class TestParitySmooth:
         out.equation = sd.smooth(model, inp, 2.0, 0.0)
         run_parity(model, ['out'], atol=1e-9)
 
+    def test_smooth_without_initial_value(self):
+        """The average starts at the input, as XMILE's SMTH1 does."""
+        model = Model(starttime=1, stoptime=10, dt=0.25, name='smooth_no_initial_par')
+        inp = model.converter('input')
+        inp.equation = 5.0 + sd.step(10.0, 3.0)
+        out = model.converter('out')
+        out.equation = sd.smooth(model, inp, 2.0)
+        run_parity(model, ['out'], atol=1e-9)
+
     def test_smooth_matched_initial(self):
         """Constant input matched to the initial value — output stays constant."""
         model = Model(starttime=0, stoptime=5, dt=0.5, name='smooth_matched_par')
@@ -1599,18 +1609,18 @@ class TestParityTrend:
     def test_trend_step_input(self, dt):
         model = Model(starttime=1, stoptime=10, dt=dt, name='trend_step_par')
         inp = model.converter('input')
-        inp.equation = sd.step(10.0, 3.0)
+        inp.equation = 5.0 + sd.step(10.0, 3.0)
         out = model.converter('out')
-        out.equation = sd.trend(model, inp, 2.0, 5.0)
+        out.equation = sd.trend(model, inp, 2.0, 0.1)
         run_parity(model, ['out'], atol=1e-9)
 
     def test_trend_large_averaging_time(self):
         """Slow response to a step."""
         model = Model(starttime=0, stoptime=20, dt=0.5, name='trend_slow_par')
         inp = model.converter('input')
-        inp.equation = sd.step(10.0, 5.0)
+        inp.equation = 5.0 + sd.step(10.0, 5.0)
         out = model.converter('out')
-        out.equation = sd.trend(model, inp, 8.0, 5.0)
+        out.equation = sd.trend(model, inp, 8.0, 0.1)
         run_parity(model, ['out'], atol=1e-9)
 
     def test_trend_linear_input(self):
@@ -1630,6 +1640,179 @@ class TestParityTrend:
         out = model.converter('out')
         out.equation = sd.trend(model, inp, 1.0, 5.0)
         run_parity(model, ['out'], atol=1e-10)
+
+
+class TestParityFallingInput:
+    """smooth and trend follow an input that falls - their internal change may be
+    negative, which a flow, never below zero, used to swallow on both engines."""
+
+    @pytest.mark.parametrize("build", [
+        lambda m, x: sd.smooth(m, x, 2.0),
+        lambda m, x: sd.trend(m, x, 2.0),
+        lambda m, x: sd.smooth3(m, x, 2.0),
+        lambda m, x: sd.delay3(m, x, 2.0),
+    ], ids=["smooth", "trend", "smooth3", "delay3"])
+    def test_a_falling_input_is_followed(self, build):
+        model = Model(starttime=0, stoptime=10, dt=0.25, name='falling_par')
+        inp = model.converter('input')
+        inp.equation = 10.0 - sd.step(8.0, 2.0)
+        out = model.converter('out')
+        out.equation = build(model, inp)
+        run_parity(model, ['out'], atol=1e-9)
+        assert model.evaluate_equation('out', 10.0) != model.evaluate_equation('out', 0.0)
+
+
+# XMILE's cascades, each built from stocks and biflows, so they reach the engine as they are
+CASCADES = {
+    "smooth3": lambda m, x: sd.smooth3(m, x, 4.0),
+    "smooth3_initial": lambda m, x: sd.smooth3(m, x, 4.0, 2.0),
+    "smoothn": lambda m, x: sd.smoothn(m, x, 4.0, 5),
+    "smoothn_floored": lambda m, x: sd.smoothn(m, x, 1.0, 9),
+    "delay1": lambda m, x: sd.delay1(m, x, 4.0),
+    "delay1_initial": lambda m, x: sd.delay1(m, x, 4.0, 2.0),
+    "delay3": lambda m, x: sd.delay3(m, x, 4.0),
+    "delayn": lambda m, x: sd.delayn(m, x, 4.0, 5),
+    "delayn_floored": lambda m, x: sd.delayn(m, x, 1.0, 9),
+    "forecast": lambda m, x: sd.forecast(m, x, 3.0, 5.0),
+    "forecast_initial": lambda m, x: sd.forecast(m, x, 3.0, 5.0, 0.1),
+    "npv": lambda m, x: sd.npv(m, x, 0.1),
+    "npv_initial": lambda m, x: sd.npv(m, x, 0.1, 0.0),
+}
+
+
+class TestParityCascades:
+
+    @pytest.mark.parametrize("name", sorted(CASCADES))
+    def test_a_step_input(self, name):
+        model = Model(starttime=1, stoptime=15, dt=0.25, name='cascade_par')
+        inp = model.converter('input')
+        inp.equation = 5.0 + sd.step(10.0, 3.0)
+        out = model.converter('out')
+        out.equation = CASCADES[name](model, inp)
+        run_parity(model, ['out'], atol=1e-9)
+
+    def test_a_delay_time_that_changes(self):
+        """The material delays read their delay time every step."""
+        model = Model(starttime=0, stoptime=15, dt=0.25, name='cascade_varying_par')
+        inp = model.converter('input')
+        inp.equation = 5.0 + sd.step(10.0, 3.0)
+        delay_time = model.converter('delay_time')
+        delay_time.equation = 2.0 + sd.step(4.0, 6.0)
+        for name, build in [("d1", sd.delay1), ("d3", sd.delay3)]:
+            out = model.converter(name)
+            out.equation = build(model, inp, delay_time)
+        run_parity(model, ['d1', 'd3'], atol=1e-9)
+
+
+class TestParityStatelessBuiltins:
+    """RAMP, MIN/MAX over n, SAFEDIV, ROOTN, PERCENT, PMT/FV/PV, CGROWTH and COUNTER are
+    built from existing operators, so they reach the engine unchanged."""
+
+    def test_each_matches(self):
+        model = Model(starttime=1, stoptime=15, dt=0.5, name='stateless_par')
+        x = model.converter('x')
+        x.equation = sd.time() - 8.0
+        rate = model.converter('rate')
+        rate.equation = sd.If(sd.time() > 5.0, 0.04, 0.0)
+        expressions = {
+            'ramp': sd.ramp(2.0, 4.0),
+            'ramp_end': sd.ramp(x, 4.0, 9.0),
+            'max': sd.max(x, 1.0, -3.0, 2.5),
+            'min': sd.min(x, 1.0, -3.0, 2.5),
+            'safediv': sd.safediv(10.0, x, -1.0),
+            'rootn': sd.rootn(x, 3.0),
+            'rootn_even': sd.rootn(x, 2.0),
+            'percent': sd.percent(x),
+            'pmt': sd.pmt(rate, 10.0, 1000.0, 100.0),
+            'fv': sd.fv(rate, 10.0, -100.0, -50.0),
+            'pv': sd.pv(rate, 10.0, -100.0, 50.0),
+            'cgrowth': sd.cgrowth(model, x),
+            'counter': sd.counter(model, 2.0, 5.0),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-9)
+
+
+class TestParityThePast:
+    """INIT, PREVIOUS, HISTORY and DERIVN are built from DELAY, so they reach the engine."""
+
+    def test_each_matches(self):
+        model = Model(starttime=1, stoptime=12, dt=0.5, name='past_par')
+        x = model.converter('x')
+        x.equation = sd.time() ** 2.0 + sd.step(5.0, 6.0)
+        counter = model.converter('counter')
+        counter.equation = sd.previous(model, counter, 0.0) + 1.0
+        expressions = {
+            'init': sd.init(model, x),
+            'init_expression': sd.init(model, x * 2.0),
+            'previous': sd.previous(model, x, -1.0),
+            'history': sd.history(model, x, 3.0),
+            'history_now': sd.history(model, x, sd.time()),
+            'history_moving': sd.history(model, x, sd.time() - 2.0),
+            'derivn_1': sd.derivn(model, x, 1),
+            'derivn_3': sd.derivn(model, x, 3),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions) + ['counter'], atol=1e-9)
+
+
+class TestParityRunSpecsChangedLater:
+    def test_dt_and_starttime_are_read_when_the_model_runs(self):
+        """The Python terms of DT, STARTTIME, STOPTIME, PULSE and DELAY used to carry the
+        values of the moment the equation was written, so run specs set afterwards - as a
+        scenario's are - did not reach them."""
+        model = Model(starttime=0, stoptime=4, dt=1, name='runspecs_later_par')
+        source = model.converter('source')
+        source.equation = sd.time()
+        names = {'dt': sd.dt(model), 'start': sd.starttime(model), 'stop': sd.stoptime(model),
+                 'pulse': sd.pulse(model, 1.0, 2.0),
+                 'delayed': sd.delay(model, source, 1.0)}
+        for name, equation in names.items():
+            model.converter(name).equation = equation
+        model.run_specs(1.0, 6.0, 0.5)
+        run_parity(model, list(names), atol=1e-10)
+        assert model.evaluate_equation('dt', 1.0) == 0.5
+
+
+class TestParityLookupInAStock:
+    def test_a_lookup_written_into_a_stock_reads_the_step_before(self):
+        model = Model(starttime=0, stoptime=6, dt=1, name='lookup_stock_par')
+        x = model.converter('x')
+        x.equation = sd.time()
+        stock = model.stock('stock')
+        stock.initial_value = 0.0
+        stock.equation = sd.lookup(x, [[0, 0], [10, 10]])
+        run_parity(model, ['stock'], atol=1e-10)
+        assert model.evaluate_equation('stock', 2.0) == 1.0
+
+
+class TestParityPrecedence:
+    """A compound operand keeps its own precedence. The Python engine rendered
+    a - (b + c) as a - b + c and (1 + r) ** (t - s) as 1 + r ** t - s."""
+
+    def test_compound_operands(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name='precedence_par')
+        a = model.converter('a')
+        a.equation = 8.0 + sd.time()
+        b = model.converter('b')
+        b.equation = 3.0
+        c = model.converter('c')
+        c.equation = 2.0
+        expressions = {
+            'sub_sum': a - (b + c),
+            'sub_sub': a - (b - c),
+            'literal_sub_sum': 10.0 - (b + c),
+            'pow_base': (a - b) ** c,
+            'pow_exponent': c ** (b - c),
+            'pow_both': (1.0 + c) ** (a - b),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-9)
+        assert model.evaluate_equation('sub_sum', 0.0) == 3.0
+        assert model.evaluate_equation('pow_both', 0.0) == 243.0
 
 
 class TestParityDelay:
@@ -1769,6 +1952,15 @@ class TestParityFloorCeil:
         c = model.converter('c')
         c.equation = sd.ceil(inp)
         run_parity(model, ['f', 'c'], atol=1e-10)
+
+    def test_trunc_on_both_signs(self):
+        """trunc cuts towards zero on both sides of it."""
+        model = Model(starttime=0, stoptime=10, dt=1, name='trunc_par')
+        inp = model.converter('input')
+        inp.equation = sd.time() * 1.7 - 8.5
+        out = model.converter('out')
+        out.equation = sd.trunc(inp)
+        run_parity(model, ['out'], atol=1e-10)
 
 
 # ---------------------------------------------------------------------------
@@ -1993,3 +2185,266 @@ class TestParityFeedbackLoops:
         a[1].equation = a[0] + 1.0
 
         run_parity(model, ['a[0]', 'a[1]'], atol=1e-10)
+
+
+# ---------------------------------------------------------------------------
+# Compound operands in every argument position - TestParityCompoundOperands
+# ---------------------------------------------------------------------------
+
+COMPOUND_MODEL = object()      # the position takes the model
+COMPOUND_FIXED = "fixed"       # a position that stays as it is: a constant the function needs
+COMPOUND_WHOLE = "whole"       # a whole number: filled, but without growing with time
+COMPOUND_ELEMENT = "element"   # a model element: the function takes no plain number there
+
+COMPOUND_SLOPE = 0.01
+
+# Every function, with arguments it accepts. A tuple is (value, kind).
+COMPOUND_BASE = {
+    "abs": [-2.5], "arccos": [0.3], "arcsin": [0.3], "arctan": [0.7],
+    "ceil": [2.3], "floor": [2.3], "trunc": [-2.3], "cos": [0.5], "sin": [0.5], "tan": [0.5],
+    "exp": [1.2], "ln": [2.0], "log10": [2.0], "sqrt": [4.0], "percent": [0.3],
+    "gammaln": [3.5], "rootn": [27.0, 3.0],
+    "factorial": [(4.0, COMPOUND_WHOLE)], "combinations": [(5.0, COMPOUND_WHOLE), (2.0, COMPOUND_WHOLE)],
+    "permutations": [(5.0, COMPOUND_WHOLE), (2.0, COMPOUND_WHOLE)],
+    "round": [2.345, (1.0, COMPOUND_WHOLE)],
+    "coswave": [2.0, 4.0], "sinwave": [2.0, 4.0],
+    "max": [1.5, 2.5], "min": [1.5, 2.5],
+    "safediv": [3.0, 2.0, -1.0],
+    "step": [2.0, 1.0], "ramp": [1.0, 1.0, 3.0],
+    "pulse": [COMPOUND_MODEL, 2.0, 1.0, 2.0],
+    "fv": [0.05, 10.0, -100.0, 0.0], "pmt": [0.05, 10.0, 1000.0, 0.0],
+    "pv": [0.05, 10.0, -100.0, 0.0],
+    "invnorm": [0.3, 1.0, 2.0], "normalcdf": [-1.0, 1.0, 0.0, 1.0],
+    "lookup": [1.5, ([[0.0, 0.0], [2.0, 4.0], [4.0, 6.0]], COMPOUND_FIXED)],
+    "cgrowth": [COMPOUND_MODEL, 10.0], "counter": [COMPOUND_MODEL, 0.0, 5.0],
+    "delay": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0],
+    "delay1": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0], "delay3": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0],
+    "delayn": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, (3, COMPOUND_FIXED), 1.0],
+    "smooth": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0], "smooth3": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0],
+    "smoothn": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, (3, COMPOUND_FIXED), 1.0],
+    "trend": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 0.1],
+    "forecast": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 3.0, 2.0, 0.1],
+    "npv": [COMPOUND_MODEL, (10.0, COMPOUND_ELEMENT), 0.1, 0.0],
+    "derivn": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), (1, COMPOUND_FIXED)],
+    "init": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT)], "previous": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 1.0],
+    "history": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 1.0],
+}
+
+# Functions this file does not compare, and why.
+COMPOUND_NOT_COMPARED = {
+    # The engines draw from different generators: not value-comparable.
+    **{name: "random" for name in ("beta", "binomial", "exprnd", "gamma", "geometric",
+                                    "logistic", "lognormal", "montecarlo", "negbinomial",
+                                    "normal", "pareto", "poisson", "random", "triangular",
+                                    "uniform", "weibull")},
+    # Refused on the Rust engine until 3.5.0.
+    **{name: "not on the engine" for name in ("irr", "lookupinv", "lookuparea", "rank",
+                                               "interpolate", "agecount")},
+    # No argument to fill.
+    **{name: "no argument" for name in ("Inf", "nan", "pi", "time", "dt", "starttime", "stoptime")},
+    # Conditions: covered below with compound comparisons.
+    **{name: "condition" for name in ("And", "Or", "Not", "If")},
+}
+
+# Positions where a function refuses an expression and wants an element or a number.
+# XMILE takes an expression everywhere; each entry here is a limit of the SD DSL, and
+# the test fails when one is lifted, so that the entry goes.
+COMPOUND_REFUSED = {}
+
+# Where the engine itself falls short, not the Python term: each case is expected to
+# fail, strictly, so that it shows when the engine catches up.
+COMPOUND_ENGINE_GAPS = {}
+
+COMPOUND_BINARY = {
+    ops.AdditionOperator: operator.add, ops.SubtractionOperator: operator.sub,
+    ops.MultiplicationOperator: operator.mul, ops.DivisionOperator: operator.truediv,
+    ops.PowerOperator: operator.pow, ops.ModOperator: operator.mod,
+}
+# Binary operators covered by tests of their own below.
+COMPOUND_ELSEWHERE = {ops.And: "conditions", ops.Or: "conditions",
+             ops.NumericalMultiplicationOperator: "a number and a compound"}
+COMPOUND_COMPARISONS = (operator.gt, operator.lt, operator.ge, operator.le, operator.eq, operator.ne)
+
+COMPOUND_FORMS = ("sum", "difference", "negation", "quotient")
+COMPOUND_PLACES = ("converter", "stock", "arrayed")
+
+
+def _compound_functions():
+    return sorted(name for name, function in vars(sd).items()
+                  if inspect.isfunction(function) and function.__module__ == sd.__name__
+                  and not name.startswith("_"))
+
+
+def _compound_value(entry):
+    return entry if not isinstance(entry, tuple) else entry[0]
+
+
+def _compound_kind(entry):
+    return None if not isinstance(entry, tuple) else entry[1]
+
+
+def _compound_expression(model, form, value, slope, arrayed, tag):
+    """An expression of `form` that has `value` at time 0 and grows by `slope` a step.
+    Arrayed, the second cell is a little larger - by 1 for a whole number, which does not
+    grow, so that it stays whole."""
+    step = 1.0 if slope == 0.0 else 0.1
+
+    def part(name, equation_of):
+        element = model.converter("{}_{}".format(tag, name))
+        if arrayed:
+            element.setup_vector(2, [0.0, 0.0])
+            for cell, offset in enumerate((0.0, step)):
+                element[cell].equation = equation_of(value + offset)
+        else:
+            element.equation = equation_of(value)
+        return element
+
+    grow = lambda base: base + slope * sd.time()
+    if form == "sum":
+        return part("a", lambda v: grow(v - 1.0)) + part("b", lambda v: 1.0)
+    if form == "difference":
+        return part("a", lambda v: grow(v + 1.0)) - part("b", lambda v: 1.0)
+    if form == "negation":
+        return -part("a", lambda v: -grow(v))
+    return part("a", lambda v: grow(v) * 2.0) / part("b", lambda v: 2.0)
+
+
+def _compound_cases():
+    for name in _compound_functions():
+        if name not in COMPOUND_BASE:
+            continue
+        for position, entry in enumerate(COMPOUND_BASE[name]):
+            if entry is COMPOUND_MODEL or _compound_kind(entry) == COMPOUND_FIXED:
+                continue
+            for form in COMPOUND_FORMS:
+                for place in COMPOUND_PLACES:
+                    yield pytest.param(name, position, form, place, id="{}-{}-{}-{}".format(name, position, form, place))
+
+
+def _compound_build(name, position, form, place):
+    model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="{}_{}_{}_{}".format(name, position, form, place))
+    arguments = []
+    for index, entry in enumerate(COMPOUND_BASE[name]):
+        if entry is COMPOUND_MODEL:
+            arguments.append(model)
+        elif index == position:
+            slope = 0.0 if _compound_kind(entry) == COMPOUND_WHOLE else COMPOUND_SLOPE
+            arguments.append(_compound_expression(model, form, _compound_value(entry), slope, place == "arrayed", "x"))
+        elif _compound_kind(entry) == COMPOUND_ELEMENT:
+            element = model.converter("input_{}".format(index))
+            element.equation = _compound_value(entry) + COMPOUND_SLOPE * sd.time()
+            arguments.append(element)
+        else:
+            arguments.append(_compound_value(entry))
+    expression = getattr(sd, name)(*arguments)
+    if place == "stock":
+        target = model.stock("target")
+        target.initial_value = 1.0
+    else:
+        target = model.converter("target")
+    target.equation = expression
+    return model, target
+
+
+def _compound_leaves(element):
+    if element._elements.vector_size() == 0:
+        return [element.name]
+    return [name for key in element._elements.equations for name in _compound_leaves(element[key])]
+
+
+class TestParityCompoundOperands:
+    """Python-vs-Rust parity with a compound expression in every argument position.
+    
+    The other parity tests fill an argument with a single element, and four times in 3.4.0 a
+    Python term lost something only a compound operand shows: the parentheses of a
+    subtraction, of a power, of a delay's duration, and the time at which `lookup` read its
+    input. Rust was right each time.
+    
+    So this file takes every function of `sd_functions` and every binary operator, and fills
+    one argument position at a time with each of four compound forms - a sum, a difference,
+    a negation and a quotient. Each form has the value the position needs and grows a little
+    with time, so that reading it at `t` instead of `t - dt` shows. Each case runs in three
+    places: a converter's equation, a stock's equation - where the term is rendered at
+    `t - dt` - and, where the function takes arrays, as an arrayed operand.
+    
+    The list of functions is not written here: it is read from `sd_functions`. A function
+    that is neither in `COMPOUND_BASE` nor in `COMPOUND_NOT_COMPARED` fails `test_every_function_is_covered`.
+    """
+
+    def test_every_function_is_covered(self):
+        """A new function has to be given arguments here, or a reason it is not compared."""
+        missing = [name for name in _compound_functions() if name not in COMPOUND_BASE and name not in COMPOUND_NOT_COMPARED]
+        stale = [name for name in list(COMPOUND_BASE) + list(COMPOUND_NOT_COMPARED) if name not in _compound_functions()]
+        assert missing == [] and stale == [], "missing: {}, no longer a function: {}".format(missing, stale)
+
+
+
+    def test_every_binary_operator_is_covered(self):
+        tabled = {entry[0] for entry in json_serializer._BINARY_OPERATORS}
+        uncovered = tabled - set(COMPOUND_BINARY) - set(COMPOUND_ELSEWHERE)
+        assert uncovered == set(), sorted(cls.__name__ for cls in uncovered)
+
+    @pytest.mark.parametrize("name, position, form, place", list(_compound_cases()))
+
+    def test_a_compound_argument(self, name, position, form, place):
+        refused = COMPOUND_REFUSED.get((name, position))
+        if refused is not None:
+            with pytest.raises((ops.OperatorError, Exception), match=refused):
+                _compound_build(name, position, form, place)
+            return
+        model, target = _compound_build(name, position, form, place)
+        gap = COMPOUND_ENGINE_GAPS.get((name, position, place))
+        if gap is not None:
+            with pytest.raises(RuntimeError, match="less than half of dt"):
+                run_parity(model, _compound_leaves(target), atol=1e-9)
+            return
+        run_parity(model, _compound_leaves(target), atol=1e-9)
+
+    @pytest.mark.parametrize("operation", list(COMPOUND_BINARY.values()), ids=lambda o: o.__name__)
+
+    @pytest.mark.parametrize("side", ("left", "right"))
+
+    @pytest.mark.parametrize("form", COMPOUND_FORMS)
+
+    @pytest.mark.parametrize("place", COMPOUND_PLACES)
+
+    def test_a_compound_operand(self, operation, side, form, place):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="operand")
+        compound = _compound_expression(model, form, 2.0, COMPOUND_SLOPE, place == "arrayed", "x")
+        other = model.converter("other")
+        other.equation = 1.5 + COMPOUND_SLOPE * sd.time()
+        expression = operation(compound, other) if side == "left" else operation(other, compound)
+        target = model.stock("target") if place == "stock" else model.converter("target")
+        target.equation = expression
+        run_parity(model, _compound_leaves(target))
+
+    @pytest.mark.parametrize("comparison", COMPOUND_COMPARISONS, ids=lambda o: o.__name__)
+
+    @pytest.mark.parametrize("form", COMPOUND_FORMS)
+
+    @pytest.mark.parametrize("place", COMPOUND_PLACES)
+
+    def test_conditions_with_compound_sides(self, comparison, form, place):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="conditions")
+        left = _compound_expression(model, form, 2.0, COMPOUND_SLOPE, place == "arrayed", "x")
+        condition = comparison(left, 2.02)
+        other = model.converter("other")
+        other.equation = 1.0
+        expression = sd.If(sd.And(condition, sd.Not(sd.Or(condition, other < 0.0))), left * 2.0, left - 1.0)
+        target = model.stock("target") if place == "stock" else model.converter("target")
+        target.equation = expression
+        run_parity(model, _compound_leaves(target))
+
+    @pytest.mark.parametrize("side", ("left", "right"))
+
+    @pytest.mark.parametrize("form", COMPOUND_FORMS)
+
+    @pytest.mark.parametrize("place", COMPOUND_PLACES)
+
+    def test_a_number_and_a_compound(self, side, form, place):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="number")
+        compound = _compound_expression(model, form, 2.0, COMPOUND_SLOPE, place == "arrayed", "x")
+        expression = 3.0 * compound if side == "left" else compound * 3.0
+        target = model.stock("target") if place == "stock" else model.converter("target")
+        target.equation = expression
+        run_parity(model, _compound_leaves(target))

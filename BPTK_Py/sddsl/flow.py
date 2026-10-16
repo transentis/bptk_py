@@ -34,6 +34,12 @@ class Flow(Element):
 
     @equation.setter
     def equation(self, equation):
+        conveyor = getattr(self, "_conveyor", None)
+        if conveyor is not None and equation is not None:
+            from .element import ElementError
+            raise ElementError(
+                "'{}' is driven by conveyor '{}', which computes its value. Take it out of "
+                "the conveyor's outflows or leaks to give it an equation.".format(self.name, conveyor.name))
         if not self._handle_arrayed(equation):
             self._equation = equation
         self.model.reset_cache()
@@ -43,4 +49,16 @@ class Flow(Element):
     def build_function_string(self):
         from .operators import Operator
         right_term = self._equation.term("t-model.dt") if type(self._equation) is Operator else self._equation
-        self._function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative
+        driven_by = getattr(self, "_driven_by", None)
+        if driven_by is not None:
+            self._function_string = "lambda model, t : model.stocks['{}']._driven('{}', t)".format(
+                driven_by, self.name)
+            return
+        constraint = getattr(self, "_constraint", None)
+        if constraint is None:
+            self._function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative
+            return
+        # An outflow of a non-negative stock is cut back by the stock it leaves.
+        wanted = "max(0, {})".format(0 if right_term is None else right_term)
+        self._function_string = "lambda model, t : model.stocks['{}']._cut_back('{}', {}, t)".format(
+            constraint, self.name, wanted)

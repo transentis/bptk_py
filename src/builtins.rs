@@ -24,6 +24,10 @@ impl SdModel {
         if matches!(self.entities[entity].kind, EntityKind::Stock { .. }) {
             return true;
         }
+        // A stock's equation is evaluated after every non-stock of the step
+        if matches!(self.entities[state.current_entity()].kind, EntityKind::Stock { .. }) {
+            return true;
+        }
         let position = |idx| self.eval_order.iter().position(|&e| e == idx);
         match (position(entity), position(state.current_entity())) {
             (Some(input), Some(current)) => input < current,
@@ -68,6 +72,7 @@ impl SdModel {
             BuiltinFn::Arctan => unary(f64::atan),
             BuiltinFn::Floor => unary(f64::floor),
             BuiltinFn::Ceil => unary(f64::ceil),
+            BuiltinFn::Trunc => unary(f64::trunc),
             BuiltinFn::Round => {
                 let v = self.eval_expr(&args[0], state, step);
                 if args.len() > 1 {
@@ -359,10 +364,13 @@ impl SdModel {
                 let stddev = self.eval_expr(&args[1], state, step);
                 if !mean.is_finite() || !stddev.is_finite() {
                     f64::NAN
-                } else if stddev < 0.0 {
+                } else if mean <= 0.0 || stddev < 0.0 {
                     self.rejected(state, step, "lognormal", &[mean, stddev])
                 } else {
-                    LogNormalDist::new(mean, stddev)
+                    // XMILE's mean and stddev are those of the distribution itself; the
+                    // sampler takes the normal distribution underneath.
+                    let variance = (stddev / mean).powi(2).ln_1p();
+                    LogNormalDist::new(mean.ln() - variance / 2.0, variance.sqrt())
                         .map_or(f64::NAN, |d| d.sample(&mut *state.rng()))
                 }
             }

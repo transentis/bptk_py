@@ -1,5 +1,5 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: The array functions of the SD DSL - sum, product, rank, mean, median, standard deviation, maximum, minimum, size and dot
+# description: The array functions of the SD DSL - sum, product, rank, mean, median, standard deviation, maximum, minimum, size and dot, along one dimension or over the whole, and interpolate
 # keywords: system dynamics, systemdynamics, sd dsl, arrays, bptk, bptk-py, python, business simulation
 import marimo
 
@@ -97,7 +97,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Calculates the element-wise product of an array.
+    Calculates the element-wise product of an array. A product is Stella's `PROD`; the XMILE standard has none.
     """)
     return
 
@@ -676,8 +676,8 @@ def _(mo):
     * The operands are paired **by label, not by position**, so the two may list their
       labels in a different order.
     * A named matrix has to carry **the same column labels in every row**. A matrix whose
-      rows carry different labels is legal everywhere else, but here there would be no
-      single axis to sum over.
+      rows carry different labels can be computed with, but here there would be no single
+      axis to sum over.
     * A named array **cannot be multiplied with an unnamed one** - there is nothing for the
       labels to line up against.
 
@@ -933,6 +933,7 @@ def _(dot_matrix_one, model, dot_vector_left):
 def _(mo):
     mo.md(r"""
     \begin{equation*}
+    \begin{aligned}
     \begin{pmatrix}
     1.0 & 2.0 & 3.0 \\
     \end{pmatrix}
@@ -942,15 +943,16 @@ def _(mo):
     3.0 & 4.0 \\
     5.0 & 6.0 \\
     \end{pmatrix}
-    =
+    & =
     \begin{pmatrix}
     1.0 \cdot 1.0 + 2.0 \cdot 3.0 + 3.0 \cdot 5.0 \\
     1.0 \cdot 2.0 + 2.0 \cdot 4.0 + 3.0 \cdot 6.0 \\
-    \end{pmatrix}
-    =
+    \end{pmatrix} \\
+    & =
     \begin{pmatrix}
     22.0 & 28.0
     \end{pmatrix}
+    \end{aligned}
     \end{equation*}
     """)
     return
@@ -1226,6 +1228,171 @@ def _(dot_result_named_matrices, mo):
 
     mo.plain_text(captured_named_matrices.getvalue())
     return
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Aggregating Along One Dimension
+
+    Every aggregation takes an optional `over`. Without it, it takes every entry and returns one number. With it, it aggregates a matrix along one dimension and returns a vector: `over=1` one value per row, `over=0` one value per column - XMILE's `SUM(A[M, *])`:
+    """)
+    return
+
+@app.cell
+def _(model):
+    sales = model.converter('sales')
+    sales.setup_named_matrix({'boston': {'q1': 10.0, 'q2': 20.0}, 'nyc': {'q1': 30.0, 'q2': 40.0}})
+    sales_per_city = model.converter('sales_per_city')
+    sales_per_city.equation = sales.arr_sum(over=1)
+    best_quarter = model.converter('best_quarter')
+    best_quarter.equation = sales.arr_max(over=0)
+    return best_quarter, sales, sales_per_city
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{aligned}
+    \text{sales} & = \begin{pmatrix}
+    \text{'boston'}: & \{\text{'q1'}: 10.0,\; \text{'q2'}: 20.0\} \\
+    \text{'nyc'}: & \{\text{'q1'}: 30.0,\; \text{'q2'}: 40.0\}
+    \end{pmatrix} \\[1ex]
+    \text{sales.arr\_sum(over=1)} & = \begin{pmatrix} \text{'boston'}: & 30.0 \\ \text{'nyc'}: & 70.0 \end{pmatrix} \\[1ex]
+    \text{sales.arr\_max(over=0)} & = \begin{pmatrix} \text{'q1'}: & 30.0 \\ \text{'q2'}: & 40.0 \end{pmatrix}
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+@app.cell
+def _(best_quarter, mo, sales_per_city):
+    with mo.capture_stdout() as captured_over:
+        print("sales_per_city:", [sales_per_city[city](1) for city in ('boston', 'nyc')])
+        print("best_quarter:  ", [best_quarter[quarter](1) for quarter in ('q1', 'q2')])
+
+    mo.plain_text(captured_over.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Aggregating Parts and Expressions
+
+    An aggregation takes any array, not only an arrayed element: a part of one, or an expression. XMILE writes `SUM(sales[boston, *])` and `SUM(price * quantity)`:
+    """)
+    return
+
+@app.cell
+def _(model, sales):
+    boston_total = model.converter('boston_total')
+    boston_total.equation = sales['boston', :].arr_sum()
+    weighted = model.converter('weighted')
+    weighted.equation = (sales * 0.5).arr_sum()
+    return boston_total, weighted
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{aligned}
+    \text{sales['boston', :].arr\_sum()} & = 10.0 + 20.0 = 30.0 \\[1ex]
+    \text{(sales * 0.5).arr\_sum()} & = 0.5 \cdot (10.0 + 20.0 + 30.0 + 40.0) = 50.0
+    \end{aligned}
+    \end{equation*}
+    """)
+    return
+
+
+@app.cell
+def _(boston_total, mo, weighted):
+    with mo.capture_stdout() as captured_parts:
+        print("boston_total:", boston_total(1))
+        print("weighted:    ", weighted(1))
+
+    mo.plain_text(captured_parts.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## XMILE's RANK
+
+    `sd.rank(array, r, tiebreak=None)` is XMILE's `RANK`: the **position** of the `r`-th smallest entry of a vector, counting from 0 - not the entry itself, which is what `arr_rank` returns. Entries of equal value are ordered by `tiebreak`, a vector of the same size, and then by position. A matrix is ranked by a row or a column, as in `sd.rank(sales[:, 'q1'], 1)`; an `r` outside the vector gives NaN.
+    """)
+    return
+
+@app.cell
+def _(model, sd):
+    bids = model.converter('bids')
+    bids.setup_vector(4, [6.0, 2.0, 8.0, 5.0])
+    second_lowest = model.converter('second_lowest')
+    second_lowest.equation = sd.rank(bids, 2)
+    return (second_lowest,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \text{rank}\left(\begin{pmatrix} 6.0 & 2.0 & 8.0 & 5.0 \end{pmatrix}, 2\right) = 3
+    \end{equation*}
+
+    The second smallest bid, 5.0, stands at position 3. Stella counts from 1 and says 4.
+    """)
+    return
+
+@app.cell
+def _(mo, second_lowest):
+    with mo.capture_stdout() as captured_rank:
+        print(second_lowest(1))
+
+    mo.plain_text(captured_rank.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Interpolate
+
+    `sd.interpolate(array, w1, w2)` is Stella's `INTERPOLATE`: a value between the entries of an array, with one weight per dimension. A weight of 0 is the first entry of its dimension, 1 the last, and between them the value is interpolated linearly - for a matrix first along the columns, then along the rows. Weights outside 0 to 1 are held at the ends.
+    """)
+    return
+
+@app.cell
+def _(model, sd):
+    grid = model.converter('grid')
+    grid.setup_matrix([2, 3], [[0.0, 2.0, 4.0], [8.0, 6.0, 5.0]])
+    between = model.converter('between')
+    between.equation = sd.interpolate(grid, 0.75, 0.25)
+    return (between,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \text{interpolate}\left(\begin{pmatrix} 0.0 & 2.0 & 4.0 \\ 8.0 & 6.0 & 5.0 \end{pmatrix}, 0.75, 0.25\right) = 5.5
+    \end{equation*}
+
+    A quarter of the way along the columns the rows read 1.0 and 7.0; three quarters of the way from the first row to the second gives 5.5.
+
+    `sd.rank` and `sd.interpolate` run on the Python engine only for now; the aggregations, also along one dimension, run on both.
+    """)
+    return
+
+@app.cell
+def _(between, mo):
+    with mo.capture_stdout() as captured_interpolate:
+        print(between(1))
+
+    mo.plain_text(captured_interpolate.getvalue())
+    return
+
 
 if __name__ == "__main__":
     app.run()

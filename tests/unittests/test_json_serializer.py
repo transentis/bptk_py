@@ -103,6 +103,90 @@ class TestJsonSerializerEdgeCases(unittest.TestCase):
 
 
 
+class TestNonNegativeStockSerialization(unittest.TestCase):
+    def test_a_non_negative_stock_raises_by_name(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="non_negative")
+        stock = model.stock("store")
+        outflow = model.flow("sales")
+        outflow.equation = 1.0
+        stock.outflows = [outflow]
+        stock.non_negative = True
+
+        with self.assertRaisesRegex(ValueError, "Stock 'store' is non-negative"):
+            model_to_json(model)
+
+    def test_an_arrayed_non_negative_stock_raises_by_cell(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="arrayed_non_negative")
+        stock = model.stock("store")
+        stock.setup_vector(2, [1.0, 1.0])
+        outflow = model.flow("sales")
+        outflow.setup_vector(2, [1.0, 1.0])
+        stock.outflows = [outflow]
+        stock.non_negative = True
+
+        with self.assertRaisesRegex(ValueError, r"Stock 'store\[0\]' is non-negative"):
+            model_to_json(model)
+
+    def test_flow_lists_alone_serialize(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="lists")
+        stock = model.stock("store")
+        outflow = model.flow("sales")
+        outflow.equation = 1.0
+        stock.outflows = [outflow]
+
+        stocks = json.loads(model_to_json(model))["entities"]["stocks"]
+
+        self.assertEqual(stocks[0]["name"], "store")
+
+
+class TestArrayExpressionSerialization(unittest.TestCase):
+    def test_an_array_expression_as_a_whole_raises(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="lines")
+        vector = model.constant("vector")
+        vector.setup_vector(2, [1.0, 2.0])
+
+        with self.assertRaisesRegex(ValueError, "array expression as one value"):
+            _expr_to_json(vector[0:1])
+
+
+class TestConveyorSerialization(unittest.TestCase):
+    def _model(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="conveyor")
+        belt = model.conveyor("belt")
+        belt.transit_time = 2
+        belt.outflows = [model.flow("out")]
+        return model, belt
+
+    def test_a_conveyor_raises_by_name(self):
+        model, _ = self._model()
+
+        with self.assertRaisesRegex(ValueError, "'belt' is a conveyor"):
+            model_to_json(model)
+
+    def test_agecount_raises_by_name(self):
+        model, belt = self._model()
+        model.converter("young").equation = sd.agecount(belt, 0, 1)
+        with self.assertRaisesRegex(ValueError, "'agecount' does not run on the Rust engine"):
+            _expr_to_json(model.converters["young"].equation)
+
+
+class TestSeededSerialization(unittest.TestCase):
+    def test_a_random_function_with_a_seed_raises_by_name(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="seeded")
+        model.converter("draw").equation = sd.normal(10.0, 2.0, seed=1)
+
+        with self.assertRaisesRegex(ValueError, "'normal' with a seed"):
+            model_to_json(model)
+
+    def test_without_a_seed_it_serializes_as_before(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="unseeded")
+        model.converter("draw").equation = sd.normal(10.0, 2.0)
+
+        converters = json.loads(model_to_json(model))["entities"]["converters"]
+
+        self.assertEqual(converters[0]["equation"]["function"], "normal")
+
+
 class TestArrayedSerialization(unittest.TestCase):
     """Arrayed models reach the Rust engine.
 
@@ -442,6 +526,21 @@ class TestCustomFunctionSerialization(unittest.TestCase):
         self.assertIn("total", message)
         self.assertIn("elementwise=False", message)
 
+    def test_a_function_the_engine_does_not_run_yet_raises_by_name(self):
+        from BPTK_Py.sddsl import json_serializer
+
+        class Pending(ops.Function):
+            def term(self, time="t"):
+                return "0.0"
+
+        out = self.model.converter("out")
+        out.equation = Pending()
+
+        with unittest.mock.patch.object(json_serializer, "_NOT_ON_THE_ENGINE",
+                                        ((Pending, "pending"),)):
+            with self.assertRaisesRegex(ValueError, "'pending' does not run on the Rust engine"):
+                model_to_json(self.model)
+
     def test_a_call_site_the_function_cannot_accept_raises(self):
         self.model.function("two", lambda model, t, x, y: x + y)
         source = self.model.converter("source")
@@ -557,7 +656,8 @@ def test_concurrent_serializations_do_not_interleave():
 _RENDERED_BY_CODE = {
     "UnaryOperator", "ArrayRankOperator", "ArraySizeOperator", "DotOperator",
     "ComparisonOperator", "If", "Not", "Lookup", "Smooth", "Trend", "Delay", "Invnorm",
-    "NaryOperator",
+    "SmoothN", "MaterialDelay", "Forecast", "Npv",
+    "NaryOperator", "ArrayLines",
 }
 
 
@@ -574,7 +674,8 @@ def _concrete_operator_classes():
 
 def _tabled_operators():
     from BPTK_Py.sddsl import json_serializer as js
-    return {entry[0].__name__ for table in (js._AGGREGATIONS, js._BINARY_OPERATORS, js._CALLS)
+    return {entry[0].__name__
+            for table in (js._AGGREGATIONS, js._BINARY_OPERATORS, js._CALLS, js._NOT_ON_THE_ENGINE)
             for entry in table}
 
 

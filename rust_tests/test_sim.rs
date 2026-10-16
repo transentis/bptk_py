@@ -672,3 +672,25 @@ fn test_a_short_delay_outside_a_loop_reads_the_current_step() {
     let results = model.simulate(&["d".to_string()], None).unwrap();
     assert_eq!(results["d"]["2.0"], 2.0);
 }
+
+#[test]
+fn test_a_short_delay_in_a_stocks_equation_reads_the_current_step() {
+    // A stock's equation comes after every non-stock of the step, so its input is there.
+    let model = parse_json(r#"{
+        "name": "short_in_stock",
+        "specs": { "starttime": 0.0, "stoptime": 4.0, "dt": 1.0 },
+        "entities": {
+            "stocks": [
+                { "name": "level", "initial_value": { "type": "literal", "value": 0.0 },
+                  "equation": { "type": "call", "function": "delay", "args": [
+                    { "type": "ref", "name": "src" }, { "type": "literal", "value": 0.0 },
+                    { "type": "literal", "value": 0.0 } ] } }
+            ],
+            "converters": [
+                { "name": "src", "equation": { "type": "call", "function": "time", "args": [] } }
+            ]
+        }
+    }"#).unwrap();
+    let results = model.simulate(&["level".to_string()], None).unwrap();
+    assert_eq!(results["level"]["4.0"], 6.0);
+}

@@ -120,6 +120,7 @@ pub enum BuiltinFn {
     Round,
     Floor,
     Ceil,
+    Trunc,
     Pi,
     // Control
     Step,

@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.3.0"
+version = "3.4.0"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,

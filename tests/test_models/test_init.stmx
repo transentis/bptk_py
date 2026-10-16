@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>test_init</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months">
+		<start>0</start>
+		<stop>5</stop>
+		<dt>0.5</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="source">
+				<eqn>TIME + 3</eqn>
+			</aux>
+			<aux name="init_time">
+				<eqn>INIT(TIME * 2 + 1)</eqn>
+			</aux>
+			<aux name="init_variable">
+				<eqn>INIT(source) * 10</eqn>
+			</aux>
+			<aux name="init_in_expression">
+				<eqn>TIME - INIT(TIME)</eqn>
+			</aux>
+		</variables>
+	</model>
+</xmile>

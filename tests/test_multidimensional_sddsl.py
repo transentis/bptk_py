@@ -363,6 +363,9 @@ FUNCTIONS = [
     Case("floor", lambda v, s, w: sd.floor(v / 7.0),
          lambda v, s, w, k, sh: sd.floor(leaf_of(v, k, sh) / 7.0),
          lambda x, s, y: float(math.floor(x / 7.0))),
+    Case("trunc", lambda v, s, w: sd.trunc(v / 7.0 - 5.0),
+         lambda v, s, w, k, sh: sd.trunc(leaf_of(v, k, sh) / 7.0 - 5.0),
+         lambda x, s, y: float(math.trunc(x / 7.0 - 5.0))),
     Case("ceil", lambda v, s, w: sd.ceil(v / 7.0),
          lambda v, s, w, k, sh: sd.ceil(leaf_of(v, k, sh) / 7.0),
          lambda x, s, y: float(math.ceil(x / 7.0))),
@@ -514,8 +517,10 @@ def py_smooth(x, t=STATEFUL_T, averaging_time=SMOOTH_AVERAGING_TIME,
 
 
 def py_trend(x, t=STATEFUL_T, averaging_time=SMOOTH_AVERAGING_TIME,
-             initial=STATEFUL_INITIAL, dt=STATEFUL_DT):
-    """The fractional gap between the input and its smoothed value."""
+             initial_trend=STATEFUL_INITIAL, dt=STATEFUL_DT):
+    """The fractional gap between the input and its smoothed value. The smoothed value
+    starts where the initial trend puts it, as in XMILE: x / (1 + trend * averaging time)."""
+    initial = x / (1.0 + initial_trend * averaging_time)
     smoothed = py_smooth(x, t, averaging_time, initial, dt)
     return (x - smoothed) / (smoothed * averaging_time)
 
@@ -789,13 +794,14 @@ class TestCompositionAndOtherFunctions:
             assert incoming["a"](t) == pytest.approx(4.0 * (t - 3))
             assert incoming["b"](t) == pytest.approx(9.0 * (t - 1))
 
-    def test_delay_still_insists_on_a_model_element(self):
-        """A restriction of `sd.delay` itself, not of arrays - and it says so."""
+    def test_delay_takes_an_arrayed_expression(self):
         model, v = self._model()
+        grows = model.converter("grows")
+        grows.equation = v * sd.time()
         target = model.converter("target")
-        with pytest.raises(OperatorError, match="must be a model element"):
-            target.equation = sd.delay(model, v * 2.0, 2.0, 1.0)
-
+        target.equation = sd.delay(model, grows * 2.0, 2.0, 1.0)
+        assert [target["a"](t) for t in range(5)] == pytest.approx([1.0, 1.0, 0.0, 8.0, 16.0])
+        assert target["b"](4) == pytest.approx(36.0)
 
 class TestAggregations:
     """Only what `test_sddsl.py` does not already check against numpy.
@@ -1098,13 +1104,30 @@ class TestNamedDot:
                                    "b": {"b1": 3.0, "b2": 4.0}})
         target = model.converter("target")
 
-        with pytest.raises(Exception, match="same column labels in every row"):
+        with pytest.raises(Exception, match="same column labels in every row for a dot product"):
             target.equation = ragged.dot(products)
 
         scaled = model.converter("scaled")
         scaled.equation = factor.dot(ragged)
         assert scaled["a"]["a1"](1) == pytest.approx(2.0)
         assert scaled["b"]["b2"](1) == pytest.approx(8.0)
+
+    @pytest.mark.parametrize("operation, build", [
+        ("to take a part of it", lambda ragged: ragged["a":"b"]),
+        ("to take a part of it", lambda ragged: ragged[:, "a1"]),
+        ("to transpose it", lambda ragged: ragged.transpose()),
+        (r"for arr_sum\(over=0\)", lambda ragged: ragged.arr_sum(over=0)),
+        (r"for arr_max\(over=0\)", lambda ragged: ragged.arr_max(over=0)),
+    ])
+    def test_row_specific_column_labels_name_the_operation(self, operation, build):
+        """The same rule outside the product: the message names what needed the labels."""
+        model = Model(starttime=0, stoptime=1, dt=1)
+        ragged = model.constant("ragged")
+        ragged.setup_named_matrix({"a": {"a1": 1.0, "a2": 2.0},
+                                   "b": {"b1": 3.0, "b2": 4.0}})
+
+        with pytest.raises(Exception, match="same column labels in every row " + operation):
+            build(ragged)
 
 
 class TestDimensionSelector:

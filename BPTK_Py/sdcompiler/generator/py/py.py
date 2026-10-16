@@ -244,16 +244,18 @@ def previous(*args):
     pattern_t = r"\(?\,? ([t+\-]+)\)"
     body = re.sub(pattern_t, ",t-self.dt)", body)
 
-    if initial:
+    if initial is not None:
         return '((' + str(initial) + ') if t <= self.starttime else (' + body + '))'
 
     return body
 
 def ramp_(*args):
-    args = remove_nesting(args)
+    args = [a for a in remove_nesting(args) if a not in (",", ", ")]
     slope = parseExpression(args[0])
     start = "None" if len(args)==1 else parseExpression(args[1])
-    return "( self.ramp({},{},t ) )".format(slope,start)
+    # After the end time the ramp holds the value it reached there
+    until = "t" if len(args) < 3 else "min(t, {})".format(parseExpression(args[2]))
+    return "( self.ramp({},{},{} ) )".format(slope,start,until)
 
 def delay(*args):
     args = remove_nesting(args)
@@ -397,6 +399,24 @@ def lognormal_(*args):
     return '(np.random.lognormal({}, {}) )'.format(mean, stdev)
 
 
+def lookuparea_(*args):
+    # The area under the table between two x values, from its start up to one, or under
+    # all of it; exact, since the table is linear between its points. Reversed bounds
+    # turn the sign.
+    args = [a for a in remove_nesting(args) if a not in (",", ", ")]
+    points = "self.points[\"{}\"]".format(args[0]["name"])
+    lower = parseExpression(args[1]) if len(args) > 2 else "{}[0][0]".format(points)
+    upper = (parseExpression(args[-1]) if len(args) > 1 else "{}[-1][0]".format(points))
+    return ("((lambda p, a, b: (1.0 if a <= b else -1.0) * (lambda xs: sum((x1 - x0) * (LERP(x0, p) + LERP(x1, p)) / 2.0 "
+            "for x0, x1 in zip(xs, xs[1:])))([min(a, b)] + [x for x, _ in p if min(a, b) < x < max(a, b)] + [max(a, b)]))"
+            "({}, {}, {}))").format(points, lower, upper)
+
+def invnorm_(*args):
+    args = [a for a in remove_nesting(args) if a not in (",", ", ")]
+    mean = parseExpression(args[1]) if len(args) > 1 else 0
+    sigma = parseExpression(args[2]) if len(args) > 2 else 1
+    return "(norm.ppf({}, {}, {}))".format(parseExpression(args[0]), mean, sigma)
+
 def normalcdf_(*args):
     args = remove_nesting(args)
     left = parseExpression(args[0])
@@ -404,7 +424,8 @@ def normalcdf_(*args):
     mean = 0 if len(args) <= 2 else parseExpression(args[2])
     sigma = 1 if len(args) <= 3 else parseExpression(args[3])
 
-    return "(self.normalcdf({},{},{},{}) )".format(left, right, mean, sigma)
+    # Unrounded: the runtime's normalcdf rounds to three digits
+    return "(norm.cdf({1}, {2}, {3}) - norm.cdf({0}, {2}, {3}))".format(left, right, mean, sigma)
 
 def random_(*args):
     args = remove_nesting(args)
@@ -617,10 +638,10 @@ def safediv_(*args):
     onzero = None if len(args) ==2 else parseExpression(args[2])
 
     if onzero is not None:
-        return "(( "+ str(onzero) + ")" + ' if (' + str(denominator) + ') == 0 else (' + str(nominator) + ' / ' + str(denominator) + "))"
+        return "(( "+ str(onzero) + ")" + ' if (' + str(denominator) + ') == 0 else ((' + str(nominator) + ') / (' + str(denominator) + ")))"
     else:
-        return "((0)" + ' if (' + str(denominator) + ') == 0 else (' + str(nominator) + ' / ' + str(
-            denominator) + "))"
+        return "((0)" + ' if (' + str(denominator) + ') == 0 else ((' + str(nominator) + ') / (' + str(
+            denominator) + ")))"
 
 def history_(*args):
     args = remove_nesting(args)
@@ -634,9 +655,10 @@ def history_(*args):
     name = args[0]["name"]
 
     t = parseExpression(args[1])
+    # 0 for a time before the start or after the current one, as in Stella
     if "self.memoize" in t:
-        return "self.memoize(\"{}\",\' {} \')".format(name,t)
-    return "self.memoize(\"{}\", {})".format(name,t)
+        return "(self.memoize(\"{0}\",\' {1} \') if self.starttime <= ({1}) <= t else 0)".format(name,t)
+    return "(self.memoize(\"{0}\", {1}) if self.starttime <= ({1}) <= t else 0)".format(name,t)
 
 def rank_(*args):
     args = remove_nesting(args)
@@ -706,47 +728,40 @@ def counter_(*args):
 
 ''' Financial Builtins '''
 def npv_(*args):
-    args = remove_nesting(args)
-    initial = parseExpression(args[0])
-    p = parseExpression(args[1])
-    return "self.npv({},{},t)".format(initial,p)
+    args = [a for a in remove_nesting(args) if a not in (",", ", ")]
+    stream = "(lambda t: {})".format(parseExpression(args[0]))
+    rate = "(lambda t: {})".format(parseExpression(args[1]))
+    start = "{}(self.starttime)".format(stream if len(args) < 3 else
+                                        "(lambda t: {})".format(parseExpression(args[2])))
+    # A stock that starts at the initial value, or at the stream, and takes in each step
+    # the stream of that step discounted by 1 / (1 + rate)^(TIME - STARTTIME + DT)
+    return ("({start} + sum(self.dt * {stream}(k) / (1.0 + {rate}(k)) ** (k - self.starttime + self.dt) "
+            "for k in np.arange(self.starttime, t - self.dt / 2, self.dt)))").format(
+        start=start, stream=stream, rate=rate)
+
+def _annuity(args):
+    # rate, periods, an amount and the optional other amount; the growth over the periods
+    args = [a for a in remove_nesting(args) if a not in (",", ", ")]
+    rate, periods, amount = (parseExpression(a) for a in args[:3])
+    other = parseExpression(args[3]) if len(args) > 3 else 0
+    return rate, periods, amount, other, "((1.0 + ({})) ** ({}))".format(rate, periods)
+
+# Signed as in a spreadsheet, and as the SD DSL's pmt, fv and pv
 
 def pmt_(*args):
-    args = remove_nesting(args)
-    p = parseExpression(args[0])
-    n = parseExpression(args[1])
-    C = parseExpression(args[2])
-    fv = parseExpression(args[3])
-
-    if fv == "0" or fv == 0:
-        return "( -{} * ( ( 1+ {})**{}*{}) / ( ( 1+{})**{}-1) ) ".format(C,p,n,p,p,n)
-    print("PMT with Future Value argument not yet supported!")
-    return "0"
+    rate, n, pv, fv, growth = _annuity(args)
+    return "((-(({pv}) + ({fv})) / ({n})) if ({r}) == 0 else (-(({pv}) * {g} + ({fv})) * ({r}) / ({g} - 1.0)))".format(
+        pv=pv, fv=fv, n=n, r=rate, g=growth)
 
 def fv_(*args):
-    args = remove_nesting(args)
-    p = parseExpression(args[0])
-    n = parseExpression(args[1])
-    pmt = parseExpression(args[2])
-    pv = parseExpression(args[3])
-
-    if pv == "0" or pv == 0:
-        return "(-sum([ {}* (1 + {} ) **t for t in range(0, int( {}) )]) )".format(pmt,p,n)
-    print("FV with Present Value argument not yet supported!")
-    return "0"
+    rate, n, pmt, pv, growth = _annuity(args)
+    return "((-(({pv}) + ({pmt}) * ({n}))) if ({r}) == 0 else (-(({pv}) * {g} + ({pmt}) * ({g} - 1.0) / ({r}))))".format(
+        pv=pv, pmt=pmt, n=n, r=rate, g=growth)
 
 def pv_(*args):
-    args = remove_nesting(args)
-    p = parseExpression(args[0])
-    n = parseExpression(args[1])
-    pmt = parseExpression(args[2])
-    fv = parseExpression(args[3])
-
-    if fv == "0" or fv == 0:
-        return "(- ({} * ( 1 - (( 1+{})**(-{}))) / {}))".format(pmt, p, n , p)
-
-    print("PV with Future Value argument not yet supported!")
-    return "0"
+    rate, n, pmt, fv, growth = _annuity(args)
+    return "((-(({fv}) + ({pmt}) * ({n}))) if ({r}) == 0 else (-(({fv}) + ({pmt}) * ({g} - 1.0) / ({r})) / {g}))".format(
+        fv=fv, pmt=pmt, n=n, r=rate, g=growth)
 
 def irr_(*args):
     args = remove_nesting(args)
@@ -902,7 +917,9 @@ builtins = {
 
     # Data builtins
     # http://www.iseesystems.com/Helpv10/Content/Reference/Builtins/Data_builtins.htm
-    'init': lambda *args: parseExpression(args).replace(", t", ", self.starttime"),
+    # The whole argument at the start time: replacing ", t" reached the variables read in
+    # it, but not TIME itself, so INIT(TIME * 2) followed the clock
+    'init': lambda *args: "((lambda t: {})(self.starttime))".format(parseExpression(args)),
 
     'endval' : lambda *args : endval_(args),
 
@@ -956,7 +973,7 @@ builtins = {
 
     'poisson' : lambda *args : poisson_(args),
 
-    'invnorm' : lambda *args : "(norm.ppf({}))".format(parseExpression(remove_nesting(args)[0])),
+    'invnorm' : lambda *args : invnorm_(args),
 
     'permutations' : lambda *args : permutations_(args),# "( math.factorial( {} ) / math.factorial( {} - {} )   )".format(parseExpression(remove_nesting(args[0])),parseExpression(remove_nesting(args[0])),parseExpression(remove_nesting(args[1]))),# permutations_(args),
 
@@ -989,7 +1006,7 @@ builtins = {
 
     'lookupinv' : lambda *args : "( self.lookupinv(\"{}\", {}) )".format(remove_nesting(args)[0]["name"],parseExpression(remove_nesting(args)[1])),
 
-    'lookuparea' : lambda *args : "(np.trapezoid([LERP(  i , self.points[\"{}\"]) for i in np.arange(self.starttime,{} + self.dt,self.dt)], dx=self.dt)) ".format(remove_nesting(args)[0]["name"],parseExpression(remove_nesting(args)[1])),
+    'lookuparea' : lambda *args : lookuparea_(args),
 
     'ramp' : lambda *args : ramp_(args),
 

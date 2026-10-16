@@ -34,11 +34,15 @@ def _(mo):
 
     ## Contents
 
-    - [Writing Computational Essays Based on Simulation Models](./writing_computational_essays/writing_computational_essays.md)
     - [XMILE Step by Step](./xmile_step_by_step/xmile_step_by_step.md)
-    - [Exporting Simulation Results](./exporting_simulation_results/exporting_simulation_results.md)
     - [Working with Arrayed Variables in XMILE Models](./xmile_arrays/XMILE_arrays.md)
+    - [Exporting Simulation Results](./exporting_simulation_results/exporting_simulation_results.md)
+    - [Writing Computational Essays Based on Simulation Models](./writing_computational_essays/writing_computational_essays.md)
     - [Using the XMILE Compiler Standalone](./use_sd_compiler_standalone/use_sd_compiler_standalone.md)
+    - [XMILE in the SD DSL](./xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md): for every XMILE builtin, its SD DSL function, the engines that run it and whether the transpiler compiles it
+        - [Builtins Side by Side](./xmile_in_the_sd_dsl/builtins_side_by_side.md)
+        - [Built from Other Functions](./xmile_in_the_sd_dsl/built_from_other_functions.md)
+        - [Model Structure](./xmile_in_the_sd_dsl/model_structure.md)
     """)
     return
 

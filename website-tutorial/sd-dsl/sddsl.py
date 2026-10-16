@@ -32,6 +32,9 @@ def _(mo):
 
     - [A Simple Python Library For System Dynamics](./simple_python_library_sd_dsl/simple_python_library_sd_dsl.md)
     - [SD DSL Functions](./sd_dsl_functions/sd_dsl_functions.md)
+        - [Deterministic Functions](./sd_dsl_functions/sd_dsl_functions_deterministic.md)
+        - [Random Functions](./sd_dsl_functions/sd_dsl_functions_random.md)
+    - [Non-Negative Stocks, Biflows and Conveyors](./sd_dsl_stocks_and_flows/sd_dsl_stocks_and_flows.md)
     - [Creating User-defined Functions in SD Models](./sd_user_defined_functions/sd_user_defined_functions.md)
     - [SD DSL: Under The Hood](./sd_dsl_under_the_hood/sd_dsl_under_the_hood.md)
     - [Multidimensional SD DSL](./sd_dsl_multidimensional/sd_dsl_multidimensional.md)
@@ -41,6 +44,15 @@ def _(mo):
         - [A Simple Arrayed Model](./sd_dsl_multidimensional/sd_dsl_arrays_example.md)
     - [The Mathematics Underlying the SD DSL](./sd_dsl_mathematics/sd_dsl_mathematics.md)
     - [Working with XMILE](../xmile/xmile.md)
+        - [XMILE Step by Step](../xmile/xmile_step_by_step/xmile_step_by_step.md)
+        - [Working with Arrayed Variables in XMILE Models](../xmile/xmile_arrays/XMILE_arrays.md)
+        - [Exporting Simulation Results](../xmile/exporting_simulation_results/exporting_simulation_results.md)
+        - [Writing Computational Essays Based on Simulation Models](../xmile/writing_computational_essays/writing_computational_essays.md)
+        - [Using the XMILE Compiler Standalone](../xmile/use_sd_compiler_standalone/use_sd_compiler_standalone.md)
+        - [XMILE in the SD DSL](../xmile/xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md)
+            - [Builtins Side by Side](../xmile/xmile_in_the_sd_dsl/builtins_side_by_side.md)
+            - [Built from Other Functions](../xmile/xmile_in_the_sd_dsl/built_from_other_functions.md)
+            - [Model Structure](../xmile/xmile_in_the_sd_dsl/model_structure.md)
     """)
     return
 

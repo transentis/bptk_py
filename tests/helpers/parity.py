@@ -58,7 +58,8 @@ def run_parity(model, equations, atol=1e-10):
             assert key in rust_results[eq_name], \
                 f"Missing Rust key '{key}' for {eq_name}"
             rust_val = rust_results[eq_name][key]
-            assert py_val == pytest.approx(rust_val, abs=atol), \
+            # NaN on both sides is agreement - a root of a negative number, say
+            assert py_val == pytest.approx(rust_val, abs=atol, nan_ok=True), \
                 f"{eq_name} at t={t}: Python={py_val}, Rust={rust_val}"
 
     return py_results, rust_results

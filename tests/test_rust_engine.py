@@ -1252,9 +1252,9 @@ class TestParityTrend:
         # Python model
         py = Model(starttime=starttime, stoptime=stoptime, dt=dt, name="trend_py")
         py_input = py.converter("input_function")
-        py_input.equation = sd.step(10.0, 3.0)
+        py_input.equation = 5.0 + sd.step(10.0, 3.0)
         py_trend = py.converter("trend_out")
-        py_trend.equation = sd.trend(py, py_input, 2.0, 5.0)
+        py_trend.equation = sd.trend(py, py_input, 2.0, 0.1)
 
         # Rust model — decomposed trend entities
         engine = make_engine()
@@ -1263,7 +1263,9 @@ class TestParityTrend:
             "specs": {"starttime": starttime, "stoptime": stoptime, "dt": dt},
             "entities": {
                 "stocks": [
-                    {"name": "exp_avg", "initial_value": lit(5.0),
+                    {"name": "exp_avg", "initial_value":
+                        binop("div", ref("input_function"),
+                              binop("add", lit(1.0), binop("mul", lit(0.1), ref("averaging_time")))),
                      "equation": ref("change_in_avg")},
                 ],
                 "flows": [
@@ -1273,7 +1275,8 @@ class TestParityTrend:
                               ref("averaging_time"))},
                 ],
                 "converters": [
-                    {"name": "input_function", "equation": call("step", [lit(10.0), lit(3.0)])},
+                    {"name": "input_function", "equation":
+                        binop("add", lit(5.0), call("step", [lit(10.0), lit(3.0)]))},
                     {"name": "averaging_time", "equation": lit(2.0)},
                     {"name": "trend_out", "equation":
                         binop("div",
@@ -1310,7 +1313,9 @@ class TestParityTrend:
             "specs": {"starttime": starttime, "stoptime": stoptime, "dt": dt},
             "entities": {
                 "stocks": [
-                    {"name": "exp_avg", "initial_value": lit(1.0),
+                    {"name": "exp_avg", "initial_value":
+                        binop("div", ref("input_function"),
+                              binop("add", lit(1.0), binop("mul", lit(1.0), ref("averaging_time")))),
                      "equation": ref("change_in_avg")},
                 ],
                 "flows": [
@@ -2626,7 +2631,8 @@ class TestStochasticGuardsSmoke:
         self._run_nan(("exprnd", [lit(0.0)]), "exprnd_zero")
 
     def test_lognormal_negative_stddev(self):
-        self._run_nan(("lognormal", [lit(0.0), lit(-1.0)]), "lognorm_neg_std")
+        self._run_nan(("lognormal", [lit(1.0), lit(-1.0)]), "lognorm_neg_std")
+        self._run_nan(("lognormal", [lit(0.0), lit(1.0)]), "lognorm_zero_mean")
 
     def test_logistic_negative_scale(self):
         self._run_nan(("logistic", [lit(0.0), lit(-1.0)]), "logistic_neg_scale")

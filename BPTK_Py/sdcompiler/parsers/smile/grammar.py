@@ -55,18 +55,19 @@ class SMILEVisitor(NodeVisitor):
             return {"name": op.strip(), "type": 'operator', "args": [left, right]}
 
 
-    def visit_ComparisonExpression(self, node, visited_children):
-        try: # (Expression ComparisonOperator Expression) The most common case
-            left, op, right = visited_children[0]
-            args = [left, right]
-            return {"name": op.replace(" ","").lower(), "type": "operator", "args": args}
-        except:
-            #(Not "(" Expression ComparisonOperator Expression ")") --> NOT (x=10)
-            _ , _ , left , op , right , _ = visited_children[0]
-            args = [left, right]
-            ComparisonExpression = {"name": op.replace(" ","").lower(), "type": "operator", "args": args}
+    def visit_BooleanTerm(self, node, visited_children):
+        if type(visited_children[0]) is dict:  # (ComparisonExpression)
+            return visited_children[0]
+        if len(visited_children[0]) == 3:  # (Not _ BooleanTerm) --> NOT x > 3, NOT (x = 10)
+            _, _, term = visited_children[0]
+            return {"type": "operator", "name": "not", "args": [term]}
+        # (bracket_open _ ConditionalStatement _ bracket_closed) --> (x > 3) OR (y < 1)
+        _, _, statement, _, _ = visited_children[0]
+        return {"name": "()", "type": "operator", "args": [statement]}
 
-            return  {"type": "operator","name": "not","args": [ComparisonExpression]}
+    def visit_ComparisonExpression(self, node, visited_children):
+        left, op, right = visited_children
+        return {"name": op.replace(" ","").lower(), "type": "operator", "args": [left, right]}
 
     def visit_Expression(self, node, visited_children):
         if type(visited_children[0]) == list:
@@ -276,9 +277,10 @@ grammar = Grammar(
     Sentence                =  _  ( Comment / ConditionalExpression / ConditionalStatement / Expression / nothing ) _
     Comment                 = _ "{" ~r"[\w\s]*"iu "}" _
     ConditionalExpression   =  (if _ Sentence _ then _ Sentence _ else _ Sentence)  / (if _ Sentence _ then _ Sentence)
-    ConditionalStatement    = (ComparisonExpression BooleanOperator ConditionalStatement) / (ComparisonExpression)
-    Not                     = ~"NOT"i 
-    ComparisonExpression    = (Expression ComparisonOperator Expression ) / ( Not bracket_open Expression ComparisonOperator Expression bracket_closed )
+    ConditionalStatement    = (BooleanTerm BooleanOperator ConditionalStatement) / (BooleanTerm)
+    BooleanTerm             = (Not _ BooleanTerm) / ComparisonExpression / (bracket_open _ ConditionalStatement _ bracket_closed)
+    Not                     = ~"NOT"i !Name
+    ComparisonExpression    = Expression ComparisonOperator Expression
     Expression              = (Term AdditiveOperator Sentence)  / (Term)
     Term                    = (Atom MultiplicativeOperator Term)  / (Atom)
     Atom                    = NumericLiteral

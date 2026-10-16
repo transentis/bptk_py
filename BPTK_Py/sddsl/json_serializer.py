@@ -69,21 +69,14 @@ _COMPARISON_SIGN_MAP = {
 
 # ── Arrayed elements ─────────────────────────────────────────────────────────
 
-def _leaf_refs(element):
+def _leaf_refs(array):
     """
-    JSON for every leaf of an arrayed element, in the parent's key order.
+    JSON for every leaf of an array - an element or an expression - in its key order.
 
     The order is part of the contract: `arr_rank` and `arr_median` sort, and the two
-    engines have to sort the same list. A matrix is walked depth-first, which is the
-    order `_matrix_element_to_string` uses on the Python side.
+    engines have to sort the same list. Both sides walk `ops.array_leaves`.
     """
-    if element._elements.vector_size() == 0:
-        return [_expr_to_json(element)]
-
-    refs = []
-    for key in element._elements.equations:
-        refs.extend(_leaf_refs(element[key]))
-    return refs
+    return [_expr_to_json(leaf) for leaf in ops.array_leaves(array)]
 
 
 def _aggregation_to_json(function, element, extra_args=(), scalar_input="zero"):
@@ -93,7 +86,7 @@ def _aggregation_to_json(function, element, extra_args=(), scalar_input="zero"):
     An operand with no sub-elements follows the Python operators exactly: `arr_sum` and
     `arr_prod` pass the scalar through, every other aggregation answers 0.0.
     """
-    if element._elements.vector_size() == 0 and scalar_input == "zero":
+    if not ops.is_array(element) and scalar_input == "zero":
         return {"type": "literal", "value": 0.0}
 
     return {"type": "call", "function": function,
@@ -324,6 +317,7 @@ _CALLS = (
     (ops.Log10, "log10", ("x",)),
     (ops.Floor, "floor", ("x",)),
     (ops.Ceil, "ceil", ("x",)),
+    (ops.Trunc, "trunc", ("x",)),
     (ops.Round, "round", ("operator", "digits")),
     (ops.MaxOperator, "max", ("element_1", "element_2")),
     (ops.MinOperator, "min", ("element_1", "element_2")),
@@ -354,6 +348,19 @@ _CALLS = (
     (ops.Pareto, "pareto", ("shape", "scale")),
     (ops.NormalCDF, "normalcdf", ("left", "right", "mean", "stddev")),
 )
+
+# Operators the SD DSL has and the engine does not run yet: each is refused by name, so
+# that a model using one fails on the Rust backend instead of loading half-understood.
+# An entry leaves this table when the engine gets the builtin.
+_NOT_ON_THE_ENGINE = (
+    (ops.LookupInverse, "lookupinv"),
+    (ops.LookupArea, "lookuparea"),
+    (ops.Irr, "irr"),
+    (ops.AgeCount, "agecount"),
+    (ops.Rank, "rank"),
+    (ops.Interpolate, "interpolate"),
+)
+
 
 def _expr_to_json(expr):
     """
@@ -395,6 +402,12 @@ def _expr_to_json(expr):
             )
         return {"type": "ref", "name": expr.name}
 
+    # ── An array expression as a whole: only its cells are entities ──────
+    if isinstance(expr, ops.ArrayLines):
+        # Like the reference to an arrayed element above, a guard: an equation spreads
+        # an array expression over the cells of its element before it is serialized.
+        raise ValueError("Cannot serialize an array expression as one value; only its cells have one.")
+
     # ── Array aggregations: array in, one number out ─────────────────────
     for operator, function, pass_through in _AGGREGATIONS:
         if isinstance(expr, operator):
@@ -411,8 +424,8 @@ def _expr_to_json(expr):
     if isinstance(expr, ops.ArraySizeOperator):
         # Folded here: the size is known at serialization time, and it is the vector
         # size rather than the leaf count - 2 for a 2x2 matrix, as in Python.
-        return {"type": "literal",
-                "value": float(expr.element._elements.vector_size())}
+        size = ops._get_element_dimensions(expr.element)
+        return {"type": "literal", "value": 0.0 if size == -1 else float(size[0])}
 
     # ── dot: expanded into a sum of products ─────────────────────────────
     if isinstance(expr, ops.DotOperator):
@@ -455,6 +468,10 @@ def _expr_to_json(expr):
     # ── Builtins whose arguments are attributes of the operator ──────────
     for operator, function, arguments in _CALLS:
         if isinstance(expr, operator):
+            if getattr(expr, "seed", None) is not None:
+                raise ValueError(
+                    f"The function '{function}' with a seed does not run on the Rust engine "
+                    f"yet. Run this model on the Python engine, or leave the seed out.")
             return {"type": "call", "function": function,
                     "args": [_expr_to_json(getattr(expr, argument)) for argument in arguments]}
 
@@ -476,6 +493,10 @@ def _expr_to_json(expr):
     # ── Smooth: output is the internal stock ─────────────────────────────
     if isinstance(expr, ops.Smooth):
         return {"type": "ref", "name": expr.smooth.name}
+
+    # ── The other cascades: output is their last internal element ─────
+    if isinstance(expr, (ops.SmoothN, ops.MaterialDelay, ops.Forecast, ops.Npv)):
+        return {"type": "ref", "name": expr.output.name}
 
     # ── Trend: output is the internal converter ────────────────────────
     if isinstance(expr, ops.Trend):
@@ -503,6 +524,12 @@ def _expr_to_json(expr):
     # ── Custom functions: a call back into Python, by name ─────────────────
     if isinstance(expr, ops.NaryOperator):
         return _py_callback_to_json(expr)
+
+    for operator, name in _NOT_ON_THE_ENGINE:
+        if isinstance(expr, operator):
+            raise ValueError(
+                f"The function '{name}' does not run on the Rust engine yet. "
+                f"Run this model on the Python engine.")
 
     # ── Fallback ─────────────────────────────────────────────────────────
     raise ValueError(
@@ -555,6 +582,16 @@ def _model_to_json(model) -> str:
                 # sub-elements are entities of their own, already in this dict. It used
                 # to be emitted with a bogus {"literal": 0.0} beside the real ones.
                 continue
+            if getattr(stock, "_is_conveyor", False):
+                raise ValueError(
+                    f"'{name}' is a conveyor, and the Rust engine does not run conveyors "
+                    f"yet. Run the model on the Python engine."
+                )
+            if getattr(stock, "non_negative", False):
+                raise ValueError(
+                    f"Stock '{name}' is non-negative, and the Rust engine does not cut "
+                    f"outflows back yet. Run the model on the Python engine."
+                )
             initial_value = stock.initial_value
             # initial_value can be a float, Constant, or Converter
             initial_value_json = _expr_to_json(initial_value)

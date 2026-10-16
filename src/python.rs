@@ -325,7 +325,7 @@ impl RustSdModel {
             return Ok(());
         }
         let report = py
-            .import("BPTK_Py.sddsl.distributions")?
+            .import("BPTK_Py.sddsl.sddsl_builtins")?
             .getattr("report_from_engine")?;
         for invalid in reports {
             let t = self.model.starttime + invalid.step as f64 * self.model.dt;

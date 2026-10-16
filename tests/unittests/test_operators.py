@@ -1340,6 +1340,16 @@ class TestGenericArrayProtocol(unittest.TestCase):
         self.assertTrue([name for name in model.stocks if name.startswith("bptk_")])
         self.assertEqual(clone.averaging_time(1), 3.0)
 
+    def test_the_xmile_cascades_are_templates_too(self):
+        model, v, u, mat, s = self._model()
+        templates = [sd.smooth3(model, v, 3.0), sd.smoothn(model, v, 3.0, 4),
+                     sd.delay1(model, v, 3.0), sd.delayn(model, v, 3.0, 4),
+                     sd.forecast(model, v, 3.0, 2.0), sd.npv(model, v, 0.1)]
+
+        for template in templates:
+            self.assertEqual(template.term(), "0.0")
+            self.assertNotEqual(template.clone_with_index(["mid"]).term(), "0.0")
+
     # --- dimensions ------------------------------------------------------------
 
     def test_dimensions_come_from_the_arrayed_operand(self):
@@ -1452,3 +1462,203 @@ class TestNaryOperatorRendersItsArgumentsAtTheTimeAsked(unittest.TestCase):
 
         self.assertEqual([direct(t) for t in range(5)],
                          [through_function(t) for t in range(5)])
+
+
+def _arrays():
+    model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="parts")
+    vector = model.constant("vector")
+    vector.setup_vector(4, [6.0, 2.0, 8.0, 5.0])
+    named = model.constant("named")
+    named.setup_named_vector({"x1": 1.0, "x2": 2.0, "x3": 3.0})
+    matrix = model.constant("matrix")
+    matrix.setup_named_matrix({"boston": {"a": 1.0, "b": 2.0}, "nyc": {"a": 3.0, "b": 4.0}})
+    return model, vector, named, matrix
+
+
+def _value(model, expression, name="result"):
+    target = model.converter(name)
+    target.equation = expression
+    return model.evaluate_equation(name, 0.0)
+
+
+class TestPartsOfArrays(unittest.TestCase):
+    def test_a_range_includes_its_end_and_stops_at_the_edges(self):
+        model, vector, named, matrix = _arrays()
+
+        self.assertEqual(_value(model, vector[1:2].arr_sum(), "inner"), 10.0)
+        self.assertEqual(_value(model, vector[2:].arr_sum(), "open_end"), 13.0)
+        self.assertEqual(_value(model, vector[:1].arr_sum(), "open_start"), 8.0)
+        self.assertEqual(_value(model, vector[-3:9].arr_sum(), "beyond"), 21.0)
+        self.assertEqual(_value(model, named["x2":"x3"].arr_sum(), "labels"), 5.0)
+
+    def test_a_pair_selects_a_cell_a_row_or_a_column(self):
+        model, vector, named, matrix = _arrays()
+
+        self.assertIs(matrix["nyc", "b"], matrix["nyc"]["b"])
+        self.assertIs(matrix[1, 0], matrix["nyc"]["a"])
+        self.assertEqual(_value(model, matrix["boston", :].arr_sum(), "row"), 3.0)
+        self.assertEqual(_value(model, matrix[:, "b"].arr_sum(), "column"), 6.0)
+        self.assertEqual(_value(model, matrix[:, "a":"a"].arr_sum(), "block"), 4.0)
+        self.assertEqual(_value(model, matrix[0:0, :].arr_sum(), "first_row"), 3.0)
+
+    def test_an_expression_can_be_indexed_too(self):
+        model, vector, named, matrix = _arrays()
+
+        self.assertEqual(_value(model, (vector * 2.0)[2] + 0.0, "one_cell"), 16.0)
+        self.assertEqual(_value(model, (named["x2"] * 2.0).arr_sum(), "scalar_sum"), 4.0)
+
+        self.assertEqual(_value(model, (vector * 2.0)[1:1].arr_sum(), "doubled"), 4.0)
+        self.assertEqual(_value(model, matrix.transpose()["b", :].arr_sum(), "transposed_row"), 6.0)
+        self.assertEqual(_value(model, (matrix * 1.0)[1, 1] + 0.0, "cell"), 4.0)
+
+    def test_what_a_selection_refuses(self):
+        model, vector, named, matrix = _arrays()
+        refused = {
+            "three keys": lambda: matrix[0, 0, 0],
+            "a step": lambda: vector[0:3:2],
+            "two keys on a vector": lambda: vector[0, 1],
+            "an unknown label": lambda: named["x1":"x9"],
+            "an unknown key": lambda: matrix["paris", :],
+            "a position beyond": lambda: matrix[:, 5],
+            "a scalar expression": lambda: (named["x1"] * 2.0)[0],
+        }
+        for what, select in refused.items():
+            with self.subTest(what):
+                with self.assertRaises(OperatorError):
+                    select()
+
+    def test_an_array_expression_has_no_single_value(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError) as context:
+            vector[0:1].term()
+
+        self.assertIn("2 cells", str(context.exception))
+
+    def test_arrays_with_other_labels_do_not_combine(self):
+        model, vector, named, matrix = _arrays()
+        target = model.converter("mixed")
+
+        with self.assertRaises(OperatorError) as context:
+            target.equation = matrix["boston", :] + matrix[:, "a"]
+
+        self.assertIn("same labels", str(context.exception))
+
+
+class TestTranspose(unittest.TestCase):
+    def test_rows_become_columns(self):
+        model, vector, named, matrix = _arrays()
+        target = model.converter("transposed")
+        target.equation = matrix.transpose()
+
+        self.assertEqual(model.evaluate_equation("transposed[a][nyc]", 0.0), 3.0)
+        self.assertEqual(model.evaluate_equation("transposed[b][boston]", 0.0), 2.0)
+
+    def test_only_a_matrix_is_transposed(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError):
+            vector.transpose()
+
+
+class TestAlongADimension(unittest.TestCase):
+    def test_over_1_aggregates_each_row_and_over_0_each_column(self):
+        model, vector, named, matrix = _arrays()
+        rows = model.converter("rows")
+        rows.equation = matrix.arr_sum(over=1)
+        columns = model.converter("columns")
+        columns.equation = matrix.arr_max(over=0)
+
+        self.assertEqual(model.evaluate_equation("rows[nyc]", 0.0), 7.0)
+        self.assertEqual(model.evaluate_equation("columns[b]", 0.0), 4.0)
+
+    def test_over_0_of_a_vector_is_the_whole(self):
+        model, vector, named, matrix = _arrays()
+
+        self.assertEqual(_value(model, vector.arr_sum(over=0)), 21.0)
+
+    def test_an_expression_aggregates_along_its_lines(self):
+        model, vector, named, matrix = _arrays()
+        target = model.converter("scaled_rows")
+        target.equation = (matrix * 10.0).arr_min(over=1)
+
+        self.assertEqual(model.evaluate_equation("scaled_rows[boston]", 0.0), 10.0)
+
+    def test_what_over_refuses(self):
+        model, vector, named, matrix = _arrays()
+        refused = {
+            "another dimension": lambda: matrix.arr_sum(over=2),
+            "dimension 1 of a vector": lambda: vector.arr_sum(over=1),
+            "a scalar": lambda: model.constant("single").arr_sum(over=0),
+        }
+        for what, aggregate in refused.items():
+            with self.subTest(what):
+                with self.assertRaises(OperatorError):
+                    aggregate()
+
+    def test_lines_have_no_single_value(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError):
+            matrix.arr_sum(over=1).term()
+
+    def test_the_lines_name_their_keys(self):
+        model, vector, named, matrix = _arrays()
+        lines = matrix.arr_sum(over=1)
+
+        self.assertEqual(lines.resolve_dimensions(), [2, 0])
+        self.assertEqual(lines.index_to_string([1]), "nyc")
+        self.assertTrue(lines.is_named())
+        self.assertIs(lines.clone_with_index([1]), lines.clone_with_index(["nyc"]))
+
+
+class TestRankAndInterpolate(unittest.TestCase):
+    def test_rank_gives_the_position_of_the_r_th_smallest(self):
+        model, vector, named, matrix = _arrays()
+        ties = model.constant("ties")
+        ties.setup_vector(3, [5.0, 5.0, 1.0])
+        breaks = model.constant("breaks")
+        breaks.setup_vector(3, [9.0, 1.0, 0.0])
+
+        self.assertEqual(_value(model, sd.rank(vector, 2), "second"), 3.0)
+        self.assertEqual(_value(model, sd.rank(ties, 2), "tie"), 0.0)
+        self.assertEqual(_value(model, sd.rank(ties, 2, breaks), "broken"), 1.0)
+        self.assertEqual(_value(model, sd.rank(matrix[:, "b"], 1), "column"), 0.0)
+
+    def test_a_rank_outside_the_array_gives_nan(self):
+        model, vector, named, matrix = _arrays()
+        import math
+
+        for rank in (0, 5, 1.5):
+            with self.subTest(rank=rank):
+                self.assertTrue(math.isnan(_value(model, sd.rank(vector, rank), "r{}".format(rank).replace(".", "_"))))
+
+    def test_what_rank_refuses(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError):
+            sd.rank(matrix, 1)
+        with self.assertRaises(OperatorError):
+            sd.rank(vector, 1, named)
+
+    def test_interpolate_between_the_elements(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="interpolate")
+        points = model.constant("points")
+        points.setup_matrix([2, 3], [[0.0, 2.0, 4.0], [8.0, 6.0, 5.0]])
+        single = model.constant("single")
+        single.setup_vector(1, [7.0])
+
+        self.assertEqual(_value(model, sd.interpolate(points, 0.75, 0.25), "isee"), 5.5)
+        self.assertEqual(_value(model, sd.interpolate(points[0, :], 1.5), "clamped"), 4.0)
+        self.assertEqual(_value(model, sd.interpolate(points[:, 2], 0.5), "column"), 4.5)
+        self.assertEqual(_value(model, sd.interpolate(single, 0.3), "one_value"), 7.0)
+        import math
+        self.assertTrue(math.isnan(_value(model, sd.interpolate(points[0, :], sd.nan()), "no_weight")))
+
+    def test_what_interpolate_refuses(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError):
+            sd.interpolate(matrix, 0.5)
+        with self.assertRaises(OperatorError):
+            sd.interpolate(model.constant("single"), 0.5)
