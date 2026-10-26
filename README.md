@@ -74,6 +74,11 @@ For any questions or suggestions you have regarding BPTK, please contact us at: 
 
 ## Changelog
 
+### 3.4.2
+
+* Upgraded logfire from 4.19.0 to 5.2.0 in the `observability` extra, which allows OpenTelemetry 1.45.1 - for a published advisory
+* Upgraded pillow from 12.3.0 to 13.0.0 and certifi from 2026.7.22 to 2026.10.23 - for published advisories
+
 ### 3.4.1
 
 * Bugfixes:

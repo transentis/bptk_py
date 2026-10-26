@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bptk-py"
-version = "3.4.1"
+version = "3.4.2"
 # Two renderings of the same requirement, chosen by the installer rather than
 # by the wheel: both wheels carry these lines and the marker decides. Pyodide
 # builds pandas, numpy and scipy itself and PyPI has no wasm wheels for them,
@@ -55,7 +55,7 @@ server = [
     "flask==3.1.3","psycopg[binary,pool]==3.3.6","redis==6.4.0"
 ]
 observability = [
-    "logfire==4.19.0"
+    "logfire==5.2.0"
 ]
 # The suite covers every extra, so `pip install ".[test]"` has to pull them all.
 test = [
