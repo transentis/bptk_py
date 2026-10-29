@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_submodels="true"/>
+		<name>modules_all_elements</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>16</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="Region">
+			<elem name="north"/>
+			<elem name="south"/>
+		</dim>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="base_demand">
+				<eqn>20</eqn>
+			</aux>
+			<aux name="demand_signal">
+				<eqn>base_demand + STEP(10, 4)</eqn>
+			</aux>
+			<aux name="transit_time">
+				<eqn>3 + STEP(1, 8)</eqn>
+			</aux>
+			<aux name="spoil_rate">
+				<eqn>0.02</eqn>
+			</aux>
+			<module name="market">
+				<connect to="market.signal" from=".demand_signal"/>
+				<connect to=".customers" from="market.customers"/>
+				<connect to=".regional_demand" from="market.regional_demand"/>
+			</module>
+			<module name="supply">
+				<connect to="supply.orders" from="market.order_rate"/>
+				<connect to="supply.transit" from=".transit_time"/>
+				<connect to="supply.spoil_rate" from=".spoil_rate"/>
+				<connect to="supply.regional_demand" from="market.regional_demand"/>
+				<connect to=".inventory" from="supply.inventory"/>
+				<connect to=".shipped" from="supply.shipping"/>
+				<connect to=".young_on_belt" from="supply.young"/>
+			</module>
+			<aux name="customers" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="regional_demand" access="input">
+				<dimensions><dim name="Region"/></dimensions>
+				<eqn>0</eqn>
+			</aux>
+			<aux name="inventory" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="shipped" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="young_on_belt" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="total_regional">
+				<eqn>SUM(regional_demand[*])</eqn>
+			</aux>
+			<aux name="service">
+				<eqn>SAFEDIV(shipped, demand_signal)</eqn>
+			</aux>
+			<aux name="overview">
+				<eqn>inventory + customers + young_on_belt</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1600" page_height="1200" type="stock_flow">
+				<aux x="100" y="140" name="base_demand"/>
+				<aux x="320" y="140" name="demand_signal"/>
+				<aux x="1240" y="140" name="transit_time"/>
+				<aux x="1460" y="140" name="spoil_rate"/>
+				<module x="100" y="260" name="market"/>
+				<module x="320" y="260" name="supply"/>
+				<aux x="1240" y="260" name="customers"/>
+				<aux x="1460" y="260" name="regional_demand"/>
+				<aux x="100" y="380" name="inventory"/>
+				<aux x="320" y="380" name="shipped"/>
+				<aux x="1240" y="380" name="young_on_belt"/>
+				<aux x="1460" y="380" name="total_regional"/>
+				<aux x="100" y="500" name="service"/>
+				<aux x="320" y="500" name="overview"/>
+				<connector uid="1" angle="0"><from>base_demand</from><to>demand_signal</to></connector>
+				<connector uid="2" angle="0"><from>demand_signal</from><to>market</to></connector>
+				<connector uid="3" angle="0"><from>transit_time</from><to>supply</to></connector>
+				<connector uid="4" angle="0"><from>spoil_rate</from><to>supply</to></connector>
+				<connector uid="5" angle="0"><from>regional_demand</from><to>total_regional</to></connector>
+				<connector uid="6" angle="0"><from>shipped</from><to>service</to></connector>
+				<connector uid="7" angle="0"><from>demand_signal</from><to>service</to></connector>
+				<connector uid="8" angle="0"><from>inventory</from><to>overview</to></connector>
+				<connector uid="9" angle="0"><from>customers</from><to>overview</to></connector>
+				<connector uid="10" angle="0"><from>young_on_belt</from><to>overview</to></connector>
+			</view>
+		</views>
+	</model>
+	<model name="market">
+		<variables>
+			<aux name="signal" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="price_index" access="input">
+				<eqn>1</eqn>
+			</aux>
+			<stock name="customers" access="output">
+				<eqn>100</eqn>
+				<inflow>winning</inflow>
+				<outflow>churn</outflow>
+				<non_negative/>
+			</stock>
+			<flow name="winning">
+				<eqn>signal * attractiveness</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="churn">
+				<eqn>customers * churn_rate</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="churn_rate">
+				<eqn>0.05</eqn>
+			</aux>
+			<aux name="attractiveness">
+				<eqn>price_index</eqn>
+				<gf type="extrapolate"><xscale min="0" max="2"/><yscale min="0" max="3"/><ypts>1.5,1,0.5</ypts></gf>
+			</aux>
+			<module name="pricing">
+				<connect to="pricing.pressure" from="market.customers"/>
+				<connect to="market.price_index" from="pricing.index"/>
+			</module>
+			<aux name="order_rate" access="output">
+				<eqn>winning + SMTH1(churn, 2)</eqn>
+			</aux>
+			<aux name="regional_demand" access="output">
+				<dimensions><dim name="Region"/></dimensions>
+				<element subscript="north"><eqn>order_rate * 0.6</eqn></element>
+				<element subscript="south"><eqn>order_rate * 0.4</eqn></element>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1600" page_height="1200" type="stock_flow">
+				<aux x="100" y="140" name="signal"/>
+				<aux x="320" y="140" name="price_index"/>
+				<stock x="400" y="120" name="customers"/>
+				<flow label_side="bottom" x="288.75" y="120.0" name="winning"><pts><pt x="200" y="120"/><pt x="377.5" y="120"/></pts></flow>
+				<flow label_side="bottom" x="511.25" y="120.0" name="churn"><pts><pt x="422.5" y="120"/><pt x="600" y="120"/></pts></flow>
+				<aux x="1240" y="140" name="churn_rate"/>
+				<aux x="1460" y="140" name="attractiveness"/>
+				<module x="100" y="260" name="pricing"/>
+				<aux x="320" y="260" name="order_rate"/>
+				<aux x="1240" y="260" name="regional_demand"/>
+				<connector uid="1" angle="0"><from>signal</from><to>winning</to></connector>
+				<connector uid="2" angle="0"><from>attractiveness</from><to>winning</to></connector>
+				<connector uid="3" angle="0"><from>customers</from><to>churn</to></connector>
+				<connector uid="4" angle="0"><from>churn_rate</from><to>churn</to></connector>
+				<connector uid="5" angle="0"><from>price_index</from><to>attractiveness</to></connector>
+				<connector uid="6" angle="0"><from>customers</from><to>pricing</to></connector>
+				<connector uid="7" angle="0"><from>winning</from><to>order_rate</to></connector>
+				<connector uid="8" angle="0"><from>churn</from><to>order_rate</to></connector>
+				<connector uid="9" angle="0"><from>order_rate</from><to>regional_demand</to></connector>
+			</view>
+		</views>
+	</model>
+	<model name="pricing">
+		<variables>
+			<aux name="pressure" access="input">
+				<eqn>100</eqn>
+			</aux>
+			<aux name="reference">
+				<eqn>100</eqn>
+			</aux>
+			<aux name="raw">
+				<eqn>pressure / reference</eqn>
+			</aux>
+			<aux name="index" access="output">
+				<eqn>SMTH1(raw, 3, 1)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1600" page_height="1200" type="stock_flow">
+				<aux x="100" y="140" name="pressure"/>
+				<aux x="320" y="140" name="reference"/>
+				<aux x="1240" y="140" name="raw"/>
+				<aux x="1460" y="140" name="index"/>
+				<connector uid="1" angle="0"><from>pressure</from><to>raw</to></connector>
+				<connector uid="2" angle="0"><from>reference</from><to>raw</to></connector>
+				<connector uid="3" angle="0"><from>raw</from><to>index</to></connector>
+			</view>
+		</views>
+	</model>
+	<model name="supply">
+		<variables>
+			<aux name="orders" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="transit" access="input">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="spoil_rate" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="regional_demand" access="input">
+				<dimensions><dim name="Region"/></dimensions>
+				<eqn>0</eqn>
+			</aux>
+			<stock name="belt">
+				<eqn>30</eqn>
+				<inflow>production</inflow>
+				<outflow>arriving</outflow>
+				<outflow>spoilage</outflow>
+				<conveyor><len>transit</len></conveyor>
+			</stock>
+			<flow name="production">
+				<eqn>orders</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="arriving">
+				<non_negative/>
+			</flow>
+			<flow name="spoilage">
+				<eqn>spoil_rate</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<stock name="inventory" access="output">
+				<eqn>50</eqn>
+				<inflow>arriving</inflow>
+				<inflow>adjustment</inflow>
+				<outflow>shipping</outflow>
+				<outflow>writeoff</outflow>
+				<non_negative/>
+			</stock>
+			<flow name="adjustment">
+				<eqn>(target_inventory - inventory) / 10</eqn>
+			</flow>
+			<aux name="target_inventory">
+				<eqn>60</eqn>
+			</aux>
+			<flow name="shipping" access="output">
+				<eqn>SUM(regional_demand[*])</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="writeoff">
+				<eqn>inventory * 0.01</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="young" access="output">
+				<eqn>AGECOUNT(belt, 0, 1)</eqn>
+			</aux>
+			<aux name="delayed_orders">
+				<eqn>DELAY(orders, 2, 0)</eqn>
+			</aux>
+			<aux name="stock_pressure">
+				<eqn>inventory</eqn>
+				<gf type="discrete"><xscale min="0" max="100"/><yscale min="0" max="3"/><ypts>2,1,0.5</ypts></gf>
+			</aux>
+			<stock name="regional_stock">
+				<dimensions><dim name="Region"/></dimensions>
+				<eqn>10</eqn>
+				<inflow>regional_supply</inflow>
+			</stock>
+			<flow name="regional_supply">
+				<dimensions><dim name="Region"/></dimensions>
+				<eqn>regional_demand * 0.5</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="check">
+				<eqn>SUM(regional_stock[*]) + delayed_orders * stock_pressure</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1600" page_height="1200" type="stock_flow">
+				<aux x="100" y="140" name="orders"/>
+				<aux x="320" y="140" name="transit"/>
+				<aux x="1240" y="140" name="spoil_rate"/>
+				<aux x="1460" y="140" name="regional_demand"/>
+				<stock x="400" y="120" name="belt"/>
+				<flow label_side="bottom" x="288.75" y="120.0" name="production"><pts><pt x="200" y="120"/><pt x="377.5" y="120"/></pts></flow>
+				<flow label_side="bottom" x="400.0" y="230.0" name="arriving"><pts><pt x="422.5" y="120"/><pt x="520" y="120"/><pt x="520" y="340"/><pt x="377.5" y="340"/></pts></flow>
+				<flow label_side="bottom" x="511.25" y="150.0" name="spoilage"><pts><pt x="422.5" y="150"/><pt x="600" y="150"/></pts></flow>
+				<stock x="400" y="340" name="inventory"/>
+				<flow label_side="bottom" x="288.75" y="370.0" name="adjustment"><pts><pt x="200" y="370"/><pt x="377.5" y="370"/></pts></flow>
+				<aux x="100" y="260" name="target_inventory"/>
+				<flow label_side="bottom" x="511.25" y="340.0" name="shipping"><pts><pt x="422.5" y="340"/><pt x="600" y="340"/></pts></flow>
+				<flow label_side="bottom" x="511.25" y="370.0" name="writeoff"><pts><pt x="422.5" y="370"/><pt x="600" y="370"/></pts></flow>
+				<aux x="320" y="260" name="young"/>
+				<aux x="1240" y="260" name="delayed_orders"/>
+				<aux x="1460" y="260" name="stock_pressure"/>
+				<stock x="400" y="560" name="regional_stock"/>
+				<flow label_side="bottom" x="288.75" y="560.0" name="regional_supply"><pts><pt x="200" y="560"/><pt x="377.5" y="560"/></pts></flow>
+				<aux x="100" y="380" name="check"/>
+				<connector uid="1" angle="0"><from>orders</from><to>production</to></connector>
+				<connector uid="2" angle="0"><from>spoil_rate</from><to>spoilage</to></connector>
+				<connector uid="3" angle="0"><from>target_inventory</from><to>adjustment</to></connector>
+				<connector uid="4" angle="0"><from>inventory</from><to>adjustment</to></connector>
+				<connector uid="5" angle="0"><from>regional_demand</from><to>shipping</to></connector>
+				<connector uid="6" angle="0"><from>inventory</from><to>writeoff</to></connector>
+				<connector uid="7" angle="0"><from>belt</from><to>young</to></connector>
+				<connector uid="8" angle="0"><from>orders</from><to>delayed_orders</to></connector>
+				<connector uid="9" angle="0"><from>inventory</from><to>stock_pressure</to></connector>
+				<connector uid="10" angle="0"><from>regional_demand</from><to>regional_supply</to></connector>
+				<connector uid="11" angle="0"><from>regional_stock</from><to>check</to></connector>
+				<connector uid="12" angle="0"><from>delayed_orders</from><to>check</to></connector>
+				<connector uid="13" angle="0"><from>stock_pressure</from><to>check</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

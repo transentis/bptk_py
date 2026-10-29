@@ -44,7 +44,7 @@ cd ..
 # checkout does. `uv pip install -e .` triggers a maturin PEP 517 build, compiling the
 # Rust extension into it - a working Rust toolchain is required locally. The [test]
 # extra pulls pytest, python-dotenv and every optional dependency group; the suite
-# covers all four extras, so a base install cannot run it.
+# covers all three extras, so a base install cannot run it.
 uv venv venv_temp
 source ./venv_temp/bin/activate
 uv pip install -e ".[test]"
@@ -113,7 +113,7 @@ sleep 8
 uv venv venv_temp
 source ./venv_temp/bin/activate
 # Pull bptk-py from Test PyPI; deps come from real PyPI. [test] pulls the test
-# tooling AND the four capability extras, so nothing here is listed by hand. It
+# tooling AND the three capability extras, so nothing here is listed by hand. It
 # used to be - pytest and python-dotenv - and that list went stale the moment the
 # suite gained a dependency on wheel: six tests failed for want of a package the
 # extra already declared.
@@ -150,12 +150,12 @@ assert "site-packages" in BPTK_Py.__file__, f"imported from {BPTK_Py.__file__}, 
 print("Rust engine loaded from the installed wheel:", _rust_engine.version())
 PYCHECK
 
-  # The published metadata must carry the four extras. A typo in pyproject.toml
+  # The published metadata must carry the three extras. A typo in pyproject.toml
   # would otherwise only surface later, as a dependency that never got installed.
   python3 - <<'PYCHECK'
 from importlib.metadata import metadata
 declared = set(metadata("BPTK-Py").get_all("Provides-Extra") or [])
-expected = {"plotting", "xmile", "server", "observability"}
+expected = {"plotting", "server", "observability"}
 missing = expected - declared
 if missing:
     raise SystemExit(f"Published metadata is missing extras: {sorted(missing)}")

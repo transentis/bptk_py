@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>lookup_inverse</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>1</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="gf_monotonic">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="8"/>
+					<yscale min="3" max="8"/>
+					<ypts>3,5,7,8</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_falling">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="8"/>
+					<yscale min="3" max="8"/>
+					<ypts>8,7,5,3</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_not_monotonic">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="8"/>
+					<yscale min="3" max="7"/>
+					<ypts>3,5,7,6</ypts>
+				</gf>
+			</aux>
+			<aux name="monotonic_below">
+				<eqn>LOOKUPINV(gf_monotonic, 1)</eqn>
+			</aux>
+			<aux name="monotonic_inside">
+				<eqn>LOOKUPINV(gf_monotonic, 6)</eqn>
+			</aux>
+			<aux name="monotonic_above">
+				<eqn>LOOKUPINV(gf_monotonic, 10)</eqn>
+			</aux>
+			<aux name="falling_inside">
+				<eqn>LOOKUPINV(gf_falling, 6)</eqn>
+			</aux>
+			<aux name="falling_above">
+				<eqn>LOOKUPINV(gf_falling, 10)</eqn>
+			</aux>
+			<aux name="not_monotonic_inside">
+				<eqn>LOOKUPINV(gf_not_monotonic, 4)</eqn>
+			</aux>
+			<aux name="not_monotonic_twice">
+				<eqn>LOOKUPINV(gf_not_monotonic, 6.5)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="gf_monotonic"/>
+				<aux x="220" y="290" name="gf_falling"/>
+				<aux x="360" y="290" name="gf_not_monotonic"/>
+				<aux x="500" y="290" name="monotonic_below"/>
+				<aux x="640" y="290" name="monotonic_inside"/>
+				<aux x="780" y="290" name="monotonic_above"/>
+				<aux x="80" y="380" name="falling_inside"/>
+				<aux x="220" y="380" name="falling_above"/>
+				<aux x="360" y="380" name="not_monotonic_inside"/>
+				<aux x="500" y="380" name="not_monotonic_twice"/>
+				<connector uid="1" angle="270">
+					<from>gf_monotonic</from>
+					<to>monotonic_below</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>gf_monotonic</from>
+					<to>monotonic_inside</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>gf_monotonic</from>
+					<to>monotonic_above</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>gf_falling</from>
+					<to>falling_inside</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>gf_falling</from>
+					<to>falling_above</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>gf_not_monotonic</from>
+					<to>not_monotonic_inside</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>gf_not_monotonic</from>
+					<to>not_monotonic_twice</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

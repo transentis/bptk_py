@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>smooth_trend</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>20</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="input">
+				<eqn>STEP(10, 2) + RAMP(1, 8, 12)</eqn>
+			</aux>
+			<aux name="sm1">
+				<eqn>SMTH1(input, 3)</eqn>
+			</aux>
+			<aux name="sm1_init">
+				<eqn>SMTH1(input, 3, 5)</eqn>
+			</aux>
+			<aux name="sm1_expr">
+				<eqn>SMTH1(input * 2 + 1, 1 + 2, 4 - 1)</eqn>
+			</aux>
+			<aux name="sm3">
+				<eqn>SMTH3(input, 3)</eqn>
+			</aux>
+			<aux name="sm3_init">
+				<eqn>SMTH3(input, 3, 5)</eqn>
+			</aux>
+			<aux name="smn">
+				<eqn>SMTHN(input, 3, 5)</eqn>
+			</aux>
+			<aux name="smn_init">
+				<eqn>SMTHN(input, 3, 5, 2)</eqn>
+			</aux>
+			<aux name="tr">
+				<eqn>TREND(input, 4)</eqn>
+			</aux>
+			<aux name="tr_init">
+				<eqn>TREND(input, 4, 0.5)</eqn>
+			</aux>
+			<aux name="tr_expr">
+				<eqn>TREND(input + 1, 2 * 2, 0.25 * 2)</eqn>
+			</aux>
+			<aux name="fc">
+				<eqn>FORCST(input, 4, 3)</eqn>
+			</aux>
+			<aux name="fc_init">
+				<eqn>FORCST(input, 4, 3, 0.5)</eqn>
+			</aux>
+			<aux name="dn1">
+				<eqn>DERIVN(input, 1)</eqn>
+			</aux>
+			<aux name="dn2">
+				<eqn>DERIVN(input, 2)</eqn>
+			</aux>
+			<aux name="dn_expr">
+				<eqn>DERIVN(input * input, 1)</eqn>
+			</aux>
+			<aux name="ramp_no_end">
+				<eqn>RAMP(1, 8)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="input"/>
+				<aux x="220" y="290" name="sm1"/>
+				<aux x="360" y="290" name="sm1_init"/>
+				<aux x="500" y="290" name="sm1_expr"/>
+				<aux x="640" y="290" name="sm3"/>
+				<aux x="780" y="290" name="sm3_init"/>
+				<aux x="80" y="380" name="smn"/>
+				<aux x="220" y="380" name="smn_init"/>
+				<aux x="360" y="380" name="tr"/>
+				<aux x="500" y="380" name="tr_init"/>
+				<aux x="640" y="380" name="tr_expr"/>
+				<aux x="780" y="380" name="fc"/>
+				<aux x="80" y="470" name="fc_init"/>
+				<aux x="220" y="470" name="dn1"/>
+				<aux x="360" y="470" name="dn2"/>
+				<aux x="500" y="470" name="dn_expr"/>
+				<aux x="640" y="470" name="ramp_no_end"/>
+				<connector uid="1" angle="270">
+					<from>input</from>
+					<to>sm1</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>input</from>
+					<to>sm1_init</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>input</from>
+					<to>sm1_expr</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>input</from>
+					<to>sm3</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>input</from>
+					<to>sm3_init</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>input</from>
+					<to>smn</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>input</from>
+					<to>smn_init</to>
+				</connector>
+				<connector uid="8" angle="270">
+					<from>input</from>
+					<to>tr</to>
+				</connector>
+				<connector uid="9" angle="270">
+					<from>input</from>
+					<to>tr_init</to>
+				</connector>
+				<connector uid="10" angle="270">
+					<from>input</from>
+					<to>tr_expr</to>
+				</connector>
+				<connector uid="11" angle="270">
+					<from>input</from>
+					<to>fc</to>
+				</connector>
+				<connector uid="12" angle="270">
+					<from>input</from>
+					<to>fc_init</to>
+				</connector>
+				<connector uid="13" angle="270">
+					<from>input</from>
+					<to>dn1</to>
+				</connector>
+				<connector uid="14" angle="270">
+					<from>input</from>
+					<to>dn2</to>
+				</connector>
+				<connector uid="15" angle="270">
+					<from>input</from>
+					<to>dn_expr</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

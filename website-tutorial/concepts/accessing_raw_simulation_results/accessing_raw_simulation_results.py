@@ -27,7 +27,7 @@ def _(mo):
     mo.md(r"""
     # How To: Accessing Raw Simulation Results
 
-    In some situations, it is helpful obtain the raw simulation results rather than the plot. To activate this feature, set the ``return_df`` flag to ``True``.
+    In some situations, it is helpful to obtain the raw simulation results rather than the plot. To activate this feature, set the ``return_df`` flag to ``True``.
 
     Below is example code that runs a scenario and sets ``return_df`` to true. This way it is possible to work with the data outside ``BPTK_Py``!
     """)
@@ -44,11 +44,6 @@ def _():
 @app.cell
 def _():
     #| echo: false
-    import matplotlib.pyplot as plt
-    plt.rcParams['figure.facecolor'] = 'white'
-    plt.rcParams['axes.facecolor'] = 'white'
-    plt.rcParams['savefig.facecolor'] = 'white'
-
     import pandas as pd
 
     pd.set_option("display.width", 100)
@@ -64,7 +59,7 @@ def _(bptk):
         equations=["openTasks"],
         title="Deadline changes\n",
         x_label="Time",start_date="1/1/2018",freq="ME",
-        y_label="Marketing Budget (USD)",
+        y_label="Open Tasks",
         kind="line",
         return_df=True ## <--- HERE
         ,series_names = {"smSimpleProjectManagement_scenario120_openTasks" : "openTasks"}
@@ -75,7 +70,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The following code prints useful information by calling the ``head()`` and ``describe()`` functions of the dataFrame. Head return the first 5 elements and Describe gives some important information on the data.
+    The following code prints useful information by calling the ``head()`` and ``describe()`` functions of the dataFrame. Head returns the first 5 elements and Describe gives some important information on the data.
     For instance, we learn that there are 121 elements in the dataFrame ("count"). Further values are the mean, standard deviation, min, max, and the 25th / 50th and 75th percentile.
     """)
     return
@@ -104,7 +99,7 @@ def _(mo):
     1. Use the list index representation
     2. Use dates (if you created a time series using ``start_date``)
 
-    In both cases, the selected range is supplied  in square brackets:
+    In both cases, the selected range is supplied in square brackets:
     """)
     return
 
@@ -150,6 +145,9 @@ def _(mo):
 
 @app.cell
 def _(bptk, df, mo):
+    import BPTK_Py
+    from BPTK_Py.visualizations import bptk_style
+
     df_closed = bptk.plot_scenarios(
         scenario_managers=["smSimpleProjectManagement"],
         scenarios=["scenario120"],
@@ -173,9 +171,15 @@ def _(bptk, df, mo):
     with mo.capture_stdout() as output_2:
         print(df["initialOpenTasks"].head())
 
+    settings = BPTK_Py.plotting_config.settings
+    with bptk_style():
+        percent_closed = df["Percent Tasks Closed"].plot(
+            kind="area", stacked=False, color=settings["colors"][0], alpha=settings["alpha"],
+            title="Tasks closed %")
+
     mo.vstack([
         mo.plain_text(output_2.getvalue()),
-        df["Percent Tasks Closed"].plot(title="Tasks closed %", figsize=(20, 10)).figure,
+        percent_closed.figure,
     ])
     return
 
@@ -184,6 +188,8 @@ def _(bptk, df, mo):
 def _(mo):
     mo.md(r"""
     As you can see, the DataFrame handles all the heavy lifting and we can focus on high-level analysis.
+
+    The chart is drawn by pandas, not by BPTK; `bptk_style()` gives it BPTK's look - see [Configure graphic settings](../configuration/configuration.md#configure-graphic-settings).
     """)
     return
 

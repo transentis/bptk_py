@@ -6,12 +6,12 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2020 transentis labs GmbH
+# Copyright (c) 2020-2026 transentis labs GmbH
 # MIT License
-
 
 from . import element as _element_module
 from .element import Element
+from .operators import _source
 
 class Biflow(Element):
     """
@@ -45,12 +45,12 @@ class Biflow(Element):
     def build_function_string(self):
         constraint = getattr(self, "_constraint", None)
         if constraint is None:
-            self._function_string = "lambda model, t: {}".format(self.equation)
+            self._function_string = "lambda model, t: {}".format(_source(self.equation))
             return
         # A biflow of a non-negative stock is cut back by that stock while it drains it.
         wanted = 0 if self.equation is None else self.equation
         self._function_string = "lambda model, t : model.stocks['{}']._cut_back('{}', {}, t)".format(
-            constraint, self.name, wanted)
+            constraint, self.name, _source(wanted))
 
     def wanted(self, t):
         """The value of the equation at `t`, before a non-negative stock cuts it back."""

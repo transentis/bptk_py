@@ -172,7 +172,7 @@ fn test_parse_lookup_model() {
         ref args,
     } = model.entities[0].equation
     {
-        assert!(matches!(function, BuiltinFn::Lookup(name) if name == "rate_table"));
+        assert!(matches!(function, BuiltinFn::Lookup(name, LookupKind::Continuous) if name == "rate_table"));
         assert_eq!(args.len(), 1); // just the x-value arg
     } else {
         panic!("Expected Call expression");
@@ -768,7 +768,7 @@ fn test_a_call_with_too_few_arguments_is_refused_at_load() {
         ("triangular", 2, "Function 'triangular' takes 3 argument(s), and was given 2"),
         ("sqrt", 0, "Function 'sqrt' takes 1 argument(s), and was given 0"),
         ("normalcdf", 1, "Function 'normalcdf' takes 2 to 4 argument(s), and was given 1"),
-        ("arr_rank", 1, "Function 'arr_rank' takes at least 2 argument(s), and was given 1"),
+        ("arr_largest", 1, "Function 'arr_largest' takes at least 2 argument(s), and was given 1"),
     ] {
         let args: Vec<String> = (0..given).map(|_| lit(1.0)).collect();
         let message = match parse_json(&call_model(&call_of(function, &args))) {
@@ -796,6 +796,59 @@ fn test_optional_arguments_may_be_left_out() {
         assert!(parse_json(&call_model(&call_of(function, &args))).is_ok(),
                 "{} with {} arguments", function, given);
     }
+}
+
+#[test]
+fn test_seeded_takes_the_call_of_a_random_function_last() {
+    let message = load_error(&call_model(&call_of("seeded", &[lit(3.0), call_of("sqrt", &[lit(4.0)])])));
+    assert_eq!(message, "Function 'seeded' takes a seed, the keys of a cell and the call of a random \
+                         function, last");
+    let draw = call_of("normal", &[lit(0.0), lit(1.0)]);
+    assert!(parse_json(&call_model(&call_of("seeded", &[lit(3.0), lit(1.0), draw]))).is_ok());
+}
+
+#[test]
+fn test_percentile_takes_values_and_weights_in_pairs() {
+    let message = load_error(&call_model(&call_of("arr_percentile", &[lit(0.0), lit(50.0), lit(0.0), lit(2.0), lit(3.0), lit(1.0)])));
+    assert_eq!(message, "Function 'arr_percentile' takes whether it weighs, a percentile, a lower one, then values \
+                         and as many weights, so an odd number of argument(s), and was given 6");
+    assert!(parse_json(&call_model(&call_of("arr_percentile", &[lit(0.0), lit(50.0), lit(0.0), lit(2.0), lit(1.0)]))).is_ok());
+}
+
+#[test]
+fn test_rank_xmile_takes_values_and_tiebreaks_in_pairs() {
+    let message = load_error(&call_model(&call_of("arr_rank", &[lit(1.0), lit(2.0), lit(3.0), lit(0.0)])));
+    assert_eq!(message, "Function 'arr_rank' takes a rank, then values and as many tiebreak values, \
+                         so an odd number of argument(s), and was given 4");
+    assert!(parse_json(&call_model(&call_of("arr_rank", &[lit(1.0), lit(2.0), lit(0.0)]))).is_ok());
+}
+
+#[test]
+fn test_the_running_statistics_of_something_other_than_an_element_are_refused_at_load() {
+    for (name, args) in [
+        ("runcum", vec![lit(1.0), lit(0.0), lit(1.0)]),
+        ("runmean", vec![lit(1.0), lit(0.0), lit(1.0)]),
+        ("runcumtarget", vec![lit(1.0), lit(5.0)]),
+    ] {
+        let message = match parse_json(&call_model(&call_of(name, &args))) {
+            Ok(_) => panic!("{} of a literal loaded", name),
+            Err(e) => e.to_string(),
+        };
+        assert!(message.starts_with(&format!("Function '{}' reads the past of an element", name)), "{}", message);
+    }
+}
+
+#[test]
+fn test_irr_of_something_other_than_an_element_is_refused_at_load() {
+    let irr = call_of("irr", &[lit(1.0), lit(0.0)]);
+    let message = match parse_json(&call_model(&irr)) {
+        Ok(_) => panic!("an irr of a literal loaded"),
+        Err(e) => e.to_string(),
+    };
+    assert_eq!(message, "Function 'irr' reads the past of an element, so its first argument has \
+                         to be a reference to one");
+    let irr = call_of("irr", &[r#"{ "type": "ref", "name": "src" }"#.to_string(), lit(0.0)]);
+    assert!(parse_json(&call_model(&irr)).is_ok());
 }
 
 #[test]
@@ -865,6 +918,60 @@ fn test_a_lookup_without_a_table_name_is_refused() {
 }
 
 #[test]
+fn test_lookupinv_and_lookuparea_without_a_table_name_are_refused() {
+    let table = r#"{ "type": "literal", "value": "tab" }"#.to_string();
+    for (call, expected) in [
+        (call_of("lookupinv", &[lit(1.0), lit(2.0)]), "Function 'lookupinv' takes an input and the name of a table"),
+        (call_of("lookuparea", &[lit(0.0), lit(1.0), lit(2.0)]), "Function 'lookuparea' takes the name of a table, a from and a to"),
+        (call_of("lookuparea", &[table.clone()]), "Function 'lookuparea' takes the name of a table, a from and a to"),
+        (call_of("lookuprandom", &[lit(1.0)]), "Function 'lookuprandom' takes the name of a table"),
+        (call_of("lookupmean", &[table]), "Function 'lookupmean' takes the name of a table, a from and a to"),
+    ] {
+        assert_eq!(load_error(&call_model(&call)), expected);
+    }
+}
+
+#[test]
+fn test_lookupinv_and_lookuparea_parse_with_their_table() {
+    let table = r#"{ "type": "literal", "value": "tab" }"#.to_string();
+    for (call, inverse) in [
+        (call_of("lookupinv", &[lit(2.5), table.clone()]), true),
+        (call_of("lookuparea", &[table.clone(), lit(0.0), lit(2.5)]), false),
+        (call_of("lookupmax", &[table.clone(), lit(0.0), lit(2.5)]), false),
+        (call_of("lookupmin", &[table.clone(), lit(0.0), lit(2.5)]), false),
+        (call_of("lookupmean", &[table.clone(), lit(0.0), lit(2.5)]), false),
+        (call_of("lookuprandom", &[table.clone()]), false),
+    ] {
+        let json = format!(
+            r#"{{ "name": "lookups", "specs": {{ "starttime": 0.0, "stoptime": 1.0, "dt": 1.0 }},
+                "entities": {{ "converters": [ {{ "name": "x", "equation": {} }} ] }},
+                "graphical_functions": {{ "tab": {{ "points": [[0.0, 0.0], [10.0, 100.0]] }} }} }}"#,
+            call
+        );
+        let model = parse_json(&json).unwrap();
+        match &model.entities[0].equation {
+            Expr::Call { function: BuiltinFn::LookupInv(name, _), args } if inverse => {
+                assert_eq!((name.as_str(), args.len()), ("tab", 1));
+            }
+            Expr::Call {
+                function:
+                    BuiltinFn::LookupArea(name, _)
+                    | BuiltinFn::LookupMax(name, _)
+                    | BuiltinFn::LookupMin(name, _)
+                    | BuiltinFn::LookupMean(name, _),
+                args,
+            } if !inverse => {
+                assert_eq!((name.as_str(), args.len()), ("tab", 2));
+            }
+            Expr::Call { function: BuiltinFn::LookupRandom(name, _), args } => {
+                assert_eq!((name.as_str(), args.len()), ("tab", 0));
+            }
+            other => panic!("unexpected equation {:?}", other),
+        }
+    }
+}
+
+#[test]
 fn test_lookup_points_in_any_order_describe_the_same_curve() {
     let model = parse_json(&lookup_model("[[10.0, 100.0], [0.0, 0.0], [5.0, 50.0]]", "tab")).unwrap();
     assert_eq!(model.graphical_functions["tab"].points, vec![(0.0, 0.0), (5.0, 50.0), (10.0, 100.0)]);
@@ -892,4 +999,54 @@ fn test_set_points_sorts_and_refuses_the_same_way() {
     assert!(error.contains("x must be a finite number"), "{}", error);
     // A refused table leaves the one before in place.
     assert_eq!(model.graphical_functions["tab"].points, vec![(0.0, 100.0), (10.0, 0.0)]);
+}
+
+fn kind_model(call: &str) -> String {
+    format!(
+        r#"{{ "name": "kinds", "specs": {{ "starttime": 0.0, "stoptime": 1.0, "dt": 1.0 }},
+            "entities": {{ "converters": [ {{ "name": "x", "equation": {} }} ] }},
+            "graphical_functions": {{ "tab": {{ "points": [[0.0, 0.0], [10.0, 100.0]] }} }} }}"#,
+        call
+    )
+}
+
+fn text(value: &str) -> String {
+    format!(r#"{{ "type": "literal", "value": "{}" }}"#, value)
+}
+
+#[test]
+fn test_a_string_after_a_lookups_arguments_names_the_kind_of_table() {
+    for (call, expected) in [
+        (call_of("lookup", &[lit(1.0), text("tab")]), BuiltinFn::Lookup("tab".into(), LookupKind::Continuous)),
+        (call_of("lookup", &[lit(1.0), text("tab"), text("discrete")]), BuiltinFn::Lookup("tab".into(), LookupKind::Discrete)),
+        (call_of("lookupinv", &[lit(1.0), text("tab"), text("extrapolate")]), BuiltinFn::LookupInv("tab".into(), LookupKind::Extrapolate)),
+        (call_of("lookuparea", &[text("tab"), lit(0.0), lit(1.0), text("continuous")]), BuiltinFn::LookupArea("tab".into(), LookupKind::Continuous)),
+    ] {
+        let model = parse_json(&kind_model(&call)).unwrap();
+        match &model.entities[0].equation {
+            Expr::Call { function, .. } => assert_eq!(function, &expected),
+            other => panic!("unexpected equation {:?}", other),
+        }
+    }
+}
+
+#[test]
+fn test_a_kind_of_table_xmile_does_not_have_is_refused() {
+    let message = load_error(&kind_model(&call_of("lookup", &[lit(1.0), text("tab"), text("stepwise")])));
+    assert_eq!(message, "A lookup table is continuous, extrapolate or discrete, not 'stepwise'");
+    // A kind where an argument belongs is no kind
+    let message = load_error(&kind_model(&call_of("lookuparea", &[text("tab"), lit(0.0), text("discrete")])));
+    assert_eq!(message, "The string \"discrete\" stands where a number belongs; only a lookup takes a string, the name of its table");
+}
+
+#[test]
+fn test_bounded_takes_the_call_of_a_random_function_and_may_sit_in_a_seed() {
+    let draw = call_of("normal", &[lit(0.0), lit(1.0)]);
+    let inside = call_of("seeded", &[lit(3.0), call_of("bounded", &[lit(-1.0), lit(1.0), draw.clone()])]);
+    let model = parse_json(&call_model(&call_of("sample", &[lit(2.0), inside]))).unwrap();
+    assert!(matches!(&model.entities[1].equation, Expr::Call { function: BuiltinFn::Sample, .. }));
+    let message = load_error(&call_model(&call_of("bounded", &[lit(-1.0), lit(1.0), lit(0.5)])));
+    assert_eq!(message, "Function 'bounded' takes a minimum, a maximum and the call of a random function, last");
+    let message = load_error(&call_model(&call_of("seeded", &[lit(3.0), call_of("bounded", &[lit(-1.0), lit(1.0), call_of("sqrt", &[lit(4.0)])])])));
+    assert_eq!(message, "Function 'bounded' takes a minimum, a maximum and the call of a random function, last");
 }

@@ -1187,7 +1187,7 @@ def test_matrix_constant():
 
                 temp_val = temp[j]
 
-                test_element3.equation = test_element1.arr_rank(j + 1)
+                test_element3.equation = test_element1.arr_largest(j + 1)
 
                 assert(get_element_data(test_element3)
                     == pytest.approx(temp_val))
@@ -1414,7 +1414,7 @@ def test_vector():
                     temp_arr = np.sort(elements1)
                     temp_val = temp_arr[-(j + 1)]
 
-                    test_element3.equation = test_element1.arr_rank(j + 1)
+                    test_element3.equation = test_element1.arr_largest(j + 1)
 
                     assert(get_element_data(test_element3)
                         == pytest.approx(temp_val))
@@ -1624,7 +1624,7 @@ def test_vector_constants():
                 temp_arr = np.sort(elements1)
                 temp_val = temp_arr[-j]
 
-                test_constant3.equation = test_constant1.arr_rank(j)
+                test_constant3.equation = test_constant1.arr_largest(j)
                 assert(get_element_data(test_constant3) == pytest.approx(temp_val))
                 assert(get_element_data(test_constant3) != temp_val + 1)
 
@@ -1883,7 +1883,7 @@ def test_matrix():
 
                     temp_val = temp[j]
 
-                    test_element3.equation = test_element1.arr_rank(j + 1)
+                    test_element3.equation = test_element1.arr_largest(j + 1)
 
                     assert(get_element_data(test_element3)
                         == pytest.approx(temp_val))

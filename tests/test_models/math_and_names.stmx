@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>math_and_names</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="abs value">
+				<eqn>ABS(-3.5)</eqn>
+			</aux>
+			<stock name="abs stock">
+				<eqn>ABS(100)</eqn>
+			</stock>
+			<aux name="cos one">
+				<eqn>COS(1)</eqn>
+			</aux>
+			<aux name="tan one">
+				<eqn>TAN(1)</eqn>
+			</aux>
+			<aux name="sin time">
+				<eqn>SIN(TIME)</eqn>
+			</aux>
+			<aux name="derivative">
+				<eqn>DERIVN(sin_time, 4)</eqn>
+			</aux>
+			<aux name="big">
+				<eqn>100000</eqn>
+			</aux>
+			<aux name="log of big">
+				<eqn>LOG10(big)</eqn>
+			</aux>
+			<aux name="ln of big">
+				<eqn>LN(big)</eqn>
+			</aux>
+			<aux name="root">
+				<eqn>SQRT(144)</eqn>
+			</aux>
+			<aux name="growth rate">
+				<eqn>0.693147</eqn>
+			</aux>
+			<aux name="growing">
+				<eqn>EXP(growth_rate*TIME)</eqn>
+			</aux>
+			<aux name="trend of growing">
+				<eqn>TREND(growing, 1, 1)</eqn>
+			</aux>
+			<aux name="step input">
+				<eqn>5 + STEP(10, 3)</eqn>
+			</aux>
+			<aux name="smoothed">
+				<eqn>SMTHN(step_input, 5, 5)</eqn>
+			</aux>
+			<aux name="infinity">
+				<eqn>INF</eqn>
+			</aux>
+			<aux name="pi value">
+				<eqn>PI</eqn>
+			</aux>
+			<aux name="start">
+				<eqn>STARTTIME</eqn>
+			</aux>
+			<aux name="stop">
+				<eqn>STOPTIME</eqn>
+			</aux>
+			<aux name="Converter(Per Year)">
+				<eqn>TIME</eqn>
+			</aux>
+			<aux name="Other Converter (foo bar)">
+				<eqn>2*"Converter(Per_Year)"</eqn>
+			</aux>
+			<aux name="Subsidy, R&amp;D costs">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="net cost">
+				<eqn>"Subsidy,_R&amp;D_costs" - 1</eqn>
+			</aux>
+			<aux name="Fund 2017-2021">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="Fund 2021-2023">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="scenario on off">
+				<eqn>STEP(1, 6)</eqn>
+			</aux>
+			<aux name="funded">
+				<eqn>"Fund_2017-2021"*"Fund_2021-2023"*(IF scenario_on_off=0 THEN 1 ELSE 4)</eqn>
+			</aux>
+			<aux name="a">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="b">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="c">
+				<eqn>3</eqn>
+			</aux>
+			<aux name="d">
+				<eqn>4</eqn>
+			</aux>
+			<aux name="e">
+				<eqn>5</eqn>
+			</aux>
+			<aux name="nested if">
+				<eqn>IF a=1 THEN (IF a+b=2 THEN c ELSE d) ELSE e</eqn>
+			</aux>
+			<aux name="staged">
+				<eqn>IF TIME&lt;4 THEN 100 ELSE (100+STEP(1, 7)*50)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1400" page_height="1200" type="stock_flow">
+				<aux x="80" y="80" name="abs value"/>
+				<stock x="240" y="80" name="abs stock"/>
+				<aux x="400" y="80" name="cos one"/>
+				<aux x="560" y="80" name="tan one"/>
+				<aux x="720" y="80" name="sin time"/>
+				<aux x="880" y="80" name="derivative"/>
+				<aux x="1040" y="80" name="big"/>
+				<aux x="1200" y="80" name="log of big"/>
+				<aux x="80" y="180" name="ln of big"/>
+				<aux x="240" y="180" name="root"/>
+				<aux x="400" y="180" name="growth rate"/>
+				<aux x="560" y="180" name="growing"/>
+				<aux x="720" y="180" name="trend of growing"/>
+				<aux x="880" y="180" name="step input"/>
+				<aux x="1040" y="180" name="smoothed"/>
+				<aux x="1200" y="180" name="infinity"/>
+				<aux x="80" y="280" name="pi value"/>
+				<aux x="240" y="280" name="start"/>
+				<aux x="400" y="280" name="stop"/>
+				<aux x="560" y="280" name="Converter(Per Year)"/>
+				<aux x="720" y="280" name="Other Converter (foo bar)"/>
+				<aux x="880" y="280" name="Subsidy, R&amp;D costs"/>
+				<aux x="1040" y="280" name="net cost"/>
+				<aux x="1200" y="280" name="Fund 2017-2021"/>
+				<aux x="80" y="380" name="Fund 2021-2023"/>
+				<aux x="240" y="380" name="scenario on off"/>
+				<aux x="400" y="380" name="funded"/>
+				<aux x="560" y="380" name="a"/>
+				<aux x="720" y="380" name="b"/>
+				<aux x="880" y="380" name="c"/>
+				<aux x="1040" y="380" name="d"/>
+				<aux x="1200" y="380" name="e"/>
+				<aux x="80" y="480" name="nested if"/>
+				<aux x="240" y="480" name="staged"/>
+				<connector uid="1" angle="270"><from>sin_time</from><to>derivative</to></connector>
+				<connector uid="2" angle="270"><from>big</from><to>log_of_big</to></connector>
+				<connector uid="3" angle="270"><from>big</from><to>ln_of_big</to></connector>
+				<connector uid="4" angle="270"><from>growth_rate</from><to>growing</to></connector>
+				<connector uid="5" angle="270"><from>growing</from><to>trend_of_growing</to></connector>
+				<connector uid="6" angle="270"><from>step_input</from><to>smoothed</to></connector>
+				<connector uid="7" angle="270"><from>converter(per_year)</from><to>other_converter_(foo_bar)</to></connector>
+				<connector uid="8" angle="270"><from>subsidy,_r&amp;d_costs</from><to>net_cost</to></connector>
+				<connector uid="9" angle="270"><from>fund_2017-2021</from><to>funded</to></connector>
+				<connector uid="10" angle="270"><from>fund_2021-2023</from><to>funded</to></connector>
+				<connector uid="11" angle="270"><from>scenario_on_off</from><to>funded</to></connector>
+				<connector uid="12" angle="270"><from>a</from><to>nested_if</to></connector>
+				<connector uid="13" angle="270"><from>b</from><to>nested_if</to></connector>
+				<connector uid="14" angle="270"><from>c</from><to>nested_if</to></connector>
+				<connector uid="15" angle="270"><from>d</from><to>nested_if</to></connector>
+				<connector uid="16" angle="270"><from>e</from><to>nested_if</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

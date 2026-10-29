@@ -13,6 +13,11 @@ jobs:
   test:
     name: Test (Linux, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    env:
+      # `uv run` syncs before it runs, with the default groups - `docs` included, which
+      # the sync step leaves out. loro, which marimo needs, has no 3.15 wheel yet, and
+      # its source build fails there. Every `uv run` uses the environment as synced.
+      UV_NO_SYNC: "1"
     services:
       postgres:
         image: postgres:13
@@ -39,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12","3.13","3.14"]
+        python-version: ["3.13","3.14","3.15"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -81,12 +86,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter python3.12
+          args: --release --out dist --interpreter python3.13
           manylinux: auto
       - uses: actions/upload-artifact@v7
         with:
@@ -103,12 +108,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Build a platform wheel to derive from
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out platform-dist --interpreter python3.12
+          args: --release --out platform-dist --interpreter python3.13
           manylinux: auto
       - name: Derive the py3-none-any wheel
         run: |
@@ -135,7 +140,7 @@ jobs:
           import BPTK_Py
 
           kind, expect_rust = os.environ["KIND"], os.environ["EXPECT_RUST"] == "yes"
-          optional = ["matplotlib", "parsimonious", "xmltodict", "flask",
+          optional = ["matplotlib", "jinja2", "flask",
                       "psycopg", "redis", "logfire"]
 
           problems = [f"{p} came with the base install" for p in optional if util.find_spec(p)]
@@ -165,12 +170,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter python3.12
+          args: --release --out dist --interpreter python3.13
       - uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.target }}
@@ -183,7 +188,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:

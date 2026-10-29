@@ -6,9 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
 
 from .element import Element
 
@@ -47,7 +46,7 @@ class Flow(Element):
         self.generate_function()
 
     def build_function_string(self):
-        from .operators import Operator
+        from .operators import Operator, _source
         right_term = self._equation.term("t-model.dt") if type(self._equation) is Operator else self._equation
         driven_by = getattr(self, "_driven_by", None)
         if driven_by is not None:
@@ -56,9 +55,9 @@ class Flow(Element):
             return
         constraint = getattr(self, "_constraint", None)
         if constraint is None:
-            self._function_string = "lambda model, t : max( {},{})".format(0,right_term) # A flow never gets negative
+            self._function_string = "lambda model, t : max( {},{})".format(0, _source(right_term)) # A flow never gets negative
             return
         # An outflow of a non-negative stock is cut back by the stock it leaves.
-        wanted = "max(0, {})".format(0 if right_term is None else right_term)
+        wanted = "max(0, {})".format(0 if right_term is None else _source(right_term))
         self._function_string = "lambda model, t : model.stocks['{}']._cut_back('{}', {}, t)".format(
             constraint, self.name, wanted)

@@ -6,9 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2023 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
 
 import glob
 import json
@@ -177,7 +176,9 @@ class ScenarioManagerFactory():
         # a) Only load scenarios if we do not already have them
         if len(self.scenario_managers.keys()) == 0:
             log("[INFO] New scenario manager or reset. Reading in all scenarios from storage!")
-            self.scenario_files = glob.glob(os.path.join(path, '*'))
+            # Sorted, because glob follows the file system: where two files set the same
+            # thing, the one read last wins, and that has to be the same file everywhere
+            self.scenario_files = sorted(glob.glob(os.path.join(path, '*')))
 
             for infile in self.scenario_files:
                 if not os.path.isdir(infile):

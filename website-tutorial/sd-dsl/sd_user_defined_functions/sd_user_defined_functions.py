@@ -29,9 +29,9 @@ def _(mo):
     mo.md(r"""
     One of the benefits of creating System Dynamics models in Python is that we can use the full power of Python to create our own functions, which we can then use in our models.
 
-    This how to illustrates how to do this.
+    This how-to illustrates how to do this.
 
-    First of all, lets set up our model:
+    First of all, let's set up our model:
     """)
     return
 
@@ -232,77 +232,6 @@ def _(bptk, equations_to_plot, scenarios_to_plot):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Functions and arrays
-
-    An argument can be an arrayed element, and a function says once - when it is
-    registered - what that should mean.
-
-    **By default a function is applied per index**, which is the rule every operator in
-    the DSL follows: the result is an array of the same shape, and a named array keeps
-    its labels.
-    """)
-    return
-
-
-@app.cell
-def _(Model):
-    array_model = Model(starttime=1.0, stoptime=5.0, dt=1.0, name="arrays_and_functions")
-
-    revenue = array_model.constant("revenue")
-    revenue.setup_named_vector({"north": 100.0, "south": 250.0})
-
-    commission = array_model.function("commission", lambda model, t, amount: amount * 0.1)
-
-    per_region = array_model.converter("per_region")
-    per_region.equation = commission(revenue)
-
-    {name: per_region[name](1) for name in ("north", "south")}
-    return array_model, commission, revenue
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **A function declared with `elementwise=False` receives the whole array instead** and
-    answers once. An unnamed array arrives as a list, a named one as a dict keyed by its
-    labels, and a matrix arrives nested. The result is a single value, so anything built
-    on top of it is scalar too.
-    """)
-    return
-
-
-@app.cell
-def _(array_model, revenue):
-    largest_region = array_model.function(
-        "largest_region",
-        lambda model, t, amounts: max(amounts.values()),
-        elementwise=False,
-    )
-
-    peak = array_model.converter("peak")
-    peak.equation = largest_region(revenue)
-
-    peak(1)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    Which of the two you want is a property of the function, not of the call, so it is
-    stated where the function is registered. The default is the element-wise one, because
-    that is what every other operator does with an array.
-
-    The aggregations the DSL already carries - `arr_sum`, `arr_mean`, `arr_max` and the
-    rest - need no function at all, and they run on the Rust engine. Reach for
-    `elementwise=False` when the reduction is one the DSL does not have.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
     ## Where a user-defined function may stand
 
     A function computes the value of an element, so it goes where an equation goes: a
@@ -326,26 +255,14 @@ def _(mo):
     the model and calls back into Python at those nodes, once per node and timestep, so
     the function you wrote is the function that runs.
 
-    The run says so, because it is not a pure engine run:
+    The run says so at `[WARN]`, and [Execution
+    Backends](../../concepts/execution_backends/execution_backends.md#part-of-a-model-can-still-be-python)
+    explains what that means and what it costs.
 
-    ```
-    [WARN] This model calls 1 user-defined Python function(s) ('largest_region'). Those
-    nodes are evaluated in Python while the rest of the model runs on the Rust engine.
-    ```
-
-    Nothing is wrong there - the numbers are the same either way - but each call crosses
-    between two runtimes, and [what that costs is
-    measured](../../concepts/execution_backends/benchmarks/callback_benchmark.md).
-
-    Two shapes stay on the Python engine, and asking for `backend="rust"` with them raises
-    `RustBackendError` rather than quietly computing the answer elsewhere:
-
-    * **`elementwise=False`.** Such a function is handed a whole array and answers once,
-      where a callback answers with one number per node.
-    * **A hybrid model** - agents and a System Dynamics side - **whose function reads what
-      the agents produced.** The two halves advance one step at a time, and the engine
-      computes every step of a run at once, so the function would read a step that has not
-      happened yet. A model that merely *has* agents is fine.
+    A function [registered with
+    `elementwise=False`](../sd_dsl_multidimensional/sd_dsl_arrays_user_defined_functions.md),
+    and one in a hybrid model that reads what the agents produced, cannot run on the engine; [Limitations](../../usage/limitations.md#the-rust-execution-engine)
+    says why.
 
     ## On the server
 
@@ -354,6 +271,18 @@ def _(mo):
     different decision from running the model. Serve such a model from a process that
     holds the functions - a `bptk` instance with the scenario manager registered - rather
     than by posting the model itself.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Functions and arrays
+
+    How a function handles an arrayed argument - per index, or the whole array with
+    `elementwise=False` - is explained under [User-defined Functions and Arrayed
+    Models](../sd_dsl_multidimensional/sd_dsl_arrays_user_defined_functions.md).
     """)
     return
 

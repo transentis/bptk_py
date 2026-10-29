@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>logic</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>5</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="paren_or">
+				<eqn>IF (TIME &gt; 3) OR (TIME &lt; 1) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="paren_left">
+				<eqn>IF (TIME &gt; 3) OR TIME &lt; 1 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="paren_right">
+				<eqn>IF TIME &gt; 3 OR (TIME &lt; 1) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="paren_outer">
+				<eqn>IF ((TIME &gt; 3) OR (TIME &lt; 1)) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="paren_and">
+				<eqn>IF ( TIME &gt; 1 ) AND ( TIME &lt; 3 ) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="not_plain">
+				<eqn>IF NOT TIME &gt; 3 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="not_paren">
+				<eqn>IF NOT (TIME &gt; 3) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="not_compound">
+				<eqn>IF NOT ((TIME &gt; 3) OR (TIME &lt; 1)) THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="arithmetic_left">
+				<eqn>IF (TIME + 1) * 2 &gt; 5 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="not_of_number">
+				<eqn>NOT TIME</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="120" y="100" name="paren_or"/>
+				<aux x="280" y="100" name="paren_left"/>
+				<aux x="440" y="100" name="paren_right"/>
+				<aux x="600" y="100" name="paren_outer"/>
+				<aux x="120" y="210" name="paren_and"/>
+				<aux x="280" y="210" name="not_plain"/>
+				<aux x="440" y="210" name="not_paren"/>
+				<aux x="600" y="210" name="not_compound"/>
+				<aux x="120" y="320" name="arithmetic_left"/>
+				<aux x="280" y="320" name="not_of_number"/>
+			</view>
+		</views>
+	</model>
+</xmile>

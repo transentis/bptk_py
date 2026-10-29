@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>rework</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>30</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="backlog">
+				<eqn>0</eqn>
+				<inflow>entering</inflow>
+				<inflow>failing</inflow>
+				<outflow>processing</outflow>
+			</stock>
+			<stock name="inspection">
+				<eqn>0</eqn>
+				<inflow>processing</inflow>
+				<outflow>passing</outflow>
+				<outflow>failing</outflow>
+				<conveyor>
+					<len>2</len>
+				</conveyor>
+			</stock>
+			<stock name="done">
+				<eqn>0</eqn>
+				<inflow>passing</inflow>
+			</stock>
+			<stock name="total_failed">
+				<eqn>0</eqn>
+				<inflow>counting_failed</inflow>
+			</stock>
+			<flow name="entering">
+				<eqn>PULSE(100, 0, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="processing">
+				<eqn>backlog</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="passing">
+				<non_negative/>
+			</flow>
+			<flow name="failing">
+				<eqn>REWORK(10)</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<flow name="counting_failed">
+				<eqn>failing</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="rework_value">
+				<eqn>REWORK(10)</eqn>
+			</aux>
+			<aux name="rework_value_50">
+				<eqn>REWORK(50)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="backlog"/>
+				<stock x="350" y="270" name="inspection"/>
+				<stock x="350" y="440" name="done"/>
+				<stock x="350" y="610" name="total_failed"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="entering">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="270.0" name="processing">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="440.0" name="passing">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="320.0" name="failing">
+					<pts>
+						<pt x="360" y="287.5"/>
+						<pt x="360" y="320"/>
+						<pt x="550" y="320"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="610.0" name="counting_failed">
+					<pts>
+						<pt x="150" y="610"/>
+						<pt x="327.5" y="610"/>
+					</pts>
+				</flow>
+				<aux x="80" y="800" name="rework_value"/>
+				<aux x="220" y="800" name="rework_value_50"/>
+				<connector uid="1" angle="270">
+					<from>backlog</from>
+					<to>processing</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>failing</from>
+					<to>counting_failed</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

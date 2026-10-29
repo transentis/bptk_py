@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>conveyor_arrays</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="R">
+			<elem name="north"/>
+			<elem name="south"/>
+		</dim>
+		<dim name="Slots" size="5"/>
+	</dimensions>
+	<model>
+		<variables>
+			<stock name="belt">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>0</eqn>
+				<inflow>entering</inflow>
+				<outflow>leaving</outflow>
+				<outflow>dropping</outflow>
+				<conveyor>
+					<len>3</len>
+				</conveyor>
+			</stock>
+			<flow name="entering">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<element subscript="north">
+					<eqn>10</eqn>
+				</element>
+				<element subscript="south">
+					<eqn>20</eqn>
+				</element>
+				<non_negative/>
+			</flow>
+			<flow name="leaving">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<non_negative/>
+			</flow>
+			<flow name="dropping">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>0.1</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<aux name="young">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>AGECOUNT(belt, 0, 1)</eqn>
+			</aux>
+			<stock name="belt_listed">
+				<eqn>5, 10, 15</eqn>
+				<inflow>entering_listed</inflow>
+				<outflow>leaving_listed</outflow>
+				<conveyor>
+					<len>3</len>
+				</conveyor>
+			</stock>
+			<flow name="entering_listed">
+				<eqn>0</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="leaving_listed">
+				<non_negative/>
+			</flow>
+			<aux name="fill">
+				<dimensions>
+					<dim name="Slots"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>5</eqn>
+				</element>
+			</aux>
+			<stock name="belt_from_slice">
+				<eqn>fill[1:3]</eqn>
+				<inflow>entering_slice</inflow>
+				<outflow>leaving_slice</outflow>
+				<conveyor>
+					<len>3</len>
+				</conveyor>
+			</stock>
+			<flow name="entering_slice">
+				<eqn>0</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="leaving_slice">
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="belt"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="entering">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="100.0" name="leaving">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="150.0" name="dropping">
+					<pts>
+						<pt x="372.5" y="150"/>
+						<pt x="550" y="150"/>
+					</pts>
+				</flow>
+				<aux x="80" y="290" name="young"/>
+				<stock x="350" y="270" name="belt_listed"/>
+				<flow label_side="bottom" x="238.75" y="270.0" name="entering_listed">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="270.0" name="leaving_listed">
+					<pts>
+						<pt x="372.5" y="270"/>
+						<pt x="550" y="270"/>
+					</pts>
+				</flow>
+				<aux x="220" y="460" name="fill"/>
+				<stock x="350" y="440" name="belt_from_slice"/>
+				<flow label_side="bottom" x="238.75" y="440.0" name="entering_slice">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="440.0" name="leaving_slice">
+					<pts>
+						<pt x="372.5" y="440"/>
+						<pt x="550" y="440"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="270">
+					<from>belt</from>
+					<to>young</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

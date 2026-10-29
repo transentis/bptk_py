@@ -24,27 +24,13 @@ def _(mo):
 
     ![Agents and their environment](../images/agents_environment.svg)
 
-    So to create an agent using Python and the BPTK framework, all you really need to do is:
+    [Agent-based Modeling with BPTK-Py](../../abm/agent_based_modeling/agent_based_modeling.md) explains step by step what an agent and a model need; this page builds one. A model is configured in a JSON file, and each configuration of it is a scenario.
 
-    * Identify the relevant agents
-    * Define the agents properties
-    * For each agent, implement an initializer which sets the agents initial state
-    * Define handlers for each kind of event you want your agent to react to
-    * Define an action method, which describes what the agent does in each time-step, e.g. perform internal tasks and send events to other agents
-
-    Defining the model is even easier:
-
-    * Define the environment properties and update them when necessary
-    * Tell the model which kinds of agents there are
-    * Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents. Each unique configuration of a model is referred to as a scenario. The BPTK framework helps you to manage different scenarios and compare results easily.
-
-    Configuring Agent-based models is best done using a config file defined in JSON.
-
-    Agent-based modeling is a very powerful approach and you can build models using ABM that you cannot build using SD. This power comes at a prices though: because each agent is modelled as an individual entity, agent-based models are quite slow.
+    Agent-based modeling is a very powerful approach and you can build models using ABM that you cannot build using SD. This power comes at a price though: because each agent is modelled as an individual entity, agent-based models are quite slow.
 
     ## Setting Up the Model
 
-    For the customer acquisition model, we really just need to agents: the company that sends advertising events and the consumers that receive those events. If a consumer becomes a customer, then the consumers starts sending word ouf mouth events.
+    For the customer acquisition model, we really just need two agents: the company that sends advertising events and the consumers that receive those events. If a consumer becomes a customer, then the consumer starts sending word of mouth events.
 
     This is illustrated in the following diagram:
 
@@ -102,7 +88,7 @@ def _(Agent, Event):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Note that the company agent defined below accesses the properties `advertising_budget`and `consumers_reacher_per _euro`. These properties are defined in the scenarios and can then be accessed "magically" as either agent properties or model properties.
+    Note that the company agent defined below accesses the properties `advertising_budget` and `consumers_reached_per_euro`. These properties are defined in the scenarios and can then be accessed "magically" as either agent properties or model properties.
     """)
     return
 

@@ -143,11 +143,7 @@ def _(mo):
     mo.md(r"""
     Scenarios are just particular settings for the constants and graphical functions in your model and scenario managers are a simple way of grouping scenarios.
 
-    You can create scenarios directly in Python (which we will do here), but the easiest way to maintain them is to keep them in separate JSON files – you can define as many scenario managers and scenarios in a file as you would like and use as many files as you would like.
-
-    Each scenario manager references the model it pertains to. So you can run multiple simulation models in one notebook.
-
-    If you do keep them in files, BPTK-Py looks for a `scenarios/` folder beside your notebook and loads everything it finds there – including the underlying simulation models. The [XMILE quickstart](../xmile/xmile.md) works that way; here we stay in Python.
+    You can create scenarios directly in Python, which we will do here, or keep them in JSON files, as the [XMILE quickstart](../xmile/xmile.md) does. [Scenarios In Depth](../../concepts/scenarios/scenarios.md) describes both.
     """)
     return
 

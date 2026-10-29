@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>rk4_conveyor</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="RK4" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="belt">
+				<eqn>0</eqn>
+				<inflow>entering</inflow>
+				<outflow>exiting</outflow>
+				<outflow>leaking</outflow>
+				<conveyor>
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<flow name="entering">
+				<eqn>10 + STEP(5, 3)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="exiting">
+				<non_negative/>
+			</flow>
+			<flow name="leaking">
+				<eqn>0.2</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<stock name="behind">
+				<eqn>0</eqn>
+				<inflow>arriving</inflow>
+			</stock>
+			<flow name="arriving">
+				<eqn>exiting</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="belt"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="entering">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="100.0" name="exiting">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="150.0" name="leaking">
+					<pts>
+						<pt x="360" y="117.5"/>
+						<pt x="360" y="150"/>
+						<pt x="550" y="150"/>
+					</pts>
+				</flow>
+				<stock x="350" y="270" name="behind"/>
+				<flow label_side="bottom" x="238.75" y="270.0" name="arriving">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="270">
+					<from>exiting</from>
+					<to>arriving</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

@@ -28,7 +28,7 @@ The best way to get started with BPTK-Py is to read the [Quickstart](https://bpt
 
 ## Installation
 
-BPTK-Py requires Python 3.12 or later.
+BPTK-Py requires Python 3.13 or later.
 
 ```bash
 pip install bptk-py
@@ -41,11 +41,10 @@ Capabilities that a modeller does not always need are available as extras:
 | Install | Adds |
 |---|---|
 | `pip install bptk-py[plotting]` | Plotting via [Matplotlib](https://www.matplotlib.org) — `plot_scenarios`, `Element.plot`, `plot_lookup` |
-| `pip install bptk-py[xmile]` | The XMILE compiler, for models built in Stella or iThink |
 | `pip install bptk-py[server]` | `BptkServer` and the Postgres and Redis state adapters |
 | `pip install bptk-py[observability]` | Logging to [Pydantic Logfire](https://logfire.pydantic.dev) |
 
-They combine: `pip install "bptk-py[plotting,xmile]"`. Note the quotes — some shells, zsh among them, treat the brackets as a filename pattern.
+They combine: `pip install "bptk-py[plotting,server]"`. Note the quotes — some shells, zsh among them, treat the brackets as a filename pattern.
 
 Using a capability without its extra raises an error naming the extra to install, so nothing fails silently.
 
@@ -73,6 +72,53 @@ If you want to build simulation models using a UI and AI, please check our [Meta
 For any questions or suggestions you have regarding BPTK, please contact us at: [support@transentis.com](mailto:support@transentis.com).
 
 ## Changelog
+
+### 3.5.0
+
+* Breaking: Python 3.13 or later is required; tested on 3.13, 3.14 and 3.15
+* Breaking: `arr_rank` is XMILE's RANK - the position of the n-th smallest, counting from 1; the value of the n-th largest, which it returned, is `arr_largest`
+* Breaking: `sd.rank` and `sd.interpolate` are the array methods `arr_rank` and `arr_interpolate`
+* Breaking: `sd.poisson`'s mean is per time unit, as XMILE and Stella - a step draws with mu * dt; a model with dt other than 1 draws differently
+* Breaking: `sd.pareto(shape, scale)` is the classic Pareto distribution, starting at scale - it started at 0
+* Breaking: a division by zero - `/`, `%` or 0 to a negative power - gives NaN and logs one `[ERROR]` per element on both engines; the Python engine raised `ZeroDivisionError`
+* Breaking: `sd.factorial`, `sd.combinations` and `sd.permutations` take whole numbers of at least 0 only - anything else gives NaN and an `[ERROR]`; the Python engine cut fractions off
+* Breaking: a biflow among the inflows of a non-negative stock that runs backwards is served before the outflows, as in Stella - it was served after them
+* Breaking: the XMILE transpiler reads `NOT a > b` as `(NOT a) > b`, as the standard and Stella - it read `NOT (a > b)`
+* Breaking: `compile_xmile`'s unused `json` target, which wrote the compiler's intermediate representation, is removed
+* Breaking: a scenario manager compiles an XMILE model with `py-sddsl`, also over a file an earlier release wrote, and uses the values its interface controls were left at
+* Breaking: the bare name of an XMILE array has no values of its own; `inventory[*,*]` still sums its cells
+* Breaking: `compile_xmile`'s target `py` is removed; a scenario manager compiles a file `py` wrote again from the model's source, and without the source the file no longer runs
+* Breaking: the XMILE transpiler refuses `ENDVAL`, `RUNCOUNT` and `SENSIRUNCOUNT`, which read earlier runs, `SUM`, `PROD` and `SIZE` with more than one argument, and an array beside other arguments of `MEAN`, `MAX` and `MIN` - as Stella does
+* Feature: `sd.irr`, `sd.lookupinv`, `sd.lookuparea`, `arr_rank`, `arr_interpolate`, random functions with a seed, non-negative stocks and conveyors with `sd.agecount` run on the Rust engine; the two engines draw different numbers for the same seed
+* Feature: `sd.agecount` takes no maximum - everything from the minimum on - and counts one step's material when maximum equals minimum, as Stella
+* Feature: `sd.lookup`, `sd.lookupinv` and `sd.lookuparea` take XMILE's type of graphical function as `kind` - `"continuous"`, `"extrapolate"` or `"discrete"` - on both engines
+* Feature: every random function but `sd.random` takes `minimum`, `maximum` and `sample`, as Stella's min, max and sample, on both engines; bounds no draw of 100 meets give NaN and an `[ERROR]`
+* Feature: Stella's `ISNAN`, `REWORK`, `EXPBOUND`, `LOGISTICBOUND`, `MAXSOFT`, `MINSOFT`, `NORMALPINK`, `LOOKUPMAX`, `LOOKUPMIN`, `LOOKUPMEAN`, `LOOKUPRANDOM`, `PERCENTILE`, `RUNCUM`, `RUNMAX`, `RUNMIN`, `RUNMEAN` and `RUNCUMTARGET` in the SD DSL, on both engines
+* Feature: `compile_xmile(source, target, "py-sddsl")` writes an XMILE model as SD DSL code - a `Model` that runs on both engines, as Stella computes it; `"json-rust-engine"` writes the Rust engine's JSON of that model; what the SD DSL cannot express is refused with a message
+* Feature: a model compiled from XMILE runs on the Rust engine
+* Feature: the XMILE compiler is part of the base install; the `[xmile]` extra is gone
+* Feature: `inventory[1,germany]` and `inventory[1,*]` ask for a cell and for the sum of a row of any arrayed model, on both engines
+* Feature: `Module.conveyor` creates a conveyor under the module's name, as `stock` and `flow` do
+* Feature: the XMILE transpiler reads comments in braces, quoted names with spaces, `NOT`, `AND` and `OR` on numbers, a comparison as a number, `2E3` and arithmetic on a dimension in an index
+* Feature: the XMILE transpiler warns at `[WARN]` where a Stella model computes differently once transpiled - `MOD` beside other operators, `PULSE` without an interval, `DELAY` with a changing delay time
+* Feature: the XMILE transpiler leaves out loop and pathway scores (`LOOPSCORE`, `PATHSCORE`) with a `[WARN]` rather than refusing the model
+* Removed parsimonious, xmltodict and jinja2: the XMILE compiler has no dependency of its own
+* Upgraded matplotlib from 3.10.8 to 3.11.2, numpy from 2.5.3 to 2.5.4 and redis from 6.4.0 to 8.1.0
+* Bugfixes:
+    * A comparison, `sd.And`, `sd.Or` and `sd.Not` give 1.0 or 0.0 on the Python engine, as on Rust; `(TIME > 2) + (TIME > 4)` adds two comparisons
+    * Sessions: a constant set at a step holds from that step's time on in a model with a finer dt on the Rust engine too; `sd.lookuparea` without bounds follows a table set during a session
+    * `sd.sqrt`, `sd.ln`, `sd.log10`, `sd.arcsin` and `sd.arccos` outside their domain give NaN and an `[ERROR]`
+    * `sd.sinwave` and `sd.coswave` with a period of 0, `sd.gammaln` at 0 and below, a negative or half-step delay and powers beyond a float give the same on both engines
+    * NaN and infinity work as literals in every argument position, and `sd.max`, `sd.min`, `sd.lookup` and `sd.delay` give NaN for a NaN argument on both engines
+    * `arr_largest` takes an expression as its rank; an array as the rank of `arr_rank` or a weight of `arr_interpolate` is refused when the equation is built
+    * A negative base to a fractional power gives NaN rather than a complex number
+    * `sd.pulse` without a first pulse fires at the start time, and a pulse time between two steps fires in the later one, as Stella - it fired at time 0, and skipped such a time
+    * `sd.lookuparea` counts nothing beyond the table's ends; `sd.lookupinv` gives NaN for a value a table that is not monotonic never reaches
+    * `sd.trend` and `sd.forecast` give 0 and the input while the input is 0 - they raised ZeroDivisionError
+    * Rust engine: an equation that divides by a stock reports no division by zero at the start time; an initial value that reads its own stock is refused as a cycle
+    * XMILE modules: a variable a module connect feeds takes its source's values rather than its placeholder; SELF works in a module
+    * XMILE: a flow with a graphical function of its own reads it; it was ignored
+    * Scenario files are read in alphabetical order, so where two files set the same value the same file wins on every system
 
 ### 3.4.2
 

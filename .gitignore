@@ -6,6 +6,8 @@ BPTK_Py/.DS_Store
 *.*pyc
 *__pycache
 *.csv
+# Stella's runs of the check models are reference data, kept with their models
+!tests/test_models/**/*.csv
 *.log
 results/
 venv
@@ -27,10 +29,6 @@ tests/state
 target/
 BPTK_Py/_rust_engine*.so
 BPTK_Py/_rust_engine*.pyd
-
-# Generated Python files from XMILE compiler
-# XMILE models (*.stmx) are compiled to Python during tests
-tests/test_models/*.py
 
 # marimo session/autosave caches (the notebook .py itself IS tracked)
 __marimo__/

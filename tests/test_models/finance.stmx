@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>finance</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="cash">
+				<eqn>IF TIME = 0 THEN -100 ELSE 30</eqn>
+			</aux>
+			<aux name="npv_1">
+				<eqn>NPV(cash, 0.1)</eqn>
+			</aux>
+			<aux name="npv_init">
+				<eqn>NPV(cash, 0.1, 5)</eqn>
+			</aux>
+			<aux name="npv_expr">
+				<eqn>NPV(cash * 2, 0.05 * 2)</eqn>
+			</aux>
+			<aux name="irr_1">
+				<eqn>IRR(cash)</eqn>
+			</aux>
+			<aux name="pmt_1">
+				<eqn>PMT(0.05, 10, 1000, 0)</eqn>
+			</aux>
+			<aux name="pmt_fv">
+				<eqn>PMT(0.05, 10, 1000, 200)</eqn>
+			</aux>
+			<aux name="fv_1">
+				<eqn>FV(0.05, 10, -100, 0)</eqn>
+			</aux>
+			<aux name="fv_pv">
+				<eqn>FV(0.05, 10, -100, -500)</eqn>
+			</aux>
+			<aux name="pv_1">
+				<eqn>PV(0.05, 10, -100, 0)</eqn>
+			</aux>
+			<aux name="pv_fv">
+				<eqn>PV(0.05, 10, -100, 500)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="cash"/>
+				<aux x="220" y="290" name="npv_1"/>
+				<aux x="360" y="290" name="npv_init"/>
+				<aux x="500" y="290" name="npv_expr"/>
+				<aux x="640" y="290" name="irr_1"/>
+				<aux x="780" y="290" name="pmt_1"/>
+				<aux x="80" y="380" name="pmt_fv"/>
+				<aux x="220" y="380" name="fv_1"/>
+				<aux x="360" y="380" name="fv_pv"/>
+				<aux x="500" y="380" name="pv_1"/>
+				<aux x="640" y="380" name="pv_fv"/>
+				<connector uid="1" angle="270">
+					<from>cash</from>
+					<to>npv_1</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>cash</from>
+					<to>npv_init</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>cash</from>
+					<to>npv_expr</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>cash</from>
+					<to>irr_1</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

@@ -30,7 +30,7 @@ def _(mo):
     mo.md(r"""
     Let's dive right into the first example. We may want to simulate different equations for a specific simulation scenario.
 
-    We want to simulate the equation 'openTasks' and 'closedTasks' for the scenario "scenario80". Play around with the parameters for the x/y labels and title.
+    We want to simulate the equations 'openTasks' and 'closedTasks' for the scenario "scenario80". Play around with the parameters for the x/y labels and title.
 
     You may either use the ``scenario_managers`` parameter and supply a list of the names of all scenario managers you want to plot the simulation results for or use the specific scenarios' names. If you have the same scenario name in different scenario managers both the name of the scenario and scenario manager are required.
     """)
@@ -71,7 +71,7 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Changing Start Date And Frequency
-    In the example above, we did not specify the ``freq`` and ``start_date`` parameters. The series just plots the values of t for the x-axis. Using the mentioned parameters, you can generate time-series data. Let's specify the x-axis by setting ``freq="ME"``and ``start_date="1/11/2017"``.
+    In the example above, we did not specify the ``freq`` and ``start_date`` parameters. The series just plots the values of t for the x-axis. Using the mentioned parameters, you can generate time-series data. Let's specify the x-axis by setting ``freq="ME"`` and ``start_date="1/11/2017"``.
     """)
     return
 
@@ -86,7 +86,7 @@ def _(bptk):
         x_label="Date",
         y_label="Open / Closed Tasks",
         start_date="1/11/2017",
-        freq="D", format="axes"
+        freq="ME", format="axes"
     )
     return
 
@@ -117,7 +117,7 @@ def _(bptk):
         freq="D",
         series_names={
             "anotherSimpleProjectManagement_scenario80_openTasks" : "Open Tasks another manager" ,
-            "anotherSimpleProjectManagement_scenario80_closedTasks" : "Closed Tasks anoter Manager"}, format="axes"
+            "anotherSimpleProjectManagement_scenario80_closedTasks" : "Closed Tasks another Manager"}, format="axes"
     )
     return
 

@@ -6,10 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
-
 
 import importlib
 from copy import deepcopy
@@ -219,7 +217,7 @@ class ScenarioManagerSd(ScenarioManager):
 
         if not os.path.isfile(py_model_file_path) or last_stamp_source > last_stamp_model:
             if not self.source is None and os.path.isfile(self.source):  ## <- Only do if the source actually exists
-                compile(target="py", src=self.source, dest=py_model_file_path)
+                compile(target="py-sddsl", src=self.source, dest=py_model_file_path)
                 # The file below is imported straight after being written. CPython
                 # usually notices because FileFinder tracks the directory's mtime;
                 # Pyodide does not, and the import fails with ModuleNotFoundError.
@@ -257,6 +255,14 @@ class ScenarioManagerSd(ScenarioManager):
             #  In case we loaded the same module before, Python would not do anything with the above line alone. We explicitly need to tell Python to reload the file!
             mod = importlib.reload(mod)
             model_class = getattr(mod, class_link)
+
+            # A file transpiled by an earlier release is a plain class rather than a
+            # Model, and it can be newer than its source - the rule above keeps it then
+            if self.source and os.path.isfile(self.source) and not isinstance(model_class(), Model):
+                compile(target="py-sddsl", src=self.source, dest=py_model_file_path)
+                importlib.invalidate_caches()
+                mod = importlib.reload(mod)
+                model_class = getattr(mod, class_link)
 
             ## INSTANTIATE THE MODEL OBJECT.
             for scenario in self.scenarios.values():

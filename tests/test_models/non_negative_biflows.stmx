@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>non_negative_biflows</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>3</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="s_biflow_out_last">
+				<eqn>5</eqn>
+				<outflow>o_uni</outflow>
+				<outflow>b_out</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_biflow_out_first">
+				<eqn>5</eqn>
+				<outflow>b_out_first</outflow>
+				<outflow>o_uni_second</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_biflow_in_with_inflow">
+				<eqn>5</eqn>
+				<inflow>i_two</inflow>
+				<inflow>b_in</inflow>
+				<outflow>o_uni_c</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_two_biflows_in">
+				<eqn>5</eqn>
+				<inflow>b_in_first</inflow>
+				<inflow>b_in_second</inflow>
+				<outflow>o_uni_d</outflow>
+				<non_negative/>
+			</stock>
+			<flow name="o_uni">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="b_out">
+				<eqn>8</eqn>
+			</flow>
+			<flow name="b_out_first">
+				<eqn>8</eqn>
+			</flow>
+			<flow name="o_uni_second">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="i_two">
+				<eqn>2</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="b_in">
+				<eqn>-8</eqn>
+			</flow>
+			<flow name="o_uni_c">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="b_in_first">
+				<eqn>-4</eqn>
+			</flow>
+			<flow name="b_in_second">
+				<eqn>-4</eqn>
+			</flow>
+			<flow name="o_uni_d">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="s_biflow_out_last"/>
+				<stock x="350" y="270" name="s_biflow_out_first"/>
+				<stock x="350" y="440" name="s_biflow_in_with_inflow"/>
+				<stock x="350" y="610" name="s_two_biflows_in"/>
+				<flow label_side="bottom" x="461.25" y="100.0" name="o_uni">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="150.0" name="b_out">
+					<pts>
+						<pt x="360" y="117.5"/>
+						<pt x="360" y="150"/>
+						<pt x="550" y="150"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="270.0" name="b_out_first">
+					<pts>
+						<pt x="372.5" y="270"/>
+						<pt x="550" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="320.0" name="o_uni_second">
+					<pts>
+						<pt x="360" y="287.5"/>
+						<pt x="360" y="320"/>
+						<pt x="550" y="320"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="440.0" name="i_two">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="340.0" y="473.75" name="b_in">
+					<pts>
+						<pt x="150" y="490"/>
+						<pt x="340" y="490"/>
+						<pt x="340" y="457.5"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="440.0" name="o_uni_c">
+					<pts>
+						<pt x="372.5" y="440"/>
+						<pt x="550" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="610.0" name="b_in_first">
+					<pts>
+						<pt x="150" y="610"/>
+						<pt x="327.5" y="610"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="340.0" y="643.75" name="b_in_second">
+					<pts>
+						<pt x="150" y="660"/>
+						<pt x="340" y="660"/>
+						<pt x="340" y="627.5"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="610.0" name="o_uni_d">
+					<pts>
+						<pt x="372.5" y="610"/>
+						<pt x="550" y="610"/>
+					</pts>
+				</flow>
+			</view>
+		</views>
+	</model>
+</xmile>

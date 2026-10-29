@@ -59,7 +59,7 @@ def _(mo):
 
     To illustrate the DSL, we will build the simple project management model we introduced in our [step-by-step tutorial on System Dynamics](https://www.transentis.com/step-by-step-tutorials/introduction-to-system-dynamics/).
 
-    The project management model is really simple and just containts a few stocks, flows and converters, as you can see in the following diagram:
+    The project management model is really simple and just contains a few stocks, flows and converters, as you can see in the following diagram:
 
     ![Stock and Flow Diagram of the Simple Project Management Model](./sfd_simple_project_management.svg)
 
@@ -124,7 +124,7 @@ def _(mo):
     mo.md(r"""
     As you can see our convention is to use the camel casing naming convention for the model elements and to create Python variables for the elements that carry the same name.
 
-    Once a model element has been defined in this manner, we only need to refer to the Python variable and don't need to reference the model element (i.e. we can use `openTasks` in our equations, as opposed to using `model.stock("openTasks")`. This saves a lot of typing.
+    Once a model element has been defined in this manner, we only need to refer to the Python variable and don't need to reference the model element (i.e. we can use `openTasks` in our equations, as opposed to using `model.stock("openTasks")`). This saves a lot of typing.
     """)
     return
 
@@ -175,6 +175,8 @@ def _(mo):
     staff.initial_value = initialStaff
     openTasks.initial_value = initialOpenTasks
     ```
+
+    `staff` has no flows, so it keeps its initial value for the whole run – it is a stock so that hiring and attrition can be added as flows later.
     """)
     return
 
@@ -278,7 +280,7 @@ def _(mo):
     mo.md(r"""
     The `schedulePressure` is a dimensionless ratio that compares the required effort to complete all remaining open tasks to the remaining work capacity.
 
-    We use the  `min` and `max` functions from the SD function library to ensure that no division by zero occurs and that the schedule pressure is capped at 2.5:
+    We use the `min` and `max` functions from the SD function library to ensure that no division by zero occurs and that the schedule pressure is capped at 2.5:
     """)
     return
 
@@ -358,7 +360,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The last equation we need to define is that of the `completionRate` - the completion rate is defined by the number of staff working on the project divided by the effort per task. We then multiply this with the (average) productivity of the staff. The completion rate may never be larger than the number of  `openTasks`, so we constrain it using the `min` function.
+    The last equation we need to define is that of the `completionRate` - the completion rate is defined by the number of staff working on the project divided by the effort per task. We then multiply this with the (average) productivity of the staff. The completion rate may never be larger than the number of `openTasks`, so we constrain it using the `min` function.
     """)
     return
 
@@ -493,7 +495,7 @@ def _(closedTasks, deadline):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Of course we can also plot the variables in a graph straight away using the element's  ``plot()`` method.
+    Of course we can also plot the variables in a graph straight away using the element's ``plot()`` method.
     """)
     return
 
@@ -673,11 +675,11 @@ def _(mo):
     mo.md(r"""
     ## Storing Models Created Using The SD DSL In A Python Class
 
-    It is possible to take the code from above and store it in a Python code file. The JSON structure is exactly as you are used to from the generated models. [simulation_models/simple_project_dsl_class.py](simulation_models/simple_project_dsl_class.py) is such a code file that implements the code.
+    It is possible to take the code from above and store it in a Python code file. [simulation_models/simple_project_dsl_class.py](simulation_models/simple_project_dsl_class.py) is such a code file that implements the code.
     Let us walk through it. For readability, we omit a lot of code and only show the basic structure:
     ```python
 
-    class simulation_model(Model):
+    class simulation(Model):
 
         def __init__(self):
 
@@ -713,13 +715,13 @@ def _(mo):
             completionRate.equation = sd.max(0.0, sd.min(openTasks, staff * (productivity / effortPerTask)))
     ```
 
-    First, the class's name has to be ``simulation_model`` and inherit from BPTK_Py.Model, as we have done before. The call to the ``super()._init__`` function configures the model's main parameters. And then only the code for your equations follows. Now you are done, the model is defined.
+    First, the class inherits from BPTK_Py.Model, as we have done before. The call to the ``super().__init__`` function configures the model's main parameters. And then only the code for your equations follows. Now you are done, the model is defined.
 
-    In the next step, we need to write the JSON (the full file is available here: [scenarios/dsl_class.json](scenarios/dsl_class.json):
+    In the next step, we need to write the JSON (the full file is available here: [scenarios/dsl_class.json](scenarios/dsl_class.json)):
     ```json
     {
       "smSimpleProjectManagementDslClass": {
-        "model": "simulation_models/simple_project_dsl_class",
+        "model": "simulation_models.simple_project_dsl_class.simulation",
         "base_constants": {
           "deadline": 100.0,
           "initialOpenTasks": 100.0
@@ -737,9 +739,9 @@ def _(mo):
       }
     }
     ```
-    Note that this is exactly the structure we used for linking to the generated SD models. As long as the model has an ``equations`` and ``memo`` field and its name is ``simulation_model``, BPTK-Py is agnostic of the code inside.
+    The ``model`` key names the module and, after the last dot, the class - the [Scenarios](../../concepts/scenarios/scenarios.md) page describes the notation. A model compiled from XMILE is a file of the same kind.
 
-    We can easily plot the scenario and see that it the same model as we defined interactively:
+    We can easily plot the scenario and see that it is the same model as we defined interactively:
     """)
     return
 
@@ -782,7 +784,7 @@ def _(mo):
     mo.md(r"""
     This page introduced a simple domain-specific language for System Dynamics, implemented in Python. It lets you create System Dynamics models in Python and supports interactive modeling in a notebook.
 
-    Creating System Dynamics models directly in Python is particulary useful if you have the need to extend your SD models with your own SD functions or you would like to combine your models with other computational models such as Agent-based models or mathematical models.
+    Creating System Dynamics models directly in Python is particularly useful if you have the need to extend your SD models with your own SD functions or you would like to combine your models with other computational models such as Agent-based models or mathematical models.
     """)
     return
 

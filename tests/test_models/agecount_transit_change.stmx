@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>agecount_transit_change</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="longer">
+				<eqn>0</eqn>
+				<inflow>in_longer</inflow>
+				<outflow>out_longer</outflow>
+				<conveyor>
+					<len>transit_longer</len>
+				</conveyor>
+			</stock>
+			<stock name="shorter">
+				<eqn>0</eqn>
+				<inflow>in_shorter</inflow>
+				<outflow>out_shorter</outflow>
+				<conveyor>
+					<len>transit_shorter</len>
+				</conveyor>
+			</stock>
+			<stock name="leaking">
+				<eqn>30</eqn>
+				<inflow>in_leaking</inflow>
+				<outflow>out_leaking</outflow>
+				<outflow>leak_leaking</outflow>
+				<conveyor>
+					<len>transit_longer</len>
+				</conveyor>
+			</stock>
+			<flow name="in_leaking">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_leaking">
+				<non_negative/>
+			</flow>
+			<flow name="leak_leaking">
+				<eqn>0.02</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<aux name="leaking_young">
+				<eqn>AGECOUNT(leaking, 0, 1)</eqn>
+			</aux>
+			<aux name="leaking_older">
+				<eqn>AGECOUNT(leaking, 1)</eqn>
+			</aux>
+			<flow name="in_longer">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_longer">
+				<non_negative/>
+			</flow>
+			<flow name="in_shorter">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_shorter">
+				<non_negative/>
+			</flow>
+			<aux name="transit_longer">
+				<eqn>3 + STEP(1, 4)</eqn>
+			</aux>
+			<aux name="transit_shorter">
+				<eqn>4 - STEP(1, 4)</eqn>
+			</aux>
+			<aux name="longer_young">
+				<eqn>AGECOUNT(longer, 0, 1)</eqn>
+			</aux>
+			<aux name="longer_older">
+				<eqn>AGECOUNT(longer, 1)</eqn>
+			</aux>
+			<aux name="shorter_young">
+				<eqn>AGECOUNT(shorter, 0, 1)</eqn>
+			</aux>
+			<aux name="shorter_older">
+				<eqn>AGECOUNT(shorter, 1)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="120" name="longer"/>
+				<stock x="350" y="360" name="shorter"/>
+				<flow label_side="bottom" x="238.75" y="120" name="in_longer">
+					<pts><pt x="150" y="120"/><pt x="327.5" y="120"/></pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="120" name="out_longer">
+					<pts><pt x="372.5" y="120"/><pt x="550" y="120"/></pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="360" name="in_shorter">
+					<pts><pt x="150" y="360"/><pt x="327.5" y="360"/></pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="360" name="out_shorter">
+					<pts><pt x="372.5" y="360"/><pt x="550" y="360"/></pts>
+				</flow>
+				<stock x="350" y="600" name="leaking"/>
+				<flow label_side="bottom" x="238.75" y="600" name="in_leaking">
+					<pts><pt x="150" y="600"/><pt x="327.5" y="600"/></pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="600" name="out_leaking">
+					<pts><pt x="372.5" y="600"/><pt x="550" y="600"/></pts>
+				</flow>
+				<flow label_side="bottom" x="455" y="650" name="leak_leaking">
+					<pts><pt x="360" y="617.5"/><pt x="360" y="650"/><pt x="550" y="650"/></pts>
+				</flow>
+				<aux x="650" y="560" name="leaking_young"/>
+				<aux x="650" y="640" name="leaking_older"/>
+				<aux x="250" y="40" name="transit_longer"/>
+				<aux x="250" y="280" name="transit_shorter"/>
+				<aux x="650" y="80" name="longer_young"/>
+				<aux x="650" y="160" name="longer_older"/>
+				<aux x="650" y="320" name="shorter_young"/>
+				<aux x="650" y="400" name="shorter_older"/>
+				<connector uid="1" angle="0"><from>longer</from><to>longer_young</to></connector>
+				<connector uid="2" angle="0"><from>longer</from><to>longer_older</to></connector>
+				<connector uid="3" angle="0"><from>shorter</from><to>shorter_young</to></connector>
+				<connector uid="4" angle="0"><from>shorter</from><to>shorter_older</to></connector>
+				<connector uid="5" angle="0"><from>leaking</from><to>leaking_young</to></connector>
+				<connector uid="6" angle="0"><from>leaking</from><to>leaking_older</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

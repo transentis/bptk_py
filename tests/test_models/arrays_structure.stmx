@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>arrays_structure</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="Products" size="3"/>
+		<dim name="Countries"><elem name="Germany"/><elem name="England"/><elem name="Austria"/><elem name="Greece"/></dim>
+		<dim name="Pair"><elem name="north"/><elem name="middle"/><elem name="south"/></dim>
+		<dim name="Single" size="1"/>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="production start rate">
+				<dimensions><dim name="Products"/><dim name="Countries"/></dimensions>
+				<element subscript="1, Germany"><eqn>1</eqn></element>
+				<element subscript="1, England"><eqn>2</eqn></element>
+				<element subscript="1, Austria"><eqn>3</eqn></element>
+				<element subscript="1, Greece"><eqn>4</eqn></element>
+				<element subscript="2, Germany"><eqn>5</eqn></element>
+				<element subscript="2, England"><eqn>6</eqn></element>
+				<element subscript="2, Austria"><eqn>7</eqn></element>
+				<element subscript="2, Greece"><eqn>8</eqn></element>
+				<element subscript="3, Germany"><eqn>9</eqn></element>
+				<element subscript="3, England"><eqn>10</eqn></element>
+				<element subscript="3, Austria"><eqn>11</eqn></element>
+				<element subscript="3, Greece"><eqn>12</eqn></element>
+			</aux>
+			<aux name="production duration">
+				<dimensions><dim name="Products"/><dim name="Countries"/></dimensions>
+				<eqn>2</eqn>
+			</aux>
+			<flow name="production start">
+				<dimensions><dim name="Products"/><dim name="Countries"/></dimensions>
+				<eqn>production_start_rate</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="production">
+				<dimensions><dim name="Products"/><dim name="Countries"/></dimensions>
+				<eqn>DELAY(production_start, production_duration, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<stock name="inventory">
+				<dimensions><dim name="Products"/><dim name="Countries"/></dimensions>
+				<eqn>0</eqn>
+				<inflow>production</inflow>
+			</stock>
+			<aux name="total">
+				<eqn>SUM(inventory[*, *])</eqn>
+			</aux>
+			<aux name="per country">
+				<dimensions><dim name="Countries"/></dimensions>
+				<eqn>SUM(inventory[*, Countries])</eqn>
+			</aux>
+			<aux name="german sum">
+				<eqn>SUM(inventory[*, Germany])</eqn>
+			</aux>
+			<aux name="smallest german">
+				<eqn>inventory[RANK(inventory[*, Germany], 1), Germany]</eqn>
+			</aux>
+			<aux name="largest german">
+				<eqn>inventory[RANK(inventory[*, Germany], SIZE(inventory[*, Germany])), Germany]</eqn>
+			</aux>
+			<aux name="cells">
+				<eqn>SIZE(inventory)</eqn>
+			</aux>
+			<aux name="average">
+				<eqn>SUM(inventory[*, *])/SIZE(inventory[*, *])</eqn>
+			</aux>
+			<aux name="mean all">
+				<eqn>MEAN(inventory[*, *])</eqn>
+			</aux>
+			<aux name="mean of countries">
+				<eqn>MEAN(per_country)</eqn>
+			</aux>
+			<aux name="interpolated">
+				<eqn>INTERPOLATE(production_start_rate, 0.75, 0.5)</eqn>
+			</aux>
+			<aux name="pair values">
+				<dimensions><dim name="Pair"/></dimensions>
+				<element subscript="north"><eqn>1</eqn></element>
+				<element subscript="middle"><eqn>2</eqn></element>
+				<element subscript="south"><eqn>3</eqn></element>
+			</aux>
+			<aux name="pair range">
+				<eqn>SUM(pair_values[north:middle])</eqn>
+			</aux>
+			<aux name="single values">
+				<dimensions><dim name="Single"/></dimensions>
+				<eqn>7</eqn>
+			</aux>
+			<aux name="single sum">
+				<eqn>SUM(single_values[*])</eqn>
+			</aux>
+			<aux name="own size">
+				<dimensions><dim name="Products"/></dimensions>
+				<eqn>SIZE(SELF)</eqn>
+			</aux>
+			<aux name="changing">
+				<dimensions><dim name="Products"/></dimensions>
+				<eqn>1/TIME</eqn>
+			</aux>
+			<stock name="frozen">
+				<eqn>SUM(changing[*])</eqn>
+			</stock>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1400" page_height="1200" type="stock_flow">
+				<aux x="80" y="80" name="production start rate"/>
+				<aux x="240" y="80" name="production duration"/>
+				<flow x="400" y="80" name="production start"><pts><pt x="350" y="80"/><pt x="450" y="80"/></pts></flow>
+				<flow x="560" y="80" name="production"><pts><pt x="510" y="80"/><pt x="610" y="80"/></pts></flow>
+				<stock x="720" y="80" name="inventory"/>
+				<aux x="880" y="80" name="total"/>
+				<aux x="1040" y="80" name="per country"/>
+				<aux x="1200" y="80" name="german sum"/>
+				<aux x="80" y="180" name="smallest german"/>
+				<aux x="240" y="180" name="largest german"/>
+				<aux x="400" y="180" name="cells"/>
+				<aux x="560" y="180" name="average"/>
+				<aux x="720" y="180" name="mean all"/>
+				<aux x="880" y="180" name="mean of countries"/>
+				<aux x="1040" y="180" name="interpolated"/>
+				<aux x="1200" y="180" name="pair values"/>
+				<aux x="80" y="280" name="pair range"/>
+				<aux x="240" y="280" name="single values"/>
+				<aux x="400" y="280" name="single sum"/>
+				<aux x="560" y="280" name="own size"/>
+				<aux x="720" y="280" name="changing"/>
+				<stock x="880" y="280" name="frozen"/>
+				<connector uid="1" angle="270"><from>production_start_rate</from><to>production_start</to></connector>
+				<connector uid="2" angle="270"><from>production_duration</from><to>production</to></connector>
+				<connector uid="3" angle="270"><from>production_start</from><to>production</to></connector>
+				<connector uid="4" angle="270"><from>inventory</from><to>total</to></connector>
+				<connector uid="5" angle="270"><from>inventory</from><to>per_country</to></connector>
+				<connector uid="6" angle="270"><from>inventory</from><to>german_sum</to></connector>
+				<connector uid="7" angle="270"><from>inventory</from><to>smallest_german</to></connector>
+				<connector uid="8" angle="270"><from>inventory</from><to>largest_german</to></connector>
+				<connector uid="9" angle="270"><from>inventory</from><to>cells</to></connector>
+				<connector uid="10" angle="270"><from>inventory</from><to>average</to></connector>
+				<connector uid="11" angle="270"><from>inventory</from><to>mean_all</to></connector>
+				<connector uid="12" angle="270"><from>per_country</from><to>mean_of_countries</to></connector>
+				<connector uid="13" angle="270"><from>production_start_rate</from><to>interpolated</to></connector>
+				<connector uid="14" angle="270"><from>pair_values</from><to>pair_range</to></connector>
+				<connector uid="15" angle="270"><from>single_values</from><to>single_sum</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

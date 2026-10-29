@@ -425,6 +425,12 @@ class Conveyor(Stock):
         return leaked[plan["leaks"].index(flow)] / self.model.dt
 
     def _agecount(self, t, minimum, maximum):
+        # As Stella: no maximum counts everything from minimum on, and a maximum equal to
+        # minimum the one step of material of that age rather than nothing
+        if maximum is None:
+            maximum = math.inf
+        elif abs(maximum - minimum) < 1e-9:
+            maximum = minimum + self.model.dt
         return self._belt(self._step_of(t)).agecount(t, minimum, maximum)
 
 

@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>stella_extras</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="E" size="5"/>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="input">
+				<eqn>SINWAVE(5, 6) + TIME</eqn>
+			</aux>
+			<aux name="isnan_number">
+				<eqn>ISNAN(input)</eqn>
+			</aux>
+			<aux name="isnan_nan">
+				<eqn>ISNAN(NAN)</eqn>
+			</aux>
+			<aux name="expbound_slow_start">
+				<eqn>EXPBOUND(1, 9, TIME, 2, 2, 8)</eqn>
+			</aux>
+			<aux name="expbound_linear">
+				<eqn>EXPBOUND(1, 9, TIME, 0, 2, 8)</eqn>
+			</aux>
+			<aux name="expbound_fast_start">
+				<eqn>EXPBOUND(1, 9, TIME, -2, 2, 8)</eqn>
+			</aux>
+			<aux name="logisticbound_open">
+				<eqn>LOGISTICBOUND(1, 9, TIME, 5, 1)</eqn>
+			</aux>
+			<aux name="logisticbound_closed">
+				<eqn>LOGISTICBOUND(1, 9, TIME, 5, 1, 1, 10)</eqn>
+			</aux>
+			<aux name="logisticbound_linear">
+				<eqn>LOGISTICBOUND(1, 9, TIME, 5, 0, 1, 10)</eqn>
+			</aux>
+			<aux name="maxsoft_1">
+				<eqn>MAXSOFT(6 - TIME, 1, 2)</eqn>
+			</aux>
+			<aux name="maxsoft_hard">
+				<eqn>MAXSOFT(6 - TIME, 1, 0)</eqn>
+			</aux>
+			<aux name="minsoft_1">
+				<eqn>MINSOFT(TIME, 7, 2)</eqn>
+			</aux>
+			<aux name="runcum_1">
+				<eqn>RUNCUM(input)</eqn>
+			</aux>
+			<aux name="runcum_as_stock">
+				<eqn>RUNCUM(input, STARTTIME, TIME - DT)</eqn>
+			</aux>
+			<aux name="runcum_window">
+				<eqn>RUNCUM(input, TIME - 2, TIME)</eqn>
+			</aux>
+			<aux name="runmax_1">
+				<eqn>RUNMAX(input)</eqn>
+			</aux>
+			<aux name="runmin_1">
+				<eqn>RUNMIN(input)</eqn>
+			</aux>
+			<aux name="runmean_1">
+				<eqn>RUNMEAN(input)</eqn>
+			</aux>
+			<aux name="runmean_window">
+				<eqn>RUNMEAN(input, TIME - 3, TIME)</eqn>
+			</aux>
+			<aux name="runcumtarget_constant">
+				<eqn>RUNCUMTARGET(1, 6)</eqn>
+			</aux>
+			<aux name="runcumtarget_input">
+				<eqn>RUNCUMTARGET(input, 20)</eqn>
+			</aux>
+			<aux name="gf_shape">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="10"/>
+					<yscale min="0" max="20"/>
+					<ypts>0,5,20,10,0</ypts>
+				</gf>
+			</aux>
+			<aux name="lookupmax_1">
+				<eqn>LOOKUPMAX(gf_shape)</eqn>
+			</aux>
+			<aux name="lookupmin_1">
+				<eqn>LOOKUPMIN(gf_shape)</eqn>
+			</aux>
+			<aux name="lookupmean_1">
+				<eqn>LOOKUPMEAN(gf_shape)</eqn>
+			</aux>
+			<aux name="lookupmax_range">
+				<eqn>LOOKUPMAX(gf_shape, 5, 3)</eqn>
+			</aux>
+			<aux name="lookupmean_range">
+				<eqn>LOOKUPMEAN(gf_shape, 8)</eqn>
+			</aux>
+			<aux name="values">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>5</eqn>
+				</element>
+			</aux>
+			<aux name="weights">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>6</eqn>
+				</element>
+			</aux>
+			<aux name="percentile_50">
+				<eqn>PERCENTILE(values, 50)</eqn>
+			</aux>
+			<aux name="percentile_25">
+				<eqn>PERCENTILE(values, 25)</eqn>
+			</aux>
+			<aux name="percentile_0">
+				<eqn>PERCENTILE(values, 0)</eqn>
+			</aux>
+			<aux name="percentile_100">
+				<eqn>PERCENTILE(values, 100)</eqn>
+			</aux>
+			<aux name="percentile_difference">
+				<eqn>PERCENTILE(values, 50, 25)</eqn>
+			</aux>
+			<aux name="percentile_weighted">
+				<eqn>PERCENTILE(values, 50, 0, weights)</eqn>
+			</aux>
+			<aux name="weights_first">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>1</eqn>
+				</element>
+			</aux>
+			<aux name="maxsoft_half">
+				<eqn>MAXSOFT(6 - TIME, 1, 0.5)</eqn>
+			</aux>
+			<aux name="maxsoft_5">
+				<eqn>MAXSOFT(6 - TIME, 1, 5)</eqn>
+			</aux>
+			<aux name="maxsoft_equal">
+				<eqn>MAXSOFT(TIME, TIME, 2)</eqn>
+			</aux>
+			<aux name="minsoft_half">
+				<eqn>MINSOFT(TIME, 7, 0.5)</eqn>
+			</aux>
+			<aux name="minsoft_5">
+				<eqn>MINSOFT(TIME, 7, 5)</eqn>
+			</aux>
+			<aux name="percentile_10">
+				<eqn>PERCENTILE(values, 10)</eqn>
+			</aux>
+			<aux name="percentile_40">
+				<eqn>PERCENTILE(values, 40)</eqn>
+			</aux>
+			<aux name="percentile_60">
+				<eqn>PERCENTILE(values, 60)</eqn>
+			</aux>
+			<aux name="percentile_75">
+				<eqn>PERCENTILE(values, 75)</eqn>
+			</aux>
+			<aux name="percentile_90">
+				<eqn>PERCENTILE(values, 90)</eqn>
+			</aux>
+			<aux name="percentile_cut_75_25">
+				<eqn>PERCENTILE(values, 75, 25)</eqn>
+			</aux>
+			<aux name="percentile_cut_90_10">
+				<eqn>PERCENTILE(values, 90, 10)</eqn>
+			</aux>
+			<aux name="percentile_weighted_25">
+				<eqn>PERCENTILE(values, 25, 0, weights)</eqn>
+			</aux>
+			<aux name="percentile_weighted_75">
+				<eqn>PERCENTILE(values, 75, 0, weights)</eqn>
+			</aux>
+			<aux name="percentile_weighted_first">
+				<eqn>PERCENTILE(values, 50, 0, weights_first)</eqn>
+			</aux>
+			<aux name="percentile_weighted_cut">
+				<eqn>PERCENTILE(values, 75, 25, weights)</eqn>
+			</aux>
+			<aux name="runmax_window">
+				<eqn>RUNMAX(input, TIME - 2, TIME)</eqn>
+			</aux>
+			<aux name="runmin_window">
+				<eqn>RUNMIN(input, TIME - 2, TIME)</eqn>
+			</aux>
+			<aux name="runcumtarget_never">
+				<eqn>RUNCUMTARGET(1, 100)</eqn>
+			</aux>
+			<aux name="runcumtarget_falling">
+				<eqn>RUNCUMTARGET(6 - TIME, 10)</eqn>
+			</aux>
+			<aux name="lookupmean_range_3_5">
+				<eqn>LOOKUPMEAN(gf_shape, 3, 5)</eqn>
+			</aux>
+			<aux name="lookupmin_range_3_5">
+				<eqn>LOOKUPMIN(gf_shape, 3, 5)</eqn>
+			</aux>
+					<aux name="gf_const">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="10"/>
+					<yscale min="0" max="2"/>
+					<ypts>1,1,1,1,1</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_shape_from_0">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="20"/>
+					<ypts>0,5,20,10,0</ypts>
+				</gf>
+			</aux>
+			<aux name="values_sorted">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>5</eqn>
+				</element>
+			</aux>
+			<aux name="values_orig">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>5</eqn>
+				</element>
+			</aux>
+			<aux name="w_equal">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>1</eqn>
+				</element>
+			</aux>
+			<aux name="w_first_2">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>1</eqn>
+				</element>
+			</aux>
+			<aux name="w_last_2">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>2</eqn>
+				</element>
+			</aux>
+			<aux name="w_middle_3">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>1</eqn>
+				</element>
+			</aux>
+			<aux name="w_last_half">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>0.5</eqn>
+				</element>
+			</aux>
+			<aux name="w_last_6">
+				<dimensions>
+					<dim name="E"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>6</eqn>
+				</element>
+			</aux>
+			<aux name="p">
+				<eqn>TIME * 100 / 12</eqn>
+			</aux>
+			<aux name="lookupmean_const">
+				<eqn>LOOKUPMEAN(gf_const)</eqn>
+			</aux>
+			<aux name="lookupmean_const_8">
+				<eqn>LOOKUPMEAN(gf_const, 8)</eqn>
+			</aux>
+			<aux name="lookupmean_const_4">
+				<eqn>LOOKUPMEAN(gf_const, 4)</eqn>
+			</aux>
+			<aux name="lookupmean_const_3_5">
+				<eqn>LOOKUPMEAN(gf_const, 3, 5)</eqn>
+			</aux>
+			<aux name="lookupmean_const_5_3">
+				<eqn>LOOKUPMEAN(gf_const, 5, 3)</eqn>
+			</aux>
+			<aux name="lookupmean_const_4_8">
+				<eqn>LOOKUPMEAN(gf_const, 4, 8)</eqn>
+			</aux>
+			<aux name="lookupmean_const_8_4">
+				<eqn>LOOKUPMEAN(gf_const, 8, 4)</eqn>
+			</aux>
+			<aux name="lookupmean_const_6_10">
+				<eqn>LOOKUPMEAN(gf_const, 6, 10)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_4_8">
+				<eqn>LOOKUPMEAN(gf_shape, 4, 8)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_8_4">
+				<eqn>LOOKUPMEAN(gf_shape, 8, 4)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_5_3">
+				<eqn>LOOKUPMEAN(gf_shape, 5, 3)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_6">
+				<eqn>LOOKUPMEAN(gf_shape, 6)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_from_0">
+				<eqn>LOOKUPMEAN(gf_shape_from_0)</eqn>
+			</aux>
+			<aux name="lookupmean_shape_from_0_1_3">
+				<eqn>LOOKUPMEAN(gf_shape_from_0, 1, 3)</eqn>
+			</aux>
+			<aux name="percentile_sorted">
+				<eqn>PERCENTILE(values_sorted, p)</eqn>
+			</aux>
+			<aux name="percentile_orig">
+				<eqn>PERCENTILE(values_orig, p)</eqn>
+			</aux>
+			<aux name="percentile_w_equal">
+				<eqn>PERCENTILE(values_sorted, p, 0, w_equal)</eqn>
+			</aux>
+			<aux name="percentile_w_first_2">
+				<eqn>PERCENTILE(values_sorted, p, 0, w_first_2)</eqn>
+			</aux>
+			<aux name="percentile_w_last_2">
+				<eqn>PERCENTILE(values_sorted, p, 0, w_last_2)</eqn>
+			</aux>
+			<aux name="percentile_w_middle_3">
+				<eqn>PERCENTILE(values_sorted, p, 0, w_middle_3)</eqn>
+			</aux>
+			<aux name="percentile_w_last_half">
+				<eqn>PERCENTILE(values_sorted, p, 0, w_last_half)</eqn>
+			</aux>
+			<aux name="percentile_orig_w_last_6">
+				<eqn>PERCENTILE(values_orig, p, 0, w_last_6)</eqn>
+			</aux>
+			<aux name="in_const_2">
+				<eqn>2</eqn>
+			</aux>
+			<aux name="in_step">
+				<eqn>STEP(4, 3)</eqn>
+			</aux>
+			<aux name="in_ramp">
+				<eqn>TIME</eqn>
+			</aux>
+			<aux name="in_pulse">
+				<eqn>IF TIME = 2 THEN 10 ELSE 0</eqn>
+			</aux>
+			<aux name="in_sin">
+				<eqn>SINWAVE(5, 6) + TIME</eqn>
+			</aux>
+			<aux name="runcumtarget_const_7">
+				<eqn>RUNCUMTARGET(in_const_2, 7)</eqn>
+			</aux>
+			<aux name="runcumtarget_step_10">
+				<eqn>RUNCUMTARGET(in_step, 10)</eqn>
+			</aux>
+			<aux name="runcumtarget_ramp_20">
+				<eqn>RUNCUMTARGET(in_ramp, 20)</eqn>
+			</aux>
+			<aux name="runcumtarget_ramp_3">
+				<eqn>RUNCUMTARGET(in_ramp, 3)</eqn>
+			</aux>
+			<aux name="runcumtarget_pulse_4">
+				<eqn>RUNCUMTARGET(in_pulse, 4)</eqn>
+			</aux>
+			<aux name="runcumtarget_sin_10">
+				<eqn>RUNCUMTARGET(in_sin, 10)</eqn>
+			</aux>
+			<aux name="runcumtarget_sin_20">
+				<eqn>RUNCUMTARGET(in_sin, 20)</eqn>
+			</aux>
+			<aux name="runcumtarget_sin_30">
+				<eqn>RUNCUMTARGET(in_sin, 30)</eqn>
+			</aux>
+			<aux name="runcum_sin">
+				<eqn>RUNCUM(in_sin)</eqn>
+			</aux>
+			<aux name="runcum_ramp">
+				<eqn>RUNCUM(in_ramp)</eqn>
+			</aux>
+</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="1810" type="stock_flow">
+				<aux x="80" y="290" name="input"/>
+				<aux x="220" y="290" name="isnan_number"/>
+				<aux x="360" y="290" name="isnan_nan"/>
+				<aux x="500" y="290" name="expbound_slow_start"/>
+				<aux x="640" y="290" name="expbound_linear"/>
+				<aux x="780" y="290" name="expbound_fast_start"/>
+				<aux x="80" y="380" name="logisticbound_open"/>
+				<aux x="220" y="380" name="logisticbound_closed"/>
+				<aux x="360" y="380" name="logisticbound_linear"/>
+				<aux x="500" y="380" name="maxsoft_1"/>
+				<aux x="640" y="380" name="maxsoft_hard"/>
+				<aux x="780" y="380" name="minsoft_1"/>
+				<aux x="80" y="470" name="runcum_1"/>
+				<aux x="220" y="470" name="runcum_as_stock"/>
+				<aux x="360" y="470" name="runcum_window"/>
+				<aux x="500" y="470" name="runmax_1"/>
+				<aux x="640" y="470" name="runmin_1"/>
+				<aux x="780" y="470" name="runmean_1"/>
+				<aux x="80" y="560" name="runmean_window"/>
+				<aux x="220" y="560" name="runcumtarget_constant"/>
+				<aux x="360" y="560" name="runcumtarget_input"/>
+				<aux x="500" y="560" name="gf_shape"/>
+				<aux x="640" y="560" name="lookupmax_1"/>
+				<aux x="780" y="560" name="lookupmin_1"/>
+				<aux x="80" y="650" name="lookupmean_1"/>
+				<aux x="220" y="650" name="lookupmax_range"/>
+				<aux x="360" y="650" name="lookupmean_range"/>
+				<aux x="500" y="650" name="values"/>
+				<aux x="640" y="650" name="weights"/>
+				<aux x="780" y="650" name="percentile_50"/>
+				<aux x="80" y="740" name="percentile_25"/>
+				<aux x="220" y="740" name="percentile_0"/>
+				<aux x="360" y="740" name="percentile_100"/>
+				<aux x="500" y="740" name="percentile_difference"/>
+				<aux x="640" y="740" name="percentile_weighted"/>
+				<connector uid="1" angle="270">
+					<from>input</from>
+					<to>isnan_number</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>input</from>
+					<to>runcum_1</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>input</from>
+					<to>runcum_as_stock</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>input</from>
+					<to>runcum_window</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>input</from>
+					<to>runmax_1</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>input</from>
+					<to>runmin_1</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>input</from>
+					<to>runmean_1</to>
+				</connector>
+				<connector uid="8" angle="270">
+					<from>input</from>
+					<to>runmean_window</to>
+				</connector>
+				<connector uid="9" angle="270">
+					<from>input</from>
+					<to>runcumtarget_input</to>
+				</connector>
+				<connector uid="10" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmax_1</to>
+				</connector>
+				<connector uid="11" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmin_1</to>
+				</connector>
+				<connector uid="12" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_1</to>
+				</connector>
+				<connector uid="13" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmax_range</to>
+				</connector>
+				<connector uid="14" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_range</to>
+				</connector>
+				<connector uid="15" angle="270">
+					<from>values</from>
+					<to>percentile_50</to>
+				</connector>
+				<connector uid="16" angle="270">
+					<from>values</from>
+					<to>percentile_25</to>
+				</connector>
+				<connector uid="17" angle="270">
+					<from>values</from>
+					<to>percentile_0</to>
+				</connector>
+				<connector uid="18" angle="270">
+					<from>values</from>
+					<to>percentile_100</to>
+				</connector>
+				<connector uid="19" angle="270">
+					<from>values</from>
+					<to>percentile_difference</to>
+				</connector>
+				<connector uid="20" angle="270">
+					<from>weights</from>
+					<to>percentile_weighted</to>
+				</connector>
+				<connector uid="21" angle="270">
+					<from>values</from>
+					<to>percentile_weighted</to>
+				</connector>
+				<aux x="80" y="830" name="weights_first"/>
+				<aux x="220" y="830" name="maxsoft_half"/>
+				<aux x="360" y="830" name="maxsoft_5"/>
+				<aux x="500" y="830" name="maxsoft_equal"/>
+				<aux x="640" y="830" name="minsoft_half"/>
+				<aux x="780" y="830" name="minsoft_5"/>
+				<aux x="920" y="830" name="percentile_10"/>
+				<aux x="80" y="920" name="percentile_40"/>
+				<aux x="220" y="920" name="percentile_60"/>
+				<aux x="360" y="920" name="percentile_75"/>
+				<aux x="500" y="920" name="percentile_90"/>
+				<aux x="640" y="920" name="percentile_cut_75_25"/>
+				<aux x="780" y="920" name="percentile_cut_90_10"/>
+				<aux x="920" y="920" name="percentile_weighted_25"/>
+				<aux x="80" y="1010" name="percentile_weighted_75"/>
+				<aux x="220" y="1010" name="percentile_weighted_first"/>
+				<aux x="360" y="1010" name="percentile_weighted_cut"/>
+				<aux x="500" y="1010" name="runmax_window"/>
+				<aux x="640" y="1010" name="runmin_window"/>
+				<aux x="780" y="1010" name="runcumtarget_never"/>
+				<aux x="920" y="1010" name="runcumtarget_falling"/>
+				<aux x="80" y="1100" name="lookupmean_range_3_5"/>
+				<aux x="220" y="1100" name="lookupmin_range_3_5"/>
+				<connector uid="22" angle="270">
+					<from>values</from>
+					<to>percentile_10</to>
+				</connector>
+				<connector uid="23" angle="270">
+					<from>values</from>
+					<to>percentile_40</to>
+				</connector>
+				<connector uid="24" angle="270">
+					<from>values</from>
+					<to>percentile_60</to>
+				</connector>
+				<connector uid="25" angle="270">
+					<from>values</from>
+					<to>percentile_75</to>
+				</connector>
+				<connector uid="26" angle="270">
+					<from>values</from>
+					<to>percentile_90</to>
+				</connector>
+				<connector uid="27" angle="270">
+					<from>values</from>
+					<to>percentile_cut_75_25</to>
+				</connector>
+				<connector uid="28" angle="270">
+					<from>values</from>
+					<to>percentile_cut_90_10</to>
+				</connector>
+				<connector uid="29" angle="270">
+					<from>values</from>
+					<to>percentile_weighted_25</to>
+				</connector>
+				<connector uid="30" angle="270">
+					<from>weights</from>
+					<to>percentile_weighted_25</to>
+				</connector>
+				<connector uid="31" angle="270">
+					<from>values</from>
+					<to>percentile_weighted_75</to>
+				</connector>
+				<connector uid="32" angle="270">
+					<from>weights</from>
+					<to>percentile_weighted_75</to>
+				</connector>
+				<connector uid="33" angle="270">
+					<from>values</from>
+					<to>percentile_weighted_first</to>
+				</connector>
+				<connector uid="34" angle="270">
+					<from>weights_first</from>
+					<to>percentile_weighted_first</to>
+				</connector>
+				<connector uid="35" angle="270">
+					<from>values</from>
+					<to>percentile_weighted_cut</to>
+				</connector>
+				<connector uid="36" angle="270">
+					<from>weights</from>
+					<to>percentile_weighted_cut</to>
+				</connector>
+				<connector uid="37" angle="270">
+					<from>input</from>
+					<to>runmax_window</to>
+				</connector>
+				<connector uid="38" angle="270">
+					<from>input</from>
+					<to>runmin_window</to>
+				</connector>
+				<connector uid="39" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_range_3_5</to>
+				</connector>
+				<connector uid="40" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmin_range_3_5</to>
+				</connector>
+				<aux x="80" y="1190" name="gf_const"/>
+				<aux x="360" y="1190" name="gf_shape_from_0"/>
+				<aux x="500" y="1190" name="values_sorted"/>
+				<aux x="640" y="1190" name="values_orig"/>
+				<aux x="780" y="1190" name="w_equal"/>
+				<aux x="920" y="1190" name="w_first_2"/>
+				<aux x="80" y="1280" name="w_last_2"/>
+				<aux x="220" y="1280" name="w_middle_3"/>
+				<aux x="360" y="1280" name="w_last_half"/>
+				<aux x="500" y="1280" name="w_last_6"/>
+				<aux x="640" y="1280" name="p"/>
+				<aux x="780" y="1280" name="lookupmean_const"/>
+				<aux x="920" y="1280" name="lookupmean_const_8"/>
+				<aux x="80" y="1370" name="lookupmean_const_4"/>
+				<aux x="220" y="1370" name="lookupmean_const_3_5"/>
+				<aux x="360" y="1370" name="lookupmean_const_5_3"/>
+				<aux x="500" y="1370" name="lookupmean_const_4_8"/>
+				<aux x="640" y="1370" name="lookupmean_const_8_4"/>
+				<aux x="780" y="1370" name="lookupmean_const_6_10"/>
+				<aux x="920" y="1370" name="lookupmean_shape_4_8"/>
+				<aux x="80" y="1460" name="lookupmean_shape_8_4"/>
+				<aux x="220" y="1460" name="lookupmean_shape_5_3"/>
+				<aux x="360" y="1460" name="lookupmean_shape_6"/>
+				<aux x="500" y="1460" name="lookupmean_shape_from_0"/>
+				<aux x="640" y="1460" name="lookupmean_shape_from_0_1_3"/>
+				<aux x="780" y="1460" name="percentile_sorted"/>
+				<aux x="920" y="1460" name="percentile_orig"/>
+				<aux x="80" y="1550" name="percentile_w_equal"/>
+				<aux x="220" y="1550" name="percentile_w_first_2"/>
+				<aux x="360" y="1550" name="percentile_w_last_2"/>
+				<aux x="500" y="1550" name="percentile_w_middle_3"/>
+				<aux x="640" y="1550" name="percentile_w_last_half"/>
+				<aux x="780" y="1550" name="percentile_orig_w_last_6"/>
+				<aux x="920" y="1550" name="in_const_2"/>
+				<aux x="80" y="1640" name="in_step"/>
+				<aux x="220" y="1640" name="in_ramp"/>
+				<aux x="360" y="1640" name="in_pulse"/>
+				<aux x="500" y="1640" name="in_sin"/>
+				<aux x="640" y="1640" name="runcumtarget_const_7"/>
+				<aux x="780" y="1640" name="runcumtarget_step_10"/>
+				<aux x="920" y="1640" name="runcumtarget_ramp_20"/>
+				<aux x="80" y="1730" name="runcumtarget_ramp_3"/>
+				<aux x="220" y="1730" name="runcumtarget_pulse_4"/>
+				<aux x="360" y="1730" name="runcumtarget_sin_10"/>
+				<aux x="500" y="1730" name="runcumtarget_sin_20"/>
+				<aux x="640" y="1730" name="runcumtarget_sin_30"/>
+				<aux x="780" y="1730" name="runcum_sin"/>
+				<aux x="920" y="1730" name="runcum_ramp"/>
+				<connector uid="41" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const</to>
+				</connector>
+				<connector uid="42" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_8</to>
+				</connector>
+				<connector uid="43" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_4</to>
+				</connector>
+				<connector uid="44" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_3_5</to>
+				</connector>
+				<connector uid="45" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_5_3</to>
+				</connector>
+				<connector uid="46" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_4_8</to>
+				</connector>
+				<connector uid="47" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_8_4</to>
+				</connector>
+				<connector uid="48" angle="270">
+					<from>gf_const</from>
+					<to>lookupmean_const_6_10</to>
+				</connector>
+				<connector uid="49" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_shape_4_8</to>
+				</connector>
+				<connector uid="50" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_shape_8_4</to>
+				</connector>
+				<connector uid="51" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_shape_5_3</to>
+				</connector>
+				<connector uid="52" angle="270">
+					<from>gf_shape</from>
+					<to>lookupmean_shape_6</to>
+				</connector>
+				<connector uid="53" angle="270">
+					<from>gf_shape_from_0</from>
+					<to>lookupmean_shape_from_0</to>
+				</connector>
+				<connector uid="54" angle="270">
+					<from>gf_shape_from_0</from>
+					<to>lookupmean_shape_from_0_1_3</to>
+				</connector>
+				<connector uid="55" angle="270">
+					<from>p</from>
+					<to>percentile_sorted</to>
+				</connector>
+				<connector uid="56" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_sorted</to>
+				</connector>
+				<connector uid="57" angle="270">
+					<from>p</from>
+					<to>percentile_orig</to>
+				</connector>
+				<connector uid="58" angle="270">
+					<from>values_orig</from>
+					<to>percentile_orig</to>
+				</connector>
+				<connector uid="59" angle="270">
+					<from>p</from>
+					<to>percentile_w_equal</to>
+				</connector>
+				<connector uid="60" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_w_equal</to>
+				</connector>
+				<connector uid="61" angle="270">
+					<from>w_equal</from>
+					<to>percentile_w_equal</to>
+				</connector>
+				<connector uid="62" angle="270">
+					<from>p</from>
+					<to>percentile_w_first_2</to>
+				</connector>
+				<connector uid="63" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_w_first_2</to>
+				</connector>
+				<connector uid="64" angle="270">
+					<from>w_first_2</from>
+					<to>percentile_w_first_2</to>
+				</connector>
+				<connector uid="65" angle="270">
+					<from>p</from>
+					<to>percentile_w_last_2</to>
+				</connector>
+				<connector uid="66" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_w_last_2</to>
+				</connector>
+				<connector uid="67" angle="270">
+					<from>w_last_2</from>
+					<to>percentile_w_last_2</to>
+				</connector>
+				<connector uid="68" angle="270">
+					<from>p</from>
+					<to>percentile_w_middle_3</to>
+				</connector>
+				<connector uid="69" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_w_middle_3</to>
+				</connector>
+				<connector uid="70" angle="270">
+					<from>w_middle_3</from>
+					<to>percentile_w_middle_3</to>
+				</connector>
+				<connector uid="71" angle="270">
+					<from>p</from>
+					<to>percentile_w_last_half</to>
+				</connector>
+				<connector uid="72" angle="270">
+					<from>values_sorted</from>
+					<to>percentile_w_last_half</to>
+				</connector>
+				<connector uid="73" angle="270">
+					<from>w_last_half</from>
+					<to>percentile_w_last_half</to>
+				</connector>
+				<connector uid="74" angle="270">
+					<from>p</from>
+					<to>percentile_orig_w_last_6</to>
+				</connector>
+				<connector uid="75" angle="270">
+					<from>values_orig</from>
+					<to>percentile_orig_w_last_6</to>
+				</connector>
+				<connector uid="76" angle="270">
+					<from>w_last_6</from>
+					<to>percentile_orig_w_last_6</to>
+				</connector>
+				<connector uid="77" angle="270">
+					<from>in_const_2</from>
+					<to>runcumtarget_const_7</to>
+				</connector>
+				<connector uid="78" angle="270">
+					<from>in_step</from>
+					<to>runcumtarget_step_10</to>
+				</connector>
+				<connector uid="79" angle="270">
+					<from>in_ramp</from>
+					<to>runcumtarget_ramp_20</to>
+				</connector>
+				<connector uid="80" angle="270">
+					<from>in_ramp</from>
+					<to>runcumtarget_ramp_3</to>
+				</connector>
+				<connector uid="81" angle="270">
+					<from>in_pulse</from>
+					<to>runcumtarget_pulse_4</to>
+				</connector>
+				<connector uid="82" angle="270">
+					<from>in_sin</from>
+					<to>runcumtarget_sin_10</to>
+				</connector>
+				<connector uid="83" angle="270">
+					<from>in_sin</from>
+					<to>runcumtarget_sin_20</to>
+				</connector>
+				<connector uid="84" angle="270">
+					<from>in_sin</from>
+					<to>runcumtarget_sin_30</to>
+				</connector>
+				<connector uid="85" angle="270">
+					<from>in_sin</from>
+					<to>runcum_sin</to>
+				</connector>
+				<connector uid="86" angle="270">
+					<from>in_ramp</from>
+					<to>runcum_ramp</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

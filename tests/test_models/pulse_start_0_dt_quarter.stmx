@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>pulse_start_0_dt_quarter</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>5</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="s_volume_only">
+				<eqn>0</eqn>
+				<inflow>p_volume_only</inflow>
+			</stock>
+			<stock name="s_first_only">
+				<eqn>0</eqn>
+				<inflow>p_first_only</inflow>
+			</stock>
+			<stock name="s_interval_0">
+				<eqn>0</eqn>
+				<inflow>p_interval_0</inflow>
+			</stock>
+			<stock name="s_interval_1_5">
+				<eqn>0</eqn>
+				<inflow>p_interval_1_5</inflow>
+			</stock>
+			<flow name="p_volume_only">
+				<eqn>PULSE(20)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="p_first_only">
+				<eqn>PULSE(20, 2)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="p_interval_0">
+				<eqn>PULSE(20, 2, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="p_interval_1_5">
+				<eqn>PULSE(20, 2, 1.5)</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="a_volume_only">
+				<eqn>PULSE(20)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="200" y="100" name="s_volume_only"/>
+				<stock x="550" y="100" name="s_first_only"/>
+				<stock x="200" y="250" name="s_interval_0"/>
+				<stock x="550" y="250" name="s_interval_1_5"/>
+				<flow label_side="bottom" x="123.75" y="100.0" name="p_volume_only">
+					<pts>
+						<pt x="70" y="100"/>
+						<pt x="177.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="473.75" y="100.0" name="p_first_only">
+					<pts>
+						<pt x="420" y="100"/>
+						<pt x="527.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="123.75" y="250.0" name="p_interval_0">
+					<pts>
+						<pt x="70" y="250"/>
+						<pt x="177.5" y="250"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="473.75" y="250.0" name="p_interval_1_5">
+					<pts>
+						<pt x="420" y="250"/>
+						<pt x="527.5" y="250"/>
+					</pts>
+				</flow>
+				<aux x="120" y="450" name="a_volume_only"/>
+			</view>
+		</views>
+	</model>
+</xmile>

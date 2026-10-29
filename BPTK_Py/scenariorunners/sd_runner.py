@@ -1,4 +1,3 @@
-
 #                                                       /`-
 # _                                  _   _             /####`-
 # | |                                | | (_)           /########`-
@@ -7,9 +6,10 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2021 transentis labs GmbH
+# Copyright (c) 2021-2026 transentis labs GmbH
 # MIT License
 
+import re
 
 import pandas as pd
 
@@ -18,7 +18,6 @@ from ..exceptions import rust_backend_error
 from ..modeling.model import _leaf_list, load_rust_model, rust_frame
 from .scenario_runner import ScenarioRunner
 from ..sdsimulation import SdSimulation
-from ..sdsimulation.sd_simulation import requested_element
 
 
 def _runspecs(sc):
@@ -27,16 +26,63 @@ def _runspecs(sc):
 
 def _arrayed_leaves(model, equation):
     """The sub-elements of `equation` if it names an arrayed element of `model`. A model
-    compiled from XMILE has no such elements; its arrays are asked for as `name[*]`."""
+    class of the user's own that is no `Model` has no such elements."""
     leaves_of = getattr(model, "_arrayed_leaves", None)
     return leaves_of(equation) if leaves_of is not None else None
+
+
+def requested_cells(model, equation):
+    """The cells an equation written as in XMILE asks for, or None if it is no such request.
+
+    `inventory[1,germany]` names the cell `inventory[1][germany]`, and an asterisk stands
+    for every label of its dimension: `inventory[1,*]` asks for the sum of the first row,
+    as it does in Stella. A label matches regardless of case, as XMILE names do.
+    """
+    if equation in model.equations or "[" not in equation or not equation.endswith("]"):
+        return None
+    name, subscript = equation[:-1].split("[", 1)
+    leaves = _arrayed_leaves(model, name)
+    if leaves is None:
+        return None
+    wanted = [part.strip().lower() for part in subscript.split(",")]
+    cells = []
+    for leaf in leaves:
+        labels = [label.lower() for label in re.findall(r"\[([^\]]*)\]", leaf[len(name):])]
+        if len(labels) == len(wanted) and all(part in ("*", label) for part, label in zip(wanted, labels)):
+            cells.append(leaf)
+    return cells or None
+
+
+def _cell_requests(model, equations):
+    """{request: its cells} for the equations of `equations` that ask for cells."""
+    requests = {}
+    for equation in equations:
+        cells = requested_cells(model, equation)
+        if cells is not None:
+            requests[equation] = cells
+    return requests
+
+
+def _with_cells(equations, requests):
+    """The equations an engine computes: each cell request replaced by its cells."""
+    return list(dict.fromkeys(name for equation in equations
+                              for name in requests.get(equation, [equation])))
+
+
+def _with_sums(frame, requests):
+    """The engine's frame with a column per cell request, holding the sum of its cells."""
+    if frame is None or not requests:
+        return frame
+    for equation, cells in requests.items():
+        frame[equation] = frame[cells].sum(axis=1)
+    return frame
 
 
 def index_equations(equations, scenario_objects, caller=""):
     """Map each requested equation to the scenarios whose model has it, and log an
     error with suggestions for every equation no scenario has.
 
-    An arrayed request such as `stock[*]` is looked up by its raw name `stock`.
+    A request written as in XMILE, such as `stock[1,*]`, is found by its cells.
     `caller` prefixes the message, as `begin_session:` does for its own errors.
     """
     from ..util.didyoumean import didyoumean
@@ -46,10 +92,9 @@ def index_equations(equations, scenario_objects, caller=""):
 
     dict_equations = {}
     for equation in equations:
-        cleaned_equation = requested_element(equation)
         dict_equations[equation] = [name for name, sc in scenario_objects.items()
-                                    if (equation in sc.model.equations or cleaned_equation in sc.model.equations)
-                                    and _arrayed_leaves(sc.model, equation) is None]
+                                    if (equation in sc.model.equations and _arrayed_leaves(sc.model, equation) is None)
+                                    or requested_cells(sc.model, equation) is not None]
 
     prefix = caller + ": " if caller else ""
     for equation, found_in in dict_equations.items():
@@ -72,7 +117,7 @@ def index_equations(equations, scenario_objects, caller=""):
 class SdRunner(ScenarioRunner):
     """Runs pure SD scenarios created with XMILE or with SD DSL.
 
-    This is the class that merges the scenario settings (which it reads from SdScenario) onto the actual simulation model (which is either a Model or a SimulationModel).
+    This is the class that merges the scenario settings (which it reads from SdScenario) onto the actual simulation model, a Model.
 
     Runs a set of scenarios for a given scenario manager.
     """
@@ -161,9 +206,11 @@ class SdRunner(ScenarioRunner):
             log("[ERROR] No scenarios found for scenario manager \"{}\" and scenarios \"{}\"".format(scenario_manager,",".join(scenarios)))
 
         for scenario, sc in scenario_objects.items():
+            requests = _cell_requests(sc.model, equations)
+            run = _with_cells(equations, requests)
             if backend == "rust":
                 try:
-                    self._run_scenario_step_rust(sc, step, settings, scenario_manager, scenario, equations, seed=seed)
+                    self._run_scenario_step_rust(sc, step, settings, scenario_manager, scenario, run, seed=seed)
                 except (ValueError, ImportError, AttributeError) as error:
                     # A session cannot change engines halfway. The Python backend has no
                     # record of the rounds the Rust engine already played - its memo lives
@@ -174,7 +221,8 @@ class SdRunner(ScenarioRunner):
                     # here instead.
                     raise rust_backend_error(error) from error
             else:
-                self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, equations, settings_history)
+                self._run_scenario_step_python(sc, step, settings, scenario_manager, scenario, run, settings_history)
+            sc.result = _with_sums(sc.result, requests)
 
         return {name:scenario.result.to_dict() for name,scenario in scenario_objects.items()}
 
@@ -255,11 +303,13 @@ class SdRunner(ScenarioRunner):
         # the first run_step() returns. The Python path applies the settings and only then
         # computes the step, so overriding a constant in the very first run_step() would
         # otherwise be silently ignored by the Rust backend.
+        step_settings = {}
         if settings and scenario_manager in settings and scenario in settings[scenario_manager]:
-            s = settings[scenario_manager][scenario]
-            for name, value in s.get("constants", {}).items():
-                sc.rust_model.set_constant(name, float(value))
-            for name, pts in s.get("points", {}).items():
+            step_settings = settings[scenario_manager][scenario]
+            if first_call:
+                for name, value in step_settings.get("constants", {}).items():
+                    sc.rust_model.set_constant(name, float(value))
+            for name, pts in step_settings.get("points", {}).items():
                 # Rust set_points expects list[tuple[float, float]]; settings may carry
                 # list[list[float, float]] (JSON-style).
                 sc.rust_model.set_points(name, [(float(x), float(y)) for x, y in pts])
@@ -284,8 +334,14 @@ class SdRunner(ScenarioRunner):
             current = sc.rust_model.current_time()
             n = max(1, round((target - current) / model_dt))
             values = {}
-            for _ in range(n):
+            for _ in range(n - 1):
                 values = sc.rust_model.step()
+            # A constant set at this step holds from this step's time on, as on the Python
+            # engine (`valid_from`): the model's steps in between still see the old value.
+            # A table, which the Python engine reads when it computes, holds for them too.
+            for name, value in step_settings.get("constants", {}).items():
+                sc.rust_model.set_constant(name, float(value))
+            values = sc.rust_model.step()
             t = sc.rust_model.current_time()
 
         sc.result = pd.DataFrame({eq: {float(t): val} for eq, val in values.items()})
@@ -382,10 +438,12 @@ class SdRunner(ScenarioRunner):
             if key in scenarios:
                 sc = scenario_objects[key]
 
+                requests = _cell_requests(sc.model, equations)
+                run = _with_cells(equations, requests)
                 if backend == "rust":
-                    sc.result = self._run_scenario_rust(sc, equations)
+                    sc.result = _with_sums(self._run_scenario_rust(sc, run), requests)
                 else:
-                    sc.result = self._run_scenario_python(sc, equations, output)
+                    sc.result = _with_sums(self._run_scenario_python(sc, run, output), requests)
 
         return scenario_objects
 

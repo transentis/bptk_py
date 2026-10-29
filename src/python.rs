@@ -247,6 +247,10 @@ impl RustSdModel {
     /// always preserved exactly.
     fn export_state(&self) -> Option<(usize, HashMap<String, Vec<f64>>)> {
         let state = self.state.as_ref()?;
+        // A conveyor's belt is not in the memo grid; without it the session is replayed
+        if !state.conveyors.lock().expect("conveyor mutex poisoned").is_empty() {
+            return None;
+        }
         let step = state.current_step;
         // Include one column PAST the cursor: `step()` integrates each stock's next
         // value ahead of the cursor (stock[C+1] is written while landing on C), and

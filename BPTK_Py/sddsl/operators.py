@@ -6,9 +6,13 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
+
 import functools
+import itertools
+import math
+import types
 import zlib
 
 import BPTK_Py.sddsl.element
@@ -65,9 +69,25 @@ class ArrayMethods:
         """Element-wise product of vector/matrix, or with `over` the products along one dimension."""
         return self._aggregate("arr_prod", over, lambda array: ArrayProductOperator(array, dimension))
 
-    def arr_rank(self, rank):
-        """Returns the rank'th highest element."""
-        return ArrayRankOperator(self, rank)
+    def arr_rank(self, rank, tiebreak=None):
+        """XMILE's RANK: the position, counting from 1, of the rank-th smallest element of a
+        vector; equal elements are ordered by tiebreak, then by position."""
+        return Rank(self, rank, tiebreak)
+
+    def arr_percentile(self, percentile, lower=None, weights=None):
+        """Stella's PERCENTILE: the value below which `percentile` percent of the elements
+        lie, less the one at `lower` percent if given; `weights` counts each element that
+        often, and changes the rule - see the functions page."""
+        return Percentile(self, percentile, lower, weights)
+
+    def arr_largest(self, rank):
+        """The value of the rank-th largest element."""
+        return ArrayLargestOperator(self, rank)
+
+    def arr_interpolate(self, *weights):
+        """Stella's INTERPOLATE: a value between the elements, one weight in [0, 1] per
+        dimension."""
+        return Interpolate(self, *weights)
 
     def arr_mean(self, over=None):
         """Mean of vector/matrix."""
@@ -480,7 +500,7 @@ def is_array(operand):
 def array_leaves(operand):
     """The scalar cells of an array - an element or an expression - row by row; a scalar
     is its own single leaf. Every aggregation reads its operand through this, on both
-    engines, so the order is part of the contract: `arr_rank` and `arr_median` sort."""
+    engines, so the order is part of the contract: `arr_largest`, `arr_rank` and `arr_median` sort."""
     if isinstance(operand, BPTK_Py.sddsl.element.Element):
         if operand._elements.vector_size() == 0:
             return [operand]
@@ -701,6 +721,11 @@ class ScalarResultOperator:
         return -1
 
 
+def _one_number(operand, what):
+    if _get_element_dimensions(operand) != -1:
+        raise OperatorError("{} is one number, not an array.".format(what))
+
+
 def _vector_of(array, name):
     shape = _get_element_dimensions(array)
     if shape == -1 or shape[1] > 0:
@@ -709,17 +734,18 @@ def _vector_of(array, name):
 
 
 class Rank(ScalarResultOperator, Operator):
-    """XMILE's RANK: the position, counting from 0, of the `rank`-th smallest element of a
+    """XMILE's RANK: the position, counting from 1, of the `rank`-th smallest element of a
     vector. Equal values are ordered by `tiebreak`, a vector of the same size, then by
     position."""
 
     def __init__(self, array, rank, tiebreak=None):
         super().__init__()
-        _vector_of(array, "rank")
+        _vector_of(array, "arr_rank")
+        _one_number(rank, "arr_rank's rank")
         if tiebreak is not None:
-            _vector_of(tiebreak, "rank's tiebreak")
+            _vector_of(tiebreak, "arr_rank's tiebreak")
             if len(array_leaves(tiebreak)) != len(array_leaves(array)):
-                raise OperatorError("rank's tiebreak has to be as long as the array it ranks.")
+                raise OperatorError("arr_rank's tiebreak has to be as long as the array it ranks.")
         self.array = array
         self.rank = rank
         self.tiebreak = tiebreak
@@ -730,6 +756,35 @@ class Rank(ScalarResultOperator, Operator):
             time, _matrix_element_to_string(self.array, time), extractTerm(self.rank, time), tiebreak)
 
 
+class Percentile(ScalarResultOperator, Operator):
+    """Stella's PERCENTILE over every element of an array. Without weights the rank is
+    percentile * (n - 1) / 100, and a rank between two elements gives the mean of the two;
+    with weights each element stands at the middle of its weight, two neighbours meet at
+    their mean on the border between them, and the value is interpolated in between. A
+    lower percentile above 0 is taken off the result - Stella writes 0 for none."""
+
+    def __init__(self, array, percentile, lower=None, weights=None):
+        super().__init__()
+        if _get_element_dimensions(array) == -1:
+            raise OperatorError("arr_percentile takes an array.")
+        _one_number(percentile, "arr_percentile's percentile")
+        if lower is not None:
+            _one_number(lower, "arr_percentile's lower percentile")
+        if weights is not None and len(array_leaves(weights)) != len(array_leaves(array)):
+            raise OperatorError("arr_percentile's weights have to be as many as the elements they weigh.")
+        self.array = array
+        self.percentile = percentile
+        self.lower = 0.0 if lower is None else lower
+        self.weights = weights
+
+    def term(self, time="t"):
+        def cells(array):
+            return "[{}]".format(", ".join(extractTerm(leaf, time) for leaf in array_leaves(array)))
+        weights = "None" if self.weights is None else cells(self.weights)
+        return "sddsl_builtins.percentile(model, {}, {}, {}, {}, {})".format(
+            time, cells(self.array), extractTerm(self.percentile, time), extractTerm(self.lower, time), weights)
+
+
 class Interpolate(ScalarResultOperator, Operator):
     """Stella's INTERPOLATE: a value between the elements of an array, by one weight
     between 0 and 1 per dimension - 0 the first element, 1 the last."""
@@ -738,11 +793,13 @@ class Interpolate(ScalarResultOperator, Operator):
         super().__init__()
         shape = _get_element_dimensions(array)
         if shape == -1:
-            raise OperatorError("interpolate takes an array.")
+            raise OperatorError("arr_interpolate takes an array.")
         depth = 2 if shape[1] > 0 else 1
+        for weight in weights:
+            _one_number(weight, "A weight of arr_interpolate")
         if len(weights) != depth:
             raise OperatorError(
-                "interpolate takes one weight per dimension: {} for this array, {} were "
+                "arr_interpolate takes one weight per dimension: {} for this array, {} were "
                 "given.".format(depth, len(weights)))
         self.array = array
         self.weights = weights
@@ -817,10 +874,11 @@ class ArraySizeOperator(ScalarResultOperator, Operator):
         return a
 
 
-class ArrayRankOperator(ScalarResultOperator, Operator):
+class ArrayLargestOperator(ScalarResultOperator, Operator):
     """
-    Array rank sorts elements and returns the index-highest element. If the index is bigger than the list, returns smallest element. If index is -1, returns the smallest index.
-    Example: array_rank([3,6,2,4,1], 2) -> 4
+    arr_largest sorts the elements and returns the rank-th largest. A rank beyond the list, or
+    below 1, returns the smallest element.
+    Example: arr_largest([3,6,2,4,1], 2) -> 4
     """
 
     def __init__(self, element, rank):
@@ -833,12 +891,10 @@ class ArrayRankOperator(ScalarResultOperator, Operator):
             return "0.0"
 
         string_term = _matrix_element_to_string(self.element, time, True)
-        count = len(array_leaves(self.element))
-
-        return "sorted({arr},reverse=True)[({count}-1 if ({rank} < 0 or {rank} > {count}) else {rank}-1)]".format(arr=string_term, rank=self.rank, count=count)
+        return "sddsl_builtins.largest({}, {})".format(string_term, extractTerm(self.rank, time))
 
     def clone_with_index(self, index):
-        a = ArrayRankOperator(self.element, self.rank)
+        a = ArrayLargestOperator(self.element, self.rank)
         a.index = index
         return a
 
@@ -1018,9 +1074,9 @@ class UnaryOperator(Operator):
 
     def term(self, time="t"):
         if isinstance(self.element, (float, int)):
-            return str(self.element)
+            return _number_term(self.element)
         else:
-            return self.element.term(time)
+            return str(extractTerm(self.element, time))
 
 
 class PowerOperator(Operator):
@@ -1034,9 +1090,7 @@ class PowerOperator(Operator):
         element = extractTerm(self.element, time)
         power = extractTerm(self.power, time)
 
-        # Both sides in parentheses: the terms of + and - carry none, and ** binds tighter
-        # than either, so (1 + r) ** (t - s) rendered as 1 + r ** t - s.
-        return "(({}) ** ({}))".format(element, power)
+        return "sddsl_builtins.power(model, {}, {}, {})".format(time, element, power)
 
 
 class ComparisonOperator(BinaryOperator):
@@ -1051,7 +1105,9 @@ class ComparisonOperator(BinaryOperator):
     def term(self, time="t"):
         element_1 = extractTerm(self.element_1, time)
         element_2 = extractTerm(self.element_2, time)
-        return str(element_1) + "{}".format(self.sign) + str(element_2)
+        # 1.0 or 0.0, as on the Rust engine, and in parentheses of its own: a comparison
+        # beside another one or in a sum is no chain of comparisons
+        return "float({} {} {})".format(element_1, self.sign, element_2)
 
 
 def _array_literal(element, time):
@@ -1124,7 +1180,8 @@ class ModOperator(BinaryOperator):
         # Both operands are parenthesised: without them a compound operand binds
         # by Python's precedence rather than by the expression the modeller wrote,
         # and `(a + b) % b` rendered as `a+b%b`.
-        return "(" + self.element_1.term(time) + ") % (" + self.element_2.term(time) + ")"
+        return "sddsl_builtins.modulo(model, {}, {}, {})".format(
+            time, extractTerm(self.element_1, time), extractTerm(self.element_2, time))
 
 
 class AdditionOperator(BinaryOperator):
@@ -1134,7 +1191,7 @@ class AdditionOperator(BinaryOperator):
             # expands it index by index instead, and each of those clones addresses
             # sub-elements, so it renders through the line below.
             return "0.0"
-        return self.element_1.term(time) + "+" + self.element_2.term(time)
+        return str(extractTerm(self.element_1, time)) + "+" + str(extractTerm(self.element_2, time))
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1157,7 +1214,7 @@ class SubtractionOperator(BinaryOperator):
             # sub-elements, so it renders through the line below.
             return "0.0"
         # The right side in parentheses: a - (b + c) rendered as a - b + c without them
-        return self.element_1.term(time) + "-(" + self.element_2.term(time) + ")"
+        return str(extractTerm(self.element_1, time)) + "-(" + str(extractTerm(self.element_2, time)) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1179,7 +1236,8 @@ class DivisionOperator(BinaryOperator):
             # expands it index by index instead, and each of those clones addresses
             # sub-elements, so it renders through the line below.
             return "0.0"
-        return "(" + self.element_1.term(time) + ") / (" + self.element_2.term(time) + ")"
+        return "sddsl_builtins.divide(model, {}, {}, {})".format(
+            time, extractTerm(self.element_1, time), extractTerm(self.element_2, time))
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1201,7 +1259,7 @@ class NumericalMultiplicationOperator(BinaryOperator):
             # expands it index by index instead, and each of those clones addresses
             # sub-elements, so it renders through the line below.
             return "0.0"
-        return "(" + str(self.element_2) + ") * (" + self.element_1.term(time) + ")"
+        return "(" + str(extractTerm(self.element_2, time)) + ") * (" + str(extractTerm(self.element_1, time)) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1223,7 +1281,7 @@ class MultiplicationOperator(BinaryOperator):
             # expands it index by index instead, and each of those clones addresses
             # sub-elements, so it renders through the line below.
             return "0.0"
-        return "(" + self.element_1.term(time) + ") * (" + self.element_2.term(time) + ")"
+        return "(" + str(extractTerm(self.element_1, time)) + ") * (" + str(extractTerm(self.element_2, time)) + ")"
 
     def resolve_dimensions(self):
         dim1 = _get_element_dimensions(self.element_1)
@@ -1403,11 +1461,11 @@ class DotOperator(BinaryOperator):
         index = self.index if isinstance(self.index, (list, tuple)) else [self.index]
 
         if kind == "value_array":
-            return "({}) * ({})".format(self.element_1.term(time),
+            return "({}) * ({})".format(str(extractTerm(self.element_1, time)),
                                         _leaf_term(self.element_2, index, time))
         if kind == "array_value":
             return "({}) * ({})".format(_leaf_term(self.element_1, index, time),
-                                        self.element_2.term(time))
+                                        str(extractTerm(self.element_2, time)))
 
         if kind == "vector_matrix":
             column = index[0]
@@ -1530,19 +1588,19 @@ class AbsOperator(UnaryOperator):
     """
 
     def term(self, time="t"):
-        return "abs("+self.element.term(time)+")"
+        return "abs("+str(extractTerm(self.element, time))+")"
 
 
 class MaxOperator(BinaryOperator):
 
     def term(self, time="t"):
-        return "max( " + self.element_1.term(time)+", " + self.element_2.term(time)+")"
+        return "sddsl_builtins.maximum(" + str(extractTerm(self.element_1, time))+", " + str(extractTerm(self.element_2, time))+")"
 
 
 class MinOperator(BinaryOperator):
 
     def term(self, time="t"):
-        return "min( " + self.element_1.term(time)+", " + self.element_2.term(time)+")"
+        return "sddsl_builtins.minimum(" + str(extractTerm(self.element_1, time))+", " + str(extractTerm(self.element_2, time))+")"
 
 
 class Exp(UnaryOperator):
@@ -1551,7 +1609,7 @@ class Exp(UnaryOperator):
     """
 
     def term(self, time="t"):
-        return "np.exp("+self.element.term(time)+")"
+        return "np.exp("+str(extractTerm(self.element, time))+")"
 
 
 class DT(Function):
@@ -1604,13 +1662,19 @@ class Time(Function):
         return time
 
 
+def _kind_argument(kind):
+    # A continuous table is the default and is left out, so its code reads as it always has
+    return "" if kind == "continuous" else ", '{}'".format(kind)
+
+
 class Lookup(Function):
     """
     Lookup function. Uses the points of a graphical function for interpolation
     """
 
-    def __init__(self, element, points):
+    def __init__(self, element, points, kind="continuous"):
         self.element = element
+        self.kind = kind
 
         if type(points) is str:
             self.points = "\"" + points + "\""
@@ -1623,8 +1687,8 @@ class Lookup(Function):
     def term(self, time="t"):
         # At the time asked about: written straight into a stock's equation, the input is
         # read one step back, and str() of the element always read it at t.
-        element = self.element.term(time) if hasattr(self.element, "term") else self.element
-        return "model._lookup({},{})".format(element, self.points)
+        element = extractTerm(self.element, time)
+        return "model._lookup({},{}{})".format(element, self.points, _kind_argument(self.kind))
 
 
 class Irr(Function):
@@ -1639,35 +1703,91 @@ class Irr(Function):
         return "sddsl_builtins.irr(model, '{}', {}, {})".format(self.stream.name, time, missing)
 
 
+class RunStatistic(Function):
+    """Stella's RUNCUM, RUNMAX, RUNMIN and RUNMEAN over the history of a stream element, from
+    `from_time` to `to_time` - the start and the current time when left out."""
+
+    STATISTICS = ("cum", "max", "min", "mean")
+
+    def __init__(self, statistic, stream, from_time=None, to_time=None):
+        self.statistic = statistic
+        self.stream = stream
+        self.from_time = from_time
+        self.to_time = to_time
+
+    def term(self, time="t"):
+        def bound(value, missing):
+            return missing if value is None else extractTerm(value, time)
+        return "sddsl_builtins.run_statistic(model, '{}', '{}', {}, {}, {})".format(
+            self.statistic, self.stream.name, time, bound(self.from_time, "-math.inf"),
+            bound(self.to_time, "math.inf"))
+
+
+class RunCumTarget(Function):
+    """Stella's RUNCUMTARGET: the time at which the running sum of a stream's magnitude
+    reaches a target."""
+
+    def __init__(self, stream, target):
+        self.stream = stream
+        self.target = target
+
+    def term(self, time="t"):
+        return "sddsl_builtins.run_cum_target(model, '{}', {}, {})".format(
+            self.stream.name, time, extractTerm(self.target, time))
+
+
 class LookupInverse(Function):
     """Stella's LOOKUPINV: the x at which a lookup table reaches a value."""
 
-    def __init__(self, value, points):
+    def __init__(self, value, points, kind="continuous"):
         self.value = value
         self.points = Lookup(0.0, points).points
+        self.kind = kind
 
     def term(self, time="t"):
-        return "sddsl_builtins.lookup_inverse(model, {}, {})".format(extractTerm(self.value, time), self.points)
+        return "sddsl_builtins.lookup_inverse(model, {}, {}{})".format(
+            extractTerm(self.value, time), self.points, _kind_argument(self.kind))
 
 
 class LookupArea(Function):
     """Stella's LOOKUPAREA: the area under a lookup table between two x values."""
 
-    def __init__(self, points, from_x=None, to_x=None):
+    def __init__(self, points, from_x=None, to_x=None, kind="continuous"):
         self.points = Lookup(0.0, points).points
         self.from_x = from_x
         self.to_x = to_x
+        self.kind = kind
 
     def term(self, time="t"):
-        return "sddsl_builtins.lookup_area(model, {}, {}, {})".format(
-            self.points, extractTerm(self.from_x, time), extractTerm(self.to_x, time))
+        return "sddsl_builtins.lookup_area(model, {}, {}, {}{})".format(
+            self.points, extractTerm(self.from_x, time), extractTerm(self.to_x, time), _kind_argument(self.kind))
+
+
+class LookupStatistic(Function):
+    """Stella's LOOKUPMAX, LOOKUPMIN and LOOKUPMEAN: the largest or smallest value of a lookup
+    table, or the mean x of the table read as a density, between two x values."""
+
+    STATISTICS = ("max", "min", "mean")
+
+    def __init__(self, statistic, points, from_x=None, to_x=None, kind="continuous"):
+        self.statistic = statistic
+        self.points = Lookup(0.0, points).points
+        self.from_x = from_x
+        self.to_x = to_x
+        self.kind = kind
+
+    def term(self, time="t"):
+        return "sddsl_builtins.lookup_statistic(model, '{}', {}, {}, {}{})".format(
+            self.statistic, self.points, extractTerm(self.from_x, time), extractTerm(self.to_x, time),
+            _kind_argument(self.kind))
 
 
 class AgeCount(Function):
     """Stella's AGECOUNT: the material on a conveyor that has been on it for at least
-    `minimum` and less than `maximum` time units."""
+    `minimum` and less than `maximum` time units - everything from `minimum` on without a
+    maximum, and the one step of material aged `minimum` when the two are equal."""
 
-    def __init__(self, conveyor, minimum, maximum):
+    def __init__(self, conveyor, minimum, maximum=None):
         self.conveyor = conveyor
         self.minimum = minimum
         self.maximum = maximum
@@ -1696,23 +1816,29 @@ class Pulse(Function):
     Pulse class, which represents the pulse function as a SD DSL operator.
     """
 
-    def __init__(self, model, volume, first_pulse=0.0, interval=0.0):
+    def __init__(self, model, volume, first_pulse=None, interval=0.0):
         self.model = model
         self.volume = UnaryOperator(volume)
-        self.first_pulse = UnaryOperator(first_pulse)
+        self.first_pulse = UnaryOperator(Starttime(model) if first_pulse is None else first_pulse)
         self.interval = UnaryOperator(interval)
 
     def term(self, time="t"):
-        # Times are compared with a tolerance: with dt = 0.1, `0.8 - 0.2` is not exactly
-        # twice 0.3, and an exact comparison skipped that pulse.
+        # A pulse fires in the first step that reaches its time, as in Stella: a pulse time
+        # between two steps fires in the later one rather than being skipped. So a step
+        # fires when a pulse time lies in (t - dt, t] - counted with a tolerance, since with
+        # dt = 0.1, `0.8 - 0.2` is not exactly twice 0.3.
         # An interval of 0 means a single pulse, decided at run time: the interval can be
         # an expression, read every step as the engine reads it.
         elapsed = "(({}) - ({}))".format(time, self.first_pulse.term(time))
+        before = "({} - model.dt)".format(elapsed)
         interval = "({})".format(self.interval.term(time))
-        return ("(((({volume})/{dt}) if ((abs({elapsed}) < 1e-10) if {interval} == 0.0 else "
-                "({elapsed} >= -1e-10 and abs({elapsed}/{interval} - round({elapsed}/{interval})) < 1e-9)) "
-                "else 0.0))").format(volume=self.volume.term(time), dt="model.dt", elapsed=elapsed,
-                                     interval=interval)
+        # The index of the last pulse up to a time since the first one, -1 before it
+        passed = "(np.floor({x}/{interval} + 1e-9) if {x} >= -1e-10 else -1)"
+        return ("(((({volume})/model.dt) if (({elapsed} >= -1e-10 and {before} < -1e-10) "
+                "if {interval} == 0.0 else {passed_now} > {passed_before}) else 0.0))").format(
+            volume=self.volume.term(time), elapsed=elapsed, before=before, interval=interval,
+            passed_now=passed.format(x=elapsed, interval=interval),
+            passed_before=passed.format(x=before, interval=interval))
 
 
 class Trend(Function):
@@ -1752,8 +1878,10 @@ class Trend(Function):
             self.input_function - self.exponential_average) / self.averaging_time
         self.exponential_average.equation = self.change_in_average
         self.trend = model.converter(self.id + "trend")
-        self.trend.equation = (self.input_function - self.exponential_average) / (
-            self.exponential_average * self.averaging_time)
+        # As in Stella, the trend is 0 while the average is 0, rather than a division by zero
+        denominator = self.exponential_average * self.averaging_time
+        self.trend.equation = If(denominator == 0.0, 0.0,
+                                 (self.input_function - self.exponential_average) / denominator)
 
     def term(self, time="t"):
         if self.trend is None:
@@ -1989,20 +2117,34 @@ class Delay(Function):
         # The duration is read at the time asked about, not at `starttime`: a delay whose
         # duration varies is asking how long the delay is *now*. Reading it once at the
         # start made a variable duration have no effect at all, and described a different
-        # system from the Rust engine and from a compiled XMILE model, which both read it
-        # every step.
+        # system from the Rust engine, which reads it every step.
         # The duration in parentheses: a compound one, t - (t - 3), lost them as t - t - 3
         # The input is read at the nearest step, so the start counts as reached half a dt
         # before it - as on the engine, which rounds the duration to whole steps first.
-        delayed_time = "{} - ({})".format(str(time),
-                                          self.delay_duration.term(str(time)))
-        return "({} if {}>={} else {})".format(
+        delayed_time = "{} - sddsl_builtins.delay_lag(model, {}, {})".format(
+            str(time), str(time), self.delay_duration.term(str(time)))
+        # A NaN duration fails both comparisons and gives NaN, as on the engine
+        return "({} if {delayed}>={start} else ({} if {delayed}<{start} else math.nan))".format(
             self.input_function.term(delayed_time),
-            delayed_time,
-            "model.starttime - model.dt / 2",
             self.initial_value.term("model.starttime") if self.initial_value is not None else self.input_function.term(
-                "model.starttime")
+                "model.starttime"),
+            delayed=delayed_time,
+            start="model.starttime - model.dt / 2",
         )
+
+
+def _number_term(value):
+    """A number as Python reads it back: str() of NaN and infinity is `nan` and `inf`,
+    names the term does not have."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return "math.nan" if math.isnan(value) else ("math.inf" if value > 0 else "(-math.inf)")
+    return str(value)
+
+
+def _source(value):
+    """A value as it goes into a function string: a number through `_number_term`, anything
+    else as it renders itself."""
+    return _number_term(value) if isinstance(value, float) else str(value)
 
 
 def extractTerm(obj, time):
@@ -2011,6 +2153,8 @@ def extractTerm(obj, time):
     read at `t`."""
     if isinstance(obj, (Operator, BPTK_Py.sddsl.element.Element)):
         return obj.term(time)
+    if isinstance(obj, float):
+        return _number_term(obj)
     return obj
 
 
@@ -2022,40 +2166,60 @@ def _cell_key(index):
     return [key if isinstance(key, int) else zlib.crc32(str(key).encode()) for key in keys]
 
 
+_draw_sites = itertools.count()
+
+
+def _plain(function):
+    """Whether a draw has neither bounds nor a sample: then it is written as it always was."""
+    return all(getattr(function, name, None) is None for name in ("minimum", "maximum", "sample"))
+
+
 def _draw_term(function, name, time, *arguments):
-    """The term of a draw from the distribution `name` - from the seed, if it has one."""
-    rendered = ", ".join(str(extractTerm(argument, time)) for argument in arguments)
-    if function.seed is None:
-        return "sddsl_builtins.evaluate(model, '{}', {}, {})".format(name, time, rendered)
-    return "sddsl_builtins.evaluate_seeded(model, '{}', {}, {}, {}, {})".format(
-        name, time, extractTerm(function.seed, time), _cell_key(function.index), rendered)
+    """The term of a draw from the distribution `name` - from the seed, if it has one.
+
+    An argument is a value, or a function of the time it is read at. With a sample the
+    draw and all its arguments are read at the time the sample began, so the value holds
+    until the next one; with bounds it is drawn again until it lies within them."""
+    at = time
+    if getattr(function, "sample", None) is not None:
+        at = "sddsl_builtins.sample_start(model, {}, {})".format(time, extractTerm(function.sample, time))
+    rendered = ", ".join(str(argument(at) if isinstance(argument, types.FunctionType) else extractTerm(argument, at))
+                         for argument in arguments)
+    seed = None if function.seed is None else extractTerm(function.seed, at)
+    if _plain(function):
+        if seed is None:
+            return "sddsl_builtins.evaluate(model, '{}', {}, {})".format(name, time, rendered)
+        return "sddsl_builtins.evaluate_seeded(model, '{}', {}, {}, {}, {})".format(
+            name, time, seed, _cell_key(function.index), rendered)
+    # An unseeded draw that holds is kept where its sample began, under a site of its own
+    site = next(_draw_sites) if seed is None and function.sample is not None else None
+    bound = lambda value: "math.nan" if value is None else extractTerm(value, at)
+    return "sddsl_builtins.draw(model, '{}', {}, {}, {}, {}, {}, {}, {})".format(
+        name, at, seed, _cell_key(function.index), site,
+        bound(function.minimum), bound(function.maximum), rendered)
 
 
 class Random(Function):
-    def __init__(self, min_value=0, max_value=1, seed=None):
+    def __init__(self, min_value=0, max_value=1, seed=None, minimum=None, maximum=None, sample=None):
         self.min_value = min_value
         self.max_value = max_value
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'uniform', time, self.min_value, self.max_value)
 
 
 # Half away from zero, as the Rust engine and a spreadsheet round: 2.5 -> 3, -2.5 -> -3.
-# Python's round() rounds half to even (2.5 -> 2). Compared on the fractional part,
-# because floor(x + 0.5) turns 0.49999999999999994 into 1.
-ROUND_HALF_AWAY_FROM_ZERO = (
-    "(lambda v, d=0: math.copysign(math.floor(abs(v) * 10.0 ** d) + (1.0 if abs(v) * 10.0 ** d - math.floor(abs(v) * 10.0 ** d) >= 0.5 else 0.0), v) / 10.0 ** d)"
-)
-
-
 class Round(Function):
     def __init__(self, operator, digits):
         self.operator = operator
         self.digits = digits
 
     def term(self, time="t"):
-        return "({}({}, {}))".format(ROUND_HALF_AWAY_FROM_ZERO, extractTerm(self.operator, time),
+        return "sddsl_builtins.round_half_away({}, {})".format(extractTerm(self.operator, time),
                                      extractTerm(self.digits, time))
 
 
@@ -2081,7 +2245,8 @@ class And(Function):
         lhs = extractTerm(self.lhs, time)
         rhs = extractTerm(self.rhs, time)
 
-        return "( ({}) and ({}) )".format(lhs, rhs)
+        # 1.0 or 0.0, as on the Rust engine: Python's `and` gives one of its operands
+        return "float(bool({}) and bool({}))".format(lhs, rhs)
 
 
 class Or(Function):
@@ -2093,7 +2258,7 @@ class Or(Function):
         lhs = extractTerm(self.lhs, time)
         rhs = extractTerm(self.rhs, time)
 
-        return "( ({}) or ({}) )".format(lhs, rhs)
+        return "float(bool({}) or bool({}))".format(lhs, rhs)
 
 
 class Not(Function):
@@ -2103,7 +2268,7 @@ class Not(Function):
     def term(self, time="t"):
         condition = extractTerm(self.condition, time)
 
-        return "( not ({}) )".format(condition)
+        return "float(not ({}))".format(condition)
 
 
 class Nan(Function):
@@ -2118,7 +2283,7 @@ class Sqrt(Function):
         self.x = x
 
     def term(
-        self, time="t"): return "( ({})**(1/2) )".format(extractTerm(self.x, time))
+        self, time="t"): return "sddsl_builtins.in_domain(model, 'sqrt', {}, {})".format(time, extractTerm(self.x, time))
 
 
 class Sin(Function):
@@ -2149,8 +2314,8 @@ class Arccos(Function):
     def __init__(self, x):
         self.x = x
 
-    def term(self, time="t"): return "( np.arccos({}) )".format(
-        extractTerm(self.x, time))
+    def term(self, time="t"): return "sddsl_builtins.in_domain(model, 'arccos', {t}, {})".format(
+        extractTerm(self.x, time), t=time)
 
 
 class Arctan(Function):
@@ -2165,24 +2330,24 @@ class Arcsin(Function):
     def __init__(self, x):
         self.x = x
 
-    def term(self, time="t"): return "( np.arcsin({}) )".format(
-        extractTerm(self.x, time))
+    def term(self, time="t"): return "sddsl_builtins.in_domain(model, 'arcsin', {t}, {})".format(
+        extractTerm(self.x, time), t=time)
 
 
 class Ln(Function):
     def __init__(self, x):
         self.x = x
 
-    def term(self, time="t"): return "( np.log({}) )".format(
-        extractTerm(self.x, time))
+    def term(self, time="t"): return "sddsl_builtins.in_domain(model, 'ln', {t}, {})".format(
+        extractTerm(self.x, time), t=time)
 
 
 class Log10(Function):
     def __init__(self, x):
         self.x = x
 
-    def term(self, time="t"): return "( np.log10({}) )".format(
-        extractTerm(self.x, time))
+    def term(self, time="t"): return "sddsl_builtins.in_domain(model, 'log10', {t}, {})".format(
+        extractTerm(self.x, time), t=time)
 
 
 class Floor(Function):
@@ -2217,8 +2382,8 @@ class Sinwave(Function):
         self.amplitude = amplitude
         self.period = period
 
-    def term(self, time="t"): return "( np.sin(2*np.pi / ({}) * (({})-model.starttime) ) * ({}) )".format(
-        extractTerm(self.period, time), time, extractTerm(self.amplitude, time))
+    def term(self, time="t"): return "( np.sin(sddsl_builtins.divide(model, {t}, 2*np.pi, {}) * (({t})-model.starttime) ) * ({}) )".format(
+        extractTerm(self.period, time), extractTerm(self.amplitude, time), t=time)
 
 
 class Coswave(Function):
@@ -2226,8 +2391,8 @@ class Coswave(Function):
         self.amplitude = amplitude
         self.period = period
 
-    def term(self, time="t"): return "( np.cos(2*np.pi / ({}) * (({})-model.starttime) ) * ({}) )".format(
-        extractTerm(self.period, time), time, extractTerm(self.amplitude, time))
+    def term(self, time="t"): return "( np.cos(sddsl_builtins.divide(model, {t}, 2*np.pi, {}) * (({t})-model.starttime) ) * ({}) )".format(
+        extractTerm(self.period, time), extractTerm(self.amplitude, time), t=time)
 
 
 class Inf(Function):
@@ -2239,30 +2404,39 @@ class Pi(Function):
 
 
 class Beta(Function):
-    def __init__(self, a, b, seed=None):
+    def __init__(self, a, b, seed=None, minimum=None, maximum=None, sample=None):
         self.a = a
         self.b = b
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'beta', time, self.a, self.b)
 
 
 class Binomial(Function):
-    def __init__(self, n, p, seed=None):
+    def __init__(self, n, p, seed=None, minimum=None, maximum=None, sample=None):
         self.n = n
         self.p = p
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'binomial', time, self.n, self.p)
 
 
 class NegBinomial(Function):
-    def __init__(self, n, p, seed=None):
+    def __init__(self, n, p, seed=None, minimum=None, maximum=None, sample=None):
         self.n = n
         self.p = p
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'negbinomial', time, self.n, self.p)
@@ -2277,13 +2451,16 @@ class Combinations(Function):
         n = extractTerm(self.n, time)
         r = extractTerm(self.r, time)
 
-        return '(0.0 if int({n}) < int({r}) else (math.factorial(int({n})) / (math.factorial(int({r})) * math.factorial(int({n})-int({r})))))'.format(n=n, r=r)
+        return "sddsl_builtins.evaluate(model, 'combinations', {t}, {n}, {r})".format(t=time, n=n, r=r)
 
 
 class Exprnd(Function):
-    def __init__(self, l, seed=None):
+    def __init__(self, l, seed=None, minimum=None, maximum=None, sample=None):
         self.l = l
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'exprnd', time, self.l)
@@ -2293,15 +2470,18 @@ class Factorial(Function):
     def __init__(self, n):
         self.n = n
 
-    def term(self, time="t"): return "(0.0 if int({n}) < 0 else 1.0*math.factorial(int({n})))".format(
-        n=extractTerm(self.n, time))
+    def term(self, time="t"): return "sddsl_builtins.evaluate(model, 'factorial', {t}, {n})".format(
+        t=time, n=extractTerm(self.n, time))
 
 
 class Gamma(Function):
-    def __init__(self, shape, scale=1, seed=None):
+    def __init__(self, shape, scale=1, seed=None, minimum=None, maximum=None, sample=None):
         self.shape = shape
         self.scale = scale
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'gamma', time, self.shape, self.scale)
@@ -2311,14 +2491,17 @@ class GammaLN(Function):
     def __init__(self, n):
         self.n = n
 
-    def term(self, time="t"): return "( scipy.special.gammaln({}) )".format(
+    def term(self, time="t"): return "sddsl_builtins.gamma_ln({})".format(
         extractTerm(self.n, time))
 
 
 class Geometric(Function):
-    def __init__(self, p, seed=None):
+    def __init__(self, p, seed=None, minimum=None, maximum=None, sample=None):
         self.p = p
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'geometric', time, self.p)
@@ -2339,45 +2522,77 @@ class Invnorm(Function):
 
 
 class Logistic(Function):
-    def __init__(self, mean, scale, seed=None):
+    def __init__(self, mean, scale, seed=None, minimum=None, maximum=None, sample=None):
         self.mean = mean
         self.scale = scale
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'logistic', time, self.mean, self.scale)
 
 
 class Lognormal(Function):
-    def __init__(self, mean, stddev, seed=None):
+    def __init__(self, mean, stddev, seed=None, minimum=None, maximum=None, sample=None):
         self.stddev = stddev
         self.mean = mean
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'lognormal', time, self.mean, self.stddev)
 
 
 class Montecarlo(Function):
-    def __init__(self, p, seed=None):
+    def __init__(self, p, seed=None, minimum=None, maximum=None, sample=None):
         self.p = p
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
-        if self.seed is None:
+        if self.seed is None and _plain(self):
             return "(1 if random.uniform(0,100) < ({}*model.dt) else 0)".format(extractTerm(self.p, time))
-        return "sddsl_builtins.montecarlo_seeded(model, {}, {}, {}, {})".format(
-            time, extractTerm(self.seed, time), _cell_key(self.index), extractTerm(self.p, time))
+        if _plain(self):
+            return "sddsl_builtins.montecarlo_seeded(model, {}, {}, {}, {})".format(
+                time, extractTerm(self.seed, time), _cell_key(self.index), extractTerm(self.p, time))
+        # The probability is per time unit, so a step draws with p * dt
+        return _draw_term(self, 'montecarlo', time, lambda at: "(({}) * model.dt)".format(extractTerm(self.p, at)))
 
 
 class Normal(Function):
-    def __init__(self, mean, stddev, seed=None):
+    def __init__(self, mean, stddev, seed=None, minimum=None, maximum=None, sample=None):
         self.mean = mean
         self.stddev = stddev
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'normal', time, self.mean, self.stddev)
+
+
+class LookupRandom(Function):
+    """Stella's LOOKUPRANDOM: a draw from a lookup table read as a density - a segment chosen
+    by its area, then a point uniformly within it. The table is read when the draw is made,
+    so one a scenario sets counts."""
+
+    def __init__(self, points, seed=None, minimum=None, maximum=None, sample=None):
+        self.points = Lookup(0.0, points).points
+        self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
+
+    def term(self, time="t"):
+        return _draw_term(self, 'lookuprandom', time,
+                          lambda at: "*sddsl_builtins.flat_table(model, {})".format(self.points))
 
 
 class NormalCDF(Function):
@@ -2393,10 +2608,13 @@ class NormalCDF(Function):
 
 
 class Pareto(Function):
-    def __init__(self, shape, scale, seed=None):
+    def __init__(self, shape, scale, seed=None, minimum=None, maximum=None, sample=None):
         self.shape = shape
         self.scale = scale
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'pareto', time, self.shape, self.scale)
@@ -2410,34 +2628,44 @@ class Permutations(Function):
     def term(self, time="t"):
         n = extractTerm(self.n, time)
         r = extractTerm(self.r, time)
-        return '(0.0 if int({n}) < int({r}) else (math.factorial(int({n})) / math.factorial(int({n})-int({r}))))'.format(n=n, r=r)
+        return "sddsl_builtins.evaluate(model, 'permutations', {t}, {n}, {r})".format(t=time, n=n, r=r)
 
 
 class Poisson(Function):
-    def __init__(self, mu, seed=None):
+    def __init__(self, mu, seed=None, minimum=None, maximum=None, sample=None):
         self.mu = mu
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
-        return _draw_term(self, 'poisson', time, self.mu)
+        # The mean is per time unit, as in XMILE and Stella: a step of dt draws with mu * dt
+        return _draw_term(self, 'poisson', time, lambda at: "(({}) * model.dt)".format(extractTerm(self.mu, at)))
 
 
 class Triangular(Function):
-    def __init__(self, lower_bound, mode, upper_bound, seed=None):
+    def __init__(self, lower_bound, mode, upper_bound, seed=None, minimum=None, maximum=None, sample=None):
         self.lower_bound = lower_bound
         self.mode = mode
         self.upper_bound = upper_bound
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'triangular', time, self.lower_bound, self.mode, self.upper_bound)
 
 
 class Weibull(Function):
-    def __init__(self, shape, scale, seed=None):
+    def __init__(self, shape, scale, seed=None, minimum=None, maximum=None, sample=None):
         self.shape = shape
         self.scale = scale
         self.seed = seed
+        self.minimum = minimum
+        self.maximum = maximum
+        self.sample = sample
 
     def term(self, time="t"):
         return _draw_term(self, 'weibull', time, self.shape, self.scale)

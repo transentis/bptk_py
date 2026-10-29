@@ -60,7 +60,7 @@ async def install():
     # Taken from pyproject.toml, not from a second list here: an unpinned
     # xmltodict silently dropped stocks from compiled XMILE models until 3.0.0.
     wanted = list(project["dependencies"])
-    for extra in ("plotting", "xmile"):
+    for extra in ("plotting",):
         wanted += project["optional-dependencies"][extra]
 
     # Pyodide ships these itself, and its builds are the only ones that work here.

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>initial_values</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>5</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="base">
+				<eqn>5</eqn>
+			</aux>
+			<stock name="first">
+				<eqn>10</eqn>
+				<outflow>draining</outflow>
+			</stock>
+			<flow name="draining">
+				<eqn>first * 0.1</eqn>
+				<non_negative/>
+			</flow>
+			<stock name="second">
+				<eqn>first * 2</eqn>
+			</stock>
+			<stock name="third">
+				<eqn>base + second</eqn>
+			</stock>
+			<stock name="from_flow">
+				<eqn>draining</eqn>
+			</stock>
+			<stock name="from_init">
+				<eqn>INIT(first) + 1</eqn>
+			</stock>
+			<aux name="reads_stock">
+				<eqn>third</eqn>
+			</aux>
+			<aux name="init_of_stock">
+				<eqn>INIT(third)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="base"/>
+				<stock x="350" y="100" name="first"/>
+				<flow label_side="bottom" x="461.25" y="100.0" name="draining">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<stock x="350" y="270" name="second"/>
+				<stock x="350" y="440" name="third"/>
+				<stock x="350" y="610" name="from_flow"/>
+				<stock x="350" y="780" name="from_init"/>
+				<aux x="220" y="970" name="reads_stock"/>
+				<aux x="360" y="970" name="init_of_stock"/>
+				<connector uid="1" angle="270">
+					<from>first</from>
+					<to>draining</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>third</from>
+					<to>reads_stock</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>third</from>
+					<to>init_of_stock</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

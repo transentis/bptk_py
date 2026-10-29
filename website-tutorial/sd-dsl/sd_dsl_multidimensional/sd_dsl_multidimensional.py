@@ -1,5 +1,5 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: Description and overview how vector-valued and matrix-valued SD Models can bet setup and worked with
+# description: Description and overview of how vector-valued and matrix-valued SD Models can be set up and worked with
 # keywords: system dynamics, systemdynamics, sd dsl, bptk, bptk-py, python, business simulation
 import marimo
 
@@ -38,6 +38,8 @@ def _(mo):
     * [Array Functions](./sd_dsl_arrays_functions.md) – what turns an array into one value
       or multiplies arrays: sum, product, rank, mean, median, standard deviation, maximum
       and minimum, size and `dot`
+    * [User-defined Functions and Arrayed Models](./sd_dsl_arrays_user_defined_functions.md) –
+      a function of your own applied per index, or handed the whole array
     * [A Simple Arrayed Model](./sd_dsl_arrays_example.md) – an investment depot with two
       accounts, from setting up the model to the plot
 
@@ -59,57 +61,38 @@ def _(mo):
 
     * **Element-wise is the default, everywhere.** Every operator applies to an array
       index by index, and so does a
-      [user-defined function](../sd_user_defined_functions/sd_user_defined_functions.md):
-      it is called once per index, and the result is an array of the same shape. A
-      function that wants the whole array instead is registered with
-      `elementwise=False` - and that one does not run on the Rust engine: a run that
-      asks for it raises, and a run that does not stays in Python. The element-wise
-      form runs on the engine like everything else here.
+      [user-defined function](./sd_dsl_arrays_user_defined_functions.md),
+      unless it is registered with `elementwise=False`.
     * **An aggregation is a scalar, and it needs an element of its own.**
       `headcount.arr_sum()` is one number, and assigning it to an element you gave a
       shape raises: an arrayed element holds no value beside its cells.
-    * **The order of a dimension is the order you declared it in.** `arr_rank` and
-      `arr_median` sort, and both engines sort the same list - but a named vector's
+    * **`arr_size` counts the first dimension**, not the cells - see [Array
+      Size](./sd_dsl_arrays_functions.md#array-size).
+    * **The order of a dimension is the order you declared it in.** `arr_largest`,
+      `arr_rank` and `arr_median` sort, and both engines sort the same list - but a named vector's
       "first" index is the first key you set up, not the alphabetically first label.
     * **A sub-element is an element of its own.** `headcount["north"]` has its own
       equation, its own name in the result frame (`headcount[north]`), and a scenario
       overrides it under that name.
+    * **A flow never goes negative**, arrayed or not. A quantity that has to move both ways
+      belongs in a [biflow](../sd_dsl_stocks_and_flows/sd_dsl_stocks_and_flows.md#biflows).
 
     ## What Is Not Supported
 
-    Worth knowing before you build on arrays. None of these fails silently - each one
-    raises with a message that says what happened.
+    None of these fails silently - each one raises with a message that says what happened.
 
     * **Two dimensions is the limit.** `setup_matrix` takes exactly two sizes, and there
       is no three-dimensional array.
-    * **Some operations need the same column labels in every row of a named matrix:**
-      `dot`, taking a part of it, `transpose()` and aggregating with `over=0`. Each works
-      across the rows and so needs a single set of column labels; for a matrix whose rows
-      carry different labels the error names the operation. Arithmetic on such a matrix
-      works.
-    * **A `dot` cannot mix a named array with an unnamed one.** There is nothing for the
-      labels to line up against, so it raises.
-    * **There is no aggregation over a single dimension.** `arr_sum` and `arr_prod` take
-      a `dimensions` argument, but the only values it accepts are `"*"` (the default) and
-      an integer equal to the array's depth - both of which aggregate every cell.
-      Aggregating along the rows of a matrix would have to return a vector, which is not
-      supported; where you need it, address the rows yourself. A row of a named matrix is
-      a named vector in its own right, so `matrix['north'].arr_sum()` is the total of
-      that row.
-    * **`arr_size` counts the first dimension**, not the number of cells: 2 for a
-      $2 \times 3$ matrix.
-    * **There is no broadcasting.** Both operands of an element-wise operation must have
-      the same shape and the same indices; a vector and a matrix is an error.
-    * **No transpose, and no dimension-position operator.** The XMILE standard has both -
-      a transpose, and `@` to name a position within a dimension - and the SD DSL has
-      never implemented either, because nothing in the model library or the test corpus
-      has needed one. Where you would reach for a transpose, address the cells the other
-      way round when you set the matrix up; a row of a named matrix is a named vector, so
-      `matrix['north']` is that row and there is no need to turn the matrix around to get
-      at it.
-    * **A flow never goes negative**, arrayed or not: every flow equation is wrapped in
-      `max(0, ...)`. A quantity that has to move both ways belongs in a **biflow**, which
-      takes the same `setup_vector` and `setup_named_vector` as any other element.
+    * **No dimension-position operator.** XMILE's `@`, which names a position within a
+      dimension, has no counterpart.
+    * **No broadcasting.** Both operands of an element-wise operation need the same shape
+      and the same indices - see [Standard
+      Operations](./sd_dsl_arrays_operations.md#standard-operations).
+    * **A named matrix whose rows carry different column labels** cannot be multiplied
+      with `dot`, sliced, transposed or aggregated with `over=0`: each of these works
+      across the rows. Arithmetic on such a matrix works.
+    * **A `dot` of a named array with an unnamed one** - see [Array
+      Dot](./sd_dsl_arrays_functions.md#array-dot).
     """)
     return
 

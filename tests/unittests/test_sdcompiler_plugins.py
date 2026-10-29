@@ -1,6 +1,6 @@
 """Direct tests for the XMILE compiler plugins that were covered only through whole models."""
 
-from BPTK_Py.sdcompiler.plugins import filterGhosts, resolveSelf, sanitizeName, sortEntities
+from BPTK_Py.sdcompiler.plugins import fillEmptyEquations, resolveSelf, sanitizeName, sortEntities
 
 
 def _ir(entities):
@@ -8,11 +8,11 @@ def _ir(entities):
     return {"models": {"m": {"entities": entities}}}
 
 
-def test_filter_ghosts_gives_an_empty_equation_a_zero():
+def test_an_empty_equation_is_filled_with_a_zero():
     ir = _ir({"stock": [{"name": "empty", "equation_parsed": []},
                         {"name": "full", "equation_parsed": ["1.0"]}]})
 
-    stocks = filterGhosts(ir)["models"]["m"]["entities"]["stock"]
+    stocks = fillEmptyEquations(ir)["models"]["m"]["entities"]["stock"]
 
     assert stocks[0]["equation_parsed"] == ["0"]
     assert stocks[1]["equation_parsed"] == ["1.0"]

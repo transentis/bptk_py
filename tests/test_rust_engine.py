@@ -2811,8 +2811,8 @@ class TestArrayAggregations:
         (1.0, 6.0), (2.0, 4.0), (3.0, 3.0), (4.0, 2.0), (5.0, 1.0),
         (6.0, 1.0), (99.0, 1.0), (0.0, 1.0), (-1.0, 1.0),
     ])
-    def test_arr_rank_takes_the_rank_as_its_last_argument(self, rank, expected):
-        assert self._aggregate("arr_rank", [lit(rank)]) == pytest.approx(expected)
+    def test_arr_largest_takes_the_rank_as_its_last_argument(self, rank, expected):
+        assert self._aggregate("arr_largest", [lit(rank)]) == pytest.approx(expected)
 
     def test_an_aggregation_over_computed_entities(self):
         """The arguments are refs, so they can be anything - not just constants."""

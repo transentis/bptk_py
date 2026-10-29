@@ -1,4 +1,4 @@
-BPTK-Py[plotting,xmile]
+BPTK-Py[plotting]
 # Pinned, because the version decides what the site *is*: the marimo release determines
 # which islands runtime the pages embed, and therefore which bundle patch_islands mirrors
 # and patches - 437 files at 0.24.0, where 0.23.13 mirrored 405. Unpinned, CI and a laptop

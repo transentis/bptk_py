@@ -23,9 +23,9 @@ def _(mo):
 
     This document illustrates how to build agent-based simulation models (AB models) using the BPTK_PY framework.
 
-    Agent-based models are much more powerful than SD models - you can build any model you build with SD with ABM,  but not the other way round. This is because AB models are built using a programming language such as Python (and hence are Turing complete) as opposed to SD models, which are based on a simple mathematical formalism that is not Turing complete.
+    Agent-based models are much more powerful than SD models - you can build any model you build with SD with ABM, but not the other way round. This is because AB models are built using a programming language such as Python (and hence are Turing complete) as opposed to SD models, which are based on a simple mathematical formalism that is not Turing complete.
 
-    This power comes at a cost: While SD models are modelled visually using a simple graphical notation, ABMs are built using a programming language. This means you need good programming skills to create and understand them ABM models. They also tend to be much slower than SD models.
+    This power comes at a cost: While SD models are modelled visually using a simple graphical notation, ABMs are built using a programming language. This means you need good programming skills to create and understand ABM models. They also tend to be much slower than SD models.
 
     The objective of the BPTK_PY framework is to provide all the infrastructure code that is necessary for managing and running an agent-based model, so that the modeler can concentrate on creating the simulation logic.
 
@@ -48,17 +48,17 @@ def _(mo):
     So to create an agent using Python and the BPTK_PY framework, all you really need to do is:
 
     * Identify the relevant agents
-    * Define the agents properties
+    * Define the agent's properties
     * Define an action method, which describes what the agent does in each time-step, e.g. perform internal tasks and send events to other agents
     * Define handlers for each kind of event you want your agent to react to
-    * For each agent, implement an initializer which sets the agents initial state
+    * For each agent, implement an initializer which sets the agent's initial state
 
     Defining the model is even easier:
 
     * Define the environment properties and update them when necessary
     * Tell the model which kinds of agents there are
 
-    Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents. Each unique configuration of a model is refered to as a scenario. The BPTK_PY framework helps you to manage different scenarios and compare results easily.
+    Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents. Each unique configuration of a model is referred to as a scenario. The BPTK_PY framework helps you to manage different scenarios and compare results easily.
 
     Much like with the SD models, configuring AB models is best done using a config file defined in JSON.
     """)
@@ -70,7 +70,7 @@ def _(mo):
     mo.md(r"""
     ## The Simple Project Management Model As An Agent-based model
 
-    The purpose of the model is to investigate how long it takes to complete a set of task within a given deadline.
+    The purpose of the model is to investigate how long it takes to complete a set of tasks within a given deadline.
 
     The underlying assumption is that our productivity isn't linear, but depends on schedule pressure:
 
@@ -122,25 +122,25 @@ def _(mo):
 
     * We have two kinds of agents, `staff_member` and `task`.
     * Staff members can either be available or busy working on a task. Staff members only have one property: the task they are currently working on.
-    * Tasks are either, open, in progress, or closed. Tasks have an `effort` property defining the initial effort per task and a `remaining_effort` property which tracks how much more effort needs to be invested into a task in order to complete it.
-    * Staff Members send the `task_started` event to a task when they start working on a task and a `task_progress` event every time they do some work on the task.
+    * Tasks are either open, in progress, or closed. Tasks have an `effort` property defining the initial effort per task and a `remaining_effort` property which tracks how much more effort needs to be invested into a task in order to complete it.
+    * Staff members send the `task_started` event to a task when they start working on a task and a `task_progress` event every time they do some work on the task.
     * The model provides the overall productivity property and the deadline.
     * A staff member only works on one task at a time.
 
-    The simulation runs through a number of time steps - in each time step, each staff member checks first checks its status. If it is `available`, then the staff members grabs the next open task and changes its status to `busy`. It also sends a `task_started` event to the task, to ensure no other staff member will start working on the task.
+    The simulation runs through a number of time steps - in each time step, each staff member first checks its status. If it is `available`, then the staff member grabs the next open task and changes its status to `busy`. It also sends a `task_started` event to the task, to ensure no other staff member will start working on the task.
 
-    If it is `busy` then it continues working on the task at hand and send a `task_progress` event to the task. In the event it records the amount of work done on the task.
+    If it is `busy` then it continues working on the task at hand and sends a `task_progress` event to the task. In the event it records the amount of work done on the task.
 
-    At the end of the timestep, the staff members checks to see whether the task is completed - if yes, it changes its state back to `available`.
+    At the end of the timestep, the staff member checks to see whether the task is completed - if yes, it changes its state back to `available`.
 
     Tasks are even simpler, because they don't perform actions of their own, all they do is respond to events:
 
     * If a task receives the `task_started` event, it changes its status to `in_progress`.
-    * If it receives the `in_progess` event, it reduces the remaining effort by the amouht defined in the event and then checks the remaining effort – if this is zero, it changes its state to `closed`.
+    * If it receives the `task_progress` event, it reduces the remaining effort by the amount defined in the event and then checks the remaining effort – if this is zero, it changes its state to `closed`.
 
     That's really all there is to it!
 
-    Before we take a look at how to implement this in Python using the BPTK_PY Framework, let's take a look at the simulation results.
+    Before we take a look at how to implement this in Python using the BPTK_PY framework, let's take a look at the simulation results.
 
     Assuming that each task takes one day to complete when productivity is equal to one, here are the simulation results for a deadline of 100 days and 80, 100 and 120 tasks respectively:
     """)
@@ -237,11 +237,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Implementing the Simple Project Managment Model in Python using BPTK_PY
+    ## Implementing the Simple Project Management Model in Python using BPTK_PY
 
     The code for this model sits beside this page, in `simulation_models/spm` — the excerpts below are taken from it. Everything shown in a grey block is source you read; the cells you can run are the ones that plot the results.
 
-    First let's take a look at the `act` method of the staff member agent, which implements the logic outline above:
+    First let's take a look at the `act` method of the staff member agent, which implements the logic outlined above:
 
     Right at the beginning of the method the `work_capacity` for this time step is calculated. This represents the maximum amount of work the staffMember is able to do in this time step, given his current productivity - the actual amount of work performed may be less, because all tasks could be complete.
 
@@ -251,7 +251,7 @@ def _(mo):
 
     If there is a task, then the state of the staff member is set to `busy` and the task is sent a `task_started` event.
 
-    If the staff member is currently busy, then the actual work done in this step is calculated - this depends on the work capacity and the tasks remaining effort.
+    If the staff member is currently busy, then the actual work done in this step is calculated - this depends on the work capacity and the task's remaining effort.
 
     ```python
 
@@ -302,9 +302,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Note that the staff members properties such as productivity and current_progress are accessed using dot-notation (e.g. self.productivity). But no getters or setters need to be set up for these properties - all you need to do is define the agent properties in the config file or define properties in the agents initialize method, the syntax used is identical in either case.
+    Note that the staff member's properties such as productivity and current_progress are accessed using dot-notation (e.g. self.productivity). But no getters or setters need to be set up for these properties - all you need to do is define the agent properties in the config file or define properties in the agent's initialize method, the syntax used is identical in either case.
 
-    In our model we don't need to set staff members properties in the scenario file, because its properties are not relevant for differentiating between scenarios. Here is what the staff members initialize method looks like:
+    In our model we don't need to set staff members' properties in the scenario file, because its properties are not relevant for differentiating between scenarios. Here is what the staff member's initialize method looks like:
     ```python
         def initialize(self):
 
@@ -325,9 +325,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now let's take a look at how the `task`is implemented - the task doesn't actually do anything, so we don't need to implement an act method. All we need is handlers for the `taskStarted` and `taskProgress`events:
+    Now let's take a look at how the `task` is implemented - the task doesn't actually do anything, so we don't need to implement an act method. All we need is handlers for the `taskStarted` and `taskProgress` events:
 
-    The handler for the started event just changes the tasks state from `open` to `inProgress`:
+    The handler for the started event just changes the task's state from `open` to `inProgress`:
     ```python
         def handle_started_event(self, event):
             self.state = "in_progress"
@@ -342,7 +342,7 @@ def _(mo):
                 self.state = "closed"
     ```
 
-    The only thing that remains to be done is to register the event handlers - this is done in the tasks `initialize` method:
+    The only thing that remains to be done is to register the event handlers - this is done in the task's `initialize` method:
     ```python
        def initialize(self):
             self.agent_type = "task"
@@ -362,9 +362,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The only remaing class we need to look at is the SPM model itself. The key method in the model class is the `initialize_model` method - this method is called automatically by the framework, it is used to register the agent factories. Agent factories are simple, anonymous functions which instantiate agents by calling their constructors and passing an agent id, the model the agent is part of and the agent properties (which are defined in the scenarios config file).
+    The only remaining class we need to look at is the SPM model itself. The key method in the model class is the `instantiate_model` method - this method is called automatically by the framework, it is used to register the agent factories. Agent factories are simple, anonymous functions which instantiate agents by calling their constructors and passing an agent id, the model the agent is part of and the agent properties (which are defined in the scenario's config file).
 
-    Here is what the `initialize_model` method in the SPM class, which derived from the Model class in the BPTK PY framework:
+    Here is the `instantiate_model` method of the SPM class, which is derived from the Model class in the BPTK PY framework:
 
     ```python
     def instantiate_model(self):
@@ -422,22 +422,22 @@ def _(mo):
     We need to be careful though - our model could potentially have many staff members, and we need to ensure that
     they all get the same value of `schedule_pressure` and `productivity` - we need to ensure that the values of these properties are only updated once at the beginning of each round.
 
-    This is what the models `act` method is for - it is called by the scheduler at the beginning of each round, before the agents `act` methods are called.
+    This is what the model's `begin_round` method is for - it is called by the scheduler at the beginning of each round, before the agents' `act` methods are called.
 
-    We've included the code for the `act` method below, here is how schedule pressure and productivity are calculated:
+    We've included the code for the `begin_round` method below, here is how schedule pressure and productivity are calculated:
 
-    First the `remaining_effort` for all open tasks is calculated by walking along the list of remaining open tasks and reading their `effort` property. This list is accessed using the models's `agent_ids` method, which is provided by the BPTK_PY framework. To this effort we need to add the remaining_effort of the task currently being worked on.
+    First the `remaining_effort` for all open tasks is calculated by walking along the list of remaining open tasks and reading their `effort` property. This list is accessed using the model's `agent_ids` method, which is provided by the BPTK_PY framework. To this effort we need to add the remaining_effort of the task currently being worked on.
 
     We then add the remaining effort for all the tasks that are currently being worked on, by all staff members.
 
-    We can then work out the remaining work capacity by multiplying the remaing time until the deadline with the number of staff members (assuming that all staff members work on tasks full time).
+    We can then work out the remaining work capacity by multiplying the remaining time until the deadline with the number of staff members (assuming that all staff members work on tasks full time).
 
-    The schedule pressure is then simply the ratio of the remaining effort and the work capacity (we need to ensure the value is never greater than 2.5, because the productivity lookup is only defined in the range between 0 and 2.5.
+    The schedule pressure is then simply the ratio of the remaining effort and the work capacity (we need to ensure the value is never greater than 2.5, because the productivity lookup is only defined in the range between 0 and 2.5).
 
     Once we know the schedule pressure, we can work out the productivity using the productivity lookup.
 
     ```python
-           def act(self, time, sim_round, step):
+           def begin_round(self, time, sim_round, step):
             # schedule pressure and productivity are updated once at the beginning of each round
             # this ensures that they are constant within each round
             # and thus the same for all staff members
@@ -507,7 +507,7 @@ def _(mo):
 
     bptk = bptk()
     ```
-    These lines not only load the BPTK framework, they also start a background process that reads the config files found in the `scenarios` folder, loads the corresponding ABM and SD model and confgiures them according to the scenarios.
+    These lines not only load the BPTK framework, they also start a background process that reads the config files found in the `scenarios` folder, loads the corresponding ABM and SD model and configures them according to the scenarios.
     """)
     return
 
@@ -515,7 +515,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    And thats all - once a model has been configured for each scenario defined, we can run the scenario/model using the `plot_scenario`function:
+    And that's all - once a model has been configured for each scenario defined, we can run the scenario/model using the `plot_scenario` function:
     """)
     return
 
@@ -616,7 +616,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We can even compare two scenarios with the same settings but different time steps. The simulations time step essentially defines the granularity at which measurements take place – in this case the simulation with a granularity of 4 steps per time unit is "faster" than the same simulation with 1 time step per unit – this is natural if you think about it: in the former scenario, we check much more often if we have completed a task and thus can move on to a new task sooner.
+    We can even compare two scenarios with the same settings but different time steps. The simulation's time step essentially defines the granularity at which measurements take place – in this case the simulation with a granularity of 4 steps per time unit is "faster" than the same simulation with 1 time step per unit – this is natural if you think about it: in the former scenario, we check much more often if we have completed a task and thus can move on to a new task sooner.
     """)
     return
 
@@ -640,7 +640,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We can also see what happens if we double the number of staff members - adding new staff members reduced productivity, unless the deadline is adjusted.
+    We can also see what happens if we double the number of staff members - adding new staff members reduces productivity, unless the deadline is adjusted.
     """)
     return
 
@@ -677,7 +677,7 @@ def _(mo):
 
     * The BPTK_PY framework supports System Dynamics models in XMILE Format, native SD models, Agent-based models and hybrid SD-ABM-Models
     * The objective of the framework is to provide the infrastructure for managing model settings and scenarios and for running and plotting simulation results, so that the modeller can concentrate on modelling.
-    * The framework automatically collect statistics on agents, their states and their properties, which makes plotting simulation results very easy.
+    * The framework automatically collects statistics on agents, their states and their properties, which makes plotting simulation results very easy.
     * Simulation results can also be returned as Pandas dataframes.
     * The framework uses some advanced Python metaprogramming techniques to ensure the amount of boilerplate code the modeler has to write is kept to a minimum.
     * Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing in a notebook very painless.

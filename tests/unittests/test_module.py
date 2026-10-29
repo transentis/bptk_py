@@ -56,6 +56,15 @@ class TestModule(unittest.TestCase):
 
         self.assertEqual(str(module.biflow(name="stockName")),str(module.model.biflow("testName.stockName")))         
 
+    def test_conveyor(self):
+        model = Model()
+
+        module = Module(model=model,name="testName")
+        conveyor = module.conveyor(name="belt")
+
+        self.assertIs(conveyor, model.stocks["testName.belt"])
+        self.assertEqual(type(conveyor).__name__, "Conveyor")
+
     def test_converter(self):
         model = Model()
 

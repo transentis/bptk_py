@@ -26,7 +26,7 @@ def _(mo):
     mo.md(r"""
     # Working with XMILE
 
-    Part of the BPTK framework is a transpiler that allows you to convert an XMILE model into a Python class.
+    Part of the BPTK framework is a transpiler that turns an XMILE model into an SD DSL model, which runs on both the Python and the Rust engine.
 
     This feature allows you to work with XMILE models independently of the tool you used to create the model: you can run them from Python via [bptk](../api/api_bptk.md), work with them interactively in a notebook, or serve them over HTTP with [BptkServer](../api/api_bptk_server/api_bptk_server.md).
 
@@ -39,7 +39,7 @@ def _(mo):
     - [Exporting Simulation Results](./exporting_simulation_results/exporting_simulation_results.md)
     - [Writing Computational Essays Based on Simulation Models](./writing_computational_essays/writing_computational_essays.md)
     - [Using the XMILE Compiler Standalone](./use_sd_compiler_standalone/use_sd_compiler_standalone.md)
-    - [XMILE in the SD DSL](./xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md): for every XMILE builtin, its SD DSL function, the engines that run it and whether the transpiler compiles it
+    - [XMILE in the SD DSL](./xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md): how an XMILE model is written in the SD DSL, where the two depart, and what the transpiler does not compile
         - [Builtins Side by Side](./xmile_in_the_sd_dsl/builtins_side_by_side.md)
         - [Built from Other Functions](./xmile_in_the_sd_dsl/built_from_other_functions.md)
         - [Model Structure](./xmile_in_the_sd_dsl/model_structure.md)

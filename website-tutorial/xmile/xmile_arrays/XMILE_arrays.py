@@ -23,7 +23,7 @@ def _(mo):
 
     This page illustrates how to work with XMILE models that contain arrays.
 
-    BPTK_Py supports arrayed variables out of the box. You can access them easily just the way you would in Stella Equations. This lets you plot them easily. The advantage of analysing arrayed variables in BPTK_Py is that you can plot anything easily and quickly. It supports a rapid and quick analytics approach: in a notebook you can build the story alongside the analysis, pointing out cost drivers and growth opportunities for your business models.
+    BPTK_Py supports arrayed variables out of the box. You can access them easily just the way you would in Stella equations. This lets you plot them easily. The advantage of analysing arrayed variables in BPTK_Py is that you can plot anything easily and quickly. It supports a rapid and quick analytics approach: in a notebook you can build the story alongside the analysis, pointing out cost drivers and growth opportunities for your business models.
     """)
     return
 
@@ -59,10 +59,8 @@ def _(mo):
     mo.md(r"""
     ## Plot total of all dimensions
 
-    Let us suppose, for an initial data analysis we want to get a high level overview over the inventory for all products in all countries.
-    For this purpose, BPTK_Py supports the asterisk and array notation ``inventory[*,*]`` as we are used to from Stella Architect. For simplification purposes, we also added a shortcut. For the sum of all dimensions of a stock, you can just use the name of the stock without any array operator.
-
-    Hence, plotting ``inventory[*,*]`` and ``inventory`` returns the same graph:
+    Let us suppose, for an initial data analysis we want to get a high-level overview of the inventory for all products in all countries.
+    For this purpose, BPTK_Py supports the asterisk and array notation ``inventory[*,*]`` as we are used to from Stella Architect: an asterisk sums over its dimension. The name of the stock alone, ``inventory``, has no values of its own - BPTK_Py reports it together with the cells it has.
     """)
     return
 
@@ -72,7 +70,7 @@ def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smArrayedVariables"],
         scenarios=["base"], 
-        equations=["inventory[*,*]","inventory"], format="axes"
+        equations=["inventory[*,*]"], format="axes"
     )
     return
 
@@ -108,7 +106,7 @@ def _(mo):
     mo.md(r"""
     ## Analyse a single product inventory in all countries
 
-    Now that we saw a rising inventory for all products in all countries, we want to get to the bottom of it and understand which product drives the inventory
+    Now that we saw a rising inventory for all products in all countries, we want to get to the bottom of it and understand which product drives the inventory.
     """)
     return
 
@@ -144,13 +142,13 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We observe that the inventory rises early in Germany but England quickly surpasses at t=3. Further analysis may be possible here. But for demonstration purposes, let us jump over to another interesting features.
+    We observe that the inventory rises early in Germany but England quickly surpasses it at t=3. Further analysis may be possible here. But for demonstration purposes, let us jump over to another interesting feature.
 
     ## Advanced Array Functions
     But for now, let's go ahead and look at more advanced plotting functions.
-    BPTK_Py supports all array functions as outlined in the [Stella Architect builtins documentation](https://www.iseesystems.com/resources/help/v1-9/default.htm#08-Reference/07-Builtins/Array_builtins.htm)
+    BPTK_Py supports the array functions outlined in the [Stella Architect builtins documentation](https://www.iseesystems.com/resources/help/v1-9/default.htm#08-Reference/07-Builtins/Array_builtins.htm), except those listed under [What the transpiler does not compile](../xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md#what-the-transpiler-does-not-compile).
 
-    In the model, we built a converter ``average Inventory`` using the ``MEAN`` equation: ``MEAN(Inventory[*; *])``. The converter ``total Inventory`` uses the ``SUM`` function. It returns the same results as when using ``inventory[*,*]`` in BPTK_Py. The transpiler makes sure to translate the equations properly to simulate them in Python:
+    In the model, we built a converter ``average Inventory`` using the ``MEAN`` equation: ``MEAN(Inventory[*; *])``. The converter ``total Inventory`` uses the ``SUM`` function. It returns the same results as when using ``inventory[*,*]`` in BPTK_Py. The transpiler translates both into the SD DSL's array functions:
     """)
     return
 

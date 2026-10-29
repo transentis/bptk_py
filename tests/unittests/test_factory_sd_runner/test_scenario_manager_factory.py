@@ -148,6 +148,37 @@ class TestScenarioManagerFactory(unittest.TestCase):
         sm.destroy()
         tmproot.cleanup()
 
+    def test_a_source_is_compiled_and_watched(self):
+        """A model the scenario file names with its XMILE source is compiled from it into a
+        Model, and the source gets a monitor of its own - until destroy()."""
+        import shutil, sys, tempfile
+
+        source = os.path.join(os.path.dirname(__file__), "..", "..", "test_models", "init.stmx")
+        tmproot = tempfile.TemporaryDirectory()
+        os.mkdir(os.path.join(tmproot.name, "scenarios"))
+        os.mkdir(os.path.join(tmproot.name, "watched_models"))
+        shutil.copy(source, os.path.join(tmproot.name, "watched_models", "init.stmx"))
+        with open(os.path.join(tmproot.name, "scenarios", "sourced.json"), "w", encoding="utf-8") as f:
+            json.dump({"smSourced": {"model": "watched_models/init", "source": "watched_models/init.stmx",
+                                     "scenarios": {"base": {}}}}, f)
+
+        previous = os.getcwd()
+        os.chdir(tmproot.name)
+        sys.path.insert(0, tmproot.name)
+        try:
+            sm = ScenarioManagerFactory(start_model_monitor=True, start_scenario_monitor=False)
+            sm.get_scenario_managers(path="scenarios")
+            self.assertTrue(os.path.isfile(os.path.join("watched_models", "init.py")))
+            self.assertIsInstance(sm.scenario_managers["smSourced"].scenarios["base"].model, Model)
+            self.assertEqual(list(sm.model_monitors), [os.path.join("watched_models", "init.stmx")])
+            sm.destroy()
+        finally:
+            os.chdir(previous)
+            sys.path.remove(tmproot.name)
+            for name in [name for name in sys.modules if name.split(".")[0] == "watched_models"]:
+                del sys.modules[name]
+            tmproot.cleanup()
+
     def test_get_scenarios(self):
         currentDir = os.path.abspath(os.getcwd())
         testDir = os.path.join(currentDir,"tests","unittests","test_factory_sd_runner","scenarios")
@@ -183,3 +214,37 @@ class TestScenarioManagerFactory(unittest.TestCase):
                          {"testBasePoint": [[0.0, 0.1], [1.0, 0.9]]})
         self.assertEqual(sm._ScenarioManagerFactory__base_values("unknown", dictionaries, "base_points"), {})
         self.assertIn(f"[ERROR] No parser available for file {invalidFile}. Skipping!", read_log())
+
+
+    def test_scenario_files_are_read_in_alphabetical_order(self):
+        """Where two files set the same thing, the file read last wins - and glob hands the
+        files over in whatever order the file system keeps them, so the files are sorted."""
+        import shutil
+        import tempfile
+
+        def manager(initial_value, interest_rate):
+            return {"smOrder": {
+                "model": "simulation_models/simulation_model",
+                "base_constants": {"initialValue": initial_value},
+                "scenarios": {"base": {"constants": {"interestRate": interest_rate}}},
+            }}
+
+        here = os.path.join(os.path.abspath(os.getcwd()), "tests", "unittests", "test_factory_sd_runner")
+        with tempfile.TemporaryDirectory() as project:
+            shutil.copytree(os.path.join(here, "simulation_models"), os.path.join(project, "simulation_models"))
+            scenarios = os.path.join(project, "scenarios")
+            os.mkdir(scenarios)
+            first, last = os.path.join(scenarios, "a.json"), os.path.join(scenarios, "b.json")
+            with open(first, "w") as f:
+                json.dump(manager(1.0, 0.1), f)
+            with open(last, "w") as f:
+                json.dump(manager(2.0, 0.2), f)
+
+            sm = ScenarioManagerFactory(start_model_monitor=False, start_scenario_monitor=False)
+            with patch("BPTK_Py.scenariomanager.scenario_manager_factory.glob.glob", return_value=[last, first]):
+                managers = sm.get_scenario_managers(path=scenarios)
+
+        self.assertEqual(sm.scenario_files, [first, last])
+        self.assertEqual(managers["smOrder"].base_constants, {"initialValue": 2.0})
+        self.assertEqual(managers["smOrder"].scenarios["base"].dictionary["constants"],
+                         {"interestRate": 0.2, "initialValue": 2.0})

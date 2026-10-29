@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>rk4_builtins</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="RK4" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="s_step">
+				<eqn>0</eqn>
+				<inflow>f_step</inflow>
+			</stock>
+			<stock name="s_pulse">
+				<eqn>0</eqn>
+				<inflow>f_pulse</inflow>
+			</stock>
+			<stock name="s_delay">
+				<eqn>0</eqn>
+				<inflow>f_delay</inflow>
+			</stock>
+			<stock name="s_smooth">
+				<eqn>0</eqn>
+				<inflow>f_smooth</inflow>
+			</stock>
+			<stock name="s_previous">
+				<eqn>0</eqn>
+				<inflow>f_previous</inflow>
+			</stock>
+			<stock name="s_time">
+				<eqn>0</eqn>
+				<inflow>f_time</inflow>
+			</stock>
+			<flow name="f_step">
+				<eqn>STEP(10, 2)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="f_pulse">
+				<eqn>PULSE(5, 3, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="f_delay">
+				<eqn>DELAY(input, 1.5)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="f_smooth">
+				<eqn>SMTH1(input, 2)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="f_previous">
+				<eqn>PREVIOUS(input, 0)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="f_time">
+				<eqn>TIME</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="input">
+				<eqn>STEP(10, 2) + RAMP(1, 4)</eqn>
+			</aux>
+			<aux name="a_delay">
+				<eqn>DELAY(input, 1.5)</eqn>
+			</aux>
+			<aux name="a_smooth">
+				<eqn>SMTH1(input, 2)</eqn>
+			</aux>
+			<aux name="a_previous">
+				<eqn>PREVIOUS(input, 0)</eqn>
+			</aux>
+			<aux name="a_trend">
+				<eqn>TREND(input, 3)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="s_step"/>
+				<stock x="350" y="270" name="s_pulse"/>
+				<stock x="350" y="440" name="s_delay"/>
+				<stock x="350" y="610" name="s_smooth"/>
+				<stock x="350" y="780" name="s_previous"/>
+				<stock x="350" y="950" name="s_time"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="f_step">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="270.0" name="f_pulse">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="440.0" name="f_delay">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="610.0" name="f_smooth">
+					<pts>
+						<pt x="150" y="610"/>
+						<pt x="327.5" y="610"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="780.0" name="f_previous">
+					<pts>
+						<pt x="150" y="780"/>
+						<pt x="327.5" y="780"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="950.0" name="f_time">
+					<pts>
+						<pt x="150" y="950"/>
+						<pt x="327.5" y="950"/>
+					</pts>
+				</flow>
+				<aux x="80" y="1140" name="input"/>
+				<aux x="220" y="1140" name="a_delay"/>
+				<aux x="360" y="1140" name="a_smooth"/>
+				<aux x="500" y="1140" name="a_previous"/>
+				<aux x="640" y="1140" name="a_trend"/>
+				<connector uid="1" angle="270">
+					<from>input</from>
+					<to>f_delay</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>input</from>
+					<to>f_smooth</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>input</from>
+					<to>f_previous</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>input</from>
+					<to>a_delay</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>input</from>
+					<to>a_smooth</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>input</from>
+					<to>a_previous</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>input</from>
+					<to>a_trend</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

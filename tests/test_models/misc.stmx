@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>misc</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="grown">
+				<eqn>100</eqn>
+				<inflow>growing</inflow>
+			</stock>
+			<flow name="growing">
+				<eqn>grown * CGROWTH(10)</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="ramp_end">
+				<eqn>RAMP(2, 2, 6)</eqn>
+			</aux>
+			<aux name="ramp_off_grid">
+				<eqn>RAMP(1, 2.1)</eqn>
+			</aux>
+			<aux name="step_off_grid">
+				<eqn>STEP(5, 3.1)</eqn>
+			</aux>
+			<aux name="step_expr">
+				<eqn>STEP(2 + 3, 1 + 2)</eqn>
+			</aux>
+			<aux name="sinwave_1">
+				<eqn>SINWAVE(10, 4)</eqn>
+			</aux>
+			<aux name="coswave_1">
+				<eqn>COSWAVE(10, 4)</eqn>
+			</aux>
+			<aux name="safediv_1">
+				<eqn>SAFEDIV(10, TIME - 2)</eqn>
+			</aux>
+			<aux name="safediv_alt">
+				<eqn>SAFEDIV(10 + 0, TIME - 2, -1)</eqn>
+			</aux>
+			<aux name="percent_1">
+				<eqn>PERCENT(0.25)</eqn>
+			</aux>
+			<aux name="rootn_1">
+				<eqn>ROOTN(27, 3)</eqn>
+			</aux>
+			<aux name="combinations_1">
+				<eqn>COMBINATIONS(5, 2)</eqn>
+			</aux>
+			<aux name="permutations_1">
+				<eqn>PERMUTATIONS(5, 2)</eqn>
+			</aux>
+			<aux name="factorial_1">
+				<eqn>FACTORIAL(5)</eqn>
+			</aux>
+			<aux name="gammaln_1">
+				<eqn>GAMMALN(4.5)</eqn>
+			</aux>
+			<aux name="invnorm_1">
+				<eqn>INVNORM(0.975)</eqn>
+			</aux>
+			<aux name="invnorm_mean_sd">
+				<eqn>INVNORM(0.975, 10, 2)</eqn>
+			</aux>
+			<aux name="normalcdf_1">
+				<eqn>NORMALCDF(-1, 1)</eqn>
+			</aux>
+			<aux name="normalcdf_mean_sd">
+				<eqn>NORMALCDF(8, 12, 10, 2)</eqn>
+			</aux>
+			<aux name="max_two">
+				<eqn>MAX(1, TIME)</eqn>
+			</aux>
+			<aux name="min_two">
+				<eqn>MIN(5, TIME)</eqn>
+			</aux>
+			<aux name="dt_value">
+				<eqn>DT</eqn>
+			</aux>
+			<aux name="starttime_value">
+				<eqn>STARTTIME</eqn>
+			</aux>
+			<aux name="stoptime_value">
+				<eqn>STOPTIME</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="grown"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="growing">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<aux x="80" y="290" name="ramp_end"/>
+				<aux x="220" y="290" name="ramp_off_grid"/>
+				<aux x="360" y="290" name="step_off_grid"/>
+				<aux x="500" y="290" name="step_expr"/>
+				<aux x="640" y="290" name="sinwave_1"/>
+				<aux x="780" y="290" name="coswave_1"/>
+				<aux x="80" y="380" name="safediv_1"/>
+				<aux x="220" y="380" name="safediv_alt"/>
+				<aux x="360" y="380" name="percent_1"/>
+				<aux x="500" y="380" name="rootn_1"/>
+				<aux x="640" y="380" name="combinations_1"/>
+				<aux x="780" y="380" name="permutations_1"/>
+				<aux x="80" y="470" name="factorial_1"/>
+				<aux x="220" y="470" name="gammaln_1"/>
+				<aux x="360" y="470" name="invnorm_1"/>
+				<aux x="500" y="470" name="invnorm_mean_sd"/>
+				<aux x="640" y="470" name="normalcdf_1"/>
+				<aux x="780" y="470" name="normalcdf_mean_sd"/>
+				<aux x="80" y="560" name="max_two"/>
+				<aux x="220" y="560" name="min_two"/>
+				<aux x="360" y="560" name="dt_value"/>
+				<aux x="500" y="560" name="starttime_value"/>
+				<aux x="640" y="560" name="stoptime_value"/>
+				<connector uid="1" angle="270">
+					<from>grown</from>
+					<to>growing</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

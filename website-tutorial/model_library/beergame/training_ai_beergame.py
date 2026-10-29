@@ -2,11 +2,11 @@
 # keywords: agent-based modeling, abm, bptk, bptk-py, python, business simulation, q-learning, reinforcement learning
 # The training cell runs. It was shown rather than run on the assumption that it
 # writes the q-tables back to disk, and that is wrong: `dump_q_tables` writes, and
-# that call is on `beergame_ql`, not here. Ten episodes cost no measurable
+# that call is shown rather than run, further down. Ten episodes cost no measurable
 # time, and without them the two "10 episodes" charts below showed an untrained
 # model. `eval: false` on the whole page is the other trap - it cost this page all
 # eleven of its charts once.
-# description: This notebook first provides a brief introduction to agent-based modeling and reinforcement learning. It then applies these ideas to training artificial intelligence to play the infamous Beer Game
+# description: This page first provides a brief introduction to agent-based modeling and reinforcement learning. It then applies these ideas to training artificial intelligence to play the infamous Beer Game
 import marimo
 
 __generated_with = "0.23.13"
@@ -28,7 +28,7 @@ def _(mo):
     # Training Artificial Intelligence To Play The Beer Game
     ## An Approach Using Agent-based Modeling And Reinforcement Learning
 
-    _This notebook first provides a brief introduction to agent-based modeling and reinforcement learning. It then applies these ideas to training artificial intelligence to play the infamous Beer Game_
+    _This page first gives a brief introduction to reinforcement learning. It then applies it to training agents to play the Beer Game_
     """)
     return
 
@@ -36,243 +36,19 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The infamous Beer Distribution Game was originally developed in the late 1950s by Jay Forrester at MIT to introduce the concepts of dynamic systems, in this case the dynamic system is a supply chain that delivers beer from a brewery to the end consumer. What makes the game so intriguing is that the structure of the supply chain and the rules of the game are simple, yet the resulting behavior is quite complex.
-
-    The Beer Game is well documented:
-
-    * our favorite description of the game is in Peter Senge’s [The Fifth Discipline](https://www.amazon.com/-/de/dp/B000SEIFKK/ref=sr_1_1?__mk_de_DE=ÅMÅŽÕÑ&keywords=fifth+discipline&qid=1584205992&sr=8-1)
-    * John Sterman’s [Business Dynamics](https://www.amazon.com/-/de/dp/007238915X/ref=sr_1_2?__mk_de_DE=ÅMÅŽÕÑ&keywords=business+dynamics&qid=1584206015&sr=8-2) analyses the game using system dynamics stock and flow models.
-    * [Understanding The Beergame](understanding_the_beergame.md), another page of this model library, provides in-depth analysis of the game.
-
-    Agent-based modeling is an approch to buildig simulation models of real-world systems. In agent-based modeling, entities are captured by agents, which show behaviour in reaction to internal or external events. We will use agents to represent the players in the beergame.
-
-    Once we have the agents, we can investigate different ordering strategies and try to find one that enables the agents to play the beergame and optimize game performance. We provide a separate page in this model library, [An Agent-based Approach To Modeling The Beer Game](beergame_abm.md), that walks through the various stages.
-
-    But using the agents we can do something even more interesting: Instead of giving the agents a set of predefined behaviours, we can train the agents to play the beergame using machine learning techniques, in particular a technique known as _Reinforcement Learning_.
+    On [An Agent-based Approach To Modeling The Beer Game](beergame_abm.md), agents play the [Beer Distribution Game](beergame.md) with fixed policies; the best of them, the order-balance policy, comes close to the target supply chain cost of $29,300 but misses it. This page lets the agents learn a policy themselves, using reinforcement learning.
 
     Reinforcement Learning is a machine learning technique that focuses on learning from interaction. The machine is not told which actions to take, but must discover which actions have the best effect by trying them.
     """)
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### A Brief Introduction To The Beer Game
-
-    To understand the challenge of managing the beer distribution supply chain, let’s take a more detailed look at its structure: the supply chain leads from the brewery, via a distributor and wholesaler to the reseller, who sells beer to his customers, the end consumers.
-
-    The objective of the game is to ensure that the consumers demand for beer can be met directly or at least with as small a delay as possible, while keeping each players inventory as small as possible.
-
-    The sketch below illustrates the supply chain and the flow of information along it:
-
-    ![Overview of the supply chain](images/supply_chain.png)
-
-    Initially customer demand for beer is stable at 100 units per week and the entire supply chain is in a steady state. Each member of the supply chain has an inventory of 400 units.
-
-    The rules of the game are simple – in every round each player performs the following four steps:
-
-    * __Check deliveries.__ Check how many units of beer are being delivered to him from his supplier in the supply chain
-    * __Check incoming orders.__ Check how many units of beer his client in the supply chain has ordered.
-    * __Deliver beer.__ Deliver as much beer as he can to satisfy the customers demand (Note: in our implementation of the game above, this step is performed for you automatically).
-    * __Place outgoing order__. The difficult step is to decide how many units of beer the player needs from his supplier to keep his inventory stocked up and to ensure he has enough beer to meet future demands.
-
-    > If you've never played the game or want to understand the game dynamics in more detail, make sure you read the companion notebook [Understanding the Beergame](understanding_the_beergame.md).
-
-    Now that we know the structure of the game, let's learn about agent-based modeling and see how we can use agents to play the game.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### A Brief Introduction To Agent-based Modeling
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The basic concept behind Agent-based models is quite simple:
-
-    * An environment is populated with a set of agents.
-    * Agents and the environment each have a set of (numerical) properties and each agent must always be in a defined internal state (e.g. active, idle, defect, ...).
-    * Agents can perform actions and interact with each other and with the environment by sending signals - the agents react to these events by updating their properties and/or changing their state.
-
-    Which events an agent sends or receives doesn't have to be deterministic –  for instance you can let this depend on a probability distribution based on the current state of the agent and its environment and the action it decides to take.
-
-    ![Agents](images/agents.png)
-
-    Agent-based simulation run in timesteps - in each timestep, all agents first receive the events that have been sent to them, then they act and send new events. Typically events are then received in the next timestep, though in some cases "instantaneous" events are useful.
-
-    Thus to create an Agent-based simulation, we need to:
-
-    * Identify the relevant agents
-    * Define the agents properties
-    * Define an action method, which describes what the agent does in each time-step, e.g. perform internal tasks and send events to other agents
-    * Define handlers for each kind of event you want your agent to react to
-    * For each agent, implement an initializer which sets the agents initial state
-
-    Defining the model is even easier:
-
-    * Define the environment properties and update them when necessary
-    * Tell the model which kinds of agents there are
-
-    Then, to configure the simulation, all we need to do is to set the initial values of the properties and instantiate the initial agents.
-
-    Let's model the beergame using agents. Each player in the game is modeled by an agent, so we have five agents: the consumer amd the agents that are part of the supply chain, ie. the retailer, the wholesaler, the distributor and the brewery.
-
-    The supply chain agents are essentially all the same - they have an internal state that captures:
-
-    * __Inventory,__ ie. how much beer the agent has in stock.
-    * __Outstanding Orders,__ i.e. how much beer the agent has order from his supplier but has not received yet.
-    * __Backorder,__ i.e. how much beer the agents customer have odered but which the agent hasn't delivered yet.
-
-    In each timestep, the agent has to react to the following events:
-
-    * __Delivery.__ The beer delivered from the agents supplier.
-    * __Order.__ The beer ordered by the agents customer.
-
-    At the end of each timestep, after the agent has received deliveries and orders, the agent has to make an order decision, which is then passed on to its supplier as an order.
-
-    ![Agents](images/supply_chain_agents.png)
-
-    Experience shows that in a typical game, the number of orders placed by the players is much higher than necessary: The graph below shows what happens when the consumer changes his order just once, at the beginning of the game, from 100 units of beer to 400 units and then leaves it at the new setting.  This leads to a huge "whiplash" that ripples through the supply chain, causing the brewery to produce over 30,000 units of beer during peak times!
-    """)
-    return
-
-
 @app.cell
 def _():
-    from BPTK_Py.bptk import bptk 
+    from BPTK_Py.bptk import bptk
 
     bptk = bptk()
-    bptk.plot_scenarios(
-        scenario_managers=["smBeergame"],
-        kind="area",
-        title="Order Behavior In A Typical Game",
-        scenarios=["typical"],
-        agents=["brewery","distributor","wholesaler","retailer","consumer"],
-        agent_states=["active"],
-        agent_properties=["outgoing_order"],
-        agent_property_types=["total"],
-        return_df=False,
-        series_names={
-            "smBeergame_typical_brewery_active_outgoing_order_total" : "Brewery",
-            "smBeergame_typical_distributor_active_outgoing_order_total" : "Distributor",
-            "smBeergame_typical_wholesaler_active_outgoing_order_total" : "Wholesaler",
-            "smBeergame_typical_retailer_active_outgoing_order_total" : "Retailer",
-            "smBeergame_typical_consumer_active_outgoing_order_total" : "Consumer"
-        
-        }, format="axes"
-    )
     return (bptk,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    With this order behaviour, the supply chain costs are way off target:
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smBeergame"],
-        kind="area",
-        title="Overall Supply Chain Cost",
-        scenarios=["typical"],
-        agents=["controlling"],
-        agent_states=["active"],
-        agent_properties=["supply_chain_cost","target_supply_chain_cost"],
-        agent_property_types=["total"],
-        return_df=False,
-        series_names={
-            "smBeergame_typical_controlling_active_supply_chain_cost_total" : "Supply Chain Cost",
-            "smBeergame_typical_controlling_active_target_supply_chain_cost_total" : "Target Supply Chain Cost"
-        
-        }, format="axes"
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    It is actually quite easy to define ordering policies that will lead to improved behaviour (again it is best to read [Understanding the Beergame](understanding_the_beergame.md) for details).
-
-    One simple strategy is to manage the order balance, i.e. the difference between incoming orders (i.e. those coming from the customer) and outgoing orders (i.e. those going to the supplier). Put simply, we would expect the balance to be a constant equal to the desired inventory, a sensible ordering strategy then would be:
-
-    `Int(Max(Incoming Order+(2 * Incoming Order+ Target Inventory- Order Balance)/Inventory Adjustment Time),0))`
-
-    The graphs below show how orders, inventory and costs develop under this strategy.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smSmartBeergame"],
-        kind="area",
-        title="Order Behavior When Using the 'Order Balance' Policy",
-        scenarios=["order_balance"],
-        agents=["brewery","distributor", "wholesaler", "retailer","consumer"],
-        agent_states=["active"],
-        agent_properties=["outgoing_order"],
-        agent_property_types=["total"],
-        return_df=False,
-        series_names={
-            "smSmartBeergame_order_balance_brewery_active_outgoing_order_total" : "Brewery",
-            "smSmartBeergame_order_balance_distributor_active_outgoing_order_total" : "Distributor",
-            "smSmartBeergame_order_balance_wholesaler_active_outgoing_order_total" : "Wholesaler",
-            "smSmartBeergame_order_balance_retailer_active_outgoing_order_total" : "Retailer",
-            "smSmartBeergame_order_balance_consumer_active_outgoing_order_total" : "Consumer"
-        
-        }, format="axes"
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    This policy is nice and simple and it is almost good enough to achieve the target of keeping the supply chain costs below $30,000.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smSmartBeergame"],
-        kind="area",
-        title="Supply Chain Cost When Using the 'Order Balance' Policy",
-        scenarios=["order_balance"],
-        agents=["controlling"],
-        agent_states=["active"],
-        agent_properties=["supply_chain_cost","target_supply_chain_cost"],
-        agent_property_types=["total"],
-        return_df=False,
-        series_names={
-            "smSmartBeergame_order_balance_controlling_active_supply_chain_cost_total" : "Supply Chain Cost",
-            "smSmartBeergame_order_balance_controlling_active_target_supply_chain_cost_total" : "Target Supply Chain Cost"
-        }, format="axes"
-    
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The objective now is to use machine learning to find an order policy that keeps the actual supply chain costs close to the target supply chain cost, in the following we will do so using a reinforcement learning approach.
-    """)
-    return
 
 
 @app.cell(hide_code=True)
@@ -288,21 +64,21 @@ def _(mo):
     mo.md(r"""
     Reinforcement Learning is a machine learning technique that focuses on learning from interaction: agents interact with their environment according to their "action policy" and receive rewards for their actions. The objective of reinforcement learning algorithms is to learn the right action policies, i.e. to find policies that maximize the rewards the agents receive for their actions.
 
-    There are different approaches to reinforcement learning and we will use a simple one known as Q-Learning in this notebook.
+    There are different approaches to reinforcement learning and we will use a simple one known as Q-Learning on this page.
 
-    in Q-Learning, each agent has a "Q-Table", which defines the expected total reward an agent will get for performing a particular action when in a particular state. Agents initially start with an "empty" Q-Table and then learn the right behaviour through trial and error.
+    In Q-Learning, each agent has a "Q-Table", which defines the expected total reward an agent will get for performing a particular action when in a particular state. Agents initially start with an "empty" Q-Table and then learn the right behaviour through trial and error.
 
     Agents start with an "empty" q-table and then fill it by learning through trial and error. At each step, an agent always chooses to perform the action that will lead to the highest reward.
 
     ![Agents Use Q-Tables To Choose Their Actions](images/q-table.png)
 
-    The following paragraphs dive a little deeper into the mathematics behind reinforcement learning. This is quite illustrative because it shows how you can deal with uncertainty and also how to deal with (extrinsic) reward systems – two capabilities that are very important in any enterprise. Feel free to skip to the next chapter if you are not interessted in the mathematical formalism.
+    The following paragraphs dive a little deeper into the mathematics behind reinforcement learning. This is quite illustrative because it shows how you can deal with uncertainty and also how to deal with (extrinsic) reward systems – two capabilities that are very important in any enterprise. Feel free to skip to the next chapter if you are not interested in the mathematical formalism.
 
     > The following exposition of reinforcement learning closely follows that in the seminal book [Reinforcement Learning](https://www.amazon.com/-/de/dp/0262039249/ref=sr_1_1?__mk_de_DE=ÅMÅŽÕÑ&keywords=reinforcement+learning&qid=1584206411&sr=8-1) by Richard S. Sutton and Andre G. Barto
 
-    In order to make reinforcement learning computable, we need to find an apropriate formalism. One such formalism is to model such agent-environment interactions as _Markov Decision Processes_ (MDPs):
+    In order to make reinforcement learning computable, we need to find an appropriate formalism. One such formalism is to model such agent-environment interactions as _Markov Decision Processes_ (MDPs):
 
-    At each timestep $t$ the agent receives some representation of the enviroments state, $S_t \in \mathcal{S}$, and on that basis selects an action, $A_t \in \mathcal{A}$. One time step later, (in part) as a consequence of its action, the agent receives a reward $R_t \in \mathcal{R} \subset \mathbb{R}$.
+    At each timestep $t$ the agent receives some representation of the environment's state, $S_t \in \mathcal{S}$, and on that basis selects an action, $A_t \in \mathcal{A}$. One time step later, (in part) as a consequence of its action, the agent receives a reward $R_t \in \mathcal{R} \subset \mathbb{R}$.
 
     ![Agents interact with the environment](images/agent_environment.png)
 
@@ -326,7 +102,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Using $p$, we can calculate anything we need to know about an agents behaviour, e.g the _state-transition probabilities_:
+    Using $p$, we can calculate anything we need to know about an agent's behaviour, e.g. the _state-transition probabilities_:
 
     \begin{equation*}
     p\left(s' \mid s,a\right) = Pr\{S_t=s'\mid S_{t-1}=s, A_{t-1}=a\}=\sum_{r \in \mathcal{R}} p\left(s',r \mid s,a\right)
@@ -358,7 +134,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In order to get our agents to learn, we not only need to define the reward an agent gets for performing an action, we also need to tell the agents to maximize the sum of rewards over its lifetime, i.e the lifetime reward.
+    In order to get our agents to learn, we not only need to define the reward an agent gets for performing an action, we also need to tell the agents to maximize the sum of rewards over its lifetime, i.e. the lifetime reward.
 
     Formally we can define the objective of reinforcement learning to maximize the expected lifetime reward, which is defined as:
 
@@ -382,7 +158,7 @@ def _(mo):
     mo.md(r"""
     #### Action Policies
 
-    Now that we know we want to optimize the liftetime reward, we need to help our agent to learn an optimal policy. A _policy_ is a mapping from states to the probability of selecting a possible action.
+    Now that we know we want to optimize the lifetime reward, we need to help our agent to learn an optimal policy. A _policy_ is a mapping from states to the probability of selecting a possible action.
 
     If the agent is following policy $\pi$ at time $t$, then $\pi(a \mid s)$ is the probability that $A_t=a$ if $S_t=s$.
 
@@ -392,7 +168,7 @@ def _(mo):
 
     ![Backup Diagram](images/backup_diagram.png)
 
-    Given $\pi$ and $p$ we can calulate the probability an agent will transition into a particular state $s'$ given that it is in state $s$:
+    Given $\pi$ and $p$ we can calculate the probability an agent will transition into a particular state $s'$ given that it is in state $s$:
 
     \begin{equation*}
     p_\pi (s' \mid s) =  \sum_a \pi(a \mid s) \sum_{r} p\left(s',r \mid s,a\right)
@@ -412,7 +188,7 @@ def _(mo):
     mo.md(r"""
     #### Value Functions
 
-    Using the action policy $pi$ and the environment dynamic $p$, we can now calculate the value we expect to achieve from the policy: The _value function_ of a state $s$ under a policy $\pi$, denoted $v_\pi (s)$, is the expected return when starting in $s$ and following $\pi$ thereafter.
+    Using the action policy $\pi$ and the environment dynamic $p$, we can now calculate the value we expect to achieve from the policy: The _value function_ of a state $s$ under a policy $\pi$, denoted $v_\pi (s)$, is the expected return when starting in $s$ and following $\pi$ thereafter.
 
     For our MDPs, we can define $v_\pi$ by:
 
@@ -440,9 +216,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### Bellmann Equation
+    #### Bellman Equation
 
-    Given the recursive nature of the lifetime reward, we can answer the question of how the value of an agents current state is related to the value of its future state if it follows a policy and takes an action now: after all, once we have transitioned from $s$ to $s'$, nothing changes from a conceptual perspective.
+    Given the recursive nature of the lifetime reward, we can answer the question of how the value of an agent's current state is related to the value of its future state if it follows a policy and takes an action now: after all, once we have transitioned from $s$ to $s'$, nothing changes from a conceptual perspective.
 
     \begin{align}
     v_\pi (s) & \doteq \mathbb{E}_\pi \lbrack G_t \mid S_t=s \rbrack \\
@@ -467,7 +243,7 @@ def _(mo):
 
     The second part of the equation is visualized in the diagram below.
 
-    ![Bellmann Equation](images/bellmann.png)
+    ![Bellman Equation](images/bellmann.png)
 
     Putting these terms together and rearranging the sums, we end up with:
 
@@ -481,7 +257,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is known as the _Bellmann equation for $v_\pi$_. It expresses a relationship between the value of a state and the values of successor states: The value of the start state must equal the (discounted) value of the expected next state, plus the reward expected in getting to that state.
+    This is known as the _Bellman equation for $v_\pi$_. It expresses a relationship between the value of a state and the values of successor states: The value of the start state must equal the (discounted) value of the expected next state, plus the reward expected in getting to that state.
     """)
     return
 
@@ -491,7 +267,7 @@ def _(mo):
     mo.md(r"""
     #### Optimal Policies and the Optimal Value Function
 
-    Now that we know about policies and value functions, we can try looking for the best possible, optimal value function. i.e. the one that achieves the highest reward over the long run.
+    Now that we know about policies and value functions, we can try looking for the best possible, optimal value function, i.e. the one that achieves the highest reward over the long run.
 
     Using value functions, we can define an ordering of policies: $\pi \geq \pi'$ if and only if $v_\pi (s) \geq v_{\pi'} (s)$ for all $s \in \mathcal{S}$.
 
@@ -508,7 +284,7 @@ def _(mo):
     & = \mathbb{E}\lbrack R_{t+1}+\gamma v_* (S_{t+1}) \mid S_t=s, A_t=a \rbrack
     \end{align}
 
-    Because $v_*$ is the value function for a policy, it must satisfy the Bellmann equation. However, because it is the optimal value function, we can actually write this in a special form without reference to any specific policy. This form is called the _Bellmann optimality equation_:
+    Because $v_*$ is the value function for a policy, it must satisfy the Bellman equation. However, because it is the optimal value function, we can actually write this in a special form without reference to any specific policy. This form is called the _Bellman optimality equation_:
 
     \begin{align}
     v_* (s) & = \max\limits_\pi q_\pi (s,a) \\
@@ -517,9 +293,9 @@ def _(mo):
     &= \max\limits_a  \sum_{s', r} p\left(s',r \mid s,a\right)\lbrack r+\gamma v_* (s')\rbrack
     \end{align}
 
-    >Intuitively, the Bellmann optimality equation expresses the fact that the value of a state under an optimal policy must equal the expected return for the best action from that state.
+    >Intuitively, the Bellman optimality equation expresses the fact that the value of a state under an optimal policy must equal the expected return for the best action from that state.
 
-    The Bellmann optimality equation for $q_*$ is:
+    The Bellman optimality equation for $q_*$ is:
 
     \begin{align}
     q_* (s,a) & =  \mathbb{E}\lbrack R_{t+1}+\gamma \max\limits_{a'} q_* (S_{t+1},a') \mid S_t=s, A_t=a \rbrack \\
@@ -534,9 +310,9 @@ def _(mo):
     mo.md(r"""
     #### Solving The Bellman Equation: Temporal Difference Learning / Q-Learning
 
-    Reinforcement learning then essentially boils down to solving the Bellman optimality equation. For finite MDPs, such a solution will always exist - because the Bellman optimality equation defines a system of equations, once for each state. So if there are $n$ states, you end up with $n$ equations in $n$ unknowns.
+    Reinforcement learning then essentially boils down to solving the Bellman optimality equation. For finite MDPs, such a solution will always exist - because the Bellman optimality equation defines a system of equations, one for each state. So if there are $n$ states, you end up with $n$ equations in $n$ unknowns.
 
-    Once you have $v_*$, it is quite easy to derive the optimal policy: for each state $s$, there will be at least one state for which the maximum is obtained in the Bellman optimality equation. Any policy that assigns nonzero probability only to these actions is an optimal policy.
+    Once you have $v_*$, it is quite easy to derive the optimal policy: for each state $s$, there will be at least one action for which the maximum is obtained in the Bellman optimality equation. Any policy that assigns nonzero probability only to these actions is an optimal policy.
 
     If you have $q_*$, choosing an optimal policy is even easier - you simply have to find an action that maximises $q_* (s,a)$:
 
@@ -553,7 +329,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    One way of estimating $v$ is to use a Monte-Carlo approach: we start with an initial approximation $V$ for $v$ (i.e. for the expected total reward folling that state) and then run through our simulation a large number of times - each time we run the simulation we will wander through a different trajectory defined by $pi_*$ and the environment dynamic $p$.
+    One way of estimating $v$ is to use a Monte-Carlo approach: we start with an initial approximation $V$ for $v$ (i.e. for the expected total reward following that state) and then run through our simulation a large number of times - each time we run the simulation we will wander through a different trajectory defined by $\pi_*$ and the environment dynamic $p$.
 
     During each run we cache the actual value for $G_t$ (i.e. the actual total reward following that state) for each state and timestep. At the end of the run we update $V(S_t)$ using the following formula, where $\alpha$ is a constant that defines how quickly we move towards the new value:
 
@@ -571,9 +347,9 @@ def _(mo):
     V(S_t) \gets V(S_t) + \alpha \lbrack R_{t+1}+\gamma V(S_{t+1}) - V(S_t) \rbrack
     \end{equation*}
 
-    This approach to learning is referred to as _Temporal Difference Learning_, because it compare values of $V$ that are separated by a (short) temporal difference.
+    This approach to learning is referred to as _Temporal Difference Learning_, because it compares values of $V$ that are separated by a (short) temporal difference.
 
-    In this notebook we focus on a variant of temporal difference learning known as  _Q-Learning_ because it finds a solution for $q_*$ instead of $v_*$:
+    On this page we focus on a variant of temporal difference learning known as  _Q-Learning_ because it finds a solution for $q_*$ instead of $v_*$:
 
     \begin{equation*}
     Q(S_t,A_t) \gets Q(S_t,A_t) + \alpha \lbrack R_{t+1}+\gamma \max\limits_a Q(S_{t+1},a) - Q(S_t,A_t) \rbrack
@@ -593,7 +369,7 @@ def _(mo):
         * $S \gets S'$
     3. Until S is terminal or simulation reaches a predefined end
 
-    We use the $epsilon$-greedy policy in step 2.1 to ensure that our algorithm doesn't get locked into a local optimum: using a small $\epsilon > 0$ that defines a probability that we will choose a random action instead of one defined by our policy ($\epsilon$-greedy approach).
+    We use the $\epsilon$-greedy policy in step 2.1 to ensure that our algorithm doesn't get locked into a local optimum: using a small $\epsilon > 0$ that defines a probability that we will choose a random action instead of one defined by our policy ($\epsilon$-greedy approach).
 
     The step size $\alpha \in (0, 1\rbrack$ defines how quickly we move from our current value of $Q$ to a new value and $\gamma$ is the discounting factor.
     """)
@@ -611,7 +387,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now let's apply the theory above to our beergame agents. Our "learning" consists of finding the right values for the function $Q(S,A)$, which tells the agent which action to take if it is in State A.
+    Now let's apply the theory above to our beergame agents. Our "learning" consists of finding the right values for the function $Q(S,A)$, which tells the agent the value of taking action $A$ in state $S$.
 
     We set $\epsilon=0.1$ and $\alpha=0.2$. Because the beergame runs over a finite set of 24 rounds, we can set $\gamma=1$.
 
@@ -621,7 +397,7 @@ def _(mo):
 
     Next to adding and reading values, the q-table provides two key methods:
 
-    * __best_action(state)__ This method returns the best action for a given state, i.e. the action that maximes $Q(S,A)$ for a given state $S$.
+    * __best_action(state)__ This method returns the best action for a given state, i.e. the action that maximises $Q(S,A)$ for a given state $S$.
     * __max_action_value(state)__ This method returns the best value that can be achieved for a given state, i.e. $Q(S, best\_action(S))$.
     """)
     return
@@ -630,7 +406,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Each supply chain agent has its own Q-table and we capture the agents state via a single value, namely the __order balance__ introduced above.
+    Each supply chain agent has its own Q-table and we capture the agent's state via a single value, namely the __order balance__ introduced above.
 
     The implementation of the actual training algorithm is remarkably simple, which is why we have included the complete code below.
 
@@ -710,7 +486,7 @@ def _(mo):
 
     Which guidance can we give the agents along the way?
 
-    The first thing we can do is to penalize the agents as soon as they miss the game target (which can happen very early on in the game). In this case we penalize the agents and stop the game for that episode to avoide filling the q-table with unnecessary information. We also penalize the agents if they don't order at least as much as the incoming order.
+    The first thing we can do is to penalize the agents as soon as they miss the game target (which can happen very early on in the game). In this case we penalize the agents and stop the game for that episode to avoid filling the q-table with unnecessary information. We also penalize the agents if they don't order at least as much as the incoming order.
 
     ```python
      if (agent.order_balance < 0  or agent.order_balance > 1400):
@@ -751,7 +527,8 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     Now let's see how this works out in practice. The code below runs the beergame over ten
-    episodes and returns the total supply chain reward - in the long run we would like the
+    episodes with `train_scenarios`, which [Training Agents](../../abm/training_agents/training_agents.md)
+    explains, and returns the total supply chain reward - in the long run we would like the
     reward to become less and less negative.
 
     Ten episodes are not many, and the two charts after it show how little the agents
@@ -763,7 +540,10 @@ def _(mo):
 
 @app.cell
 def _(bptk):
-    belohnung = bptk.train_scenarios(
+    import BPTK_Py
+    from BPTK_Py.visualizations import bptk_style
+
+    reward_10 = bptk.train_scenarios(
         episodes=10,
         scenario_managers=["smBeergameQlOB"],
         scenarios=["train_agents"],
@@ -773,12 +553,15 @@ def _(bptk):
         agent_property_types=["total"],
         return_df=True,
     )
-    belohnung.columns = ["Supply Chain Reward"]
-    belohnung.plot(
-        title="Training Results: Supply Chain Reward Per Episode",
-        xlabel="Episode",
-        ylabel="Reward",
-    )
+    reward_10.columns = ["Supply Chain Reward"]
+    with bptk_style():
+        reward_plot = reward_10.plot(
+            title="Training Results: Supply Chain Reward Per Episode",
+            xlabel="Episode",
+            ylabel="Reward",
+            color=BPTK_Py.plotting_config.settings["colors"][0],
+        )
+    reward_plot.figure
     return
 
 
@@ -793,16 +576,16 @@ def _(mo):
 @app.cell
 def _(bptk):
     bptk.reset_scenario(scenario_manager="smBeergameQlOB", scenario="smart_agents")
-    nach_training = "10 Episodes"
-    return (nach_training,)
+    after_training = "10 Episodes"
+    return (after_training,)
 
 
 @app.cell
-def _(bptk, nach_training):
-    kosten_10 = bptk.plot_scenarios(
+def _(bptk, after_training):
+    cost_10 = bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title=f"Agent Cost Q-Learning ({nach_training})",
+        title=f"Agent Cost Q-Learning ({after_training})",
         scenarios=["smart_agents"],
         agents=["brewery","distributor","wholesaler","retailer"],
         agent_states=["active"],
@@ -817,24 +600,24 @@ def _(bptk, nach_training):
         
         }, format="axes"
     )
-    kosten_10
-    return (kosten_10,)
+    cost_10
+    return (cost_10,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We can see that the agents haven't learnt much after ten trainig episodes  ... the retailer is ordering far too much, producing very high costs.
+    We can see that the agents haven't learnt much after ten training episodes  ... the retailer is ordering far too much, producing very high costs.
     """)
     return
 
 
 @app.cell
-def _(bptk, nach_training):
-    lieferkette_10 = bptk.plot_scenarios(
+def _(bptk, after_training):
+    supply_chain_10 = bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title=f"Supply Chain Cost Q-Learning ({nach_training})",
+        title=f"Supply Chain Cost Q-Learning ({after_training})",
         scenarios=["smart_agents"],
         agents=["controlling"],
         agent_states=["active"],
@@ -845,14 +628,14 @@ def _(bptk, nach_training):
             "smBeergameQlOB_smart_agents_controlling_active_target_supply_chain_cost_total" : "Target Supply Chain Cost"
         }, format="axes"
     )
-    lieferkette_10
-    return (lieferkette_10,)
+    supply_chain_10
+    return (supply_chain_10,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Actually, training the agents takes quite a few episodes and it takes around 50,000 epsiodes to produce satisfactory results (this is still small if you consider the number of potential paths, which is essentially infinite because the agents could order any amount of beer). Because it takes 2-3 of hours to run that many epsiodes (on a Macbook Pro with 16 GB of RAM), we've provided pretrained q-tables for 12500, 25000, 37500 and 50000 for you to experiment with (see the `data` directory of this repository).
+    Actually, training the agents takes quite a few episodes and it takes around 50,000 episodes to produce satisfactory results (this is still small if you consider the number of potential paths, which is essentially infinite because the agents could order any amount of beer). Because it takes 2-3 hours to run that many episodes (on a Macbook Pro with 16 GB of RAM), we've provided pretrained q-tables for 12500, 25000, 37500 and 50000 for you to experiment with (they are stored in the `data` directory beside this page).
 
     To use them you first need to reset the q-tables:
     """)
@@ -860,8 +643,8 @@ def _(mo):
 
 
 @app.cell
-def _(kosten_10, lieferkette_10):
-    _ = kosten_10, lieferkette_10
+def _(cost_10, supply_chain_10):
+    _ = cost_10, supply_chain_10
     from src.abm.q_learning_base.sparseQTable import SparseQTable
     from src.abm.q_learning_ob.beergame import BeergameQlOB
     BeergameQlOB.brewery_q_table=SparseQTable(dimension=1)
@@ -909,6 +692,21 @@ def _(BeergameQlOB, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    Training takes time and the q-tables grow large, so trained q-tables are worth keeping.
+    `dump_q_tables` writes them to a file, which `load_q_tables` reads back as above. The
+    call is shown rather than run: it writes into `data/`, where the q-tables this page
+    loads are kept.
+
+    ```python
+    BeergameQlOB.dump_q_tables("data/q_tables_10.json", "JSON")
+    ```
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     Reset the scenario to ensure the scenarios pick up the new q-tables:
     """)
     return
@@ -923,7 +721,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now we can take a look at the results - it looks quite good already after 37500 training episodes, but the retailers cost are still a little high.
+    Now we can take a look at the results - it looks quite good already after 37500 training episodes, but the retailer's costs are still a little high.
     """)
     return
 
@@ -933,7 +731,7 @@ def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title="Agent Cost Q-Learning (37,500 Epsiodes)",
+        title="Agent Cost Q-Learning (37,500 Episodes)",
         scenarios=["smart_agents"],
         agents=["brewery","distributor","wholesaler","retailer"],
         agent_states=["active"],
@@ -954,7 +752,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Thus, the total supply chain costs are still a little to high:
+    Thus, the total supply chain costs are still a little too high:
     """)
     return
 
@@ -964,7 +762,7 @@ def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title="Supply Chain Cost Q-Learning (37,500 Epsiodes)",
+        title="Supply Chain Cost Q-Learning (37,500 Episodes)",
         scenarios=["smart_agents"],
         agents=["controlling"],
         agent_states=["active"],
@@ -1007,7 +805,7 @@ def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title="Supply Chain Cost Q-Learning (50,000 Epsiodes)",
+        title="Supply Chain Cost Q-Learning (50,000 Episodes)",
         scenarios=["smart_agents"],
         agents=["controlling"],
         agent_states=["active"],
@@ -1034,7 +832,7 @@ def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smBeergameQlOB"],
         kind="area",
-        title="Agent Cost Q-Learning (50,000 Epsiodes)",
+        title="Agent Cost Q-Learning (50,000 Episodes)",
         scenarios=["smart_agents"],
         agents=["brewery","distributor","wholesaler","retailer"],
         agent_states=["active"],
@@ -1055,7 +853,81 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    It is interesting to compare the results of our rule-based ordering policy to the q-learning approach - the approach learned using q-learning actualy performs better. While the 'Order Balance' policy is robust and works whatever the order behaviour of an agent in the supply line, the q-learning algorithm is trained towards a particular order behavior.
+    How the trained agents play - their orders, their inventory and their backorder:
+    """)
+    return
+
+
+@app.cell
+def _(bptk):
+    bptk.plot_scenarios(
+        scenario_managers=["smBeergameQlOB"],
+        kind="area",
+        scenarios=["smart_agents"],
+        agents=["brewery","distributor","wholesaler","retailer"],
+        agent_states=["active"],
+        agent_properties=["outgoing_order"],
+        agent_property_types=["total"],
+        title="Outgoing Orders After 50,000 Episodes",
+        x_label="Weeks",
+        series_names={
+            "smBeergameQlOB_smart_agents_brewery_active_outgoing_order_total" : "Brewery",
+            "smBeergameQlOB_smart_agents_distributor_active_outgoing_order_total" : "Distributor",
+            "smBeergameQlOB_smart_agents_wholesaler_active_outgoing_order_total" : "Wholesaler",
+            "smBeergameQlOB_smart_agents_retailer_active_outgoing_order_total" : "Retailer",
+        }, format="axes"
+    )
+    return
+
+
+@app.cell
+def _(bptk):
+    bptk.plot_scenarios(
+        scenario_managers=["smBeergameQlOB"],
+        kind="area",
+        scenarios=["smart_agents"],
+        agents=["brewery","distributor","wholesaler","retailer"],
+        agent_states=["active"],
+        agent_properties=["inventory"],
+        agent_property_types=["total"],
+        title="Inventory After 50,000 Episodes",
+        x_label="Weeks",
+        series_names={
+            "smBeergameQlOB_smart_agents_brewery_active_inventory_total" : "Brewery",
+            "smBeergameQlOB_smart_agents_distributor_active_inventory_total" : "Distributor",
+            "smBeergameQlOB_smart_agents_wholesaler_active_inventory_total" : "Wholesaler",
+            "smBeergameQlOB_smart_agents_retailer_active_inventory_total" : "Retailer",
+        }, format="axes"
+    )
+    return
+
+
+@app.cell
+def _(bptk):
+    bptk.plot_scenarios(
+        scenario_managers=["smBeergameQlOB"],
+        kind="area",
+        scenarios=["smart_agents"],
+        agents=["brewery","distributor","wholesaler","retailer"],
+        agent_states=["active"],
+        agent_properties=["backorder"],
+        agent_property_types=["total"],
+        title="Backorder After 50,000 Episodes",
+        x_label="Weeks",
+        series_names={
+            "smBeergameQlOB_smart_agents_brewery_active_backorder_total" : "Brewery",
+            "smBeergameQlOB_smart_agents_distributor_active_backorder_total" : "Distributor",
+            "smBeergameQlOB_smart_agents_wholesaler_active_backorder_total" : "Wholesaler",
+            "smBeergameQlOB_smart_agents_retailer_active_backorder_total" : "Retailer",
+        }, format="axes"
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    It is interesting to compare the results of our rule-based ordering policy to the q-learning approach - the approach learned using q-learning actually performs better. While the 'Order Balance' policy is robust and works whatever the order behaviour of an agent in the supply line, the q-learning algorithm is trained towards a particular order behavior.
     """)
     return
 
@@ -1084,13 +956,13 @@ def _(mo):
     mo.md(r"""
     ### Summary
 
-    This notebook introduced the concept of agent-based simulation and reinforcement learning and applied them to a simple supply chain simulation that simulates the Beer Distribution Game.
+    This page introduced the concept of agent-based simulation and reinforcement learning and applied them to a simple supply chain simulation that simulates the Beer Distribution Game.
 
     It illustrates how simulations can be used to create a computational model of reality and how reinforcement learning can then be used to find good decision making policies - in our case, the policy found through reinforcement learning actually performs better than the rule-based policy.
 
-    The main issue in reinforcement learning is finding the right reward policies and in the end the agents are trained towards those policies - for our beergame simulation this means that are agents are now good at playing the beergame for the given behaviour of the consumer. But if the consumer changes his behaviour, the agents will not know how to deal with this. This is actually quite similar to real life situations, where it is quite difficult to set sensible extrinsic rewards.
+    The main issue in reinforcement learning is finding the right reward policies and in the end the agents are trained towards those policies - for our beergame simulation this means that our agents are now good at playing the beergame for the given behaviour of the consumer. But if the consumer changes his behaviour, the agents will not know how to deal with this. This is actually quite similar to real life situations, where it is quite difficult to set sensible extrinsic rewards.
 
-    In our case the rule-based ordering policy is so simple that an extrinsic reward system would most likely just end up encoding that policy as a set of extrinisic rewards.
+    In our case the rule-based ordering policy is so simple that an extrinsic reward system would most likely just end up encoding that policy as a set of extrinsic rewards.
     """)
     return
 

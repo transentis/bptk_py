@@ -27,7 +27,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    For agent-based models BPTK-Py has a standard data collector which collects the statistics (average, minumum, etc.) for all properties of all __agent types__. Collecting statistics for each agent individually will lead to a huge amount of data. However, if you want to explore this case or other cases which the standard data collector does not cover, you can also implement your own data collector. In this notebook, we explain how to proceed. Therefore we implement a new data collector class which collects the properties of each agent individually.
+    For agent-based models BPTK-Py has a standard data collector which collects the statistics (average, minimum, etc.) for all properties of all __agent types__. Collecting statistics for each agent individually will lead to a huge amount of data. However, if you want to explore this case or other cases which the standard data collector does not cover, you can also implement your own data collector. In this notebook, we explain how to proceed. Therefore we implement a new data collector class which collects the properties of each agent individually.
 
     We first create a new class and choose a name for it: `AgentDataCollector`. Then we implement the necessary methods and constructors. However, we don't want to create a whole new class but use the already existing methods of the standard data collector and extend it for our purposes. This saves a lot of work. The new data collector requires the following methods:
 
@@ -86,7 +86,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Of course, you can add as many libraries as you want. In depends on what you need for your collector.
+    Of course, you can add as many libraries as you want. It depends on what you need for your collector.
     """)
     return
 
@@ -102,7 +102,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This how you derive the standard data collector:
+    This is how you derive the standard data collector:
 
     ```python
     class AgentDataCollector(DataCollector):
@@ -130,7 +130,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    After collecting all the data we have to bring them into an usable structure to be able to plot the statistics later. I chose to transform the dictionary into multiple dataframes. For each agent there exists one dataframe with its statistics. When we have the statistics in a dataframe we can exploit the functionalities of the library pandas.
+    After collecting all the data we have to bring them into a usable structure to be able to plot the statistics later. I chose to transform the dictionary into multiple dataframes. For each agent there exists one dataframe with its statistics. When we have the statistics in a dataframe we can exploit the functionalities of the library pandas.
     """)
     return
 
@@ -138,7 +138,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The data is prepared and we can now plot them by using the visualization methods of pandas. To obtain the same design as the plot of BPTK-Py you need change the following parameters of the plot method. For the parameter `title` you can set any title name. The [Configuration](../../concepts/configuration/configuration.md) chapter explains what each of these settings does.
+    The data is prepared and we can now plot them by using the visualization methods of pandas. To obtain the same design as the plot of BPTK-Py you need to change the following parameters of the plot method. For the parameter `title` you can set any title name. The [Configuration](../../concepts/configuration/configuration.md) chapter explains what each of these settings does.
 
     ```python
     df.plot(kind=config.configuration["kind"],
@@ -238,7 +238,7 @@ def _(mo):
     mo.md(r"""
     The following bullet points describe the parameters of the plot method:
 
-    - agent_ids: choose the stats of the agents you want plot
+    - agent_ids: choose the stats of the agents you want to plot
     - properties: choose properties you want to plot
     - title: choose title of the plot
     - agent_type: choose the agent type

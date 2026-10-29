@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>beta_1_a0_5_b0_5</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>1000</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="draw">
+				<eqn>BETA(0.5, 0.5)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="draw"/>
+			</view>
+		</views>
+	</model>
+</xmile>

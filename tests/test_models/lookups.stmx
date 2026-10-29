@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>lookups</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="gf_continuous">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="10"/>
+					<yscale min="0" max="20"/>
+					<ypts>0,5,20,10,0</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_extrapolate">
+				<eqn>TIME</eqn>
+				<gf type="extrapolate">
+					<xscale min="2" max="10"/>
+					<yscale min="0" max="20"/>
+					<ypts>0,5,20,10,0</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_discrete">
+				<eqn>TIME</eqn>
+				<gf type="discrete">
+					<xscale min="2" max="10"/>
+					<yscale min="0" max="20"/>
+					<ypts>0,5,20,10,0</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_rising">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="16"/>
+					<ypts>0,1,4,9,16</ypts>
+				</gf>
+			</aux>
+			<aux name="lookup_continuous">
+				<eqn>LOOKUP(gf_continuous, TIME * 2 - 3)</eqn>
+			</aux>
+			<aux name="lookup_extrapolate">
+				<eqn>LOOKUP(gf_extrapolate, TIME * 2 - 3)</eqn>
+			</aux>
+			<aux name="lookup_discrete">
+				<eqn>LOOKUP(gf_discrete, TIME * 2 - 3)</eqn>
+			</aux>
+			<aux name="inverse_fixed">
+				<eqn>LOOKUPINV(gf_rising, 6)</eqn>
+			</aux>
+			<aux name="inverse_time">
+				<eqn>LOOKUPINV(gf_rising, TIME)</eqn>
+			</aux>
+			<aux name="area_all">
+				<eqn>LOOKUPAREA(gf_continuous)</eqn>
+			</aux>
+			<aux name="area_part">
+				<eqn>LOOKUPAREA(gf_continuous, 3, 7)</eqn>
+			</aux>
+			<aux name="area_time">
+				<eqn>LOOKUPAREA(gf_continuous, 0, TIME)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="gf_continuous"/>
+				<aux x="220" y="290" name="gf_extrapolate"/>
+				<aux x="360" y="290" name="gf_discrete"/>
+				<aux x="500" y="290" name="gf_rising"/>
+				<aux x="640" y="290" name="lookup_continuous"/>
+				<aux x="780" y="290" name="lookup_extrapolate"/>
+				<aux x="80" y="380" name="lookup_discrete"/>
+				<aux x="220" y="380" name="inverse_fixed"/>
+				<aux x="360" y="380" name="inverse_time"/>
+				<aux x="500" y="380" name="area_all"/>
+				<aux x="640" y="380" name="area_part"/>
+				<aux x="780" y="380" name="area_time"/>
+				<connector uid="1" angle="270">
+					<from>gf_continuous</from>
+					<to>lookup_continuous</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>gf_extrapolate</from>
+					<to>lookup_extrapolate</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>gf_discrete</from>
+					<to>lookup_discrete</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>gf_rising</from>
+					<to>inverse_fixed</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>gf_rising</from>
+					<to>inverse_time</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>gf_continuous</from>
+					<to>area_all</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>gf_continuous</from>
+					<to>area_part</to>
+				</connector>
+				<connector uid="8" angle="270">
+					<from>gf_continuous</from>
+					<to>area_time</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

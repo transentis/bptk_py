@@ -1,3 +1,14 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2022-2026 transentis labs GmbH
+# MIT License
+
 class Module():
     """
     The Module class is used to structure SD DSL models into individual modules. 
@@ -68,6 +79,14 @@ class Module():
         """
         return self.model.biflow(self.fqn(name))
 
+
+    def conveyor(self,name):
+        """
+        Add a conveyor to the model. The name of the conveyor will be a fully qualified name
+        consisting of all nested module names plus the actual element name using dot
+        notation, i.e. namespace.name
+        """
+        return self.model.conveyor(self.fqn(name))
 
     def converter(self,name):
         """

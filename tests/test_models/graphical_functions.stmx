@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>graphical_functions</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="R">
+			<elem name="north"/>
+			<elem name="south"/>
+		</dim>
+	</dimensions>
+	<model>
+		<variables>
+			<stock name="s_extrapolate">
+				<eqn>0</eqn>
+				<inflow>f_extrapolate</inflow>
+			</stock>
+			<flow name="f_extrapolate">
+				<eqn>TIME</eqn>
+				<non_negative/>
+				<gf type="extrapolate">
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="16"/>
+					<ypts>0,1,4,9,16</ypts>
+				</gf>
+			</flow>
+			<stock name="s_discrete">
+				<eqn>0</eqn>
+				<inflow>f_discrete</inflow>
+			</stock>
+			<flow name="f_discrete">
+				<eqn>TIME</eqn>
+				<non_negative/>
+				<gf type="discrete">
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="9"/>
+					<ypts>0,1,4,9,9</ypts>
+				</gf>
+			</flow>
+			<stock name="s_biflow">
+				<eqn>10</eqn>
+				<inflow>b_continuous</inflow>
+			</stock>
+			<flow name="b_continuous">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="12"/>
+					<yscale min="-3" max="2"/>
+					<ypts>2,-1,-3,1,2</ypts>
+				</gf>
+			</flow>
+			<aux name="factor">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<element subscript="north">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="south">
+					<eqn>0.5</eqn>
+				</element>
+			</aux>
+			<aux name="g_array">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>TIME * factor</eqn>
+				<gf>
+					<xscale min="0" max="12"/>
+					<yscale min="0" max="10"/>
+					<ypts>0,2,8,10</ypts>
+				</gf>
+			</aux>
+			<stock name="s_array">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>0</eqn>
+				<inflow>f_array</inflow>
+			</stock>
+			<flow name="f_array">
+				<dimensions>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>TIME * factor</eqn>
+				<non_negative/>
+				<gf type="discrete">
+					<xscale min="0" max="12"/>
+					<yscale min="0" max="5"/>
+					<ypts>1,3,5,4</ypts>
+				</gf>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="240" y="100" name="s_extrapolate"/>
+				<flow x="152.5" y="100" name="f_extrapolate">
+					<pts>
+						<pt x="80" y="100"/>
+						<pt x="217.5" y="100"/>
+					</pts>
+				</flow>
+				<stock x="240" y="200" name="s_discrete"/>
+				<flow x="152.5" y="200" name="f_discrete">
+					<pts>
+						<pt x="80" y="200"/>
+						<pt x="217.5" y="200"/>
+					</pts>
+				</flow>
+				<stock x="240" y="300" name="s_biflow"/>
+				<flow x="152.5" y="300" name="b_continuous">
+					<pts>
+						<pt x="80" y="300"/>
+						<pt x="217.5" y="300"/>
+					</pts>
+				</flow>
+				<aux x="450" y="200" name="factor"/>
+				<aux x="600" y="120" name="g_array"/>
+				<stock x="700" y="300" name="s_array"/>
+				<flow x="612.5" y="300" name="f_array">
+					<pts>
+						<pt x="540" y="300"/>
+						<pt x="677.5" y="300"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="30">
+					<from>factor</from>
+					<to>g_array</to>
+				</connector>
+				<connector uid="2" angle="-30">
+					<from>factor</from>
+					<to>f_array</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

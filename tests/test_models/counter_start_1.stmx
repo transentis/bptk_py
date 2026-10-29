@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>counter_start_1</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>1</start>
+		<stop>13</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="ctr_1_8">
+				<eqn>COUNTER(1, 8)</eqn>
+			</aux>
+			<aux name="ctr_0_5">
+				<eqn>COUNTER(0, 5)</eqn>
+			</aux>
+			<aux name="ctr_1_3_5">
+				<eqn>COUNTER(1, 3.5)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="120" y="100" name="ctr_1_8"/>
+				<aux x="280" y="100" name="ctr_0_5"/>
+				<aux x="440" y="100" name="ctr_1_3_5"/>
+			</view>
+		</views>
+	</model>
+</xmile>

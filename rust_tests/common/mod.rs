@@ -19,6 +19,7 @@ pub fn model_with_specs(starttime: f64, stoptime: f64, dt: f64) -> SdModel {
         entity_index: HashMap::new(),
         graphical_functions: HashMap::new(),
         eval_order: Vec::new(),
+        init_order: Vec::new(),
         callback_names: Vec::new(),
         #[cfg(feature = "python")]
         callbacks: Vec::new(),

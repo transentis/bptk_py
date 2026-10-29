@@ -23,19 +23,19 @@ def _(mo):
 
     In this brief document we take a look at the quickest route to importing a System Dynamics model stored in the XMILE format, such as those created with ®Stella (`*.stmx`) or ®iThink (`*.itmx`).
 
-    The main thing you need to understand here is that in its standard configuration, the BPTK-Py framework transpiles such models into Python code automatically in the background.
+    The main thing you need to understand here is that in its standard configuration, the BPTK-Py framework transpiles such models into SD DSL code automatically in the background.
 
-    So the code you actually work with in your notebook is the transpiled Python model.
+    So the model you actually work with in your notebook is the transpiled SD DSL model.
 
-    BPTK-Py watches the original XMILE file to see whether you have changed the model in the modeling environment – if yes, the model is automatically re-transpiled.
+    BPTK-Py watches the original XMILE file to see whether you have changed the model in the modeling environment – if yes, the model is automatically re-transpiled. While BPTK-Py runs, a file monitor watches the XMILE file and transpiles it again as soon as it is saved; a browser has no such monitor. When BPTK-Py starts, it transpiles every model whose XMILE file is newer than its transpiled model.
 
     For this mechanism to work, you need to tell BPTK-Py about your model and for this you need to create a scenario file.
 
-    In the standard configuration, BPTK-Py expects to find both a `scenarios` folder (which contains the scenario files) and a `simulation_models` folder which initially contains the XMILE models and – once BPTK-Py has been started – also the transpiled Python models.
+    In the standard configuration, BPTK-Py expects to find both a `scenarios` folder (which contains the scenario files) and a `simulation_models` folder which initially contains the XMILE models and – once BPTK-Py has been started – also the transpiled SD DSL models.
 
     You can see this directory structure beside this page. It can be changed in the BPTK-Py configuration settings, but let's work with the standard settings for now.
 
-    To illustrate the process, let's assume you want to work with the `sd_simple_project.itmx` model for the first time. You have set up your Python environment and installed all the necessary packages (read the [installation instructions](../../usage/installation.md) if you haven't done this yet)
+    To illustrate the process, let's assume you want to work with the `sd_simple_project.itmx` model for the first time. You have set up your Python environment and installed all the necessary packages (read the [installation instructions](../../usage/installation.md) if you haven't done this yet).
 
     Once you have your working environment, setting up your first notebook only takes a few minutes if you follow these six steps:
 
@@ -76,7 +76,7 @@ def _(mo):
     }
     ```
 
-    By convention, we mostly name the python model file (`model` to match the name of the XMILE source file (`source`), but this is just a convention.
+    By convention, we mostly name the Python model file (`model`) to match the name of the XMILE source file (`source`), but this is just a convention.
 
     The `smWorkingWithXMILE` is the name of the so-called scenario manager which is created by BPTK-Py upon reading the scenario file. Scenario managers are used to store your scenarios. You can give your scenario manager any name you would like, we use the prefix `sm` by convention.
 
@@ -128,11 +128,18 @@ def _(mo):
 
     > Important: In the folder beside this page there is already a `sd_simple_project.py`. As this is an automatically generated file, you can safely delete it. It will be re-generated as soon as you restart BPTK-Py or change the XMILE model.
 
-    It is worth taking a look at the file, because you can see the names of your equations here. BPTK-Py automatically converts your model variable names (such as `Open Taks`) into names that are compliant with Python (such as `openTasks`). Here is what the Python code for `Open Tasks` looks like:
+    It is worth taking a look at the file, because you can see the names of your equations here. BPTK-Py automatically converts your model variable names (such as `Open Tasks`) into names that are compliant with Python (such as `openTasks`). The file has two parts: it first defines every element, then sets the initial values and equations - both grouped by kind, under comments such as `# Stocks`. Here is what the code for `Open Tasks` looks like in each part:
 
     ```
-    'openTasks': lambda t : ( (self.memoize('initialOpenTasks', t)) if ( t  <=  self.starttime ) else (self.memoize('openTasks',t-self.dt) +  self.dt  * ( -1 * ( self.memoize('completionRate',t-self.dt) ) )) )
+    # Stocks
+    openTasks = self.stock('openTasks')
+
+    # Stocks
+    openTasks.initial_value = initialOpenTasks
+    openTasks.outflows = [completionRate]
     ```
+
+    This is the SD DSL, the same code you would write for a model built directly in Python.
 
     ### Show available equations
 
@@ -143,7 +150,7 @@ def _(mo):
 
     Simply run ``bptk.list_equations()`` and optionally the scenario manager(s) and scenario(s) you'd like to see the available equations for.
 
-    For example, let us get an overview over all equations and model elements for the scenario manager ``smWorkingWithXMILE``:
+    For example, let us get an overview of all equations and model elements for the scenario manager ``smWorkingWithXMILE``:
     """)
     return
 
@@ -160,7 +167,7 @@ def _(bptk, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    As you see, we left the argument ``scenarios`` empty. So we are trying to load all possible scenarios for the given scenario manager. You can also leave ``scenario_managers`` empty to get a full overview over the available SD scenarios and elements!
+    As you see, we left the argument ``scenarios`` empty. So we are trying to load all possible scenarios for the given scenario manager. You can also leave ``scenario_managers`` empty to get a full overview of the available SD scenarios and elements!
 
     ## Step 6: Start Experimenting With Your Model
 

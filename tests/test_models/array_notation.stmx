@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>array_notation</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>3</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="D" size="5"/>
+		<dim name="Stage">
+			<elem name="early"/>
+			<elem name="middle"/>
+			<elem name="late"/>
+		</dim>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="base">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>9</eqn>
+				</element>
+				<element subscript="4">
+					<eqn>16</eqn>
+				</element>
+				<element subscript="5">
+					<eqn>25</eqn>
+				</element>
+			</aux>
+			<aux name="index_value">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>D * 10</eqn>
+			</aux>
+			<aux name="counting">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>IF D = 1 THEN 1 ELSE SELF[D - 1] + 1</eqn>
+			</aux>
+			<aux name="previous_element">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>IF D = 1 THEN 0 ELSE base[D - 1]</eqn>
+			</aux>
+			<aux name="next_element">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>IF D = 5 THEN 0 ELSE base[D + 1]</eqn>
+			</aux>
+			<aux name="growing">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>IF D = 1 THEN TIME ELSE SELF[D - 1] * 2</eqn>
+			</aux>
+			<aux name="production">
+				<dimensions>
+					<dim name="Stage"/>
+				</dimensions>
+				<element subscript="early">
+					<eqn>10</eqn>
+				</element>
+				<element subscript="middle">
+					<eqn>20</eqn>
+				</element>
+				<element subscript="late">
+					<eqn>30</eqn>
+				</element>
+			</aux>
+			<aux name="last_stage">
+				<eqn>production[late]</eqn>
+			</aux>
+			<aux name="second_stage_by_number">
+				<eqn>production[2]</eqn>
+			</aux>
+			<aux name="stage_number">
+				<dimensions>
+					<dim name="Stage"/>
+				</dimensions>
+				<eqn>Stage</eqn>
+			</aux>
+			<aux name="first_two_stages">
+				<eqn>SUM(production[early:middle])</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="base"/>
+				<aux x="220" y="290" name="index_value"/>
+				<aux x="360" y="290" name="counting"/>
+				<aux x="500" y="290" name="previous_element"/>
+				<aux x="640" y="290" name="next_element"/>
+				<aux x="780" y="290" name="growing"/>
+				<aux x="80" y="380" name="production"/>
+				<aux x="220" y="380" name="last_stage"/>
+				<aux x="360" y="380" name="second_stage_by_number"/>
+				<aux x="500" y="380" name="stage_number"/>
+				<aux x="640" y="380" name="first_two_stages"/>
+				<connector uid="1" angle="270">
+					<from>base</from>
+					<to>previous_element</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>base</from>
+					<to>next_element</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>production</from>
+					<to>last_stage</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>production</from>
+					<to>second_stage_by_number</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>production</from>
+					<to>first_two_stages</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

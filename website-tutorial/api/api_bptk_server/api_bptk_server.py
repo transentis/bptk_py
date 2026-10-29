@@ -32,7 +32,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The REST API server is essentially a wrapper around the regular `bptk`class. The server is implemented using Flask and provides all the REST Endpoints / Routes that you need to interact with a simulation scenario.
+    The REST API server is essentially a wrapper around the regular `bptk` class. The server is implemented using Flask and provides all the REST Endpoints / Routes that you need to interact with a simulation scenario.
     """)
     return
 
@@ -66,7 +66,7 @@ def _(mo):
        application.run()
     ```
 
-    Assuming you save that code in a file called application.py, you can then start the server fro the command line as follows:
+    Assuming you save that code in a file called application.py, you can then start the server from the command line as follows:
 
     ```default
     export FLASK_ENV=development
@@ -82,7 +82,7 @@ def _(mo):
 
     **BptkServer(import_name, bptk_factory=None, external_state_adapter=None, bearer_token=None, externalize_state_completely=False)**
 
-    This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherts the properties and methods of Flask and doesn’t expose any further public methods.
+    This class provides a Flask-based server that provides a REST-API for running bptk scenarios. The class inherits the properties and methods of Flask and doesn’t expose any further public methods.
 
 
     * **Parameters**
@@ -113,13 +113,9 @@ def _(mo):
 
 
         * **externalize_state_completely** – Boolean (Default=False).
-        Makes the server **stateless**. With `False` an instance stays in memory *and* is
-        written to the adapter, so the adapter is a safety net. With `True` the instance is
-        deleted from memory after every use and read back from the adapter on the next
-        request, so this process holds nothing between requests - which is what lets
-        several server processes share one workload behind a load balancer, and what lets
-        any of them restart without losing a session. It needs an
-        `external_state_adapter`; without one there is nowhere to externalise to.
+        Makes the server **stateless**: with `True` an instance is read back from the adapter
+        on every request instead of kept in memory. It needs an `external_state_adapter`. What
+        that buys: [Running the server statelessly](../api_state_adapters.md#running-the-server-statelessly).
 
     ## agents
 
@@ -232,18 +228,18 @@ def _(mo):
     The following metrics are returned:
 
     - Instance count
-    - Creation time und current timestep of each instance
+    - Creation time and current timestep of each instance
 
     ## healthy
 
     **GET /healthy**
 
-    Unprotected endpoint useful for health checks, e.g. when running as a Kubernetes pod. It simply returns a HTTP 200 response and doesn't interact with the bptk factory.
+    Unprotected endpoint useful for health checks, e.g. when running as a Kubernetes pod. It simply returns an HTTP 200 response and doesn't interact with the bptk factory.
 
     ## keep-alive
 
     **POST /{instance_uuid}/keep-alive**
-    This endpoint sets the “last accessed time” of the instance to the current time to prevent the instance from timeing out.
+    This endpoint sets the “last accessed time” of the instance to the current time to prevent the instance from timing out.
 
     Arguments: None
 
@@ -321,7 +317,7 @@ def _(mo):
 
     * __Arguments:__
 
-        * __timeout (dict,optional).__ The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
+        * __timeout (dict,optional).__ The timeout period after which the instance is deleted if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
 
     ## start-instances
 
@@ -331,11 +327,11 @@ def _(mo):
 
     * __Arguments:__
 
-        * __timeout (dict,optional).__ The timeout period after which the instance is delete if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
+        * __timeout (dict,optional).__ The timeout period after which the instance is deleted if it is not accessed in the meantime. The timer is reset every time the instance is accessed. The timeout dictionary can have the following keys: weeks, days, hours, minutes, seconds, milliseconds, microseconds. Values must be integers.
         * __instances (Integer).__ Number of instances to create
     * __Response:__
        * __instance_uuids.__ List of instance UUIDs.
-       * __timeout__:_ The timeouts the instances where started with.
+       * __timeout__:_ The timeouts the instances were started with.
 
     ## stop-instance
 
@@ -595,7 +591,7 @@ def _(response_6):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    You can start as many instances as you like - typically one for every user that starts an interactive session via a front-end. Let's sart another session to illustrate this.
+    You can start as many instances as you like - typically one for every user that starts an interactive session via a front-end. Let's start another session to illustrate this.
     """)
     return
 

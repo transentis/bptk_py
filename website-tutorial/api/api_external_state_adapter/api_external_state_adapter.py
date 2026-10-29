@@ -1,5 +1,5 @@
 # Front matter the .py format cannot carry; injected on export.
-# description: Creating presistent external state for the BPTK-Server.
+# description: Creating persistent external state for the BPTK-Server.
 # keywords: agent-based modeling, abm, bptk, bptk-py, python
 # The page documents HTTP calls against a running BptkServer; the build has none,
 # so every request would fail with an empty response. eval: false shows the code
@@ -127,10 +127,7 @@ def _(mo):
 
     ## Using persistent state
 
-    To persist state, an instantiation of a class inheriting `BPTK_Py.ExternalStateAdapter` must be passed into the BPTK-server constructor. When an adapter is provided, BPTK will call the corresponding methods in the provided `ExternalStateAdapter` implementation automatically.
-
-    BPTK provides `BPTK_Py.FileAdapter`, an implementation of the `ExternalStateAdapter` class that can be used to store the state locally in JSON files.
-    Creating your own implementation for `ExternalStateAdapter` (for example to save the state to an external database) is trivial.
+    To persist state, an instance of a class inheriting `BPTK_Py.ExternalStateAdapter` is passed to the BPTK-server constructor, and BPTK calls its methods by itself. The three adapters BPTK ships - `FileAdapter`, `PostgresAdapter` and `RedisAdapter` - and running the server statelessly are on [State Adapters](../api_state_adapters.md). This page shows what an adapter does, with the `FileAdapter`, and how to write your own.
     """)
     return
 
@@ -158,10 +155,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The code above imports all required modules and creates a new `FileAdapter` object. The `FileAdapter` init method takes two arguments:
-
-    1. Compression. When enabled, BPTK sends a compressed format of the instance state to the provided `ExternalStateAdapter` and automatically decompresses the instance states on load.
-    2. Directory path. The path to which the state will be saved and from which the state will be loaded. This directory must be empty on first start-up.
+    The code above imports all required modules and creates a `FileAdapter`, whose arguments are on [State Adapters](../api_state_adapters.md#fileadapter).
     """)
     return
 

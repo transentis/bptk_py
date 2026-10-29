@@ -146,7 +146,7 @@ def _(mo):
     | `arr_max`, `arr_min` | the strongest and the weakest line |
     | `arr_median` | the middle line - with six cells, the average of the two middle ones |
     | `arr_stddev` | how unevenly the revenue is spread |
-    | `arr_rank(2)` | the second strongest line |
+    | `arr_largest(2)` | the second strongest line |
     | `arr_prod` | the product of every cell - see the compounding example further down |
     | `arr_size` | **the length of the first dimension**, so 2 here, not 6 |
 
@@ -177,7 +177,7 @@ def _(bptk, portfolio, price, revenue):
     revenue_spread.equation = revenue.arr_stddev()
 
     second_best_line = portfolio.converter("second_best_line")
-    second_best_line.equation = revenue.arr_rank(2)
+    second_best_line.equation = revenue.arr_largest(2)
 
     region_count = portfolio.converter("region_count")
     region_count.equation = price.arr_size() * 1.0
@@ -403,28 +403,22 @@ def _(mo):
     That is exactly a matrix times a vector: a 2x3 matrix of volumes and a vector of
     three prices give a vector of two revenues.
 
-    **One restriction to know:** `dot` works on **unnamed** arrays only. A named matrix
-    raises rather than guessing how to line up the labels, so the model below uses
-    positional indices - rows 0 and 1 for the regions, columns 0, 1 and 2 for the
-    products - and a comment to say which is which. That is a real limitation and worth
-    stating plainly; for element-wise work and the aggregations, named arrays are the
-    better choice.
+    With named arrays, `dot` pairs the columns of the matrix with the vector by label, so
+    the products line up by name rather than by position.
     """)
     return
 
 
 @app.cell
 def _(Model, bptk):
-    # Rows are regions (0 = north, 1 = south), columns are products
-    # (0 = stripe, 1 = mohawk, 2 = gizmo).
     trade = Model(starttime=0.0, stoptime=12.0, dt=1.0, name="Trade")
 
     volume = trade.constant("volume")
-    volume.setup_matrix([2, 3], [[1200.0, 800.0, 150.0],
-                                 [400.0, 950.0, 600.0]])
+    volume.setup_named_matrix({"north": {"stripe": 1200.0, "mohawk": 800.0, "gizmo": 150.0},
+                               "south": {"stripe": 400.0, "mohawk": 950.0, "gizmo": 600.0}})
 
     list_price = trade.constant("list_price")
-    list_price.setup_vector(3, [49.0, 79.0, 249.0])
+    list_price.setup_named_vector({"stripe": 49.0, "mohawk": 79.0, "gizmo": 249.0})
 
     # Matrix . vector -> one revenue per region.
     revenue_per_region = trade.converter("revenue_per_region")
@@ -439,9 +433,9 @@ def _(Model, bptk):
 def _(mo):
     mo.md(r"""
     With one price list applied to both regions, the north brings in **159,350** a month
-    and the south **244,050**. The northern figure is the one the named model produced,
-    because the northern prices *are* the list prices there; the southern figure is higher
-    than the named model's, and that difference is the model speaking rather than a
+    and the south **244,050**. The northern figure is the one the element-wise model
+    produced, because the northern prices *are* the list prices there; the southern figure
+    is higher than that model's, and that difference is the model speaking rather than a
     mistake. A matrix times a *vector* of
     prices says "one price list for every region". If prices really differ by region, the
     element-wise `units * price` above is the honest formulation.
@@ -466,20 +460,19 @@ def _(mo):
 
 @app.cell
 def _(bptk, trade, volume):
-    # Rows are products, columns are measures (0 = price, 1 = unit cost).
     rates = trade.constant("rates")
-    rates.setup_matrix([3, 2], [[49.0, 31.0],
-                                [79.0, 44.0],
-                                [249.0, 120.0]])
+    rates.setup_named_matrix({"stripe": {"price": 49.0, "cost": 31.0},
+                              "mohawk": {"price": 79.0, "cost": 44.0},
+                              "gizmo": {"price": 249.0, "cost": 120.0}})
 
     # Matrix . matrix -> region x measure.
     financials = trade.converter("financials")
     financials.equation = volume.dot(rates)
 
     region_margin = trade.converter("region_margin")
-    region_margin.setup_vector(2, [0.0, 0.0])
-    for _region in (0, 1):
-        region_margin[_region].equation = financials[_region][0] - financials[_region][1]
+    region_margin.setup_named_vector({"north": 0.0, "south": 0.0})
+    for _region in ("north", "south"):
+        region_margin[_region].equation = financials[_region]["price"] - financials[_region]["cost"]
 
     bptk_trade = bptk()
     bptk_trade.register_model(trade)
@@ -494,9 +487,8 @@ def _(mo):
     | **north** | 159,350 | 90,400 | 68,950 |
     | **south** | 244,050 | 126,200 | 117,850 |
 
-    One operator, and the whole regional profit and loss falls out. This is the case
-    where the dot product pays for the positional indices: written element-wise, the same
-    result needs six products, two sums per region and a subtraction.
+    One operator, and the whole regional profit and loss falls out: written element-wise,
+    the same result needs six products, two sums per region and a subtraction.
     """)
     return
 
@@ -506,13 +498,13 @@ def _(bptk_trade):
     bptk_trade.plot_scenarios(
         scenario_managers=["smTrade"],
         scenarios=["base"],
-        equations=["revenue_per_region[0]", "revenue_per_region[1]",
-                   "region_margin[0]", "region_margin[1]"],
+        equations=["revenue_per_region[north]", "revenue_per_region[south]",
+                   "region_margin[north]", "region_margin[south]"],
         series_names={
-            "smTrade_base_revenue_per_region[0]": "North revenue",
-            "smTrade_base_revenue_per_region[1]": "South revenue",
-            "smTrade_base_region_margin[0]": "North margin",
-            "smTrade_base_region_margin[1]": "South margin",
+            "smTrade_base_revenue_per_region[north]": "North revenue",
+            "smTrade_base_revenue_per_region[south]": "South revenue",
+            "smTrade_base_region_margin[north]": "North margin",
+            "smTrade_base_region_margin[south]": "South margin",
         },
         title="Revenue and margin per region, from two dot products",
         x_label="Month",
@@ -598,18 +590,11 @@ def _(bptk_portfolio, gizmo_growth, mo, stripe_price):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Two Limits This Model Ran Into
+    ## Two Limits
 
-    Both are worth naming because the model had to work around them, and both are in
-    [the reference page's list](../../sd-dsl/sd_dsl_multidimensional/sd_dsl_multidimensional.html#what-is-not-supported)
-    along with the rest.
-
-    * **`dot` needs unnamed arrays**, which is why the section above switches from
-      region and product names to positional indices.
-    * **An aggregation always takes the whole array.** There is no "sum along the rows",
-      so the per-region totals came from a dot product rather than from `arr_sum`. Where
-      a row total is all you need, address the row itself: `revenue["north"].arr_sum()`
-      works, because a row of a named matrix is a named vector in its own right.
+    Both arrays here have two dimensions, which is as many as the SD DSL has, and every row
+    of each named matrix carries the same column labels, which `dot` needs. The rest of the
+    list is on [the reference page](../../sd-dsl/sd_dsl_multidimensional/sd_dsl_multidimensional.html#what-is-not-supported).
     """)
     return
 

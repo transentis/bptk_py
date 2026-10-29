@@ -36,11 +36,11 @@ impl SdModel {
     /// Algorithm (matches how the Python engine starts a stock, `Stock` in
     /// `BPTK_Py/sddsl/stock.py`):
     /// 1. Allocate memo table: entities.len() x num_steps
-    /// 2. Pre-evaluate non-stock entities at step 0 (constants, converters, flows)
-    /// 3. Initialise stocks at step 0 from their `initial_value` expression
-    /// 4. Re-evaluate non-stocks at step 0 so that flows / converters that
-    ///    reference stocks see the correct initial values
-    /// 5. If `num_steps > 1`, Euler-integrate stocks into step 1
+    /// 2. Evaluate every entity at step 0 in `init_order`: a stock from its
+    ///    `initial_value`, anything else from its equation. That order puts each
+    ///    entity after what it reads, so nothing is evaluated with a stock that has
+    ///    not been started yet
+    /// 3. If `num_steps > 1`, Euler-integrate stocks into step 1
     ///
     /// On return `state.current_step == 0`.
     pub fn init(&self, seed: Option<u64>) -> Result<SimulationState, StepError> {
@@ -49,38 +49,17 @@ impl SdModel {
         let mut state = SimulationState::try_new(self.entities.len(), num_steps, seed)
             .map_err(StepError::Specs)?;
 
-        // Settle step 0. An initial value may read a converter that reads another
-        // stock's initial value, so one pass in each direction is not enough: with a
-        // single round the converter is corrected afterwards while the stock that read
-        // it keeps the stale number - which is how the same model answered 50 in Python
-        // and 0 here. Each round fixes one more link of such a chain, so the number of
-        // stocks bounds it, and the loop stops as soon as nothing moves. The bound also
-        // ends it when a value is NaN, which never compares equal to itself.
-        let stock_count = self
-            .entities
-            .iter()
-            .filter(|entity| matches!(entity.kind, EntityKind::Stock { .. }))
-            .count();
-
-        self.eval_step(&mut state, 0);
-        for _ in 0..stock_count.max(1) {
-            let mut settled = true;
-            for (i, entity) in self.entities.iter().enumerate() {
-                if let EntityKind::Stock { ref initial_value } = entity.kind {
-                    state.set_current_entity(i);
-                    let value = self.eval_expr(initial_value, &state, 0);
-                    if value != state.memo[i][0] {
-                        settled = false;
-                    }
-                    state.memo[i][0] = value;
-                }
-            }
-            // Non-stocks read stocks, so they follow every correction.
-            self.eval_step(&mut state, 0);
-            if settled {
-                break;
-            }
+        state.set_starting(true);
+        for &idx in &self.init_order {
+            state.set_current_entity(idx);
+            let entity = &self.entities[idx];
+            state.memo[idx][0] = match entity.kind {
+                EntityKind::Stock { ref initial_value } => self.eval_expr(initial_value, &state, 0),
+                EntityKind::Flow => self.eval_expr(&entity.equation, &state, 0).max(0.0),
+                _ => self.eval_expr(&entity.equation, &state, 0),
+            };
         }
+        state.set_starting(false);
 
         // Euler integration into step 1 if present.
         if num_steps > 1 {

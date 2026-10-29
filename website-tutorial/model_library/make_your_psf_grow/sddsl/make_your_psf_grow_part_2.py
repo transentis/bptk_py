@@ -77,15 +77,13 @@ def _(mo):
     mo.md(r"""
     I like to build my models in small steps, testing intermediate stages as I go along. That makes it much easier to find mistakes (which inevitably happen) as you go along. I'm going to build the model using the SD DSL which is part of the BPTK framework.
 
-    Once I've "finished" a model, I then extract it into separate Python files, which are easier to maintain in the long run and can be referenced from multiple notebooks. You can find the extracted model in the [src](./src/mypsfg.py) directory.
+    Once I've "finished" a model, I then extract it into separate Python files, which are easier to maintain in the long run and can be referenced from multiple pages - parts 3 and 4 use the extracted model.
 
     The diagram below shows the overall module structure we are working towards.
 
     <div align="center"><img src="images/module_structure.svg" width="50%"></div>
 
-    > This repository also contains a version of the model build using Stella Architect from isee systems, i.e. in the XMILE format. If you are more interested in the XMILE variant please follow the notebooks in the `xmile` folder. From an SD perspective, both model variants are identical and produce identical results.
-
-    >
+    > The same model also exists as a Stella Architect model, in the XMILE format: [The Same Model in Stella](../xmile/make_your_psf_grow_intro.md) shows how to load it, and that cash and the KPIs come out the same.
     """)
     return
 
@@ -194,7 +192,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We ought to check that the model works as expected: the cash flow should be constant and equal to _cashFlow = 160 * 17.6 - 200 * (80/12 + 1) - 306 = 976.67_. This also means that after 24 months we should have _cash = 1000 + 24 * 922.67 = 24440.08_.
+    We ought to check that the model works as expected: the cash flow should be constant and equal to _cashFlow = 160 * 17.6 - 200 * (80/12 + 1) - 306 = 976.67_. This also means that after 24 months we should have _cash = 1000 + 24 * 976.67 = 24440.08_.
     """)
     return
 
@@ -320,7 +318,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Another good model building practice is to explicitly model the constants: there should be now "magic" values that are not explicitly named, these are difficult to interpret for anyone reading the model (including yourself should you come back to the model at some future time).
+    Another good model building practice is to explicitly model the constants: there should be no "magic" values that are not explicitly named, these are difficult to interpret for anyone reading the model (including yourself should you come back to the model at some future time).
     """)
     return
 
@@ -536,7 +534,7 @@ def _(model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The revenue is simply the monthly project delivery fee time the delivery rate. Given our assumptions about staff allocation (#8), the delivery rate is initially at 160 project months/month.
+    The revenue is simply the monthly project delivery fee times the delivery rate. Given our assumptions about staff allocation (#8), the delivery rate is initially at 160 project months/month.
     """)
     return
 
@@ -562,7 +560,7 @@ def _(
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Collecting revenue takes  2 months, we model this using a delay function:
+    Collecting revenue takes 2 months; we model this using a delay function:
     """)
     return
 
@@ -625,7 +623,7 @@ def _(as_table, bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Unfortunately, because everything is constant, it is difficult to see whether our model of the receivables is working correctly. So we ought to test our model with some fluctuating revenue, to see whether the revenue collection is delaying properly - note that this is purely a test, the values we used for collecting revenue have nothing to do with game assumptions.
+    Unfortunately, because everything is constant, it is difficult to see whether our model of the receivables is working correctly. So we ought to test our model with some fluctuating revenue, to see whether the revenue collection is delaying properly - note that this is purely a test, the delivery rates we use below have nothing to do with game assumptions.
     """)
     return
 
@@ -633,20 +631,34 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The graph below shows are model is behaving nicely, the shape of _collectingRevenue_ is identical to that of _makingRevenue_, the entire graph is shifted by two months (i.e. the collection time)
+    To make the revenue fluctuate, the project delivery rate follows a graphical function over time, `fluctuatingRevenue`. Its points are delivery rates in project months per month - 160, then 200, then 160 again and finally 100 - not euros: the revenue is still the delivery fee times that rate.
     """)
     return
 
 
 @app.cell
-def _(bptk, projectDeliveryRate, sd):
-    projectDeliveryRate.equation=sd.lookup(sd.time(),"fluctuatingRevenue")
+def _(projectDeliveryRate, sd):
+    projectDeliveryRate.equation = sd.lookup(sd.time(), "fluctuatingRevenue")
+    fluctuating_rate = "fluctuatingRevenue"
+    return (fluctuating_rate,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The graph below shows our model is behaving nicely, the shape of _collectingRevenue_ is identical to that of _makingRevenue_, the entire graph is shifted by two months (i.e. the collection time).
+    """)
+    return
+
+
+@app.cell
+def _(bptk, fluctuating_rate):
     bptk.register_scenarios(
         scenario_manager="psfLocal",
         scenarios={
             "step3_fluctuating":{
                 "points":{
-                    "fluctuatingRevenue":[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
+                    fluctuating_rate:[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
       200), (7, 200), (8, 160), (9, 160), (10, 160), (11, 160), (12, 
       160), (13, 160), (14, 160), (15, 160), (16, 160), (17, 160), (18, 
       100), (19, 100), (20, 100), (21, 100), (22, 100), (23, 100), (24, 
@@ -680,9 +692,7 @@ def _(mo):
 
 
 @app.cell
-def _(bptk, projectDeliveryRate, sd):
-    projectDeliveryRate.equation = sd.lookup(sd.time(), "fluctuatingRevenue")
-
+def _(bptk, fluctuating_rate):
     bptk.register_scenarios(
         scenario_manager="psfLocal",
         scenarios={
@@ -691,7 +701,7 @@ def _(bptk, projectDeliveryRate, sd):
                     "collectionTime":1
                 },
              "points":{
-                    "fluctuatingRevenue":[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
+                    fluctuating_rate:[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
       200), (7, 200), (8, 160), (9, 160), (10, 160), (11, 160), (12, 
       160), (13, 160), (14, 160), (15, 160), (16, 160), (17, 160), (18, 
       100), (19, 100), (20, 100), (21, 100), (22, 100), (23, 100), (24, 
@@ -726,9 +736,7 @@ def _(mo):
 
 
 @app.cell
-def _(bptk, projectDeliveryRate, sd):
-    projectDeliveryRate.equation = sd.lookup(sd.time(), "fluctuatingRevenue")
-
+def _(bptk, fluctuating_rate):
     bptk.register_scenarios(
         scenario_manager="psfLocal",
         scenarios={
@@ -737,7 +745,7 @@ def _(bptk, projectDeliveryRate, sd):
                     "collectionTime":5
                 },
              "points":{
-                    "fluctuatingRevenue":[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
+                    fluctuating_rate:[(0, 160), (1, 160), (2, 160), (3, 200), (4, 200), (5, 200), (6, 
       200), (7, 200), (8, 160), (9, 160), (10, 160), (11, 160), (12, 
       160), (13, 160), (14, 160), (15, 160), (16, 160), (17, 160), (18, 
       100), (19, 100), (20, 100), (21, 100), (22, 100), (23, 100), (24, 
@@ -756,7 +764,7 @@ def _(bptk):
         scenario_managers=["psfLocal"],
         scenarios=['step3_collectionTime5'], 
         equations=["makingRevenue","collectingRevenue"],
-        title="Collection Duration 5 Month",
+        title="Collection Time 5 Months",
         x_label="Months",
         y_label="€", format="axes"
     )
@@ -787,8 +795,250 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Before we go on to step four, we should take a closer look at the delay funtion - it is used very frequently in System Dynamics and it is important that we understand it properly.
+    Before we go on to step four, we should take a closer look at the delay function - it is used very frequently in System Dynamics and it is important that we understand it properly.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ---
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Digression: Modeling Delays using the Delay Function
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    When modeling a business, we frequently encounter situations where we have to model delays. One way of doing this is using the DELAY-function.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    <div align="center"><img src="images/delay_function.svg" width="90%"></div>
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The delay function _DELAY(f, p, i)_ simply delays _f_ by _p_ periods if the current timestep _t_ is greater than _p_, or else it outputs the initial value _i_:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    $$\begin{equation}
+        DELAY(f,p,i)(t)=
+        \begin{cases}
+          f(t-p), & \text{if}\ t\geq p \\
+          i, & \text{if}\ t<p
+        \end{cases}
+      \end{equation}$$
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    To illustrate how the delay function works, here is a little example that shows the effect the delay function has on a simple stock where the inflow is any function and the outflow is simply the inflow delayed by the delay time.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    <div align="center"><img src="images/delay_example.svg" width="90%"></div>
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The plot below shows what happens when the outflow equals the inflow delayed by 6 time steps - the graph of the inflow is simply shifted to the right by 6 timesteps.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Note that we have set the initial value to be equal to 0 here - we need the initial value because the delay function "looks back in time" (by six timesteps in this case) and the inflow has undefined values for negative timesteps (because the simulation doesn't start until time step 0).
+    """)
+    return
+
+
+@app.cell
+def _(bptk, sd):
+    from BPTK_Py import Model as _Model
+
+    delay_model = _Model(starttime=1.0, stoptime=61.0, dt=1.0, name="delay_example")
+    _any_stock = delay_model.stock("anyStock")
+    _inflow = delay_model.flow("inflow")
+    _outflow = delay_model.flow("outflow")
+    _any_function = delay_model.converter("anyFunction")
+    _delay_time = delay_model.constant("delayTime")
+    _initial_value = delay_model.constant("initialValue")
+
+    delay_model.points["anyFunction"] = [
+        [1, 35.9], [4, 38.3], [7, 40.3], [10, 41.4], [13, 42.7], [16, 45.4], [19, 52.5],
+        [22, 74.6], [25, 80.0], [28, 79.0], [31, 77.3], [34, 73.6], [37, 70.2], [40, 48.1],
+        [43, 48.1], [46, 51.2], [49, 54.2], [52, 84.4], [55, 90.2], [58, 91.5], [61, 91.5]]
+    _any_function.equation = sd.lookup(sd.time(), "anyFunction")
+    _delay_time.equation = 6.0
+    _initial_value.equation = 0.0
+
+    _any_stock.initial_value = 0.0
+    _any_stock.inflows = [_inflow]
+    _any_stock.outflows = [_outflow]
+    _inflow.equation = _any_function
+    _outflow.equation = sd.delay(delay_model, _inflow, _delay_time, _initial_value)
+
+    delay_manager = "delay"
+    bptk.register_scenario_manager({delay_manager: {"model": delay_model}})
+    return (delay_manager,)
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.register_scenarios(scenario_manager=delay_manager,scenarios={
+    "delay6":{
+    "constants":{
+      "delayTime":6,
+      "initialValue": 0
+    },
+
+    }
+    })
+    return
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.plot_scenarios(
+        scenario_managers=[delay_manager],
+        scenarios=['delay6'], 
+        equations=["inflow","outflow"],
+        title="Delay Time 6", format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The graphs below show what happens to the outflow at various delay times.
+    """)
+    return
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.register_scenarios(scenario_manager=delay_manager,scenarios={
+    "delay0":{
+    "constants":{
+      "delayTime":0,
+      "initialValue": 0
+    }
+    },
+    "delay10":{
+    "constants":{
+      "delayTime":10,
+      "initialValue": 0
+    }
+    },
+    "delay15":{
+    "constants":{
+      "delayTime":15,
+      "initialValue": 0
+    }
+    }
+    })
+    return
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.plot_scenarios(
+        scenario_managers=[delay_manager],
+        scenarios=['delay0','delay6','delay10','delay15'], 
+        equations=["outflow"],
+        title="Delay Example",
+        series_names={
+            "delay_delay0_outflow": "Delay 0",
+            "delay_delay6_outflow": "Delay 6",
+            "delay_delay10_outflow": "Delay 10",
+            "delay_delay15_outflow": "Delay 15",
+        }, format="axes"
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    In the following graphs we're keeping the delay time constant, but are playing with different initial values.
+    """)
+    return
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.register_scenarios(scenario_manager=delay_manager,scenarios={
+    "delay0Init0":{
+    "constants":{
+      "delayTime":0,
+      "initialValue": 0
+    }
+    },
+    "delay6Init0":{
+    "constants":{
+      "delayTime":6,
+      "initialValue": 0
+    }
+    },
+    "delay6Init10":{
+    "constants":{
+      "delayTime":6,
+      "initialValue": 10
+    }
+    },
+    "delay6Init15":{
+    "constants":{
+      "delayTime":6,
+      "initialValue": 15
+    }
+    }
+    })
+    return
+
+
+@app.cell
+def _(bptk, delay_manager):
+    bptk.plot_scenarios(
+        scenario_managers=[delay_manager],
+        scenarios=['delay6Init0','delay6Init10','delay6Init15'], 
+        equations=["outflow"],
+        title="Delay Example", format="axes",
+    )
     return
 
 
@@ -811,7 +1061,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In Step 3 we defined revenue as the product of the project delivey fee and the project delivery rate, both were constant in that model. Given the game assumptions we can assume that the delivery fee is constant, but clearly the project delivery rate will depend on how many projects the PSF has acquired and also on how much staff the PSF can assign to project delivery - if no (new) projects are acquired, then the delivery rate will (eventually) be 0 regardless of  how much staff the PSF assigns to projects.
+    In Step 3 we defined revenue as the product of the project delivery fee and the project delivery rate, both were constant in that model. Given the game assumptions we can assume that the delivery fee is constant, but clearly the project delivery rate will depend on how many projects the PSF has acquired and also on how much staff the PSF can assign to project delivery - if no (new) projects are acquired, then the delivery rate will (eventually) be 0 regardless of how much staff the PSF assigns to projects.
     """)
     return
 
@@ -827,7 +1077,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In this step we model the projects as a stock with an initial value of 320 person-months (two months of project backlog, Assumption #15). The outflow is equal to the project delivery rate, which itself is equal to the minimum of projects and the project delivery capacity. For now we assume this capacity is constant at 160 person-months (i.e. 160 project staff delivery one month worth of project work per month).
+    In this step we model the projects as a stock with an initial value of 320 person-months (two months of project backlog, Assumption #15). The outflow is equal to the project delivery rate, which itself is equal to the minimum of projects and the project delivery capacity. For now we assume this capacity is constant at 160 person-months (i.e. 160 project staff delivering one month's worth of project work per month).
     """)
     return
 
@@ -845,7 +1095,7 @@ def _(model, projectDeliveryRate, sd):
     projects = model.stock("projects")
     deliveringProjects = model.flow("deliveringProjects")
     projectDeliveryCapacity=model.converter("projectDeliveryCapacity")
-    projects.initial_value = 230.0
+    projects.initial_value = 320.0
     projectDeliveryCapacity.equation = 160.0
     projects.equation = -deliveringProjects
     deliveringProjects.equation = projectDeliveryRate
@@ -856,7 +1106,7 @@ def _(model, projectDeliveryRate, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The plot below shows how the project backlog decreases steadily for the first two months and then remains at 0 - the reason it cuts of at 0 is because we used the MIN-function to constrain the outflow projectDeliveryRate.
+    The plot below shows how the project backlog decreases steadily for the first two months and then remains at 0 - the reason it cuts off at 0 is because we used the MIN-function to constrain the outflow projectDeliveryRate.
     """)
     return
 
@@ -866,7 +1116,7 @@ def _(bptk, deliveringProjects, projectDeliveryCapacity, projectDeliveryRate, pr
     projectDeliveryCapacity.equation = 160.0
     projectDeliveryRate.equation = sd.min(projects, projectDeliveryCapacity)
     # Step 6 gives the backlog an inflow. Here it only drains.
-    projects.initial_value = 230.0
+    projects.initial_value = 320.0
     projects.equation = -deliveringProjects
 
     bptk.register_scenarios(
@@ -893,7 +1143,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Initially, the delivery capacity is exactly half of the project backlog, so the backlog drops to zero after two months. We can test a closer look at this mechanism if we use different values for the delivery capacity - the graphs below show that as soon as the project backlog drops below the project delivery capacity, the delivery rate is constrained to be equal to the project backlog, before it drops down to zero.
+    Initially, the delivery capacity is exactly half of the project backlog, so the backlog drops to zero after two months. We can take a closer look at this mechanism if we use different values for the delivery capacity - the graphs below show that as soon as the project backlog drops below the project delivery capacity, the delivery rate is constrained to be equal to the project backlog, before it drops down to zero.
     """)
     return
 
@@ -903,7 +1153,7 @@ def _(bptk, deliveringProjects, projectDeliveryCapacity, projectDeliveryRate, pr
     projectDeliveryCapacity.equation = 160.0
     projectDeliveryRate.equation = sd.min(projects, projectDeliveryCapacity)
     # Step 6 gives the backlog an inflow. Here it only drains.
-    projects.initial_value = 230.0
+    projects.initial_value = 320.0
     projects.equation = -deliveringProjects
 
     bptk.register_scenarios(
@@ -1050,7 +1300,7 @@ def _(bptk, businessDevelopmentAllocationPct, businessDevelopmentCapacity, deliv
     businessDevelopmentAllocationPct.equation = 20.0
     projectDeliveryCapacity.equation = workCapacity - businessDevelopmentCapacity
     # Still no inflow into the backlog - that is step 6.
-    projects.initial_value = 230.0
+    projects.initial_value = 320.0
     projects.equation = -deliveringProjects
 
     bptk.register_scenarios(
@@ -1159,7 +1409,7 @@ def _(model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Taking a look at #3 of our assumptions, we know that it takes 4 months of effort to generade a lead and write a proposal.
+    Taking a look at #3 of our assumptions, we know that it takes 4 months of effort to generate a lead and write a proposal.
     """)
     return
 
@@ -1344,7 +1594,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Below I've provided both the graphs and the concrete values of the proposals and the project backlog in this scenario  - as expected, the number of proposals starts rising as soon as we reallocate staff to business development. The project backlog starts to rise straight away because we have reallocated staff from project delivery to business development - in month 10 (i.e. 6 months after realloacting staff) the first projects are acquired and hence the project backlog starts rising even faster - of course we should have hired some extra project staff by this point to compensate, we can test this in the next step
+    Below I've provided both the graphs and the concrete values of the proposals and the project backlog in this scenario - as expected, the number of proposals starts rising as soon as we reallocate staff to business development. The project backlog starts to rise straight away because we have reallocated staff from project delivery to business development - in month 10 (i.e. 6 months after reallocating staff) the first projects are acquired and hence the project backlog starts rising even faster - of course we should have hired some extra project staff by this point to compensate, we can test this in the next step.
     """)
     return
 
@@ -1383,7 +1633,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Well if you take a little moment to think about it (I certainly had to) then it becomes obvious - in month 4, we assign 40% of our staff to business development. They immediately start generating proposals at a rate of 0.4*200*16/4=320 project-Months per Month. Every month 160 project-months leave the proposal backlog and enter the project backlog. The delay is 6 months, so in month 10 we expect to have 160*6=960 extra project months in the pipeline. If we add these to the 320 project-months that were already in the stock of propsoals, we arrive at 960+320=1280. At month 10, the number of projects-months leaving the stock of proposals rises to 320, which equals the number coming in. So at this time, the level of proposals becomes steady at 1280.
+    Well if you take a little moment to think about it (I certainly had to) then it becomes obvious - in month 4, we assign 40% of our staff to business development. They immediately start generating proposals at a rate of 0.4*200*16/4=320 project-months per month. Every month 160 project-months leave the proposal backlog and enter the project backlog. The delay is 6 months, so in month 10 we expect to have 160*6=960 extra project months in the pipeline. If we add these to the 320 project-months that were already in the stock of proposals, we arrive at 960+320=1280. At month 10, the number of projects-months leaving the stock of proposals rises to 320, which equals the number coming in. So at this time, the level of proposals becomes steady at 1280.
     """)
     return
 
@@ -1434,7 +1684,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We model recruitment as a simple stock and flow structure which involves a delay depending on the hiring duration - the stock and flow diagram and corresponding equations are shown below - we know that the hiring duration is 3 months thanks to assumption #12
+    We model recruitment as a simple stock and flow structure which involves a delay depending on the hiring duration - the stock and flow diagram and corresponding equations are shown below - we know that the hiring duration is 3 months thanks to assumption #12.
     """)
     return
 
@@ -1476,7 +1726,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Because hiring actually takes the months, we need to hire them in timestep 7.
+    Because hiring actually takes three months, we need to hire them in timestep 7.
     """)
     return
 
@@ -1492,7 +1742,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    All in all this leads to a 100 % growth scenario. Let' s check to see how our model behaves.
+    All in all this leads to a 100 % growth scenario. Let's check to see how our model behaves.
     """)
     return
 
@@ -1594,7 +1844,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Great, we now have a complete model. We shoud now perform some sanity checks to see whether it is working correctly. Before we do that, we ought to make sure that we have incorporated all assumptions in the list. When building models we mostly keep an excel sheet containg all requirements and assumptions regarding the model and any issues that arise along the way. That way we can make sure we don't forget anything.
+    Great, we now have a complete model. We should now perform some sanity checks to see whether it is working correctly. Before we do that, we ought to make sure that we have incorporated all assumptions in the list. When building models we mostly keep an Excel sheet containing all requirements and assumptions regarding the model and any issues that arise along the way. That way we can make sure we don't forget anything.
     """)
     return
 
@@ -1686,7 +1936,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The cost side is a little more intricate: each staff member costs EUR 80000/12 = 6666 on salaries and an extra EUR 1000 workplace cost, i.e. EUR 7666. At 200 persons in the company, this sums to EUR 1533333 in staff cost.We also have overhead cost of EUR 306,000 per month, so the total cost is at EUR 1,839,333.
+    The cost side is a little more intricate: each staff member costs EUR 80000/12 = 6666 on salaries and an extra EUR 1000 workplace cost, i.e. EUR 7666. At 200 persons in the company, this sums to EUR 1533333 in staff cost. We also have overhead cost of EUR 306,000 per month, so the total cost is at EUR 1,839,333.
     """)
     return
 
@@ -1694,7 +1944,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Putting all these figures together leads to a cash inflow of EUR 976667 per month.I' ve summarised these figures in the table below:
+    Putting all these figures together leads to a cash inflow of EUR 976667 per month. I've summarised these figures in the table below:
     """)
     return
 

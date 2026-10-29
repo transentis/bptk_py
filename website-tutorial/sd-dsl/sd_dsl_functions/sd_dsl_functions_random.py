@@ -34,7 +34,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The functions of the SD DSL that draw random numbers from a distribution, from A to Z. Each call draws a new number in every timestep; with a [seed](#seeds) the numbers are the same on every run. To use them, import `sd_functions` beside the `Model` class:
+    The functions of the SD DSL that draw random numbers from a distribution, from A to Z. Each call draws a new number in every timestep, or once per [sample](#minimum-maximum-and-sample); with a [seed](#seeds) the numbers are the same on every run. To use them, import `sd_functions` beside the `Model` class:
     """)
     return
 
@@ -76,7 +76,7 @@ def _(mo):
     - **`dt` is part of the sequence.** With another `dt` the timesteps are different, and so are the numbers.
     - The seed is a whole number of at least 0, or a model element holding one - a constant, so that a scenario can choose it. Anything else gives NaN and an `[ERROR]`.
     - The numbers are not those Stella draws for the same seed; Stella's generator is not public.
-    - A random function with a seed runs on the Python engine only for now; the Rust engine raises `RustBackendError` naming the function.
+    - **The two engines draw different numbers for the same seed.** Each engine draws the same numbers on every run, and both draw from the same distribution - but a model moved from the Python engine to the Rust engine, or back, draws other numbers under the same seed.
 
     In the plot below, `first` and `second` use the seed from the slider and lie on top of each other. `unseeded` has no seed and changes every time the cell runs. Move the slider and both seeded curves change together.
     """)
@@ -103,6 +103,47 @@ def _(Model, bptk, sd, seed_slider):
         scenario_managers=['smSeeds'],
         scenarios=['base'],
         equations=['first', 'second', 'unseeded'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Minimum, Maximum and Sample
+
+    Every random function but `random` takes three more optional arguments after the seed, as in Stella: `minimum`, `maximum` and `sample`.
+
+    - **`minimum` and `maximum` keep a draw within them.** The function draws again until a number lies between them, both included. Leave one out, or give it as NaN, for no bound on that side; equal bounds give that number.
+    - **Bounds the distribution practically never reaches give NaN and an `[ERROR]`**: after 100 draws outside them the function gives up. Stella draws a uniform number between the bounds there instead, which hides that they miss the distribution. A minimum above the maximum gives NaN and an `[ERROR]` too.
+    - **`sample` holds a number for a while** rather than drawing a new one in every timestep: from the start of the run, a new number is drawn once per `sample` time units. A sample is cut down to a whole number of timesteps, as Stella does; one shorter than two timesteps draws in every timestep.
+
+    In the plot below `bounded` draws from the same distribution as `free`, within 90 and 110, and `held` keeps each number for the sample from the slider:
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    sample_slider = mo.ui.slider(start=1, stop=10, step=1, value=4, show_value=True, label="Sample")
+    sample_slider
+    return (sample_slider,)
+
+
+@app.cell
+def _(Model, bptk, sample_slider, sd):
+    #| echo: true
+    model_bounds = Model(starttime=0.0, stoptime=40.0, dt=1.0, name='bounds')
+    model_bounds.converter('free').equation = sd.normal(100.0, 10.0, seed=1)
+    model_bounds.converter('bounded').equation = sd.normal(100.0, 10.0, seed=2, minimum=90.0, maximum=110.0)
+    model_bounds.converter('held').equation = sd.normal(100.0, 10.0, seed=3, sample=sample_slider.value)
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_bounds)
+    bptk.plot_scenarios(
+        scenario_managers=['smBounds'],
+        scenarios=['base'],
+        equations=['free', 'bounded', 'held'],
         format="axes",
     )
     return
@@ -182,7 +223,7 @@ def _(Model, sd):
 def _(mo):
     mo.md(r"""
     ## GAMMA Function
-    The GAMMA builtin generates a series of random numbers that conforms to a gamma distribution with the specified ``shape`` and ``scale``. If unspecified, ``scale`` uses the value 1.0
+    The GAMMA builtin generates a series of random numbers that conforms to a gamma distribution with the specified ``shape`` and ``scale``. If unspecified, ``scale`` uses the value 1.0.
 
     Example:
     """)
@@ -278,12 +319,35 @@ def _(Model, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## LOOKUPRANDOM Function
+
+    `lookuprandom(points, seed=None, minimum=None, maximum=None, sample=None)` draws from a lookup table read as a probability density: the higher the table at an `x`, the more often values near it are drawn. As in Stella, each segment between two points of the table is chosen by its area, and the value is then drawn uniformly within the segment - so the mean of the draws is what `lookupmean` gives for the same table. `points` is a list of `(x, y)` points or the name of a table in `model.points`; the table must not fall below 0 and must have an area, or the draw is NaN and an `[ERROR]`. `seed`, `minimum`, `maximum` and `sample` work as for every random function.
+
+    The table is read when the value is drawn, so a scenario that sets other points changes what is drawn. In the example the table rises to a peak at 2, and most draws fall between 1 and 3:
+    """)
+    return
+
+
+@app.cell
+def _(Model, sd):
+    #| echo: true
+    m_lookuprandom = Model(starttime=0, stoptime=100, dt=1)
+    m_lookuprandom.points['peak'] = [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 1.0), (4.0, 0.0)]
+    drawn = m_lookuprandom.converter('drawn')
+    drawn.equation = sd.lookuprandom('peak', seed=4)
+    drawn.plot(format="axes")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## MONTECARLO Function
     The MONTECARLO operator randomly generates a series of zeros and ones from a Bernoulli distribution based on the probability you've provided. The probability is the percentage probability of an event happening per unit of simulation time. The probability value can be either a variable or a constant, but should evaluate to a number between 0 and 100.
 
     MONTECARLO is equivalent to the following logic:
 
-    IF (RANDOM(0,100,<seed>) < probability*DT THEN 1 ELSE 0
+    IF RANDOM(0,100,<seed>) < probability*DT THEN 1 ELSE 0
 
     Example:
     """)
@@ -362,8 +426,38 @@ def _(Model, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## NORMALPINK Function
+
+    `normalpink(model, mean, stddev, correlation_time, seed=None, minimum=None, maximum=None, sample=None)` is Stella's `NORMALPINK`: normally distributed noise that does not jump freely from step to step but drifts, the way a demand or a price fluctuates. Each step it moves the share `DT / correlation_time` of the way from its previous value towards a new normal draw, starting from `mean`; over a long run its values have the mean `mean` and the standard deviation `stddev`, and two neighbouring steps are correlated by `1 - DT / correlation_time`. A correlation time of at most one DT makes it plain `normal` noise; 0 gives NaN and an `[ERROR]`. It keeps its previous value, so it takes the model first.
+
+    It is the pink noise of Sterman's *Business Dynamics* (2000): white noise smoothed over the correlation time, its spread raised so that the smoothed noise keeps the standard deviation asked for.
+
+    - `seed` makes the noise the same on every run, as for every random function.
+    - `minimum` and `maximum` bound the noise itself: where a step would leave them, the draw is made again from the same previous value. Stella instead moves on from the value it rejects, which pulls the noise towards the bound - see [XMILE, Stella and the SD DSL](../../xmile/xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md#xmile-stella-and-the-sd-dsl).
+    - `sample` holds the whole noise: it takes one step per sample and keeps its value in between.
+
+    In the example the same mean and spread once as plain `normal` noise and once with a correlation time of 10:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    m_pink = Model(starttime=0, stoptime=100, dt=1, name='pink')
+    m_pink.converter('white').equation = sd.normal(100.0, 10.0, seed=3)
+    m_pink.converter('pink').equation = sd.normalpink(m_pink, 100.0, 10.0, 10.0, seed=3)
+    bptk.reset_all_scenarios()
+    bptk.register_model(m_pink)
+    bptk.plot_scenarios(scenario_managers=['smPink'], scenarios=['base'], equations=['white', 'pink'], format="axes")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## PARETO Function
-    The PARETO operator generates a series of random numbers that conforms to a distribution whose log is exponentially distributed with a specified shape and scale
+    The PARETO operator generates a series of random numbers that conforms to a distribution whose log is exponentially distributed with a specified shape and scale: the classic Pareto distribution, which starts at `scale`.
 
     Arguments are ``shape`` and ``scale``.
 
@@ -413,9 +507,9 @@ def _(mo):
     mo.md(r"""
     ## RANDOM / UNIFORM Function
 
-    RANDOM and UNIFORM both draw a random number between a minimum and maximum value that conforms to a uniform distribution. For compatibility to modelling practices, we included both into the SD DSL (just as the Stella Architect builtins).
+    RANDOM and UNIFORM both draw a random number between a minimum and maximum value that conforms to a uniform distribution. For compatibility with modelling practices, we included both in the SD DSL (just as the Stella Architect builtins).
 
-    Arguments are the ``min_value`` and ``max_value`` between which the random number should lie. If not given, the random number is between 0 and 1.
+    Arguments are the ``min_value`` and ``max_value`` between which the random number should lie. If not given, the random number is between 0 and 1. ``uniform`` also takes [minimum, maximum and sample](#minimum-maximum-and-sample); ``random`` takes only a seed, as in Stella.
 
     Simple example where the number always lies between DT and the current simulation time:
     """)

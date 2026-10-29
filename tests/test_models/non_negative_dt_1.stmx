@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>non_negative_dt_1</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>3</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="s_two_outflows">
+				<eqn>10</eqn>
+				<outflow>o_first</outflow>
+				<outflow>o_second</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_order_swapped">
+				<eqn>10</eqn>
+				<outflow>o_second_b</outflow>
+				<outflow>o_first_b</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_with_inflow">
+				<eqn>10</eqn>
+				<inflow>i_three</inflow>
+				<outflow>o_first_c</outflow>
+				<outflow>o_second_c</outflow>
+				<non_negative/>
+			</stock>
+			<stock name="s_biflow">
+				<eqn>5</eqn>
+				<inflow>b_backwards</inflow>
+				<outflow>o_three</outflow>
+				<non_negative/>
+			</stock>
+			<flow name="o_first">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_second">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_second_b">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_first_b">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="i_three">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_first_c">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_second_c">
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="b_backwards">
+				<eqn>-8</eqn>
+			</flow>
+			<flow name="o_three">
+				<eqn>3</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="200" y="100" name="s_two_outflows"/>
+				<stock x="600" y="100" name="s_order_swapped"/>
+				<stock x="200" y="300" name="s_with_inflow"/>
+				<stock x="600" y="300" name="s_biflow"/>
+				<flow label_side="bottom" x="276.25" y="100.0" name="o_first">
+					<pts>
+						<pt x="222.5" y="100"/>
+						<pt x="330" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="270.0" y="160.0" name="o_second">
+					<pts>
+						<pt x="210" y="117.5"/>
+						<pt x="210" y="160"/>
+						<pt x="330" y="160"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="676.25" y="100.0" name="o_second_b">
+					<pts>
+						<pt x="622.5" y="100"/>
+						<pt x="730" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="670.0" y="160.0" name="o_first_b">
+					<pts>
+						<pt x="610" y="117.5"/>
+						<pt x="610" y="160"/>
+						<pt x="730" y="160"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="123.75" y="300.0" name="i_three">
+					<pts>
+						<pt x="70" y="300"/>
+						<pt x="177.5" y="300"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="276.25" y="300.0" name="o_first_c">
+					<pts>
+						<pt x="222.5" y="300"/>
+						<pt x="330" y="300"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="270.0" y="360.0" name="o_second_c">
+					<pts>
+						<pt x="210" y="317.5"/>
+						<pt x="210" y="360"/>
+						<pt x="330" y="360"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="523.75" y="300.0" name="b_backwards">
+					<pts>
+						<pt x="470" y="300"/>
+						<pt x="577.5" y="300"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="676.25" y="300.0" name="o_three">
+					<pts>
+						<pt x="622.5" y="300"/>
+						<pt x="730" y="300"/>
+					</pts>
+				</flow>
+			</view>
+		</views>
+	</model>
+</xmile>

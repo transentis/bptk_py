@@ -106,7 +106,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    When modelling business models I mostly start with the value network, then look at the transaction model before finishing with the value logic. But it is imperative to keep the approach iterative, so that insights gained while modelling the value logic and transaction model can flow back into the value network, so in client situations we find ourselves cycling through the steps at least two or three times before we feel the blueprints are "complete" enough to start building the concrete prototypes. Even then it is not uncommon to uncover new aspects while building the prototoype that lead to changes to the initial blueprints.
+    When modelling business models I mostly start with the value network, then look at the transaction model before finishing with the value logic. But it is imperative to keep the approach iterative, so that insights gained while modelling the value logic and transaction model can flow back into the value network, so in client situations we find ourselves cycling through the steps at least two or three times before we feel the blueprints are "complete" enough to start building the concrete prototypes. Even then it is not uncommon to uncover new aspects while building the prototype that lead to changes to the initial blueprints.
     """)
     return
 
@@ -131,7 +131,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    A good place to start to answer this questions for PSFs is the definition given by Maister: it is clear that the PSF needs customers, which are typically referred to as clients in this industry, and the PSF delivery consulting services to these clients. Depending on the type of PSF (e.g.IT services or strategy consulting) these services will be delivered in different ways, e.g. in IT services the ratio of face time work with the client to back office work working on an IT system will be different to that of a strategy consulting firm where most of the work is done face-to-face with the customer. At a specific PSF you will often find that you have different delivery channels according to client segments (or even individual clients), in which case you would need to add a party for each client segment with an individual delivery channel for each. Because we are dealing with a generic situation here it is enough to add a delivery channel to the diagram.
+    A good place to start to answer these questions for PSFs is the definition given by Maister: it is clear that the PSF needs customers, which are typically referred to as clients in this industry, and the PSF delivers consulting services to these clients. Depending on the type of PSF (e.g. IT services or strategy consulting) these services will be delivered in different ways, e.g. in IT services the ratio of face time work with the client to back office work working on an IT system will be different to that of a strategy consulting firm where most of the work is done face-to-face with the customer. At a specific PSF you will often find that you have different delivery channels according to client segments (or even individual clients), in which case you would need to add a party for each client segment with an individual delivery channel for each. Because we are dealing with a generic situation here it is enough to add a delivery channel to the diagram.
     """)
     return
 
@@ -139,7 +139,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    It is also clear from Maister's definition that the PSF is competing for talents in the factor market. Typically, a PSF will do this via a combination of three channels : one targeted directly at the talents (e.g. through the PSFs websites, through adverts in Magazines and on websites), one targeted at students via co - operations with universities and a third one via recruiting agencies. To maintain scalability PSFs often work with freelance consulants (especially in the IT services industry), so these recruiting agencies may supply both full-time and freelance talents.
+    It is also clear from Maister's definition that the PSF is competing for talents in the factor market. Typically, a PSF will do this via a combination of three channels: one targeted directly at the talents (e.g. through the PSF's websites, through adverts in magazines and on websites), one targeted at students via co-operations with universities and a third one via recruiting agencies. To maintain scalability PSFs often work with freelance consultants (especially in the IT services industry), so these recruiting agencies may supply both full-time and freelance talents.
     """)
     return
 
@@ -155,7 +155,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Also it is important to realise that selling professional services mostly takes place at a personal, face-to-face level. In order to generate new and interesting business opportunities and later support the sales process, PSFs maintain a network of business contacts (e.g.current and former clients, people working in relevant industries, alumni, ...). We therefore add these to our value network and add a sales information channel (again bearing in mind that for a specific PSF there may be multiple groups of business contacts that are managed via corresponding channels).
+    Also it is important to realise that selling professional services mostly takes place at a personal, face-to-face level. In order to generate new and interesting business opportunities and later support the sales process, PSFs maintain a network of business contacts (e.g. current and former clients, people working in relevant industries, alumni, ...). We therefore add these to our value network and add a sales information channel (again bearing in mind that for a specific PSF there may be multiple groups of business contacts that are managed via corresponding channels).
     """)
     return
 
@@ -206,7 +206,7 @@ def _(mo):
     - What products and artifacts do you exchange via the channels of the value network?
     - Which transactions do you need for this?
     - How often are these transactions performed?
-    - What benefits (e.g.revenue) and cost (e.g. cost for external suppliers, internal effort) are associated with these transactions?
+    - What benefits (e.g. revenue) and cost (e.g. cost for external suppliers, internal effort) are associated with these transactions?
     """)
     return
 
@@ -222,7 +222,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    - the (financial) measure of the value a company creates depends on the costs and benefits associated with the transaction: value = cost - benefits. The total value added by the company is thus the sum of the value generated by each individual transaction, over all transactions that are performed.
+    - the (financial) measure of the value a company creates depends on the costs and benefits associated with the transaction: value = benefits - cost. The total value added by the company is thus the sum of the value generated by each individual transaction, over all transactions that are performed.
     - the frequency at which transactions are performed tells you something about the demand for a capability that is critical to any company: the ability to manage its transactions. Naturally it makes a big difference if you are managing many transactions or few transactions. For instance, one of our clients provides a fully automated tolling service - they perform millions of transactions a week. Each individual transaction generates only very little value, but all together the value generated adds up to billions of euros per year. Another client of ours provides engineering services for power plants - the transactions they perform sometimes take more than ten years to complete, and they only perform a few of these in parallel.
     """)
     return
@@ -239,7 +239,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The easiest way to proceed is to systematically go through all channels and ask which products and artifacts are exchanged via that channel and which transactions are used. At this stage it is important to get a complete, but not detailed picture of the transactions - you should identify all relevant transactions and get a rough estimate of the figures regarding freuqency, cost and benefits; but you don't need to look at how transactions are performed in detail or how exactly these figures come about (we do that at a later stage, while building the prototype).
+    The easiest way to proceed is to systematically go through all channels and ask which products and artifacts are exchanged via that channel and which transactions are used. At this stage it is important to get a complete, but not detailed picture of the transactions - you should identify all relevant transactions and get a rough estimate of the figures regarding frequency, cost and benefits; but you don't need to look at how transactions are performed in detail or how exactly these figures come about (we do that at a later stage, while building the prototype).
     """)
     return
 
@@ -263,7 +263,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    A useful approach to identify the transactions associated with a channel is to think along a life cycle: the PSF first has to awaken the talents interest (by providing recruiting materials), it then recruits the talents (and provides an employment contract). Eventually the talent will leave the company. So we end up with three transactions (note that I record the products and artifacts that are exchanged in brackets after the name of the transaction):
+    A useful approach to identify the transactions associated with a channel is to think along a life cycle: the PSF first has to awaken the talents' interest (by providing recruiting materials), it then recruits the talents (and provides an employment contract). Eventually the talent will leave the company. So we end up with three transactions (note that I record the products and artifacts that are exchanged in brackets after the name of the transaction):
     """)
     return
 
@@ -313,7 +313,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    To me, sketching a company's value logic is the most exciting part of business model prototyping - the value logic captures the main feedback loops that drives a company's business and show the unique recipe it uses to be successful. My experience is that few managers and leaders have ever explicitly visualised these feedback loops for their company. In fact, especially in larger companies, there are mostly only few people who have a good understanding of how the entire company works. So while it is challenging to create these diagrams, it is also exhilarating, because everybody gains insight into the workings of their company.
+    To me, sketching a company's value logic is the most exciting part of business model prototyping - the value logic captures the main feedback loops that drive a company's business and shows the unique recipe it uses to be successful. My experience is that few managers and leaders have ever explicitly visualised these feedback loops for their company. In fact, especially in larger companies, there are mostly only few people who have a good understanding of how the entire company works. So while it is challenging to create these diagrams, it is also exhilarating, because everybody gains insight into the workings of their company.
     """)
     return
 
@@ -321,7 +321,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The value network shows how the company does business with and the transaction model shows which products and artifacts are exchanged. But looking at a diagram of a value network or a transaction model is a bit like looking at an "exploded" view of the parts of a motor - even if I know all the parts and how they fit together I still can't "see" how the motor works.
+    The value network shows who the company does business with and the transaction model shows which products and artifacts are exchanged. But looking at a diagram of a value network or a transaction model is a bit like looking at an "exploded" view of the parts of a motor - even if I know all the parts and how they fit together I still can't "see" how the motor works.
     """)
     return
 
@@ -394,7 +394,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now, let's map this to our PSF situation: The main resources are PSFs the talents, the main capability is the PSF's know-how. The products being offered are the professional services, the customers are the clients. Amongst management consulting and engineering companies a service that has been sold and is being delivered is often referred to as a project - I will use that term here, even though it does not apply to all professional services. This leads to the following initial diagram of our PSF's value logic:
+    Now, let's map this to our PSF situation: The main resources are the PSF's talents, the main capability is the PSF's know-how. The products being offered are the professional services, the customers are the clients. Amongst management consulting and engineering companies a service that has been sold and is being delivered is often referred to as a project - I will use that term here, even though it does not apply to all professional services. This leads to the following initial diagram of our PSF's value logic:
     """)
     return
 
@@ -418,7 +418,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now is the time to use our more specific knowledge of the professional services industry to add new connections: we know that the know-how a PSF has also depends on its talents. We also know that the know-how will be influenced by the projects the PSF delivers, because the firm's talents gain experience and (client specific) knowledge during project delivery (that's one of the reasons most new PSFs are started by experienced professionals and not by talents coming straight from University). Adding these connections leads to the following diagram:
+    Now is the time to use our more specific knowledge of the professional services industry to add new connections: we know that the know-how a PSF has also depends on its talents. We also know that the know-how will be influenced by the projects the PSF delivers, because the firm's talents gain experience and (client specific) knowledge during project delivery (that's one of the reasons most new PSFs are started by experienced professionals and not by talents coming straight from university). Adding these connections leads to the following diagram:
     """)
     return
 
@@ -466,7 +466,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    To ensure the diagram is complete, we need to cross check with the PSFs value network and PSFs the transaction model. You will notice that we haven't included the business contacts, the universities and recruiting agencies in our value logic. This is acceptable at the conceptual level: the business contacts are needed to to find new clients and sell services, we already have a loop for this in our diagram; the universities and recruiting agencies are part of the talent hiring loop.
+    To ensure the diagram is complete, we need to cross check with the PSF's value network and the PSF's transaction model. You will notice that we haven't included the business contacts, the universities and recruiting agencies in our value logic. This is acceptable at the conceptual level: the business contacts are needed to find new clients and sell services, we already have a loop for this in our diagram; the universities and recruiting agencies are part of the talent hiring loop.
     """)
     return
 
@@ -482,7 +482,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We have now gone through the early stages of a business prototyping session and have created diagrams of the PSFs value network, its transaction model and its value logic - in the next section we will become more quantitative and look at some growth strategies for professional service firms.
+    We have now gone through the early stages of a business prototyping session and have created diagrams of the PSF's value network, its transaction model and its value logic - in the next section we will become more quantitative and look at some growth strategies for professional service firms.
     """)
     return
 

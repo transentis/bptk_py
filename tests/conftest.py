@@ -1,6 +1,5 @@
 import importlib.util
 import sys
-from pathlib import Path
 import pytest
 
 from BPTK_Py.logger import logger as logmod
@@ -16,9 +15,6 @@ from BPTK_Py.logger import logger as logmod
 # collection in the base-install job and names itself while doing so.
 _OPTIONAL_TEST_MODULES = {
     "matplotlib": ["unittests/test_visualize.py"],
-    "xmltodict": ["test_xmile.py",
-                  "unittests/test_sdcompiler_generator.py",
-                  "unittests/test_sdcompiler_parser.py"],
     "flask": ["test_external_state.py",
               "test_server.py"],
     "psycopg": ["unittests/test_postgres_adapter.py"],
@@ -91,7 +87,6 @@ if sys.platform == "emscripten":
 # tests inside modules that are otherwise fine on a base install carry it.
 _EXTRA_PACKAGES = {
     "plotting": ["matplotlib"],
-    "xmile": ["parsimonious", "xmltodict", "jinja2"],
     "server": ["flask", "psycopg", "redis"],
     "observability": ["logfire"],
 }
@@ -134,22 +129,6 @@ def reset_logfire_state():
     logmod.logfire_enabled, logmod.logfire_adapter = enabled, adapter
 
 
-
-
-@pytest.fixture(scope="session", autouse=True)
-def fresh_compiled_models():
-    """tests/scenarios/test.json names XMILE sources in tests/test_models, and loading it
-    compiles them there. Removed before the session as well as after, so the compiling
-    path runs every time - also after a run that was cut short."""
-    test_models_dir = Path(__file__).parent / "test_models"
-
-    def remove():
-        for file_path in test_models_dir.glob("*.py"):
-            file_path.unlink()
-
-    remove()
-    yield
-    remove()
 
 
 # --- Did the engine actually run? ------------------------------------------

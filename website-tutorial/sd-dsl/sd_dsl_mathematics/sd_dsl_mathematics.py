@@ -42,7 +42,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Each stocks represents a difference equation, where the value of a stock $S$ at time $t$ depends on its value at time $t-dt$ plus the net inflow per $dt$:
+    Each stock represents a difference equation, where the value of a stock $S$ at time $t$ depends on its value at time $t-dt$ plus the net inflow per $dt$:
     """)
     return
 
@@ -64,7 +64,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Assuming the simulation starts at time $t_0$, we need to define the inital value of the stock:
+    Assuming the simulation starts at time $t_0$, we need to define the initial value of the stock:
     """)
     return
 
@@ -82,7 +82,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Note that stocks only depend on their inital value and the value of their flows since.
+    Note that stocks only depend on their initial value and the value of their flows since.
     """)
     return
 
@@ -108,7 +108,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Constants are special cases of converters. Flows are mathematically equivalent to converters - the only difference is that flows can flow in to our out of stocks, while converters cannot.
+    Constants are special cases of converters. Flows are mathematically equivalent to converters - the only difference is that flows can flow into or out of stocks, while converters cannot.
     """)
     return
 
@@ -126,7 +126,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    That's really all there is to defining the equations for a System Dyamics model.
+    That's really all there is to defining the equations for a System Dynamics model.
 
     Using the SD DSL, you don't need to worry about formulating the equations for yourself, because this is done for you under the hood by the framework.
 
@@ -152,7 +152,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    If we let $dt$ get infinitesimally small, we end up with an ordinary differential equation (ODE) which shows that the derivative of the stock (it's rate of change) is defined by net difference between its inflows and outflows:
+    If we let $dt$ get infinitesimally small, we end up with an ordinary differential equation (ODE) which shows that the derivative of the stock (its rate of change) is defined by the net difference between its inflows and outflows:
     """)
     return
 
@@ -170,7 +170,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    One consequence of this is that we can use System Dynmica models to numerically solve ordinary differential equations - let's look at a concrete example, the *[Harmonic Oscillator](https://en.wikipedia.org/wiki/Harmonic_oscillator)*
+    One consequence of this is that we can use System Dynamics models to numerically solve ordinary differential equations - let's look at a concrete example, the *[Harmonic Oscillator](https://en.wikipedia.org/wiki/Harmonic_oscillator)*
     """)
     return
 
@@ -186,7 +186,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    A simple example for a harmonic oscillator is a mass on a spring. The force exerted by the spring on the mass is proportional to position of the mass: the further the mass is pulled from the equilibrium position, the stronger the force.
+    A simple example for a harmonic oscillator is a mass on a spring. The force exerted by the spring on the mass is proportional to the position of the mass: the further the mass is pulled from the equilibrium position, the stronger the force.
 
     The proportional factor is called the spring constant or the *Stiffness* of the spring.
 
@@ -207,7 +207,7 @@ def _(mo):
     And because Acceleration is the second derivative of the position, we end up with the following ordinary differential equation for the harmonic oscillator:
 
     \begin{equation*}
-    \frac{d^2Acceleration}{dt^2} =- \frac{Stiffness}{Mass} * Position
+    \frac{d^2Position}{dt^2} =- \frac{Stiffness}{Mass} * Position
     \end{equation*}
 
     This differential equation has an analytical solution:
@@ -357,6 +357,14 @@ def _(mo):
 @app.cell
 def _(df):
     df[df["diff"] > 0.003]
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    How the library turns these equations into Python is shown step by step in [SD DSL: Under The Hood](../sd_dsl_under_the_hood/sd_dsl_under_the_hood.md).
+    """)
     return
 
 

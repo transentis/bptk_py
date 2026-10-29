@@ -6,12 +6,12 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
 
 from .element import Element
 from .element import ElementError
+from .operators import _source
 
 
 class Constant(Element):
@@ -39,7 +39,7 @@ class Constant(Element):
         if not self._handle_arrayed(equation):
             self._equation = equation
             if isinstance(equation, (float, int)):
-                self._function_string = "lambda model, t: {}".format(equation)
+                self._function_string = "lambda model, t: {}".format(_source(equation))
             elif equation is None:
                 self._equation = None
             else:

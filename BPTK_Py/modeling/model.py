@@ -6,9 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2019 transentis labs GmbH
+# Copyright (c) 2019-2026 transentis labs GmbH
 # MIT License
-
 
 import random
 import threading
@@ -42,7 +41,7 @@ from .event import Event
 from ..logger import log
 from ..exceptions import CyclicDependencyError, RustBackendError, rust_backend_error
 from ..sddsl import Constant, Converter, Conveyor, Flow, Biflow, NaryOperator, Stock
-from ..sddsl.sddsl_builtins import invalid_argument_message
+from ..sddsl.sddsl_builtins import division_by_zero_message, invalid_argument_message
 from ..util.lookup_data import lookup_points
 
 
@@ -156,6 +155,8 @@ class Model:
         # Elements whose builtin has been reported for an invalid argument; once is enough
         # per element until the cache is reset, or a run of many steps repeats one line.
         self.invalid_arguments_reported = set()
+        # Unseeded draws held for their sample, by call, cell and the time the sample began
+        self._held_draws = {}
 
         # This is a placeholder. You may define SD model equations in your own 'instantiate_model' method and use them to generate hybrid models
         self.equations = {}
@@ -884,17 +885,21 @@ class Model:
         return round(random.random() * (max_value - min_value) + min_value)
 
 
-    def _lookup(self,x, points):
+    def _lookup(self,x, points, kind="continuous"):
         """Define a lookup function.
-        
+
         Function that interpolate between set of points. This is used by the SD DSL lookup function.
-        
+
         Args:
             x: Value.
                 x-value to find the y value for
             points: List.
                 List of coordinates.
-        
+            kind: String (Default "continuous").
+                XMILE's type of graphical function: "continuous" holds the end values
+                outside the table, "extrapolate" goes on along the first and the last
+                segment, "discrete" is a step function - the value of the next lower x.
+
         Returns: Float.
             Returns the value that has been looked up.
         """
@@ -903,8 +908,19 @@ class Model:
 
         points = self._lookup_table(points)
 
+        if kind == "discrete":
+            if x != x:
+                return float("nan")
+            below = [y for point_x, y in points if point_x <= x]
+            return below[-1] if below else points[0][1]
+
         x_vals = np.array([x[0] for x in points])
         y_vals = np.array([x[1] for x in points])
+
+        if kind == "extrapolate" and len(points) > 1 and not x_vals[0] <= x <= x_vals[-1]:
+            (x0, y0), (x1, y1) = (points[0], points[1]) if x < x_vals[0] else (points[-2], points[-1])
+            end_x, end_y = (x0, y0) if x < x_vals[0] else (x1, y1)
+            return float(end_y + (x - end_x) * (y1 - y0) / (x1 - x0))
 
         if x <= x_vals[0]:
             return y_vals[0]
@@ -996,15 +1012,15 @@ class Model:
 
     def equation(self,equation, t):
         # The same thing `evaluate_equation` does, deliberately kept as a second name:
-        # this is what compiled XMILE models call, once per equation per timestep, and
+        # this is what the Python engine calls, once per equation per timestep, and
         # it is the hottest path in the Python engine. Routing it through the other
         # method would buy tidiness with an extra call in that loop.
         return self.memoize(equation,t)
 
     def memoize(self, equation, arg):
-        # Public despite the look of it: every compiled XMILE model calls
-        # `self.memoize('name', t)` - see sdcompiler/generator/py/py.py - so the name is
-        # part of the contract with generated code and cannot move behind an underscore.
+        # Public despite the look of it: the term of every element calls
+        # `model.memoize('name', t)` - see sddsl/element.py - so the name is part of the
+        # contract with generated code and cannot move behind an underscore.
 
         if getattr(_rust_callback, "active", False):
             raise RuntimeError(
@@ -1080,6 +1096,16 @@ class Model:
             return
         self.invalid_arguments_reported.add(element)
         log(invalid_argument_message(builtin, element, t, reason, parameters, values))
+
+    def report_division_by_zero(self, t):
+        """Log a division by zero in the element being evaluated, once per element - as an
+        invalid argument is, and in the same set, so an element is reported once."""
+        pending = getattr(_evaluation, "pending", None)
+        element = next(reversed(pending))[1] if pending else "an equation"
+        if element in self.invalid_arguments_reported:
+            return
+        self.invalid_arguments_reported.add(element)
+        log(division_by_zero_message(element, t))
 
     def _cyclic_dependency_error(self, pending, key):
         """The error for a loop that closes at `key`, worded as the Rust engine words it.
@@ -1338,6 +1364,8 @@ class Model:
             self._memo_filled = False
 
         self.invalid_arguments_reported = set()
+        # Unseeded draws held for their sample are drawn afresh, as every other value is
+        self._held_draws = {}
         self._structure_version += 1
 
 

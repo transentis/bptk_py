@@ -5,7 +5,7 @@
 # and installing the project compiles it - in release mode, which is the one worth
 # measuring against.
 sync:
-    uv sync --all-extras
+    uv sync --all-extras --python 3.14
 
 # Rebuild the Rust extension after a change to src/. Release on purpose: a debug
 # build is roughly five times slower, and that has already been mistaken for the

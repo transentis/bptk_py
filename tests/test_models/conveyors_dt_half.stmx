@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>conveyors_dt_half</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="c_linear">
+				<eqn>0</eqn>
+				<inflow>in_linear</inflow>
+				<outflow>out_linear</outflow>
+				<outflow>leak_linear</outflow>
+				<conveyor>
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<stock name="c_exponential">
+				<eqn>0</eqn>
+				<inflow>in_exponential</inflow>
+				<outflow>out_exponential</outflow>
+				<outflow>leak_exponential</outflow>
+				<conveyor exponential_leak="true">
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<stock name="c_variable">
+				<eqn>0</eqn>
+				<inflow>in_variable</inflow>
+				<outflow>out_variable</outflow>
+				<conveyor>
+					<len>transit</len>
+				</conveyor>
+			</stock>
+			<stock name="c_filled">
+				<eqn>100</eqn>
+				<inflow>in_filled</inflow>
+				<outflow>out_filled</outflow>
+				<conveyor>
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<flow name="in_linear">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_linear">
+				<non_negative/>
+			</flow>
+			<flow name="leak_linear">
+				<eqn>0.2</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<flow name="in_exponential">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_exponential">
+				<non_negative/>
+			</flow>
+			<flow name="leak_exponential">
+				<eqn>0.2</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+			<flow name="in_variable">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_variable">
+				<non_negative/>
+			</flow>
+			<flow name="in_filled">
+				<eqn>0</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_filled">
+				<non_negative/>
+			</flow>
+			<aux name="transit">
+				<eqn>4 - STEP(2, 5)</eqn>
+			</aux>
+			<aux name="young_linear">
+				<eqn>AGECOUNT(c_linear, 0, 2)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="c_linear"/>
+				<stock x="350" y="270" name="c_exponential"/>
+				<stock x="350" y="440" name="c_variable"/>
+				<stock x="350" y="610" name="c_filled"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="in_linear">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="100.0" name="out_linear">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="150.0" name="leak_linear">
+					<pts>
+						<pt x="360" y="117.5"/>
+						<pt x="360" y="150"/>
+						<pt x="550" y="150"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="270.0" name="in_exponential">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="270.0" name="out_exponential">
+					<pts>
+						<pt x="372.5" y="270"/>
+						<pt x="550" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="320.0" name="leak_exponential">
+					<pts>
+						<pt x="360" y="287.5"/>
+						<pt x="360" y="320"/>
+						<pt x="550" y="320"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="440.0" name="in_variable">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="440.0" name="out_variable">
+					<pts>
+						<pt x="372.5" y="440"/>
+						<pt x="550" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="610.0" name="in_filled">
+					<pts>
+						<pt x="150" y="610"/>
+						<pt x="327.5" y="610"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="610.0" name="out_filled">
+					<pts>
+						<pt x="372.5" y="610"/>
+						<pt x="550" y="610"/>
+					</pts>
+				</flow>
+				<aux x="80" y="800" name="transit"/>
+				<aux x="220" y="800" name="young_linear"/>
+				<connector uid="1" angle="270">
+					<from>c_linear</from>
+					<to>young_linear</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

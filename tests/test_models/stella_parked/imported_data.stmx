@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>imported_data</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="continuous">
+				<eqn>-1</eqn>
+			</aux>
+			<aux name="inside">
+				<eqn>-1</eqn>
+			</aux>
+			<aux name="extrapolated">
+				<eqn>-1</eqn>
+			</aux>
+			<aux name="backward">
+				<eqn>-1</eqn>
+			</aux>
+			<aux name="forward">
+				<eqn>-1</eqn>
+			</aux>
+			<aux name="raw">
+				<eqn>-1</eqn>
+			</aux>
+			<stock name="accumulated">
+				<eqn>0</eqn>
+				<inflow>feeding</inflow>
+			</stock>
+			<flow name="feeding">
+				<eqn>continuous</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="continuous"/>
+				<aux x="220" y="290" name="inside"/>
+				<aux x="360" y="290" name="extrapolated"/>
+				<aux x="500" y="290" name="backward"/>
+				<aux x="640" y="290" name="forward"/>
+				<aux x="780" y="290" name="raw"/>
+				<stock x="350" y="100" name="accumulated"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="feeding">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="270">
+					<from>continuous</from>
+					<to>feeding</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

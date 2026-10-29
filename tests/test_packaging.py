@@ -13,6 +13,7 @@ a dict as its default.
 """
 
 import ast
+import re
 import subprocess
 import sys
 import textwrap
@@ -30,17 +31,16 @@ EXPECTED_BASE = {"pandas", "scipy", "numpy", "tqdm", "xlsxwriter", "jsonpickle"}
 
 EXPECTED_EXTRAS = {
     "plotting": {"matplotlib"},
-    "xmile": {"parsimonious", "xmltodict", "jinja2"},
     "server": {"flask", "psycopg", "redis"},
     "observability": {"logfire"},
 }
 
 # Optional packages that must never be reached by `import BPTK_Py`, even when
-# they are installed. flask, jinja2, psycopg, redis and logfire are absent from
+# they are installed. flask, psycopg, redis and logfire are absent from
 # this list on purpose: BptkServer and the state adapters are exported eagerly
 # from BPTK_Py/__init__.py, so installing those extras does put them in the
 # import path. Only the install shrinks, not the import.
-MUST_STAY_LAZY = ["matplotlib", "parsimonious", "xmltodict"]
+MUST_STAY_LAZY = ["matplotlib"]
 
 
 def _requirement_name(requirement):
@@ -276,17 +276,18 @@ class TestMissingExtrasExplainThemselves:
         assert "3 rows without matplotlib" in result.stdout
         assert "bptk-py[plotting]" in result.stdout
 
-    def test_xmile_extra_missing(self):
-        result = self._run_with_blocked(["parsimonious"], """
+    def test_the_xmile_compiler_needs_no_extra(self):
+        """The compiler is part of the base install: blocking every extra leaves it working."""
+        source = Path(__file__).resolve().parent / "test_models" / "math_and_names.stmx"
+        result = self._run_with_blocked(["matplotlib", "flask", "logfire"], """
+            import tempfile, pathlib
             from BPTK_Py.sdcompiler import compile_xmile
-            try:
-                compile_xmile(target="py", src="a.stmx", dest="a.py")
-                print("NO ERROR")
-            except ImportError as error:
-                print(error)
-        """)
+            target = pathlib.Path(tempfile.mkdtemp()) / "model.py"
+            compile_xmile({source!r}, str(target), "py-sddsl")
+            print("class" in target.read_text(encoding="utf-8"))
+        """.format(source=str(source)))
         assert result.returncode == 0, result.stderr
-        assert "bptk-py[xmile]" in result.stdout
+        assert result.stdout.strip() == "True"
 
     def test_observability_extra_missing(self):
         result = self._run_with_blocked(["logfire"], """
@@ -303,7 +304,7 @@ class TestMissingExtrasExplainThemselves:
     def test_base_install_still_simulates(self):
         """Blocking every extra must leave the actual product working."""
         result = self._run_with_blocked(
-            ["matplotlib", "flask", "parsimonious", "xmltodict", "logfire"], """
+            ["matplotlib", "flask", "logfire"], """
             model = BPTK_Py.Model(starttime=0.0, stoptime=10.0, dt=1.0, name="base")
             stock = model.stock("population")
             flow = model.flow("growth")
@@ -387,3 +388,24 @@ def _mutable_defaults():
 def test_no_function_has_a_mutable_default():
     found = list(_mutable_defaults())
     assert found == [], "\n".join(found)
+
+
+_BANNER = re.compile(r"\A#                                                       /`-\n(#.*\n){6}#\n"
+                     r"# Copyright \(c\) (?P<first>\d{4})(-(?P<last>\d{4}))? transentis labs GmbH\n"
+                     r"# MIT License\n")
+
+
+def test_every_module_starts_with_the_banner():
+    """The logo, the year of the first release - to the year of the last change, if later -
+    and the licence, `__init__.py` included."""
+    import datetime
+    wrong = []
+    for path in sorted(PACKAGE.rglob("*.py")):
+        match = _BANNER.match(path.read_text(encoding="utf-8"))
+        if match:
+            first, last = int(match.group("first")), match.group("last")
+            # A span runs forwards; a single year is one with no change after it
+            if 2018 <= first <= int(last or first) <= datetime.date.today().year and (last is None or int(last) > first):
+                continue
+        wrong.append(str(path.relative_to(PACKAGE)))
+    assert wrong == [], wrong

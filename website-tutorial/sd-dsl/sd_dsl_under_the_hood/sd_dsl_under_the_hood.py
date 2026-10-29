@@ -28,7 +28,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Part of the BPTK Framework is the *System Dynamics Domain Specific Language (SD DSL)*. Using the SD DSL, you can easily build System Dynamics Mmodels directly in Python using an intuitive Syntax.
+    Part of the BPTK Framework is the *System Dynamics Domain Specific Language (SD DSL)*. Using the SD DSL, you can easily build System Dynamics models directly in Python using an intuitive syntax.
 
     This notebook takes a look under the hood of the SD DSL and explains how it creates the underlying equations that are needed to run a simulation.
 
@@ -42,7 +42,7 @@ def _(mo):
 
     ![Simple System Dynamics Model](sfd_simple_model.svg)
 
-    At any given time $t$, a stock is equal to the value of the stock at time $t-1$ plus the sum of all inflows, minus the sum of all outflow at time $t-1$ are simply the sum of the flows that flow into and out of them, over time.
+    At any given time $t$, a stock is equal to the value of the stock at time $t-1$ plus the sum of all inflows, minus the sum of all outflows at time $t-1$ - this page takes $dt = 1$ throughout; [The Mathematics Underlying the SD DSL](../sd_dsl_mathematics/sd_dsl_mathematics.md) gives the general form with $dt$. Stocks are simply the sum of the flows that flow into and out of them, over time.
 
     Flows and converters are simply functions of their inputs.
 
@@ -162,7 +162,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The SD DSL uses lambda functions lambda functions to implement the equation if the System Dynamics model.
+    The SD DSL uses lambda functions to implement the equations of the System Dynamics model.
     """)
     return
 
@@ -171,11 +171,12 @@ def _(mo):
 def _():
     import pandas as pd
     import matplotlib
+    from BPTK_Py.visualizations import bptk_style
     stock = lambda t: stock(t-1) + flow(t-1) if t>0 else 1
     flow = lambda t: stock(t) * rate(t)
     rate = lambda t: 0.1
     stock(10)
-    return pd, stock
+    return bptk_style, pd, stock
 
 
 @app.cell(hide_code=True)
@@ -195,9 +196,11 @@ def _(mo):
 
 
 @app.cell
-def _(pd, stock):
+def _(bptk_style, pd, stock):
     df = pd.DataFrame((stock(t)) for t in range(0,20) )
-    df.plot(kind="line")
+    with bptk_style():
+        _ax = df.plot(kind="line")
+    _ax
     return
 
 
@@ -212,7 +215,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Assume we want to keep equations in a "model" and add new ones dynamically:  create a dictioanry of equations that are accessed by equation names as strings, e.g. `equation["stock"](5)`
+    Assume we want to keep equations in a "model" and add new ones dynamically: create a dictionary of equations that are accessed by equation names as strings, e.g. `equation["stock"](5)`
     """)
     return
 
@@ -238,7 +241,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In order to calculate the value of a stock at a given time $t$, you need to know all preceding values. The way the model is encoded at the moment, this means that we first calculate the value at time $t = 1$, then to calculate the value at time $t = 2$ we need to calcualte the values at time $t=1$ and then at time $t =2$ and so on ... this means that even models with only few timesteps can take a very long time to evaluate.
+    In order to calculate the value of a stock at a given time $t$, you need to know all preceding values. The way the model is encoded at the moment, this means that we first calculate the value at time $t = 1$, then to calculate the value at time $t = 2$ we need to calculate the values at time $t=1$ and then at time $t =2$ and so on ... this means that even models with only few timesteps can take a very long time to evaluate.
 
     The way around this of course is to remember the value of each equation at each time step, so that you don't have to recurse through all timesteps at every timestep.
 
@@ -327,9 +330,11 @@ def _(equations_1):
 
 
 @app.cell
-def _(equations_1, pd):
+def _(bptk_style, equations_1, pd):
     df_1 = pd.DataFrame((equations_1['stock'](t) for t in range(0, 50)))
-    df_1.plot(kind='line')
+    with bptk_style():
+        _ax = df_1.plot(kind='line')
+    _ax
     return
 
 
@@ -344,7 +349,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now that we know what equations we want, we need a find a way of generating them directly. We do this by first generating the code in string form and then compiling that string into code using the `eval`function.
+    Now that we know what equations we want, we need to find a way of generating them directly. We do this by first generating the code in string form and then compiling that string into code using the `eval` function.
     """)
     return
 
@@ -382,7 +387,7 @@ def _(mo):
     * Elements know which model they belong to
     * The equations for each element are defined using an equation method on the elements (e.g. `stock.equation=flow`)
     * The memoization function should be part of the model class
-    * Each element should have a term function `element.term` that generate a string representation of itself (e.g `model.memoize("stock",t)`)
+    * Each element should have a term function `element.term` that generates a string representation of itself (e.g. `model.memoize("stock",t)`)
     * Remember that stocks have an initial value
     """)
     return
@@ -511,7 +516,7 @@ def _(mo):
     mo.md(r"""
     Extend the framework to auto-generate the underlying lambda-equations and add them to the model. For the first version assume we just have a stock and a constant flow.
 
-    Override the call operator to evalue the element at a particular timestep (e.g. `stock(10)`)
+    Override the call operator to evaluate the element at a particular timestep (e.g. `stock(10)`)
 
     Create a plot function that evaluates an element in the range 0 to 100.
     """)
@@ -674,8 +679,10 @@ def _(stock_2):
 
 
 @app.cell
-def _(stock_2):
-    stock_2.plot()
+def _(bptk_style, stock_2):
+    with bptk_style():
+        _ax = stock_2.plot()
+    _ax
     return
 
 
@@ -686,7 +693,7 @@ def _(mo):
 
     In order to re-create our initial model, we need to formulate an equation such as `flow.equation = stock*rate`.
 
-    Override the `__mul__` methods of the Element and create a multiplication operator to deal with this.
+    Override the `__mul__` method of the Element and create a multiplication operator to deal with this.
     """)
     return
 
@@ -834,8 +841,10 @@ def _(pd):
 
 
 @app.cell
-def _(stock_3):
-    stock_3.plot()
+def _(bptk_style, stock_3):
+    with bptk_style():
+        _ax = stock_3.plot()
+    _ax
     return
 
 

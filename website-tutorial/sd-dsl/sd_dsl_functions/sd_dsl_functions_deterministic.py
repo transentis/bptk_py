@@ -71,7 +71,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The `ABS`function returns the absolute value of its input.
+    The `ABS` function returns the absolute value of its input.
 
     Signature: `abs(input)`
 
@@ -188,7 +188,7 @@ def _(mo):
     ## COMBINATIONS
     The COMBINATIONS operator calculates the number of r-element subsets (or r-combinations) of an n-element set without repetition.
 
-    Arguments `n` and `r` must follow n >= r >= 0 and be integers.
+    Arguments `n` and `r` must be whole numbers of at least 0; anything else gives NaN and an `[ERROR]`. An `r` greater than `n` gives 0.
 
     Example using `n` as time - because `n` must be an integer, we have to wrap it in a user defined function.
     """)
@@ -246,7 +246,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The DELAY function returns a delayed value of input, using a fixed lag time of delay duration, and an optional initial value initial for the delay. If you don't specify an initial value initial, DELAY assumes the value to be the initial value of input. A delay duration that changes during the run is read at every step, so the lag follows it - Stella fixes it at its initial value instead
+    The DELAY function returns a delayed value of input, using a lag time of delay duration, and an optional initial value initial for the delay. If you don't specify an initial value initial, DELAY assumes the value to be the initial value of input. A delay duration that changes during the run is read at every step, so the lag follows it - Stella fixes it at its initial value instead. A negative delay duration would read the future: it gives NaN and an `[ERROR]`, as Stella refuses it.
 
     Signature: `delay(model, input_function, delay_duration, initial_value)`
 
@@ -374,7 +374,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The `DT` function returns the models dt..
+    The `DT` function returns the model's dt.
 
     Signature: `dt(model)`
     """)
@@ -426,8 +426,47 @@ def _(Model, np, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## EXPBOUND / LOGISTICBOUND Functions
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Both functions take a value from `y_from` to `y_to` while `x` moves along, as Stella's `EXPBOUND` and `LOGISTICBOUND` do, with the same arguments in the same order.
+
+    `expbound(y_from, y_to, x, exponent, x_start, x_finish)` is `y_from` up to `x_start` and `y_to` from `x_finish` on. In between it follows an exponential curve: a positive `exponent` starts slowly and rises steeply at the end, a negative one the other way round, and `0` gives a straight line.
+
+    `logisticbound(y_from, y_to, x, x_middle, speed, x_start=None, x_finish=None)` is an S-curve, halfway between `y_from` and `y_to` at `x_middle`; `speed` sets how steep it is there. Without `x_start` and `x_finish` it only comes close to `y_from` and `y_to`. With them - both or neither - it reaches `y_from` at `x_start` and `y_to` at `x_finish` and holds them beyond: each half of the curve is bent by a straight line until it does. A `speed` of `0` makes the curve two straight lines that meet at `x_middle`.
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_bounds = Model(starttime=0.0, stoptime=12.0, dt=0.25, name='bounds')
+    model_bounds.converter('slow_start').equation = sd.expbound(1.0, 9.0, sd.time(), 2.0, 2.0, 8.0)
+    model_bounds.converter('fast_start').equation = sd.expbound(1.0, 9.0, sd.time(), -2.0, 2.0, 8.0)
+    model_bounds.converter('s_curve').equation = sd.logisticbound(1.0, 9.0, sd.time(), 5.0, 1.0)
+    model_bounds.converter('s_curve_bounded').equation = sd.logisticbound(1.0, 9.0, sd.time(), 5.0, 1.0, 1.0, 10.0)
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_bounds)
+    bptk.plot_scenarios(
+        scenario_managers=['smBounds'],
+        scenarios=['base'],
+        equations=['slow_start', 'fast_start', 's_curve', 's_curve_bounded'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## FACTORIAL Function
-    The FACTORIAL function calculates the factorial of the single argument `n` (traditionally noted as n!). `n` must be an integer value, decimal values are not allowed.
+    The FACTORIAL function calculates the factorial of the single argument `n` (traditionally noted as n!). `n` must be a whole number of at least 0; a fraction or a negative number gives NaN and an `[ERROR]`. From 171 on the result is infinity.
 
     The following example wraps the time `t` in a user-defined function to ensure that this value is always an integer.
     """)
@@ -490,7 +529,7 @@ def _(mo):
     mo.md(r"""
     ## GAMMALN Function
 
-    The GAMMALN operator returns the natural log of the GAMMA function, given input n. The GAMMA function is a continuous version of the FACTORIAL builtin, with GAMMA(n) the same as FACTORIAL(n-1).
+    The GAMMALN operator returns the natural log of the GAMMA function, given input n. The GAMMA function is a continuous version of the FACTORIAL builtin, with GAMMA(n) the same as FACTORIAL(n-1). For `n` of 0 and below it gives NaN, as Stella does.
 
     Only argument is ``n``
     """)
@@ -520,8 +559,8 @@ def _(mo):
     An if clause requires 3 arguments: ``If ( <condition> , <then>, <else>)``
 
     ``condition``: Must be a boolean expression, e.g. ``sd.time() > 1`` is true iff the simulation time is larger than 1
-    ``then`` : Any expression that returns a float value if the condition is true
-    ``else`` : Any expression that returns a float value if the condition is false
+    ``then``: Any expression that returns a float value if the condition is true
+    ``else``: Any expression that returns a float value if the condition is false
 
     A simple if clause may look like this:
     """)
@@ -546,9 +585,9 @@ def _(mo):
     You can also add ``and`` / ``or`` / ``not`` conditions easily:
 
     Signature:
-    ``And(<condition1>, <condition2>)`` : Logical and between 2 conditions
-    ``Or(<condition1>, <condition2>)`` : Logical or between 2 conditions
-    ``Not(<condition>)`` : Logical not: True if condition is False
+    ``And(<condition1>, <condition2>)``: Logical and between 2 conditions
+    ``Or(<condition1>, <condition2>)``: Logical or between 2 conditions
+    ``Not(<condition>)``: Logical not: True if condition is False
 
     Each condition within the operators has to return a boolean value. Nesting of the operators is easily possible!
     """)
@@ -642,7 +681,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    IRR is the internal rate of return of a stream of payments so far: the rate at which their net present value is zero, each value discounted by `(1 + rate) ** (TIME - STARTTIME)`. The stream needs payments in both directions. Where there are several such rates the one nearest zero is taken, and where there is none - at the first step, or for a stream that only ever pays in - the function gives `missing`, or NaN without one. It does not run on the Rust engine yet.
+    IRR is the internal rate of return of a stream of payments so far: the rate at which their net present value is zero, each value discounted by `(1 + rate) ** (TIME - STARTTIME)`. The stream needs payments in both directions. Where there are several such rates the one nearest zero is taken, and where there is none - at the first step, or for a stream that only ever pays in - the function gives `missing`, or NaN without one.
 
     The example pays 100 in the first year and gets 10 back every year after. The rate of return starts deep below zero and climbs towards 10 percent as the payments go on.
 
@@ -710,11 +749,23 @@ def _(mo):
     the given range it stays at the first or last point.
 
     Signature:
-    ``lookup(element, points)``
+    ``lookup(element, points, kind="continuous")``
 
     ``element`` is the input to look up, ``points`` a list of ``(x, y)`` tuples, in any
     order - they are sorted by ``x``. Two points at the same ``x`` are refused with an
     error naming it, since the table would have two values there.
+
+    ``kind`` is the type of the graphical function; XMILE has three:
+
+    - ``"continuous"``, the default: linear between the points, the first or the last value
+      outside them
+    - ``"extrapolate"``: linear between the points, and outside them on along the first or
+      the last segment
+    - ``"discrete"``: a step function - the value of the nearest point at or below the input,
+      the first value below the table
+
+    In XMILE and Stella the type belongs to the graphical function itself; in the SD DSL it is
+    given where the table is read, so a table read in several places needs it in each.
 
     This is the DSL equivalent of a graphical function in a XMILE model, and it is the right
     tool whenever a relationship is known empirically but has no closed form:
@@ -737,6 +788,32 @@ def _(Model, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    The same table read three ways, with an input that runs past both of its ends:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_kinds = Model(starttime=0.0, stoptime=12.0, dt=0.1, name='kinds')
+    model_kinds.points['peak'] = [(2.0, 0.0), (4.0, 5.0), (6.0, 20.0), (8.0, 10.0), (10.0, 0.0)]
+    for kind in ('continuous', 'extrapolate', 'discrete'):
+        model_kinds.converter(kind).equation = sd.lookup(sd.time(), 'peak', kind=kind)
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_kinds)
+    bptk.plot_scenarios(
+        scenario_managers=['smKinds'],
+        scenarios=['base'],
+        equations=['continuous', 'extrapolate', 'discrete'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## LOOKUPINV / LOOKUPAREA Functions
     """)
     return
@@ -745,13 +822,13 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    `lookupinv` reads a lookup table backwards: the `x` at which it reaches a value. It is meant for a table that only rises or only falls; a value beyond what the table reaches gives the `x` of the nearer end. `lookuparea` is the area under the table between two `x` values, or under all of it.
+    `lookupinv` reads a lookup table backwards: the `x` at which it reaches a value. It is meant for a table that only rises or only falls; a value beyond what the table reaches gives the `x` of the nearer end - on a table that does not only rise or only fall it gives NaN, as in Stella. `lookuparea` is the area under the table between two `x` values, or under all of it; as in Stella, nothing beyond the table's ends counts.
 
-    Signatures: `lookupinv(value, points)` and `lookuparea(points, from_x=None, to_x=None)`
+    Signatures: `lookupinv(value, points, kind="continuous")` and `lookuparea(points, from_x=None, to_x=None, kind="continuous")`
 
-    `points` is a list of `(x, y)` points or the name of a table in `model.points`, as for `lookup`. Neither function runs on the Rust engine yet.
+    `points` is a list of `(x, y)` points or the name of a table in `model.points`, and `kind` the type of table, as for `lookup`. On an extrapolate table `lookupinv` goes on along the end segments and `lookuparea` counts the lines beyond the ends too; a discrete table's area is the sum of its steps, and `lookupinv` reads it as continuous, as Stella does.
 
-    The example feeds the time into the same table three ways: `forwards` reads it as `lookup` does, `backwards` asks at which `x` the table reaches the time, and `area_so_far` is the area under the table from 0 to the time. Past the last point at `x = 4` the table stays at 6, so `backwards` stops at 4 once the time reaches 6, and the area grows by 6 per time unit.
+    The example feeds the time into the same table three ways: `forwards` reads it as `lookup` does, `backwards` asks at which `x` the table reaches the time, and `area_so_far` is the area under the table from 0 to the time. Past the last point at `x = 4` the table stays at 6, so `backwards` stops at 4 once the time reaches 6, and the area stops growing at 14.
     """)
     return
 
@@ -770,6 +847,47 @@ def _(Model, bptk, sd):
         scenario_managers=['smLookups'],
         scenarios=['base'],
         equations=['forwards', 'backwards', 'area_so_far'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## LOOKUPMAX / LOOKUPMIN / LOOKUPMEAN Functions
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `lookupmax` and `lookupmin` are the largest and the smallest value of a lookup table, between two `x` values or over all of it; a bound inside a segment counts with the value the table has there. `lookupmean` reads the table as a probability density and gives its mean `x` - the average of what `lookuprandom` draws from it. As in Stella, each segment counts as flat at its average height, so on a sloping segment the mean is the segment's middle; a table that has no area in the range gives NaN.
+
+    Signatures: `lookupmax(points, from_x=None, to_x=None, kind="continuous")`, and the same for `lookupmin` and `lookupmean`
+
+    `points` and `kind` are as for `lookup`. `from_x` and `to_x` can come in either order. Stella writes the range the other way round - `LOOKUPMAX(table, to, from)`, with `from` left out meaning the start of the table - so `LOOKUPMAX(table, 8)` is `sd.lookupmax("table", to_x=8.0)`. Beyond the table's ends `lookupmax` and `lookupmin` read it as `lookup` does, while `lookupmean` counts nothing there, except on an extrapolate table.
+
+    In the example the table rises to a peak of 20 at `x = 6`. `window_max` and `window_min` look at the two units of `x` up to the time; `mean_so_far` is the mean `x` of the table from its start up to the time:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_lookup_statistics = Model(starttime=2.0, stoptime=12.0, dt=0.25, name='lookup_statistics')
+    model_lookup_statistics.points['peak'] = [(2.0, 0.0), (4.0, 5.0), (6.0, 20.0), (8.0, 10.0), (10.0, 0.0)]
+    model_lookup_statistics.converter('window_max').equation = sd.lookupmax('peak', sd.time() - 2.0, sd.time())
+    model_lookup_statistics.converter('window_min').equation = sd.lookupmin('peak', sd.time() - 2.0, sd.time())
+    model_lookup_statistics.converter('mean_so_far').equation = sd.lookupmean('peak', None, sd.time())
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_lookup_statistics)
+    bptk.plot_scenarios(
+        scenario_managers=['smLookup_statistics'],
+        scenarios=['base'],
+        equations=['window_max', 'window_min', 'mean_so_far'],
         format="axes",
     )
     return
@@ -864,9 +982,51 @@ def _(Model, bptk, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## NAN / INF / PI
+    ## MAXSOFT / MINSOFT Functions
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `maxsoft(x, y, softness)` is a maximum with a rounded corner, Stella's `MAXSOFT`. It is `x` as long as `x` lies at least `softness` above `y`. Below that it does not switch to `y` at a kink but bends towards it, and approaches it only gradually: where `x` and `y` are equal, the result is still about a quarter of `softness` above them. A `softness` of `0` is the plain `max`.
+
+    `minsoft(x, y, softness)` is the mirror image, Stella's `MINSOFT`: `x` as long as it lies at least `softness` below `y`, then bending towards `y` from below.
+
+    In the example a falling `x` meets a floor of 1, once hard and twice softened:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_soft = Model(starttime=0.0, stoptime=12.0, dt=0.25, name='soft')
+    falling = model_soft.converter('falling')
+    falling.equation = 6.0 - sd.time()
+    model_soft.converter('hard').equation = sd.maxsoft(falling, 1.0, 0.0)
+    model_soft.converter('soft_2').equation = sd.maxsoft(falling, 1.0, 2.0)
+    model_soft.converter('soft_5').equation = sd.maxsoft(falling, 1.0, 5.0)
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_soft)
+    bptk.plot_scenarios(
+        scenario_managers=['smSoft'],
+        scenarios=['base'],
+        equations=['hard', 'soft_2', 'soft_5'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## NAN / INF / PI / ISNAN
 
     ``sd.nan()`` returns a NAN value, ``sd.Inf()`` gives you the infinity value, ```sd.pi()``` returns the number pi.
+
+    ``sd.isnan(x)`` is 1 where `x` is NaN and 0 otherwise, as Stella's `ISNAN`. A comparison cannot do this: NaN is unequal to every number, itself included.
     """)
     return
 
@@ -945,7 +1105,7 @@ def _(mo):
     ## PERMUTATIONS
     The PERMUTATIONS operator calculates the number of permutations of an n-element set with r-element subsets.
 
-    Arguments are ``n`` and ``r``. Note that both numbers should be integer values and must follow n >= r >= 0.
+    Arguments are ``n`` and ``r``, whole numbers of at least 0; anything else gives NaN and an ``[ERROR]``. An ``r`` greater than ``n`` gives 0.
 
     Example:
     """)
@@ -1016,9 +1176,9 @@ def _(mo):
     mo.md(r"""
     The `PULSE` function generates a pulse input of a specified size (volume). When using the PULSE builtin, you have the option of setting the time at which the PULSE will first fire (first pulse), as well as the interval between subsequent PULSEs. Each time that it fires a pulse, the framework pulses the specified volume over a period of one time step (DT). Thus, the instantaneous value taken on by the PULSE function is volume/DT.
 
-    Signature: `pulse(model, volume, first_pulse=0, interval=0)`
+    Signature: `pulse(model, volume, first_pulse=None, interval=0)`
 
-    Setting `interval` to 0 yields a single pulse that doesn't repeat
+    Without `first_pulse` the pulse fires at the start time. A pulse time between two steps fires in the step after it, so no volume is lost. Setting `interval` to 0 - or leaving it out - yields a single pulse that doesn't repeat, as in the XMILE standard; Stella differs here, see [XMILE, Stella and the SD DSL](../../xmile/xmile_in_the_sd_dsl/xmile_in_the_sd_dsl.md#xmile-stella-and-the-sd-dsl).
 
     Each argument can be a number, a model element or an expression, and is read at every step.
     """)
@@ -1083,6 +1243,51 @@ def _(Model, bptk, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## REWORK Function
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `rework(percentage)` is Stella's `REWORK`: the fraction for a flow that sends work back upstream to be done again, chosen so that `percentage` percent of all the work that enters comes back - not `percentage` percent of each pass. With the plain fraction `percentage / 100` the reworked units would be inspected again and fail again, so more than that would come back over the run; `rework(10.0)` is 10 / 110, about 0.0909.
+
+    In the example 100 units enter at time 1 and pass an inspection that sends `rework(10.0)` of them back; 10 units fail in all, and all 100 get through in the end:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_rework = Model(starttime=0.0, stoptime=20.0, dt=1.0, name='rework')
+    wip = model_rework.stock('wip')
+    done = model_rework.stock('done')
+    failed_in_all = model_rework.stock('failed_in_all')
+    entering = model_rework.flow('entering')
+    inspecting = model_rework.flow('inspecting')
+    failing = model_rework.flow('failing')
+    entering.equation = sd.pulse(model_rework, 100.0, 1.0)
+    inspecting.equation = wip
+    failing.equation = inspecting * sd.rework(10.0)
+    wip.equation = entering - inspecting + failing
+    done.equation = inspecting - failing
+    failed_in_all.equation = failing
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_rework)
+    bptk.plot_scenarios(
+        scenario_managers=['smRework'],
+        scenarios=['base'],
+        equations=['done', 'failed_in_all'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## ROUND Function
 
     This function rounds any input to a specified number of digits. A half rounds away
@@ -1112,6 +1317,53 @@ def _(Model, bptk, sd):
         scenario_managers=['smRound'],
         scenarios=['base'],
         equations=['wave', 'rounded'],
+        format="axes",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## RUNCUM / RUNMAX / RUNMIN / RUNMEAN / RUNCUMTARGET Functions
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    These functions look back over the run so far, as Stella's functions of the same names do.
+
+    Signatures: `runcum(model, variable, from_time=None, to_time=None)`, and the same for `runmax`, `runmin` and `runmean`; `runcumtarget(model, variable, target)`
+
+    - `runcum` is the sum of the values times DT - the area under the variable, as a stock filled by it would hold, but with the current step already counted.
+    - `runmax` and `runmin` are the largest and the smallest value, `runmean` the mean of the values.
+    - `from_time` and `to_time` make a window, both ends included: `sd.runmax(model, orders, sd.time() - 3.0, sd.time())` is the largest value of the last three time units. Left out, they are the start of the run and the current time; the current step is the last one any window can reach. A window without a step in it - `sd.runcum(model, orders, sd.starttime(model), sd.time() - sd.dt(model))` at the start - gives NaN.
+    - `runcumtarget` is the time at which the running sum reaches `target`, interpolated within the step that gets there; NaN until then. Like Stella, it sums the **magnitude** of the variable, so a negative value counts towards the target as much as a positive one - unlike `runcum`.
+
+    `variable` can be an element or an expression. Stella's further arguments, which read another run, have no counterpart.
+
+    In the example `orders` swing around a rising line. `last_3_max` follows their peaks over the last three time units; `reached_500` is the time at which 500 units have been ordered, a little after 4:
+    """)
+    return
+
+
+@app.cell
+def _(Model, bptk, sd):
+    #| echo: true
+    model_running = Model(starttime=0.0, stoptime=12.0, dt=0.25, name='running')
+    orders = model_running.converter('orders')
+    orders.equation = 100.0 + 40.0 * sd.sinwave(1.0, 6.0) + 5.0 * sd.time()
+    model_running.converter('last_3_max').equation = sd.runmax(model_running, orders, sd.time() - 3.0, sd.time())
+    model_running.converter('mean_so_far').equation = sd.runmean(model_running, orders)
+    model_running.converter('reached_500').equation = sd.runcumtarget(model_running, orders, 500.0)
+    bptk.reset_all_scenarios()
+    bptk.register_model(model_running)
+    bptk.plot_scenarios(
+        scenario_managers=['smRunning'],
+        scenarios=['base'],
+        equations=['orders', 'last_3_max', 'mean_so_far', 'reached_500'],
         format="axes",
     )
     return
@@ -1159,9 +1411,9 @@ def _(mo):
     mo.md(r"""
     ## SIN / TAN / COS and ARCCOS / ARCSIN / ARCTAN
 
-    The SD DSl supports all trigonometric that you are also used to from other SD simulation / modelling tools
+    The SD DSL supports all trigonometric functions that you are also used to from other SD simulation / modelling tools.
 
-    Use ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sinus, cosinus or tangent of x (radians) and ``sd.arcsin(x) / sd.arctan(x) / sd.arccos(x)`` for the respective arctan / arccos and arcsine operators.
+    Use ``sd.sin(x) / sd.cos(x) / sd.tan(x)`` for sine, cosine or tangent of x (radians) and ``sd.arcsin(x) / sd.arctan(x) / sd.arccos(x)`` for the respective arctan / arccos and arcsine operators.
 
     Let's easily plot sin / cos and tan for the current simulation time:
     """)
@@ -1200,17 +1452,17 @@ def _(m_1, sd, x):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## SINWAVE and COSWAVE function
+    ## SINWAVE and COSWAVE Functions
 
     SINWAVE returns a time-dependent sine wave, with the specified amplitude and period. To generate the sine wave, the SINWAVE builtin uses the absolute value of the amplitude you specify. To produce meaningful wave results, choose a DT that's significantly smaller than the period of the wave. A DT equal to a quarter of the period gives triangle waves. A smaller DT gives results which better approximate a continuous curve.
 
-    COSWAVE generates a time-dependent __cosine__ wave. It uses the same arguments
+    COSWAVE generates a time-dependent __cosine__ wave. It uses the same arguments.
 
     Signature:
     ``sinwave(amplitude,period)``
 
-    ``amplitude`` : Amplitude of the sine wave
-    ``period`` : Period of the sine wave
+    ``amplitude``: Amplitude of the sine wave
+    ``period``: Period of the sine wave
 
     Example:
     """)
@@ -1263,7 +1515,7 @@ def _(mo):
 
     The SMOOTH operator is a shorthand for the following stock and flow structure and equations:
 
-    ![Stock and Flow Structure for the TREND Operator](smooth_model.png)
+    ![Stock and Flow Structure for the SMOOTH Operator](smooth_model.png)
     """)
     return
 
@@ -1335,7 +1587,7 @@ def _(Model, bptk, sd):
 def _(mo):
     mo.md(r"""
     ## SQRT
-    Computes the Square root of an input expression.
+    Computes the square root of an input expression. A negative input gives NaN and an `[ERROR]`.
 
     Signature:
     ``sqrt(expression)``
@@ -1371,7 +1623,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The `STARTTIME` function returns the models starttime.
+    The `STARTTIME` function returns the model's starttime.
 
     Signature: `starttime(model)`
     """)
@@ -1432,7 +1684,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The `STOPTIME` function returns the models starttime.
+    The `STOPTIME` function returns the model's stoptime.
 
     Signature: `stoptime(model)`
     """)
@@ -1491,7 +1743,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The TREND function calculates the trend in the input, given the input, an averaging time and, optionally, the trend to start with. The TREND is defined to be the fractional change in input compared to the exponential average of input per averaging time. The TREND function thus estimates the growth rate of is input function.
+    The TREND function calculates the trend in the input, given the input, an averaging time and, optionally, the trend to start with. The TREND is defined to be the fractional change in input compared to the exponential average of input per averaging time. The TREND function thus estimates the growth rate of its input function.
 
     Signature: `trend(model, input_function, averaging_time, initial_trend=0.0)`
 
@@ -1526,7 +1778,7 @@ def _(Model, np, sd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    As an example, we set up a small model that has an input function that doubles every timestep - i.e the exponential growth rate is log 2 ≈ 0.69 and then apply the trend function to estimate the growth rate.
+    As an example, we set up a small model that has an input function that doubles every timestep - i.e. the exponential growth rate is log 2 ≈ 0.69 and then apply the trend function to estimate the growth rate.
 
     Here is a plot of the growth rate, which is constant:
     """)
@@ -1558,7 +1810,7 @@ def _(input_function_2):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    As expexted, the plot of the trend function converges to the input growth rate:
+    As expected, the plot of the trend function converges to the input growth rate:
     """)
     return
 

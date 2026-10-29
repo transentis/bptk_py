@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_submodels="true"/>
+		<name>modules_external</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="a">
+				<eqn>3</eqn>
+			</aux>
+			<module name="inner" url="r../modules_external_Modules/inner.itmx">
+				<connect to="inner.factor" from=".a"/>
+				<connect to=".x" from="inner.x"/>
+				<connect to=".kept" from="inner.kept"/>
+			</module>
+			<aux name="x" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="kept" access="input">
+				<eqn>0</eqn>
+			</aux>
+			<aux name="from_inner">
+				<eqn>x + a</eqn>
+			</aux>
+			<aux name="kept_outside">
+				<eqn>kept * 2</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="100" y="100" name="a"/>
+				<module x="250" y="100" name="inner"/>
+				<aux x="400" y="60" name="x"/>
+				<aux x="400" y="160" name="kept"/>
+				<aux x="550" y="60" name="from_inner"/>
+				<aux x="550" y="160" name="kept_outside"/>
+				<connector uid="1" angle="0"><from>a</from><to>inner</to></connector>
+				<connector uid="2" angle="0"><from>x</from><to>from_inner</to></connector>
+				<connector uid="3" angle="0"><from>a</from><to>from_inner</to></connector>
+				<connector uid="4" angle="0"><from>kept</from><to>kept_outside</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

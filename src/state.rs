@@ -1,5 +1,5 @@
-use std::collections::HashSet;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Mutex;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -48,9 +48,24 @@ pub struct SimulationState {
     error: Mutex<Option<String>>,
     /// The entity being evaluated, so that a builtin can say where it was called from.
     current_entity: AtomicUsize,
+    /// Whether the start time is being evaluated, in the model's `init_order`.
+    starting: AtomicBool,
     /// Invalid arguments not yet collected, and the entities already recorded: one record
     /// per entity and run, or a run of many steps would repeat the same one.
     invalid: Mutex<(Vec<InvalidArgument>, HashSet<usize>)>,
+    /// Per conveyor entity: its belt at the step being evaluated and the next one, and
+    /// what the step moved. Only the neighbourhood of the cursor is kept.
+    pub conveyors: Mutex<HashMap<usize, ConveyorState>>,
+    /// Per `sample` node: the step its sample began and the value drawn then, so that an
+    /// unseeded draw holds until the next sample.
+    held: Mutex<HashMap<usize, (usize, f64)>>,
+}
+
+/// The belts of one conveyor by step, and what each step moved.
+#[derive(Default)]
+pub struct ConveyorState {
+    pub belts: HashMap<usize, crate::conveyor::Belt>,
+    pub moves: HashMap<usize, crate::conveyor::Moves>,
 }
 
 impl SimulationState {
@@ -85,8 +100,21 @@ impl SimulationState {
             rng: Mutex::new(rng),
             error: Mutex::new(None),
             current_entity: AtomicUsize::new(0),
+            starting: AtomicBool::new(false),
             invalid: Mutex::new((Vec::new(), HashSet::new())),
+            conveyors: Mutex::new(HashMap::new()),
+            held: Mutex::new(HashMap::new()),
         })
+    }
+
+    /// The value a `sample` node drew when the sample that began at `step` began, if it did.
+    pub fn held(&self, node: usize, step: usize) -> Option<f64> {
+        let held = self.held.lock().expect("held draws mutex poisoned");
+        held.get(&node).filter(|&&(began, _)| began == step).map(|&(_, value)| value)
+    }
+
+    pub fn hold(&self, node: usize, step: usize, value: f64) {
+        self.held.lock().expect("held draws mutex poisoned").insert(node, (step, value));
     }
 
     pub fn current_entity(&self) -> usize {
@@ -95,6 +123,14 @@ impl SimulationState {
 
     pub fn set_current_entity(&self, entity: usize) {
         self.current_entity.store(entity, Ordering::Relaxed);
+    }
+
+    pub fn starting(&self) -> bool {
+        self.starting.load(Ordering::Relaxed)
+    }
+
+    pub fn set_starting(&self, starting: bool) {
+        self.starting.store(starting, Ordering::Relaxed);
     }
 
     /// Record an invalid argument for the entity being evaluated, unless it has one.
@@ -127,6 +163,12 @@ impl SimulationState {
             .lock()
             .expect("simulation error mutex poisoned")
             .take()
+    }
+
+    /// Put `rng` in place of the run's generator and return the one it replaces - so that
+    /// a seeded draw takes its numbers from a generator of its own and gives it back.
+    pub fn swap_rng(&self, rng: StdRng) -> StdRng {
+        std::mem::replace(&mut *self.rng(), rng)
     }
 
     pub fn rng(&self) -> std::sync::MutexGuard<'_, StdRng> {

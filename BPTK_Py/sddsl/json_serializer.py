@@ -1,3 +1,14 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2026 transentis labs GmbH
+# MIT License
+
 """
 Serialize an SD DSL Model to the JSON model format used by the Rust engine.
 
@@ -15,6 +26,7 @@ becoming a call.
 """
 
 import inspect
+import math
 import json
 import threading
 from . import operators as ops
@@ -42,6 +54,22 @@ def _next_inline_id():
     global _inline_counter
     _inline_counter += 1
     return _inline_counter
+
+
+def _table_literal(points):
+    # The table a lookup reads, by name: a named one without the quotes Lookup puts around
+    # it, inline points registered under a name of their own
+    if isinstance(points, str):
+        return {"type": "literal", "value": points.strip('"')}
+    table_name = f"_inline_lookup_{_next_inline_id()}"
+    _inline_tables[table_name] = points
+    return {"type": "literal", "value": table_name}
+
+
+def _kind(lookup):
+    # The kind of table as a string after the other arguments; a continuous one, the
+    # default, is left out
+    return [] if lookup.kind == "continuous" else [{"type": "literal", "value": lookup.kind}]
 
 
 def _reset_inline_tables():
@@ -73,7 +101,7 @@ def _leaf_refs(array):
     """
     JSON for every leaf of an array - an element or an expression - in its key order.
 
-    The order is part of the contract: `arr_rank` and `arr_median` sort, and the two
+    The order is part of the contract: `arr_largest`, `arr_rank` and `arr_median` sort, and the two
     engines have to sort the same list. Both sides walk `ops.array_leaves`.
     """
     return [_expr_to_json(leaf) for leaf in ops.array_leaves(array)]
@@ -353,13 +381,26 @@ _CALLS = (
 # that a model using one fails on the Rust backend instead of loading half-understood.
 # An entry leaves this table when the engine gets the builtin.
 _NOT_ON_THE_ENGINE = (
-    (ops.LookupInverse, "lookupinv"),
-    (ops.LookupArea, "lookuparea"),
-    (ops.Irr, "irr"),
-    (ops.AgeCount, "agecount"),
-    (ops.Rank, "rank"),
-    (ops.Interpolate, "interpolate"),
 )
+
+
+def _draw_wrapped(expr, call):
+    """A call, with the bounds, the seed and the sample of a draw around it, where it has them."""
+    # Bounds around the draw: drawn again until it lies within them, NaN for no bound
+    if getattr(expr, "minimum", None) is not None or getattr(expr, "maximum", None) is not None:
+        bound = lambda value: _expr_to_json(math.nan if value is None else value)
+        call = {"type": "call", "function": "bounded",
+                "args": [bound(expr.minimum), bound(expr.maximum), call]}
+    if getattr(expr, "seed", None) is not None:
+        # A seeded draw: the seed and the cell's keys around the call, as the Python
+        # engine derives a draw from seed, step and cell
+        keys = [{"type": "literal", "value": float(key)} for key in ops._cell_key(getattr(expr, "index", None))]
+        call = {"type": "call", "function": "seeded",
+                "args": [_expr_to_json(expr.seed)] + keys + [call]}
+    # A sample around all of it: the whole draw read when the sample began
+    if getattr(expr, "sample", None) is not None:
+        call = {"type": "call", "function": "sample", "args": [_expr_to_json(expr.sample), call]}
+    return call
 
 
 def _expr_to_json(expr):
@@ -375,7 +416,13 @@ def _expr_to_json(expr):
     """
 
     # ── Scalar literals ──────────────────────────────────────────────────
+    # JSON has no NaN or infinity: they travel as the builtins that give them
     if isinstance(expr, (int, float)):
+        if math.isnan(expr):
+            return {"type": "call", "function": "nan", "args": []}
+        if math.isinf(expr):
+            infinity = {"type": "call", "function": "inf", "args": []}
+            return infinity if expr > 0 else {"type": "unary_op", "op": "neg", "operand": infinity}
         return {"type": "literal", "value": float(expr)}
 
     # ── None (default stock equation = 0 net flow) ───────────────────────
@@ -385,7 +432,7 @@ def _expr_to_json(expr):
     # ── UnaryOperator: wraps a scalar or delegates to inner element ──────
     if type(expr) is ops.UnaryOperator:
         if isinstance(expr.element, (int, float)):
-            return {"type": "literal", "value": float(expr.element)}
+            return _expr_to_json(expr.element)
         return _expr_to_json(expr.element)
 
     # ── Element references (Stock, Flow, Converter, Constant) ────────────
@@ -416,10 +463,35 @@ def _expr_to_json(expr):
             return _aggregation_to_json(function, expr.element,
                                         scalar_input="pass_through" if pass_through else "zero")
 
-    if isinstance(expr, ops.ArrayRankOperator):
+    if isinstance(expr, ops.ArrayLargestOperator):
         # The rank is the last argument, after the leaves.
-        return _aggregation_to_json("arr_rank", expr.element,
+        return _aggregation_to_json("arr_largest", expr.element,
                                     extra_args=[_expr_to_json(expr.rank)])
+
+    # XMILE's RANK: the rank, then the values, then as many tiebreaks - zeros without them
+    if isinstance(expr, ops.Rank):
+        values = _leaf_refs(expr.array)
+        breaks = [{"type": "literal", "value": 0.0}] * len(values) if expr.tiebreak is None \
+            else _leaf_refs(expr.tiebreak)
+        return {"type": "call", "function": "arr_rank",
+                "args": [_expr_to_json(expr.rank)] + values + breaks}
+
+    # Whether there are weights decides the rule, so it comes first; without weights the
+    # engine is given ones, which it does not read
+    if isinstance(expr, ops.Percentile):
+        values = _leaf_refs(expr.array)
+        weights = [{"type": "literal", "value": 1.0}] * len(values) if expr.weights is None \
+            else _leaf_refs(expr.weights)
+        return {"type": "call", "function": "arr_percentile",
+                "args": [{"type": "literal", "value": 0.0 if expr.weights is None else 1.0},
+                         _expr_to_json(expr.percentile), _expr_to_json(expr.lower)] + values + weights}
+
+    # The number of columns tells the engine a matrix from a vector (0)
+    if isinstance(expr, ops.Interpolate):
+        columns = max(ops._get_element_dimensions(expr.array)[1], 0)
+        return {"type": "call", "function": "arr_interpolate",
+                "args": [{"type": "literal", "value": float(columns)}]
+                + [_expr_to_json(weight) for weight in expr.weights] + _leaf_refs(expr.array)}
 
     if isinstance(expr, ops.ArraySizeOperator):
         # Folded here: the size is known at serialization time, and it is the vector
@@ -468,27 +540,35 @@ def _expr_to_json(expr):
     # ── Builtins whose arguments are attributes of the operator ──────────
     for operator, function, arguments in _CALLS:
         if isinstance(expr, operator):
-            if getattr(expr, "seed", None) is not None:
-                raise ValueError(
-                    f"The function '{function}' with a seed does not run on the Rust engine "
-                    f"yet. Run this model on the Python engine, or leave the seed out.")
-            return {"type": "call", "function": function,
-                    "args": [_expr_to_json(getattr(expr, argument)) for argument in arguments]}
+            return _draw_wrapped(expr, {"type": "call", "function": function,
+                                        "args": [_expr_to_json(getattr(expr, argument)) for argument in arguments]})
+
+    # The table by name, as for the lookups; it is read when the draw is made
+    if isinstance(expr, ops.LookupRandom):
+        return _draw_wrapped(expr, {"type": "call", "function": "lookuprandom", "args": [_table_literal(expr.points)]})
 
     # ── Lookup function ──────────────────────────────────────────────────
     if isinstance(expr, ops.Lookup):
-        points = expr.points
-        # points is either a string (table name reference) or a list
-        if isinstance(points, str):
-            # Strip surrounding quotes if present (Lookup.__init__ adds them)
-            table_name = points.strip('"')
-        else:
-            # Inline points — auto-generate a unique table name and register
-            table_name = f"_inline_lookup_{_next_inline_id()}"
-            _inline_tables[table_name] = points
         return {"type": "call", "function": "lookup",
-                "args": [_expr_to_json(expr.element),
-                         {"type": "literal", "value": table_name}]}
+                "args": [_expr_to_json(expr.element), _table_literal(expr.points)] + _kind(expr)}
+
+    if isinstance(expr, ops.LookupInverse):
+        return {"type": "call", "function": "lookupinv",
+                "args": [_expr_to_json(expr.value), _table_literal(expr.points)] + _kind(expr)}
+
+    # Without from or to, the area reaches to the table's end: infinity, which both engines
+    # cut to the ends of the table as it is when the step runs - points set in a session too
+    if isinstance(expr, ops.LookupArea):
+        from_x = -math.inf if expr.from_x is None else expr.from_x
+        to_x = math.inf if expr.to_x is None else expr.to_x
+        return {"type": "call", "function": "lookuparea",
+                "args": [_table_literal(expr.points), _expr_to_json(from_x), _expr_to_json(to_x)] + _kind(expr)}
+
+    if isinstance(expr, ops.LookupStatistic):
+        from_x = -math.inf if expr.from_x is None else expr.from_x
+        to_x = math.inf if expr.to_x is None else expr.to_x
+        return {"type": "call", "function": "lookup" + expr.statistic,
+                "args": [_table_literal(expr.points), _expr_to_json(from_x), _expr_to_json(to_x)] + _kind(expr)}
 
     # ── Smooth: output is the internal stock ─────────────────────────────
     if isinstance(expr, ops.Smooth):
@@ -513,6 +593,28 @@ def _expr_to_json(expr):
         return {"type": "call", "function": "delay",
                 "args": [input_ref, delay_duration, initial_value]}
 
+    if isinstance(expr, ops.AgeCount):
+        maximum = _call("nan") if expr.maximum is None else _expr_to_json(expr.maximum)
+        return _call("agecount", {"type": "ref", "name": expr.conveyor.name},
+                     _expr_to_json(expr.minimum), maximum)
+
+    # A bound left out is the start or the current time; infinity stands for it
+    if isinstance(expr, ops.RunStatistic):
+        from_time = -math.inf if expr.from_time is None else expr.from_time
+        to_time = math.inf if expr.to_time is None else expr.to_time
+        return {"type": "call", "function": "run" + expr.statistic,
+                "args": [{"type": "ref", "name": expr.stream.name}, _expr_to_json(from_time), _expr_to_json(to_time)]}
+
+    if isinstance(expr, ops.RunCumTarget):
+        return {"type": "call", "function": "runcumtarget",
+                "args": [{"type": "ref", "name": expr.stream.name}, _expr_to_json(expr.target)]}
+
+    if isinstance(expr, ops.Irr):
+        missing = {"type": "call", "function": "nan", "args": []} if expr.missing is None \
+            else _expr_to_json(expr.missing)
+        return {"type": "call", "function": "irr",
+                "args": [{"type": "ref", "name": expr.stream.name}, missing]}
+
     if isinstance(expr, ops.Invnorm):
         # Always all three: with a positional list, a stddev given without a mean would
         # arrive where the engine reads the mean.
@@ -533,8 +635,7 @@ def _expr_to_json(expr):
 
     # ── Fallback ─────────────────────────────────────────────────────────
     raise ValueError(
-        f"Cannot serialize expression of type {type(expr).__name__} to JSON. "
-        f"This operator/function is not yet supported."
+        f"Cannot serialize expression of type {type(expr).__name__} to JSON."
     )
 
 
@@ -563,6 +664,110 @@ def model_to_json(model) -> str:
             _set_current_model(None)
 
 
+def _call(function, *args):
+    return {"type": "call", "function": function, "args": list(args)}
+
+
+def _sum(terms):
+    total = terms[0]
+    for term in terms[1:]:
+        total = {"type": "binary_op", "op": "add", "left": total, "right": term}
+    return total
+
+
+def _negated(expression):
+    return {"type": "unary_op", "op": "neg", "operand": expression}
+
+
+def _literal(value):
+    return {"type": "literal", "value": float(value)}
+
+
+def _conveyor_plan(cell):
+    """A conveyor cell's plan as the Python engine resolves it - checked first, so that a
+    conveyor without a transit time or an outflow is refused here with the same error."""
+    cell._resolved()
+    return cell._plan_source
+
+
+def _conveyor_start_json(cell):
+    """The belt at the start: fifo, exponential, transit, the fractions with their count,
+    then the initial list with its length - or 0 and the total."""
+    plan = _conveyor_plan(cell)
+    fractions = [_expr_to_json(fraction) for _, fraction in plan["leaks"]]
+    initial = plan["initial"]
+    if isinstance(initial, list):
+        start = [_literal(len(initial))] + [_literal(value) for value in initial]
+    else:
+        start = [_literal(0), _expr_to_json(initial)]
+    return _call("conveyor_start", _literal(plan["fifo"]), _literal(plan["exponential"]),
+                 _expr_to_json(plan["transit"]), _literal(len(fractions)), *fractions, *start)
+
+
+def _conveyor_flow_json(cell, name):
+    """The outflow or a leak of a conveyor cell, with everything moving the belt needs."""
+    plan = _conveyor_plan(cell)
+    leaks = [leak for leak, _ in plan["leaks"]]
+    which = -1 if name == plan["outflow"][0] else leaks.index(name)
+    inflows = [{"type": "ref", "name": inflow} for inflow in plan["inflows"]]
+    inflow = _sum(inflows) if inflows else _literal(0)
+    return _call("conveyor_flow", {"type": "ref", "name": cell.name}, _literal(which),
+                 _expr_to_json(plan["transit"]), inflow,
+                 *[_expr_to_json(fraction) for _, fraction in plan["leaks"]])
+
+
+def _flow_equation_json(model, flow):
+    """A flow's equation, cut back as `Stock._cut_back` cuts it where a non-negative stock
+    drains it: written out here, so that the engine needs nothing but three small builtins.
+
+    The cell's order check runs first, so a model the Python engine refuses is refused here
+    with the same error.
+    """
+    driven_by = getattr(flow, "_driven_by", None)
+    if driven_by is not None:
+        return _conveyor_flow_json(model.stocks[driven_by], flow.name)
+    equation = _expr_to_json(flow.equation) if flow.equation is not None else {"type": "literal", "value": 0.0}
+    constraint = getattr(flow, "_constraint", None)
+    if constraint is None:
+        return equation
+    cell = model.stocks[constraint]
+    counted = cell._check_cut()
+    inflows, outflows = cell._cut
+
+    def wanted_of(name):
+        element = model.flows.get(name) or model.biflows[name]
+        return _expr_to_json(element.equation) if element.equation is not None else {"type": "literal", "value": 0.0}
+
+    def ref(name):
+        return {"type": "ref", "name": name}
+
+    terms = [{"type": "binary_op", "op": "div", "left": ref(cell.name), "right": _call("dt")}]
+    for name, how in counted:
+        if how == "flow":
+            terms.append(ref(name))
+        elif how == "in":
+            terms.append(_call("positive", wanted_of(name)))
+        else:
+            terms.append(_call("positive", _negated(wanted_of(name))))
+
+    # What was served before: the draining biflows among the inflows, then earlier outflows
+    served = []
+    if flow.name in inflows:
+        for earlier in inflows[:inflows.index(flow.name)]:
+            if earlier in model.biflows:
+                served.append(_call("positive", _negated(ref(earlier))))
+        available = _sum(terms + [_negated(term) for term in served])
+        return _call("cut_in", equation, available)
+    for earlier in inflows:
+        if earlier in model.biflows:
+            served.append(_call("positive", _negated(ref(earlier))))
+    for earlier in outflows[:outflows.index(flow.name)]:
+        served.append(_call("positive", ref(earlier)))
+    available = _sum(terms + [_negated(term) for term in served])
+    wanted = equation if flow.name in model.biflows else _call("positive", equation)
+    return _call("cut_out", wanted, available)
+
+
 def _model_to_json(model) -> str:
     """The body of `model_to_json`, run with the serialization context in place."""
     specs = {
@@ -583,15 +788,12 @@ def _model_to_json(model) -> str:
                 # to be emitted with a bogus {"literal": 0.0} beside the real ones.
                 continue
             if getattr(stock, "_is_conveyor", False):
-                raise ValueError(
-                    f"'{name}' is a conveyor, and the Rust engine does not run conveyors "
-                    f"yet. Run the model on the Python engine."
-                )
-            if getattr(stock, "non_negative", False):
-                raise ValueError(
-                    f"Stock '{name}' is non-negative, and the Rust engine does not cut "
-                    f"outflows back yet. Run the model on the Python engine."
-                )
+                stocks_list.append({
+                    "name": name,
+                    "initial_value": _conveyor_start_json(stock),
+                    "equation": _call("conveyor_change"),
+                })
+                continue
             initial_value = stock.initial_value
             # initial_value can be a float, Constant, or Converter
             initial_value_json = _expr_to_json(initial_value)
@@ -611,7 +813,7 @@ def _model_to_json(model) -> str:
                 continue  # A parent arrayed element is not an entity - see stocks.
             flows_list.append({
                 "name": name,
-                "equation": _expr_to_json(flow.equation),
+                "equation": _flow_equation_json(model, flow),
             })
         entities["flows"] = flows_list
 
@@ -623,7 +825,7 @@ def _model_to_json(model) -> str:
                 continue  # A parent arrayed element is not an entity - see stocks.
             biflows_list.append({
                 "name": name,
-                "equation": _expr_to_json(biflow.equation),
+                "equation": _flow_equation_json(model, biflow),
             })
         entities["biflows"] = biflows_list
 

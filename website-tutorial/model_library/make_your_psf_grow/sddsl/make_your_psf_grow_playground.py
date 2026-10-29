@@ -165,40 +165,40 @@ def _():
     bptk.register_scenario_manager({"psfPlayground": {"model": model}})
 
     # The base case of part 2, step 7: a fifth of capacity selling, nobody hired
-    monate = range(25)
+    months = range(25)
     bptk.register_scenarios(
         scenario_manager="psfPlayground",
         scenarios={
             "base": {
                 "points": {
-                    "businessDevelopmentAllocation%": [(t, 20) for t in monate],
-                    "hiringRate": [(t, 0) for t in monate],
+                    "businessDevelopmentAllocation%": [(t, 20) for t in months],
+                    "hiringRate": [(t, 0) for t in months],
                 }
             }
         },
     )
-    return bptk, monate
+    return bptk, months
 
 
 @app.cell
-def _(anteil, bptk, einstellung, monate):
+def _(selling_share, bptk, hires, months):
     bptk.register_scenarios(
         scenario_manager="psfPlayground",
         scenarios={
             "myPlan": {
                 "points": {
                     "businessDevelopmentAllocation%": [
-                        (t, anteil.value if t >= 4 else 20) for t in monate
+                        (t, selling_share.value if t >= 4 else 20) for t in months
                     ],
                     "hiringRate": [
-                        (t, einstellung.value if t == 7 else 0) for t in monate
+                        (t, hires.value if t == 7 else 0) for t in months
                     ],
                 }
             }
         },
     )
-    mein_plan = f"{anteil.value} % selling, {einstellung.value} hired"
-    return (mein_plan,)
+    my_plan = f"{selling_share.value} % selling, {hires.value} hired"
+    return (my_plan,)
 
 
 @app.cell(hide_code=True)
@@ -223,21 +223,21 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    anteil = mo.ui.slider(
+    selling_share = mo.ui.slider(
         0, 60, step=5, value=20, label="Business development allocation from month 4 (%)"
     )
-    einstellung = mo.ui.slider(0, 400, step=50, value=0, label="Staff hired in month 7")
-    mo.vstack([anteil, einstellung])
-    return anteil, einstellung
+    hires = mo.ui.slider(0, 400, step=50, value=0, label="Staff hired in month 7")
+    mo.vstack([selling_share, hires])
+    return selling_share, hires
 
 
 @app.cell
-def _(bptk, mein_plan):
+def _(bptk, my_plan):
     bptk.plot_scenarios(
         scenario_managers=["psfPlayground"],
         scenarios=["base", "myPlan"],
         equations=["professionalStaff"],
-        title=f"Professional staff: base case against {mein_plan}",
+        title=f"Professional staff: base case against {my_plan}",
         x_label="Months",
         y_label="People",
         format="axes",
@@ -246,12 +246,12 @@ def _(bptk, mein_plan):
 
 
 @app.cell
-def _(bptk, mein_plan):
+def _(bptk, my_plan):
     bptk.plot_scenarios(
         scenario_managers=["psfPlayground"],
         scenarios=["base", "myPlan"],
         equations=["cash"],
-        title=f"Cash: base case against {mein_plan}",
+        title=f"Cash: base case against {my_plan}",
         x_label="Months",
         y_label="k€",
         format="axes",
@@ -272,7 +272,7 @@ def _(mo):
       grows, the delivery capacity you gave up is what would have earned the revenue, and
       the revenue you do win arrives six months after you paid for winning it.
     * **Hire without selling more.** Leave the allocation at 20 % and hire 200 people. They
-      arrive in month 12 and the staff chart steps from 200 to 400, cash dips while they are
+      arrive in month 11 and the staff chart steps from 200 to 400, cash dips while they are
       paid out of a backlog that is not growing, and recovers to **18.6 million** - still
       short of doing nothing.
     * **Both together.** 40 % and 200 hires ends with 400 people and **15.1 million**.

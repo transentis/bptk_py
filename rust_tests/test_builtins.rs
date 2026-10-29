@@ -290,6 +290,44 @@ fn test_pulse_single() {
 }
 
 #[test]
+fn test_pulse_without_a_first_pulse_fires_at_the_start() {
+    let model = model_with_specs(1.0, 6.0, 1.0);
+    let state = SimulationState::new(0, 6, None);
+
+    let expr = Expr::Call {
+        function: BuiltinFn::Pulse,
+        args: vec![Expr::Literal(20.0)],
+    };
+
+    for step in 0..=5 {
+        let expected = if step == 0 { 20.0 } else { 0.0 };
+        assert_eq!(model.eval_expr(&expr, &state, step), expected, "step={}", step);
+    }
+}
+
+#[test]
+fn test_pulse_time_between_two_steps_fires_in_the_later_one() {
+    let model = model_with_specs(1.0, 6.0, 1.0);
+    let state = SimulationState::new(0, 6, None);
+
+    // pulse(volume=20, first_pulse=2, interval=1.5) - pulse times 2, 3.5, 5 fire at t=2, 4, 5
+    let expr = Expr::Call {
+        function: BuiltinFn::Pulse,
+        args: vec![
+            Expr::Literal(20.0),
+            Expr::Literal(2.0),
+            Expr::Literal(1.5),
+        ],
+    };
+
+    for step in 0..=5 {
+        let t = 1.0 + step as f64;
+        let expected = if t == 2.0 || t == 4.0 || t == 5.0 { 20.0 } else { 0.0 };
+        assert_eq!(model.eval_expr(&expr, &state, step), expected, "step={}", step);
+    }
+}
+
+#[test]
 fn test_pulse_with_interval() {
     let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 11, None);
@@ -380,12 +418,15 @@ fn test_factorial_negative() {
     let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
 
-    // factorial(-5) = 0 (guard for invalid input)
-    let expr = Expr::Call {
-        function: BuiltinFn::Factorial,
-        args: vec![Expr::Literal(-5.0)],
-    };
-    assert_eq!(model.eval_expr(&expr, &state, 0), 0.0);
+    // Only whole numbers of at least 0: anything else is NaN, recorded for the report
+    for n in [-5.0, 2.5] {
+        let expr = Expr::Call {
+            function: BuiltinFn::Factorial,
+            args: vec![Expr::Literal(n)],
+        };
+        assert!(model.eval_expr(&expr, &state, 0).is_nan(), "{}", n);
+    }
+    assert_eq!(state.take_invalid()[0].builtin, "factorial");
 }
 
 #[test]
@@ -1085,14 +1126,14 @@ fn rank_of(values: &[f64], rank: f64) -> f64 {
     let mut args: Vec<Expr> = values.iter().map(|v| Expr::Literal(*v)).collect();
     args.push(Expr::Literal(rank));
     let expr = Expr::Call {
-        function: BuiltinFn::ArrRank,
+        function: BuiltinFn::ArrLargest,
         args,
     };
     model.eval_expr(&expr, &state, 0)
 }
 
 #[test]
-fn test_arr_rank_counts_from_the_largest() {
+fn test_arr_largest_counts_from_the_largest() {
     let values = [3.0, 6.0, 2.0, 4.0, 1.0];
     assert_eq!(rank_of(&values, 1.0), 6.0);
     assert_eq!(rank_of(&values, 2.0), 4.0);
@@ -1102,7 +1143,7 @@ fn test_arr_rank_counts_from_the_largest() {
 }
 
 #[test]
-fn test_arr_rank_clamps_to_the_minimum_instead_of_returning_nan() {
+fn test_arr_largest_clamps_to_the_minimum_instead_of_returning_nan() {
     // Out of range, zero and negative all give the smallest value - not NaN. The
     // Python operator indexes the descending sort with count-1 when the rank is out
     // of range, and a rank of zero becomes the Python index -1: the last element.
@@ -1114,7 +1155,7 @@ fn test_arr_rank_clamps_to_the_minimum_instead_of_returning_nan() {
 }
 
 #[test]
-fn test_arr_rank_edge_cases() {
+fn test_arr_largest_edge_cases() {
     assert_eq!(rank_of(&[7.0], 1.0), 7.0);
     assert_eq!(rank_of(&[7.0], 2.0), 7.0);
     // No leaves, or no rank at all.
@@ -1122,7 +1163,7 @@ fn test_arr_rank_edge_cases() {
     let model = model_with_specs(0.0, 10.0, 1.0);
     let state = SimulationState::new(0, 1, None);
     let expr = Expr::Call {
-        function: BuiltinFn::ArrRank,
+        function: BuiltinFn::ArrLargest,
         args: vec![Expr::Literal(1.0)],
     };
     assert_eq!(model.eval_expr(&expr, &state, 0), 0.0);
@@ -1259,4 +1300,469 @@ fn test_invnorm_takes_mean_and_stddev_by_position() {
     let state = SimulationState::new(1, 11, None);
     let value = model.eval_expr(&call(BuiltinFn::Invnorm, &[0.9, 0.0, 2.0]), &state, 0);
     assert!((value - 2.0 * 1.2815515655446004).abs() < 1e-12, "{}", value);
+}
+
+// ── IRR ─────────────────────────────────────────────────────────────────
+
+use bptk_rust_engine::builtins::internal_rate_of_return;
+
+#[test]
+fn test_irr_of_one_payment_and_one_return() {
+    // -100 now, 110 a period later: 10 %
+    let rate = internal_rate_of_return(&[(-100.0, 0.0), (110.0, 1.0)]).unwrap();
+    assert!((rate - 0.1).abs() < 1e-12, "{}", rate);
+}
+
+#[test]
+fn test_irr_needs_two_values_and_a_change_of_sign() {
+    assert_eq!(internal_rate_of_return(&[(-100.0, 0.0)]), None);
+    assert_eq!(internal_rate_of_return(&[(10.0, 0.0), (20.0, 1.0)]), None);
+    assert_eq!(internal_rate_of_return(&[(0.0, 0.0), (0.0, 1.0)]), None);
+    assert_eq!(internal_rate_of_return(&[(f64::NAN, 0.0), (20.0, 1.0)]), None);
+}
+
+#[test]
+fn test_irr_takes_the_rate_nearest_zero() {
+    // -100, 230, -132 has its rates at 10 % and 20 %
+    let rate = internal_rate_of_return(&[(-100.0, 0.0), (230.0, 1.0), (-132.0, 2.0)]).unwrap();
+    assert!((rate - 0.1).abs() < 1e-12, "{}", rate);
+}
+
+#[test]
+fn test_irr_finds_a_rate_on_a_point_of_the_grid() {
+    // -100, 200: 100 %, the point where the two grids meet
+    let rate = internal_rate_of_return(&[(-100.0, 0.0), (200.0, 1.0)]).unwrap();
+    assert_eq!(rate, 1.0);
+}
+
+#[test]
+fn test_irr_reads_the_stream_from_the_memo_table_and_falls_back_to_missing() {
+    let model = model_with_specs(0.0, 2.0, 1.0);
+    let mut state = SimulationState::new(1, 3, None);
+    state.memo[0] = vec![-100.0, 110.0, 0.0];
+    let expr = Expr::Call {
+        function: BuiltinFn::Irr,
+        args: vec![Expr::Ref(0), Expr::Literal(-1.0)],
+    };
+    assert_eq!(model.eval_expr(&expr, &state, 0), -1.0);
+    assert!((model.eval_expr(&expr, &state, 1) - 0.1).abs() < 1e-12);
+    assert!((model.eval_expr(&expr, &state, 2) - 0.1).abs() < 1e-12);
+    let of_literal = Expr::Call {
+        function: BuiltinFn::Irr,
+        args: vec![Expr::Literal(1.0), Expr::Literal(-1.0)],
+    };
+    assert!(model.eval_expr(&of_literal, &state, 1).is_nan());
+}
+
+// ── XMILE's RANK and Stella's INTERPOLATE ───────────────────────────────
+
+fn literals(values: &[f64]) -> Vec<Expr> {
+    values.iter().map(|&value| Expr::Literal(value)).collect()
+}
+
+fn call_with(function: BuiltinFn, args: Vec<Expr>) -> Expr {
+    Expr::Call { function, args }
+}
+
+#[test]
+fn test_rank_xmile_orders_ties_by_tiebreak_then_by_position() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let values = [2.0, 1.0, 2.0, 1.0, 2.0];
+    let rank_of = |rank: f64, breaks: &[f64]| {
+        let mut args = literals(&[rank]);
+        args.extend(literals(&values));
+        args.extend(literals(breaks));
+        model.eval_expr(&call_with(BuiltinFn::ArrRank, args), &state, 0)
+    };
+    let positions: Vec<f64> = (1..=5).map(|rank| rank_of(rank as f64, &[0.0; 5])).collect();
+    assert_eq!(positions, vec![2.0, 4.0, 1.0, 3.0, 5.0]);
+    let broken: Vec<f64> = (1..=5).map(|rank| rank_of(rank as f64, &[0.0, 0.0, -1.0, 0.0, -1.0])).collect();
+    assert_eq!(broken, vec![2.0, 4.0, 3.0, 5.0, 1.0]);
+}
+
+#[test]
+fn test_rank_xmile_refuses_a_rank_outside_the_array_or_not_whole() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    for rank in [0.0, 4.0, 2.5, f64::NAN] {
+        let mut args = literals(&[rank]);
+        args.extend(literals(&[3.0, 1.0, 2.0, 0.0, 0.0, 0.0]));
+        assert!(model.eval_expr(&call_with(BuiltinFn::ArrRank, args), &state, 0).is_nan(), "{}", rank);
+    }
+    let invalid = state.take_invalid();
+    assert_eq!(invalid.len(), 1, "one record per entity");
+    assert_eq!((invalid[0].builtin, invalid[0].values.clone()), ("arr_rank", vec![0.0, 3.0]));
+}
+
+fn percentile_of(model: &SdModel, state: &SimulationState, weighted: bool, numbers: &[f64], values: &[f64], weights: &[f64]) -> f64 {
+    let mut args = literals(&[if weighted { 1.0 } else { 0.0 }]);
+    args.extend(literals(numbers));
+    args.extend(literals(values));
+    args.extend(literals(weights));
+    model.eval_expr(&call_with(BuiltinFn::ArrPercentile, args), state, 0)
+}
+
+#[test]
+fn test_percentile_as_stella_computes_it() {
+    // Stella's runs (`test_models/stella_extras`)
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let values = [3.0, 1.0, 4.0, 1.0, 5.0];
+    let ones = [1.0; 5];
+    // Without weights a staircase: a rank between two values gives their mean
+    for (percentile, expected) in [(0.0, 1.0), (25.0, 1.0), (40.0, 2.0), (50.0, 3.0), (60.0, 3.5), (90.0, 4.5), (100.0, 5.0)] {
+        assert_eq!(percentile_of(&model, &state, false, &[percentile, 0.0], &values, &ones), expected, "{}", percentile);
+    }
+    assert_eq!(percentile_of(&model, &state, false, &[50.0, 25.0], &values, &ones), 2.0);
+    // With weights a line through the middle of each weight
+    let last_6 = [1.0, 1.0, 1.0, 1.0, 6.0];
+    assert!((percentile_of(&model, &state, true, &[50.0, 0.0], &values, &last_6) - 14.0 / 3.0).abs() < 1e-12);
+    assert_eq!(percentile_of(&model, &state, true, &[75.0, 25.0], &values, &last_6), 2.0);
+    let middle_3 = [1.0, 1.0, 3.0, 1.0, 1.0];
+    let sorted = [1.0, 2.0, 3.0, 4.0, 5.0];
+    assert!((percentile_of(&model, &state, true, &[100.0 / 12.0, 0.0], &sorted, &middle_3) - 13.0 / 12.0).abs() < 1e-12);
+    // At 0 the smallest value, where Stella gives 0
+    assert_eq!(percentile_of(&model, &state, true, &[0.0, 0.0], &sorted, &middle_3), 1.0);
+    assert!(percentile_of(&model, &state, false, &[f64::NAN, 0.0], &sorted, &ones).is_nan());
+}
+
+#[test]
+fn test_percentile_refuses_a_percentile_outside_0_to_100_and_weights_without_weight() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    assert!(percentile_of(&model, &state, false, &[101.0, 0.0], &[1.0, 2.0], &[1.0, 1.0]).is_nan());
+    let invalid = state.take_invalid();
+    assert_eq!((invalid[0].builtin, invalid[0].values.clone()), ("arr_percentile", vec![101.0, 0.0, 1.0, 1.0]));
+    let state = SimulationState::new(0, 2, None);
+    assert!(percentile_of(&model, &state, true, &[50.0, 0.0], &[1.0, 2.0], &[0.0, 0.0]).is_nan());
+    assert!(percentile_of(&model, &state, true, &[50.0, 0.0], &[1.0, 2.0], &[2.0, -1.0]).is_nan());
+}
+
+#[test]
+fn test_interpolate_a_vector_clamps_its_weight() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let at = |weight: f64| {
+        let mut args = literals(&[0.0, weight]);
+        args.extend(literals(&[0.0, 10.0, 40.0]));
+        model.eval_expr(&call_with(BuiltinFn::ArrInterpolate, args), &state, 0)
+    };
+    assert_eq!(at(0.0), 0.0);
+    assert!((at(0.25) - 5.0).abs() < 1e-12);
+    assert!((at(0.75) - 25.0).abs() < 1e-12);
+    assert_eq!(at(1.0), 40.0);
+    assert_eq!(at(-1.0), 0.0);
+    assert_eq!(at(3.0), 40.0);
+    assert!(at(f64::NAN).is_nan());
+}
+
+#[test]
+fn test_interpolate_a_matrix_along_rows_then_columns() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    // 2 x 3: [[0, 1, 4], [10, 11, 14]]
+    let mut args = literals(&[3.0, 0.5, 0.75]);
+    args.extend(literals(&[0.0, 1.0, 4.0, 10.0, 11.0, 14.0]));
+    let value = model.eval_expr(&call_with(BuiltinFn::ArrInterpolate, args), &state, 0);
+    assert!((value - 7.5).abs() < 1e-12, "{}", value);
+    // A single value has nothing to interpolate between
+    let single = call_with(BuiltinFn::ArrInterpolate, literals(&[0.0, 0.3, 7.0]));
+    assert_eq!(model.eval_expr(&single, &state, 0), 7.0);
+}
+
+// ── Seeded draws ────────────────────────────────────────────────────────
+
+fn seeded(seed: f64, keys: &[f64], draw: BuiltinFn, draw_args: &[f64]) -> Expr {
+    let mut args = literals(&[seed]);
+    args.extend(literals(keys));
+    args.push(call_with(draw, literals(draw_args)));
+    call_with(BuiltinFn::Seeded, args)
+}
+
+#[test]
+fn test_a_seeded_draw_depends_on_seed_step_and_cell_only() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let first = SimulationState::new(0, 11, Some(1));
+    let second = SimulationState::new(0, 11, Some(2));
+    let draw = seeded(3.0, &[0.0], BuiltinFn::Normal, &[0.0, 1.0]);
+    let at = |state: &SimulationState, step| model.eval_expr(&draw, state, step);
+    assert_eq!(at(&first, 4), at(&second, 4));
+    assert_eq!(at(&first, 4), at(&first, 4));
+    assert_ne!(at(&first, 4), at(&first, 5));
+    let other_cell = seeded(3.0, &[1.0], BuiltinFn::Normal, &[0.0, 1.0]);
+    assert_ne!(at(&first, 4), model.eval_expr(&other_cell, &first, 4));
+    let other_seed = seeded(4.0, &[0.0], BuiltinFn::Normal, &[0.0, 1.0]);
+    assert_ne!(at(&first, 4), model.eval_expr(&other_seed, &first, 4));
+}
+
+#[test]
+fn test_a_seeded_draw_gives_the_run_its_generator_back() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let plain = call_with(BuiltinFn::Normal, literals(&[0.0, 1.0]));
+    let alone = SimulationState::new(0, 11, Some(9));
+    let beside = SimulationState::new(0, 11, Some(9));
+    let expected: Vec<f64> = (0..5).map(|step| model.eval_expr(&plain, &alone, step)).collect();
+    let got: Vec<f64> = (0..5)
+        .map(|step| {
+            model.eval_expr(&seeded(3.0, &[], BuiltinFn::Poisson, &[4.0]), &beside, step);
+            model.eval_expr(&plain, &beside, step)
+        })
+        .collect();
+    assert_eq!(expected, got);
+}
+
+#[test]
+fn test_a_seed_that_is_no_whole_number_of_at_least_0_gives_nan() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 11, None);
+    for seed in [-1.0, 2.5, f64::NAN] {
+        assert!(model.eval_expr(&seeded(seed, &[], BuiltinFn::Normal, &[0.0, 1.0]), &state, 0).is_nan());
+    }
+    let invalid = state.take_invalid();
+    assert_eq!((invalid[0].builtin, invalid[0].values.clone()), ("seed:normal", vec![-1.0]));
+}
+
+#[test]
+fn test_seeded_around_something_that_draws_nothing_gives_nan() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 11, None);
+    let not_a_draw = call_with(BuiltinFn::Seeded, vec![Expr::Literal(3.0), call_with(BuiltinFn::Sqrt, literals(&[4.0]))]);
+    assert!(model.eval_expr(&not_a_draw, &state, 0).is_nan());
+    let not_a_call = call_with(BuiltinFn::Seeded, vec![Expr::Literal(3.0), Expr::Literal(1.0)]);
+    assert!(model.eval_expr(&not_a_call, &state, 0).is_nan());
+}
+
+// ── Bounds and samples ──────────────────────────────────────────────────
+
+fn bounded(minimum: f64, maximum: f64, draw: BuiltinFn, draw_args: &[f64]) -> Expr {
+    call_with(BuiltinFn::Bounded, vec![Expr::Literal(minimum), Expr::Literal(maximum), call_with(draw, literals(draw_args))])
+}
+
+#[test]
+fn test_a_bounded_draw_lies_within_its_bounds() {
+    let model = model_with_specs(0.0, 200.0, 1.0);
+    let state = SimulationState::new(0, 201, Some(3));
+    let draw = bounded(-1.0, 1.0, BuiltinFn::Normal, &[0.0, 1.0]);
+    let poisson = bounded(2.0, 5.0, BuiltinFn::Poisson, &[4.0]);
+    let open_above = bounded(0.0, f64::NAN, BuiltinFn::Normal, &[0.0, 1.0]);
+    let mut counts = std::collections::BTreeSet::new();
+    for step in 0..200 {
+        let value = model.eval_expr(&draw, &state, step);
+        assert!((-1.0..=1.0).contains(&value), "{}", value);
+        assert!(model.eval_expr(&open_above, &state, step) >= 0.0);
+        counts.insert(model.eval_expr(&poisson, &state, step) as i64);
+    }
+    // A discrete distribution includes its bounds
+    assert_eq!(counts.into_iter().collect::<Vec<_>>(), vec![2, 3, 4, 5]);
+    assert_eq!(model.eval_expr(&bounded(0.5, 0.5, BuiltinFn::Normal, &[0.0, 1.0]), &state, 0), 0.5);
+}
+
+#[test]
+fn test_bounds_that_cannot_be_met_give_nan_and_say_why() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 11, Some(3));
+    assert!(model.eval_expr(&bounded(1.0, -1.0, BuiltinFn::Normal, &[0.0, 1.0]), &state, 0).is_nan());
+    let invalid = state.take_invalid();
+    assert_eq!((invalid[0].builtin, invalid[0].values.clone()), ("bounds:normal:reversed", vec![1.0, -1.0]));
+    let state = SimulationState::new(0, 11, Some(3));
+    assert!(model.eval_expr(&bounded(10.0, 11.0, BuiltinFn::Normal, &[0.0, 1.0]), &state, 0).is_nan());
+    assert_eq!(state.take_invalid()[0].builtin, "bounds:normal:missed");
+    // An argument the distribution does not take is reported as it always is
+    let state = SimulationState::new(0, 11, Some(3));
+    assert!(model.eval_expr(&bounded(0.0, 1.0, BuiltinFn::Normal, &[0.0, -1.0]), &state, 0).is_nan());
+    assert_eq!(state.take_invalid()[0].builtin, "normal");
+    let not_a_call = call_with(BuiltinFn::Bounded, literals(&[0.0, 1.0, 2.0]));
+    assert!(model.eval_expr(&not_a_call, &state, 0).is_nan());
+}
+
+#[test]
+fn test_bounds_inside_a_seed_draw_from_the_seeds_generator() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let first = SimulationState::new(0, 11, Some(1));
+    let second = SimulationState::new(0, 11, Some(2));
+    let draw = call_with(BuiltinFn::Seeded, vec![Expr::Literal(3.0), bounded(2.0, 3.0, BuiltinFn::Normal, &[0.0, 1.0])]);
+    let value = model.eval_expr(&draw, &first, 4);
+    assert_eq!(value, model.eval_expr(&draw, &second, 4));
+    assert!(value.is_nan() || (2.0..=3.0).contains(&value));
+}
+
+#[test]
+fn test_a_sample_holds_from_its_start() {
+    let model = model_with_specs(0.0, 10.0, 1.0);
+    let state = SimulationState::new(0, 11, Some(5));
+    let held = call_with(BuiltinFn::Sample, vec![Expr::Literal(3.0), call_with(BuiltinFn::Normal, literals(&[0.0, 1.0]))]);
+    let values: Vec<f64> = (0..10).map(|step| model.eval_expr(&held, &state, step)).collect();
+    assert_eq!((values[0], values[1], values[2]), (values[0], values[0], values[0]));
+    assert_ne!(values[2], values[3]);
+    assert_eq!((values[4], values[5]), (values[3], values[3]));
+    // A sample under two steps, or none at all, draws at every step
+    for sample in [1.5, f64::NAN] {
+        let every = call_with(BuiltinFn::Sample, vec![Expr::Literal(sample), call_with(BuiltinFn::Normal, literals(&[0.0, 1.0]))]);
+        assert_ne!(model.eval_expr(&every, &state, 0), model.eval_expr(&every, &state, 1));
+    }
+}
+
+// ── NaN in, NaN out; division by zero ───────────────────────────────────
+
+#[test]
+fn test_max_and_min_give_nan_for_nan_on_either_side() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    for (a, b) in [(f64::NAN, 1.0), (1.0, f64::NAN)] {
+        assert!(model.eval_expr(&call_with(BuiltinFn::Max, literals(&[a, b])), &state, 0).is_nan());
+        assert!(model.eval_expr(&call_with(BuiltinFn::Min, literals(&[a, b])), &state, 0).is_nan());
+    }
+}
+
+#[test]
+fn test_arr_largest_gives_nan_for_a_nan_rank() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let largest = call_with(BuiltinFn::ArrLargest, literals(&[3.0, 1.0, 2.0, f64::NAN]));
+    assert!(model.eval_expr(&largest, &state, 0).is_nan());
+}
+
+#[test]
+fn test_a_delay_of_a_nan_duration_gives_nan() {
+    let model = model_with_specs(0.0, 3.0, 1.0);
+    let mut state = SimulationState::new(1, 4, None);
+    state.memo[0] = vec![1.0, 2.0, 3.0, 4.0];
+    let delay = call_with(BuiltinFn::Delay, vec![Expr::Ref(0), Expr::Literal(f64::NAN), Expr::Literal(0.0)]);
+    assert!(model.eval_expr(&delay, &state, 2).is_nan());
+}
+
+#[test]
+fn test_a_division_by_zero_gives_nan_and_is_recorded_once() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let by_zero = [
+        (BinOp::Div, 1.0, 0.0),
+        (BinOp::Mod, 1.0, 0.0),
+        (BinOp::Pow, 0.0, -1.0),
+    ];
+    for (op, l, r) in by_zero {
+        let expr = Expr::BinaryOp { op, left: Box::new(Expr::Literal(l)), right: Box::new(Expr::Literal(r)) };
+        assert!(model.eval_expr(&expr, &state, 0).is_nan());
+    }
+    let invalid = state.take_invalid();
+    assert_eq!(invalid.len(), 1, "one record per entity");
+    assert_eq!(invalid[0].builtin, "division");
+    let fine = Expr::BinaryOp { op: BinOp::Pow, left: Box::new(Expr::Literal(0.0)), right: Box::new(Expr::Literal(2.0)) };
+    assert_eq!(model.eval_expr(&fine, &state, 0), 0.0);
+}
+
+// ── A non-negative stock's cut back ─────────────────────────────────────
+
+#[test]
+fn test_positive_is_pythons_max_with_zero() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let positive = |x: f64| model.eval_expr(&call_with(BuiltinFn::Positive, literals(&[x])), &state, 0);
+    assert_eq!(positive(2.5), 2.5);
+    assert_eq!(positive(-1.0), 0.0);
+    assert_eq!(positive(f64::NAN), 0.0);
+}
+
+#[test]
+fn test_cut_out_takes_at_most_what_is_available() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let cut = |wanted: f64, available: f64| {
+        model.eval_expr(&call_with(BuiltinFn::CutOut, literals(&[wanted, available])), &state, 0)
+    };
+    assert_eq!(cut(5.0, 8.0), 5.0);
+    assert_eq!(cut(5.0, 3.0), 3.0);
+    assert_eq!(cut(5.0, -2.0), 0.0);
+    assert_eq!(cut(-4.0, 3.0), -4.0, "running backwards it is not cut");
+}
+
+#[test]
+fn test_cut_in_takes_at_most_what_is_available_while_running_backwards() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let cut = |wanted: f64, available: f64| {
+        model.eval_expr(&call_with(BuiltinFn::CutIn, literals(&[wanted, available])), &state, 0)
+    };
+    assert_eq!(cut(4.0, 1.0), 4.0, "bringing material in it is not cut");
+    assert_eq!(cut(-5.0, 2.0), -2.0);
+    assert_eq!(cut(-5.0, 9.0), -5.0);
+    assert_eq!(cut(-5.0, -1.0), 0.0);
+}
+
+#[test]
+fn test_gammaln_is_the_log_of_gamma_itself() {
+    // As Stella: NaN for every argument of 0 and below, the log above
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let gammaln = |x: f64| model.eval_expr(&call_with(BuiltinFn::GammaLN, literals(&[x])), &state, 0);
+    for x in [-2.5, -2.0, -1.5, -0.5, 0.0, f64::NEG_INFINITY] {
+        assert!(gammaln(x).is_nan(), "{}", x);
+    }
+    assert!((gammaln(0.5) - std::f64::consts::PI.sqrt().ln()).abs() < 1e-12);
+    assert_eq!(gammaln(f64::INFINITY), f64::INFINITY);
+}
+
+#[test]
+fn test_mathematical_functions_outside_their_domain_are_recorded() {
+    let model = model_with_specs(0.0, 1.0, 1.0);
+    let state = SimulationState::new(0, 2, None);
+    let at = |function: BuiltinFn, x: f64| model.eval_expr(&call_with(function, literals(&[x])), &state, 0);
+    assert!(at(BuiltinFn::Sqrt, -4.0).is_nan());
+    assert_eq!(state.take_invalid()[0].builtin, "sqrt");
+    assert_eq!(at(BuiltinFn::Ln, 0.0), f64::NEG_INFINITY);
+    assert_eq!(at(BuiltinFn::Sqrt, f64::INFINITY), f64::INFINITY);
+    assert!(at(BuiltinFn::Sqrt, f64::NEG_INFINITY).is_nan());
+    assert!((at(BuiltinFn::Arccos, 0.5) - std::f64::consts::FRAC_PI_3).abs() < 1e-12);
+    assert!(state.take_invalid().is_empty(), "nothing out of domain since");
+}
+
+// ── RUNCUM, RUNMAX, RUNMIN, RUNMEAN, RUNCUMTARGET ─────────────────────────
+
+fn run_call(function: BuiltinFn, from: f64, to: f64) -> Expr {
+    Expr::Call { function, args: vec![Expr::Ref(0), Expr::Literal(from), Expr::Literal(to)] }
+}
+
+#[test]
+fn test_running_statistics_over_the_run_and_a_window() {
+    // dt 0.5; the stream reads 0, 3, 5, 6, 2 at the times 0 to 2
+    let model = model_with_specs(0.0, 2.0, 0.5);
+    let mut state = SimulationState::new(1, 5, None);
+    for (i, value) in [0.0, 3.0, 5.0, 6.0, 2.0].iter().enumerate() {
+        state.memo[0][i] = *value;
+    }
+    let (all, now) = (f64::NEG_INFINITY, f64::INFINITY);
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunCum, all, now), &state, 4), 8.0);
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunMax, all, now), &state, 4), 6.0);
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunMin, all, now), &state, 4), 0.0);
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunMean, all, now), &state, 4), 3.2);
+    // A window is closed at both ends; the current step is the last one it can see
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunCum, 0.5, 1.0), &state, 4), 4.0);
+    assert_eq!(model.eval_expr(&run_call(BuiltinFn::RunMax, 1.0, 9.0), &state, 3), 6.0);
+    // Empty: nothing between 0 and minus one step; a NaN bound
+    assert!(model.eval_expr(&run_call(BuiltinFn::RunCum, 0.0, -0.5), &state, 0).is_nan());
+    assert!(model.eval_expr(&run_call(BuiltinFn::RunMean, f64::NAN, now), &state, 4).is_nan());
+    let not_a_ref = Expr::Call { function: BuiltinFn::RunCum, args: vec![Expr::Literal(1.0), Expr::Literal(all), Expr::Literal(now)] };
+    assert!(model.eval_expr(&not_a_ref, &state, 4).is_nan());
+}
+
+#[test]
+fn test_runcumtarget_sums_the_magnitude_and_interpolates_in_the_step() {
+    // dt 0.5; |-4| counts as 4, so the sum reaches 5 at the third step
+    let model = model_with_specs(0.0, 2.0, 0.5);
+    let mut state = SimulationState::new(1, 5, None);
+    for (i, value) in [2.0, -4.0, 6.0, 1.0, 0.0].iter().enumerate() {
+        state.memo[0][i] = *value;
+    }
+    let target = |value: f64| Expr::Call { function: BuiltinFn::RunCumTarget, args: vec![Expr::Ref(0), Expr::Literal(value)] };
+    assert!(model.eval_expr(&target(5.0), &state, 1).is_nan());
+    assert_eq!(model.eval_expr(&target(5.0), &state, 2), 1.0 + 2.0 / 6.0);
+    assert_eq!(model.eval_expr(&target(5.0), &state, 4), 1.0 + 2.0 / 6.0);
+    assert_eq!(model.eval_expr(&target(0.0), &state, 0), 0.0);
+    assert!(model.eval_expr(&target(f64::NAN), &state, 4).is_nan());
+    assert!(model.eval_expr(&target(100.0), &state, 4).is_nan());
+    let zero = SimulationState::new(1, 5, None);
+    assert_eq!(model.eval_expr(&target(0.0), &zero, 2), 0.0);
+    let not_a_ref = Expr::Call { function: BuiltinFn::RunCumTarget, args: vec![Expr::Literal(1.0), Expr::Literal(1.0)] };
+    assert!(model.eval_expr(&not_a_ref, &state, 4).is_nan());
 }

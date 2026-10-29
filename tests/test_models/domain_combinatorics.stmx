@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>domain_combinatorics</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>4</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="fact frac">
+				<eqn>FACTORIAL(2.5)</eqn>
+			</aux>
+			<aux name="comb frac">
+				<eqn>COMBINATIONS(5.5, 2)</eqn>
+			</aux>
+			<aux name="perm frac">
+				<eqn>PERMUTATIONS(5.5, 2)</eqn>
+			</aux>
+			<aux name="comb frac 2">
+				<eqn>COMBINATIONS(5, 2.5)</eqn>
+			</aux>
+			<aux name="perm frac 2">
+				<eqn>PERMUTATIONS(5, 2.5)</eqn>
+			</aux>
+			<aux name="fact neg">
+				<eqn>FACTORIAL(-1)</eqn>
+			</aux>
+			<aux name="comb neg r">
+				<eqn>COMBINATIONS(5, -1)</eqn>
+			</aux>
+			<aux name="perm neg r">
+				<eqn>PERMUTATIONS(5, -2.5)</eqn>
+			</aux>
+			<aux name="fact 121">
+				<eqn>FACTORIAL(121)</eqn>
+			</aux>
+			<aux name="fact 141">
+				<eqn>FACTORIAL(141)</eqn>
+			</aux>
+			<aux name="fact 161">
+				<eqn>FACTORIAL(161)</eqn>
+			</aux>
+			<aux name="fact 166">
+				<eqn>FACTORIAL(166)</eqn>
+			</aux>
+			<aux name="fact 167">
+				<eqn>FACTORIAL(167)</eqn>
+			</aux>
+			<aux name="fact 168">
+				<eqn>FACTORIAL(168)</eqn>
+			</aux>
+			<aux name="fact 170">
+				<eqn>FACTORIAL(170)</eqn>
+			</aux>
+			<aux name="fact 171">
+				<eqn>FACTORIAL(171)</eqn>
+			</aux>
+			<aux name="fact 172">
+				<eqn>FACTORIAL(172)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="120" name="fact frac"/>
+				<aux x="210" y="120" name="comb frac"/>
+				<aux x="340" y="120" name="perm frac"/>
+				<aux x="470" y="120" name="comb frac 2"/>
+				<aux x="600" y="120" name="perm frac 2"/>
+				<aux x="730" y="120" name="fact neg"/>
+				<aux x="80" y="240" name="comb neg r"/>
+				<aux x="210" y="240" name="perm neg r"/>
+				<aux x="340" y="240" name="fact 121"/>
+				<aux x="470" y="240" name="fact 141"/>
+				<aux x="600" y="240" name="fact 161"/>
+				<aux x="730" y="240" name="fact 166"/>
+				<aux x="80" y="360" name="fact 167"/>
+				<aux x="210" y="360" name="fact 168"/>
+				<aux x="340" y="360" name="fact 170"/>
+				<aux x="470" y="360" name="fact 171"/>
+				<aux x="600" y="360" name="fact 172"/>
+
+			</view>
+		</views>
+	</model>
+</xmile>

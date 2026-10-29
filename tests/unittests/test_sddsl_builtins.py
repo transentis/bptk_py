@@ -23,6 +23,7 @@ SEEDED = {
     "triangular": lambda seed: sd.triangular(0.0, 1.0, 3.0, seed=seed),
     "weibull": lambda seed: sd.weibull(2.0, 1.0, seed=seed),
     "montecarlo": lambda seed: sd.montecarlo(50.0, seed=seed),
+    "lookuprandom": lambda seed: sd.lookuprandom([[0.0, 0.0], [2.0, 1.0], [4.0, 0.0]], seed=seed),
 }
 
 
@@ -159,3 +160,15 @@ class TestUnseeded(unittest.TestCase):
 
         self.assertEqual(drawn, (random.uniform(0.0, 1.0), np.random.normal(0.0, 1.0)))
         self.assertIs(sddsl_builtins.np.random, np.random)
+
+
+class TestLookupRandom(unittest.TestCase):
+    def test_a_draw_at_the_very_end_gives_the_last_x(self):
+        # The uniform draw times the total area, worn down segment by segment, can reach the
+        # end through rounding - or with a draw of 1.0, which numpy never gives
+        class Edge:
+            @staticmethod
+            def uniform(low, high):
+                return high
+
+        self.assertEqual(sddsl_builtins._lookup_random(Edge(), 0.0, 0.0, 1.0, 1.0, 2.0, 0.0), 2.0)

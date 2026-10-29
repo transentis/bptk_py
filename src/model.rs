@@ -13,6 +13,9 @@ pub struct SdModel {
     /// Evaluation order for non-stock entities (indices into `entities`).
     /// Computed via topological sort at load time.
     pub eval_order: Vec<usize>,
+    /// Evaluation order for every entity at the start time, where a stock is its initial
+    /// value: it follows what that reads, and whatever reads the stock follows it.
+    pub init_order: Vec<usize>,
     /// The Python functions this model calls back into, by slot. A `PyCallback`
     /// expression carries the slot, never the name: the name is resolved once at load
     /// time, the way an entity reference becomes an index. Always empty in a build
@@ -94,6 +97,35 @@ pub enum UnOp {
     Not,
 }
 
+/// XMILE's three types of graphical function: `Continuous` holds the end values outside
+/// the table, `Extrapolate` goes on along the first and the last segment, `Discrete` is a
+/// step function - the value of the next lower x.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LookupKind {
+    Continuous,
+    Extrapolate,
+    Discrete,
+}
+
+impl LookupKind {
+    pub fn from_name(name: &str) -> Option<LookupKind> {
+        match name {
+            "continuous" => Some(LookupKind::Continuous),
+            "extrapolate" => Some(LookupKind::Extrapolate),
+            "discrete" => Some(LookupKind::Discrete),
+            _ => None,
+        }
+    }
+}
+
+/// What LOOKUPMAX, LOOKUPMIN and LOOKUPMEAN take of a table.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LookupStatistic {
+    Max,
+    Min,
+    Mean,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BuiltinFn {
     // Temporal
@@ -127,6 +159,7 @@ pub enum BuiltinFn {
     Pulse,
     // Stateful
     Delay,
+    Irr, // the stream, then the value without a rate
     // Combinatorial & special
     Combinations,
     Permutations,
@@ -152,17 +185,43 @@ pub enum BuiltinFn {
     Pareto,
     Invnorm,
     NormalCDF,
+    Seeded, // the seed, the cell's keys, then the draw - a random builtin's call
+    Bounded, // minimum, maximum (NaN for none), then the draw
+    Sample, // the sample, then the draw - seeded or bounded or neither
+    // A non-negative stock's outflows, cut back as the Python engine cuts them
+    Positive, // max(0, x), with Python's max: NaN gives 0
+    CutOut,   // what an outflow takes: what it wants, at most what is available
+    CutIn,    // what a biflow among the inflows takes while it runs backwards
+    // A conveyor - see `src/conveyor.rs`
+    ConveyorStart,  // fifo, exponential, transit, n, n fractions, m, then the total (m = 0) or m values
+    ConveyorFlow,   // the conveyor, -1 for its outflow or the leak's index, transit, inflow, fractions
+    ConveyorChange, // the conveyor's change over the step, for the integration
+    AgeCount,       // the conveyor, minimum, maximum (NaN for none)
     // Array aggregations - variadic over the leaves of a flattened arrayed element
     ArrSum,
     ArrProd,
     ArrMean,
     ArrMedian,
     ArrStddev,
-    ArrRank, // the rank is the last argument
+    ArrLargest, // the rank is the last argument
+    ArrRank, // the rank, then the values, then as many tiebreak values
+    ArrPercentile, // 1 with weights, 0 without; the percentile, the lower one, the values, as many weights
+    ArrInterpolate, // the number of columns (0 for a vector), one weight per dimension, the values
     ArrMax,
     ArrMin,
-    // Lookup
-    Lookup(String), // graphical function table name
+    // Lookup - each names a graphical function table and says what kind it is
+    Lookup(String, LookupKind),
+    LookupInv(String, LookupKind),
+    LookupArea(String, LookupKind), // the arguments are from and to
+    RunCum, // the stream, then from and to
+    RunMax,
+    RunMin,
+    RunMean,
+    RunCumTarget, // the stream, then the target
+    LookupRandom(String, LookupKind), // a draw: no arguments but the table
+    LookupMax(String, LookupKind), // the arguments are from and to, in either order
+    LookupMin(String, LookupKind),
+    LookupMean(String, LookupKind),
 }
 
 /// The number of timesteps a run over these specs has, starttime and stoptime included,
@@ -233,6 +292,24 @@ impl SdModel {
     pub fn time_at(&self, step: usize) -> f64 {
         let t = self.starttime + step as f64 * self.dt;
         (t * 1e10).round() / 1e10
+    }
+
+    /// The steps from `from` to `to`, both included and none after `step`, or None for a
+    /// window without one. An infinite bound is the start or the current step. The bounds
+    /// are read in steps, a millionth of a step to spare, so that TIME - 2 meets the step
+    /// it means - as the Python engine reads them.
+    pub fn run_steps(&self, step: usize, from: f64, to: f64) -> Option<(usize, usize)> {
+        let first = if from == f64::NEG_INFINITY {
+            0.0
+        } else {
+            ((from - self.starttime) / self.dt - 1e-6).ceil().max(0.0)
+        };
+        let last = if to == f64::INFINITY {
+            step as f64
+        } else {
+            ((to - self.starttime) / self.dt + 1e-6).floor().min(step as f64)
+        };
+        if first > last { None } else { Some((first as usize, last as usize)) }
     }
 
     /// Override a constant's equation to a new literal value.

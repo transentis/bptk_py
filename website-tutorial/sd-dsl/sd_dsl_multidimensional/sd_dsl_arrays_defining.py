@@ -48,12 +48,12 @@ def _(mo):
     - Vectors (one dimensional arrays)
     - Matrices (two dimensional arrays)
 
-    Moreover, both types of arrays - Vectors and Matrices - can be setup:
+    Moreover, both types of arrays - Vectors and Matrices - can be set up:
 
     - using numerical indices
     - using string-valued indices (named arrays)
 
-    Lets have a look at some examples:
+    Let's have a look at some examples:
     """)
     return
 
@@ -93,14 +93,14 @@ def _(mo):
 
     | Parameter | Type | Meaning |
     |-|-|-|
-    | values | Dictionary | Defines the string-values indices and their values |
+    | values | Dictionary | Defines the string-valued indices and their values |
     | set_stack_equation | Boolean | (optional) If the element is a stock, the initial value is set (False) or the equation is set (True). Default is False. |
 
     `values` is either one value per index, or a **single** value that every index gets -
     `setup_vector(2, 3.0)` above is the short form of `setup_vector(2, [3.0, 3.0])`.
     `set_stack_equation` has a section of its own below.
 
-    For matrices, we can proceed completely similar.
+    For matrices, we can proceed completely similarly.
     """)
     return
 
@@ -142,7 +142,7 @@ def _(mo):
 
     | Parameter | Type | Meaning |
     |-|-|-|
-    | values | Dictionary | Defines the string-values indices and their values |
+    | values | Dictionary | Defines the string-valued indices and their values |
     | set_stack_equation | Boolean | (optional) If the element is a stock, the initial value is set (False) or the equation is set (True). Default is False. |
 
     A matrix takes a single value as well: `setup_matrix([2, 2], 3.0)` gives a
@@ -218,7 +218,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     Similar to one-dimensional SD DSL elements, we can also plot these elements.
-    Lets have a look:
+    Let's have a look:
     """)
     return
 

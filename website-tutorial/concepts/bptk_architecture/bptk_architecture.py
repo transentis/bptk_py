@@ -34,12 +34,12 @@ def _(mo):
     Currently the framework has five conceptual building blocks:
 
     * *ABM and SD Modeling.* A component that allows you to build and run simulations in Python, using an Agent-based modeling approach, a System Dynamics modelling approach or both ("hybrid models"). This component contains a number of classes that you will need to build such models - please read the notebooks on [agent-based modeling](../../abm/agent_based_modeling/agent_based_modeling.md) and [System Dynamics modeling](../../sd-dsl/simple_python_library_sd_dsl/simple_python_library_sd_dsl.md) to learn more about these classes.
-    * *SD Transpiler.* A component that (automatically) translates System Dynamic models conforming to the XMILE standard into Python code.
+    * *SD Transpiler.* A component that (automatically) translates System Dynamics models conforming to the XMILE standard into SD DSL code.
     * *Scenario Management.* A component that lets you define and manage simulation scenarios in a uniform manner. A scenario is a model and a set of initial values for the simulation parameters. Scenarios are a powerful tool, because they enable you to easily compare the results of running the same simulation with different parameters to each other, which is something you have to do frequently when working with simulations.
     * *Visualisation.* A component that visualises the results produced by simulations, in the form of plots or dashboards.
     * *BPTK API.* A high level API that lets you interact with the other components using a simple and uniform API. In particular, this component allows you to run scenarios and plot scenario results from both models created in Python or translated from XMILE in a uniform manner.
 
-    To use the framework, the modeler needs to build simulation models, either directly Python (AB/SD Model) or in XMILE (using an XMILE compatible SD modeling tool, such as isee systems Stella). A model created in Python is essentially a subclass of the AB and SD Modeling component, while the XMILE models are transpiled into such a subclass by the SD Transpiler component.
+    To use the framework, the modeler needs to build simulation models, either directly in Python (AB/SD Model) or in XMILE (using an XMILE compatible SD modeling tool, such as isee systems Stella). A model created in Python is a subclass of Model from the ABM and SD Modeling component. An XMILE model is always transpiled into SD DSL code – a subclass of the same kind – by the SD Transpiler component, so from then on the framework treats both alike.
 
     How does the framework know which models to compile? This is what the scenario config files are for - the modeler uses these to define scenario parameters and to identify the model that is relevant for a particular scenario. The model is then either the name of a Python class or the name of an XMILE model.
 
@@ -57,7 +57,7 @@ def _(mo):
 
     Now let's see what happens at runtime, assuming that we are in a notebook.
 
-    First of all we initialize the framework by creating a ``bptk`` object. This automatically causes the framework to read all scenario config files from the ``scenarios`` directory. The location of this directory can be configured in the framework's config file.
+    First of all we initialize the framework by creating a ``bptk`` object. This automatically causes the framework to read all scenario config files from the ``scenarios`` directory. The location of this directory can be [configured](../configuration/configuration.md#configure-the-path-to-scenario-storage).
 
     This page has one such file beside it, and it is worth opening before reading on:
     [`scenarios/spm.json`](./scenarios/spm.json). It names the
@@ -94,7 +94,7 @@ def _(mo):
 
     At this stage, all scenario managers, scenarios and models have been instantiated and configured according to the scenario definitions, but the simulations have not run yet.
 
-    You can easily test the transpiler by deleting the transpiled Python classes from the scenario manager directory - the scenario manager notices this and automatically re-transpiles the model. This behaviour is particularly useful when building XMILE models and testing scenarios in a notebook in parallel. As soon as you change the XMILE model, the model is re-transpiled into Python. Now all you need to do is reset the model in the notebook and the Python class is then automatically reloaded.
+    A scenario manager whose model comes from an XMILE file transpiles it again whenever the file changes - see [XMILE Step by Step](../../xmile/xmile_step_by_step/xmile_step_by_step.md).
 
     The following piece of code lists all the scenarios that have been loaded:
     """)
@@ -181,7 +181,7 @@ def _(mo):
 
     The scenario manager checks its internal simulation cache to see whether the scenario has already been run - if so, it passes the dataframe containing the simulation results from the cache to the visualisation component, which creates the relevant plot.
 
-    This caching behaviour is essential – it means you do not need to re-run the scenario to plot the results from another equations or agent, you just need to look up the result in the cache. Without the cache, you would have to run the simulation again for every plot, which could take quite some time depending on the size and complexity of the model.
+    This caching behaviour is essential – it means you do not need to re-run the scenario to plot the results from another equation or agent, you just need to look up the result in the cache. Without the cache, you would have to run the simulation again for every plot, which could take quite some time depending on the size and complexity of the model.
 
     If there is no data in the cache, the scenario manager runs the scenario by calling its ``run`` method, and then passes the dataframe to the ``visualisation`` component.
 

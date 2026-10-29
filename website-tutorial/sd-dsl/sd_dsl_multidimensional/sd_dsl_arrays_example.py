@@ -43,7 +43,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Lets have a look on a concrete example, how a multidimensional SD Model can look like.
+    Let's have a look at a concrete example of what a multidimensional SD Model can look like.
 
     Consider an investment depot with two accounts:
 
@@ -53,7 +53,7 @@ def _(mo):
     Both accounts will have different deposit rates and different interest rates each year.
     We want to investigate the value development of the bank account, the depot account and the whole investment depot.
 
-    Lets set up the model:
+    Let's set up the model:
     """)
     return
 

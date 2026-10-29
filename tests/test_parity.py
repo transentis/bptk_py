@@ -12,8 +12,10 @@ import io
 import math
 import numpy as np
 import operator
+import random
 import pytest
-from BPTK_Py import Model
+import BPTK_Py
+from BPTK_Py import CyclicDependencyError, Model
 from BPTK_Py import sd_functions as sd
 from BPTK_Py.sddsl import json_serializer
 from BPTK_Py.sddsl import operators as ops
@@ -210,6 +212,29 @@ class TestParityPulse:
         flow.equation = sd.pulse(model, 9.0, 1.5, 3.0)
         stock.equation = flow
         run_parity(model, ['stock', 'flow'])
+
+    def test_pulse_without_a_first_pulse_in_a_model_not_starting_at_0(self):
+        model = Model(starttime=1, stoptime=5, dt=0.5, name='pulse_start')
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        flow = model.flow("flow")
+        flow.equation = sd.pulse(model, 20.0)
+        stock.equation = flow
+        run_parity(model, ['stock', 'flow'])
+        assert flow.plot(return_df=True)["flow"].tolist() == [40.0] + [0.0] * 8
+
+    def test_a_pulse_time_between_two_steps_fires_in_the_later_one(self):
+        """dt = 1, a pulse every 1.5 from 2: the one at 3.5 fires at 4, as in Stella - it
+        was skipped, and its volume lost."""
+        model = Model(starttime=1, stoptime=6, dt=1, name='pulse_off_grid')
+        stock = model.stock("stock")
+        stock.initial_value = 0.0
+        flow = model.flow("flow")
+        flow.equation = sd.pulse(model, 20.0, 2.0, 1.5)
+        stock.equation = flow
+        run_parity(model, ['stock', 'flow'])
+        assert flow.plot(return_df=True)["flow"].tolist() == [0.0, 20.0, 0.0, 20.0, 20.0, 0.0]
+        assert stock(6) == 60.0
 
     def test_pulse_whose_times_dt_does_not_hit_exactly(self):
         """dt = 0.1, a pulse every 0.3 from 0.2: 0.8 - 0.2 is not exactly 2 * 0.3, and the
@@ -534,6 +559,149 @@ class TestParityLookup:
             RustSdEngine().load_model(model.to_json())
 
 
+class TestParityLookupInverseAndArea:
+    """LOOKUPINV and LOOKUPAREA, including what lies beyond the table's ends."""
+
+    def test_lookupinv(self):
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name='lookupinv_par')
+        model.points["rising"] = [[0, 1], [2, 3], [4, 6]]
+        expressions = {
+            'named': sd.lookupinv(sd.time(), "rising"),
+            'inline_falling': sd.lookupinv(sd.time() * 0.5, [[0, 10], [5, 0]]),
+            'flat_segment': sd.lookupinv(2.0, [[0, 0], [1, 2], [3, 2], [4, 5]]),
+            'not_monotonic': sd.lookupinv(sd.time(), [[0, 0], [1, 5], [2, 1]]),
+            'below': sd.lookupinv(-3.0, "rising"),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-12)
+
+    def test_lookuparea(self):
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name='lookuparea_par')
+        model.points["rising"] = [[0, 1], [2, 3], [4, 6]]
+        expressions = {
+            'whole': sd.lookuparea("rising"),
+            'to_time': sd.lookuparea("rising", None, sd.time()),
+            'from_time': sd.lookuparea([[0, 0], [10, 10]], sd.time()),
+            'reversed': sd.lookuparea("rising", sd.time(), 1.0),
+            'beyond_both_ends': sd.lookuparea("rising", -5.0, 50.0),
+            'outside': sd.lookuparea("rising", 5.0, 9.0),
+            'nan': sd.lookuparea("rising", sd.nan(), 2.0),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-12)
+
+    def test_lookupmax_lookupmin_lookupmean(self):
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name='lookup_statistics_par')
+        model.points["peak"] = [[2, 0], [4, 5], [6, 20], [8, 10], [10, 0]]
+        expressions = {}
+        for name, function in (("max", sd.lookupmax), ("min", sd.lookupmin), ("mean", sd.lookupmean)):
+            expressions.update({
+                name + '_whole': function("peak"),
+                name + '_to_time': function("peak", None, sd.time()),
+                name + '_from_time': function("peak", sd.time()),
+                name + '_reversed': function("peak", sd.time(), 3.0),
+                name + '_beyond_both_ends': function("peak", -5.0, 50.0),
+                name + '_outside': function("peak", 11.0, 13.0),
+                name + '_nan': function("peak", sd.nan(), 2.0),
+                name + '_inline': function([[0, 1], [5, 2], [7, 0]], 1.0, sd.time()),
+            })
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-12)
+
+    def test_a_table_set_after_the_equation(self):
+        """Without from and to, the area spans the table as it is when the model runs."""
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name='lookuparea_late_par')
+        model.converter('area').equation = sd.lookuparea("late")
+        model.points["late"] = [[0, 2], [3, 2]]
+        run_parity(model, ['area'], atol=1e-12)
+
+
+class TestParityLookupKinds:
+    """XMILE's three types of graphical function, in lookup, LOOKUPINV and LOOKUPAREA."""
+
+    def test_every_kind_in_every_lookup(self):
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name='lookup_kinds_par')
+        model.points["peak"] = [[2, 0], [4, 5], [6, 20], [8, 10], [10, 0]]
+        model.points["rising"] = [[0, 0], [2, 1], [4, 4], [6, 9], [8, 16]]
+        model.points["falling"] = [[0, 10], [5, 4], [10, 1]]
+        x = sd.time() * 2.0 - 3.0
+        expressions = {}
+        for kind in ("continuous", "extrapolate", "discrete"):
+            expressions.update({
+                kind + '_lookup': sd.lookup(x, "peak", kind=kind),
+                kind + '_inline': sd.lookup(x, [[0, 1], [5, 2], [7, 0]], kind=kind),
+                kind + '_inverse': sd.lookupinv(x, "rising", kind=kind),
+                kind + '_inverse_falling': sd.lookupinv(x, "falling", kind=kind),
+                kind + '_area': sd.lookuparea("rising", -2.0, sd.time(), kind=kind),
+                kind + '_area_reversed': sd.lookuparea("rising", sd.time() + 3.0, -1.0, kind=kind),
+                kind + '_area_whole': sd.lookuparea("peak", kind=kind),
+                kind + '_max': sd.lookupmax("peak", sd.time() - 2.0, sd.time(), kind=kind),
+                kind + '_min': sd.lookupmin("peak", sd.time() - 2.0, sd.time(), kind=kind),
+                kind + '_mean': sd.lookupmean("peak", -2.0, sd.time() + 1.0, kind=kind),
+            })
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-12)
+
+
+class TestParityIrr:
+    """IRR over the history of a stream: no rate at the first step, one where the stream
+    has turned, the one nearest zero where there are several, and `missing` where there is
+    none."""
+
+    def test_irr(self):
+        model = Model(starttime=1, stoptime=40, dt=1, name='irr_par')
+        cash = model.converter('cash')
+        cash.equation = sd.If(sd.time() <= 3, -100.0, 25.0 + sd.time())
+        twice = model.converter('twice')
+        twice.equation = sd.If(sd.time() <= 1, -100.0, sd.If(sd.time() <= 6, 230.0, -132.0))
+        only_in = model.converter('only_in')
+        only_in.equation = 10.0 + sd.time()
+        zeros = model.converter('zeros')
+        zeros.equation = 0.0
+        expressions = {
+            'rate': sd.irr(model, cash),
+            'with_missing': sd.irr(model, cash, -1.0),
+            'several_rates': sd.irr(model, twice, -7.0),
+            'no_rate': sd.irr(model, only_in, sd.time() * 2.0),
+            'of_zeros': sd.irr(model, zeros, -3.0),
+            'expression': sd.irr(model, cash * 2.0 + 1.0),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        run_parity(model, list(expressions), atol=1e-9)
+
+    def test_irr_with_a_fractional_dt_and_a_late_start(self):
+        model = Model(starttime=2.5, stoptime=12.0, dt=0.25, name='irr_dt_par')
+        cash = model.converter('cash')
+        cash.equation = sd.If(sd.time() < 4.0, -50.0, 12.0)
+        model.converter('rate').equation = sd.irr(model, cash, 0.0)
+        run_parity(model, ['rate'], atol=1e-9)
+
+    def test_irr_in_a_stock(self):
+        """Written into a stock, the stream is read up to the step before."""
+        model = Model(starttime=0, stoptime=20, dt=1, name='irr_stock_par')
+        cash = model.converter('cash')
+        cash.equation = sd.If(sd.time() <= 2, -100.0, 30.0)
+        stock = model.stock('rates')
+        stock.initial_value = 0.0
+        stock.equation = sd.irr(model, cash, 0.0)
+        run_parity(model, ['rates'], atol=1e-9)
+
+    def test_irr_of_a_stock(self):
+        model = Model(starttime=0, stoptime=20, dt=1, name='irr_of_stock_par')
+        account = model.stock('account')
+        account.initial_value = -100.0
+        flow = model.flow('payments')
+        flow.equation = 15.0
+        account.equation = flow
+        model.converter('rate').equation = sd.irr(model, account, 0.0)
+        run_parity(model, ['rate'], atol=1e-9)
+
+
 # ---------------------------------------------------------------------------
 # Test: Inline lookup points
 # ---------------------------------------------------------------------------
@@ -821,6 +989,33 @@ class TestParityStockInitFromConstant:
         inflow.equation = 2.0
         stock.equation = inflow
         run_parity(model, ['stock', 'inflow', 'init_val'])
+
+    def test_initial_values_reading_each_other_through_a_converter(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name='init_chain')
+        first = model.stock("first")
+        second = model.stock("second")
+        twice = model.converter("twice")
+        size = model.constant("size")
+        size.equation = 25.0
+        twice.equation = second * 2.0
+        first.initial_value = twice
+        second.initial_value = size
+        run_parity(model, ['first', 'second', 'twice'])
+
+    @pytest.mark.allow_rust_unused
+    def test_an_initial_value_reading_its_own_stock_is_a_cycle_on_both(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name='init_cycle')
+        level = model.stock("level")
+        reading = model.converter("reading")
+        reading.equation = level + 1.0
+        level.initial_value = reading
+        message = "Cyclic dependency among non-stock entities: level → reading → level"
+        with pytest.raises(CyclicDependencyError) as caught:
+            model.simulate(["level"])
+        assert str(caught.value) == message
+        with pytest.raises(BPTK_Py.RustBackendError) as caught:
+            model.simulate(["level"], backend="rust")
+        assert str(caught.value).endswith(message)
 
 
 # ---------------------------------------------------------------------------
@@ -1136,7 +1331,7 @@ N_SAMPLES = 5000  # stoptime with dt=1 gives N_SAMPLES+1 data points
 
 
 def _run_stochastic_parity(equation, theoretical_mean, theoretical_var,
-                           mean_tol=None, var_tol=None, name="stoch"):
+                           mean_tol=None, var_tol=None, name="stoch", dt=1):
     """
     Run a stochastic equation through both Python and Rust backends,
     then check that sample mean and variance are within tolerance of
@@ -1151,7 +1346,7 @@ def _run_stochastic_parity(equation, theoretical_mean, theoretical_var,
 
     results = {}
     for backend_label in ("python", "rust"):
-        model = Model(starttime=0, stoptime=N_SAMPLES, dt=1,
+        model = Model(starttime=0, stoptime=N_SAMPLES * dt, dt=dt,
                        name=f"{name}_{backend_label}")
         x = model.converter("x")
         x.equation = equation
@@ -1245,6 +1440,11 @@ class TestParityStochastic:
         # poisson(mu=5): mean=5, var=5
         _run_stochastic_parity(sd.poisson(5), 5.0, 5.0, name="poisson")
 
+    def test_poisson_has_a_mean_per_time_unit(self):
+        # As in XMILE and Stella: with dt = 0.25 a step draws a quarter of the mean
+        _run_stochastic_parity(sd.poisson(4), 1.0, 1.0, mean_tol=0.1, var_tol=0.2,
+                               name="poisson_dt", dt=0.25)
+
     def test_triangular(self):
         # triangular(1, 5, 10): mean=(1+5+10)/3≈5.333, var=(1²+5²+10²-1*5-1*10-5*10)/18≈4.056
         a, c, b = 1.0, 5.0, 10.0
@@ -1263,15 +1463,21 @@ class TestParityStochastic:
                                name="weibull")
 
     def test_pareto(self):
-        # Python SD DSL: np.random.pareto(shape) * scale → shifted Pareto (min=0)
-        # mean = scale / (shape - 1), var = scale² * shape / ((shape-1)² * (shape-2))
+        # The classic Pareto of Stella's help, starting at scale:
+        # mean = shape * scale / (shape - 1), var = scale² * shape / ((shape-1)² * (shape-2))
         # Using shape=5 so kurtosis is finite (requires shape>4), which makes
         # sample variance converge reliably with N=5000.
         alpha, xm = 5.0, 1.0
         _run_stochastic_parity(sd.pareto(alpha, xm),
-                               xm / (alpha - 1),
+                               alpha * xm / (alpha - 1),
                                xm ** 2 * alpha / ((alpha - 1) ** 2 * (alpha - 2)),
                                mean_tol=0.1, var_tol=0.15, name="pareto")
+
+    def test_lookuprandom(self):
+        # The table read as a density, each segment uniform and weighted by its area -
+        # the distribution Stella draws from (`test_models/random_dt_1`)
+        _run_stochastic_parity(sd.lookuprandom([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 1.0], [4.0, 0.0]]), 2.0, 5.0 / 6.0,
+                               mean_tol=0.05, var_tol=0.05, name="lookuprandom")
 
     def test_logistic(self):
         # logistic(mean=10, scale=2): mean=10, var=π²*scale²/3≈13.159
@@ -1281,6 +1487,211 @@ class TestParityStochastic:
                                mu,
                                (math.pi ** 2 * s ** 2) / 3.0,
                                name="logistic")
+
+
+class TestParityNormalPink:
+    """NORMALPINK is built from PREVIOUS and NORMAL: the same process on both engines, from
+    different numbers."""
+
+    def _series(self, build, backend, stoptime=10000):
+        model = Model(starttime=0, stoptime=stoptime, dt=1, name="pink_" + backend)
+        model.converter("x").equation = build(model)
+        return model.simulate(["x"], backend=backend)["x"].values
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_mean_spread_and_correlation(self, backend):
+        # The lag-1 correlation is 1 - DT / correlation time, 0.8 here
+        x = self._series(lambda model: sd.normalpink(model, 10.0, 2.0, 5.0, seed=7), backend)
+        assert abs(x.mean() - 10.0) < 0.15 and abs(x.std() - 2.0) < 0.1
+        assert abs(np.corrcoef(x[:-1], x[1:])[0, 1] - 0.8) < 0.03
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_bounds_hold_the_noise_and_a_sample_holds_the_whole_process(self, backend):
+        bounded = self._series(lambda model: sd.normalpink(model, 10.0, 2.0, 5.0, 7, 10.0, 20.0), backend)
+        assert bounded.min() >= 10.0 and bounded.max() <= 20.0
+        # Drawn again from the same value: a mean of 11.8, where Stella's 11.55 moves on
+        # from each value it rejects
+        assert abs(bounded.mean() - 11.8) < 0.15
+        sampled = self._series(lambda model: sd.normalpink(model, 10.0, 2.0, 5.0, 7, sample=3.0), backend)
+        assert np.count_nonzero(np.diff(sampled)) == 3333
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_a_correlation_time_up_to_dt_is_the_normal_draw_itself(self, backend):
+        pink = self._series(lambda model: sd.normalpink(model, 10.0, 2.0, 0.75, 7), backend, 50)
+        plain = self._series(lambda model: sd.normal(10.0, 2.0, 7), backend, 50)
+        assert np.allclose(pink, plain, rtol=0, atol=1e-12)
+
+    def test_a_correlation_time_of_0_is_nan_and_reported_alike(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="pink_zero")
+        model.converter("x").equation = sd.normalpink(model, 10.0, 2.0, 0.0, 7)
+        python, python_errors = _error_lines(lambda: model.simulate(["x"]))
+        rust, rust_errors = _error_lines(lambda: model.simulate(["x"], backend="rust"))
+        assert python["x"].isna().all() and rust["x"].isna().all()
+        assert python_errors and sorted(python_errors) == sorted(rust_errors)
+
+
+class TestParitySeeded:
+    """A seeded draw: the engines draw different numbers for the same seed, and the same
+    distribution - and each engine draws the same numbers on every run."""
+
+    @pytest.mark.parametrize("build, mean, var, mean_tol, var_tol", [
+        (lambda seed: sd.normal(100, 10, seed=seed), 100.0, 100.0, None, None),
+        (lambda seed: sd.random(0, 1, seed), 0.5, 1.0 / 12.0, 0.05, 0.02),
+        (lambda seed: sd.beta(2.0, 5.0, seed=seed), 2.0 / 7.0, 10.0 / 392.0, 0.05, 0.02),
+        (lambda seed: sd.binomial(20, 0.3, seed=seed), 6.0, 4.2, None, None),
+        (lambda seed: sd.negbinomial(5, 0.4, seed=seed), 7.5, 18.75, None, None),
+        (lambda seed: sd.exprnd(5, seed=seed), 5.0, 25.0, None, None),
+        (lambda seed: sd.gamma(2, 3, seed=seed), 6.0, 18.0, None, None),
+        (lambda seed: sd.geometric(0.3, seed=seed), 1.0 / 0.3, 0.7 / 0.09, 1.0, 3.0),
+        (lambda seed: sd.lognormal(2.0, 1.0, seed=seed), 2.0, 1.0, 0.3, 1.0),
+        (lambda seed: sd.logistic(10.0, 2.0, seed=seed), 10.0, math.pi ** 2 * 4.0 / 3.0, None, None),
+        (lambda seed: sd.montecarlo(50.0, seed=seed), 0.5, 0.25, 0.05, 0.05),
+        (lambda seed: sd.poisson(5, seed=seed), 5.0, 5.0, None, None),
+        (lambda seed: sd.triangular(1.0, 5.0, 10.0, seed=seed), 16.0 / 3.0, 73.0 / 18.0, None, None),
+        (lambda seed: sd.weibull(2.0, 5.0, seed=seed), 5.0 * math.gamma(1.5),
+         25.0 * (math.gamma(2.0) - math.gamma(1.5) ** 2), None, None),
+        (lambda seed: sd.pareto(5.0, 1.0, seed=seed), 1.25, 5.0 / 48.0, 0.1, 0.15),
+        # Each segment uniform, weighted by its area: 1/8, 3/8, 3/8, 1/8
+        (lambda seed: sd.lookuprandom([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 1.0], [4.0, 0.0]], seed=seed), 2.0, 5.0 / 6.0, 0.05, 0.05),
+    ], ids=["normal", "uniform", "beta", "binomial", "negbinomial", "exprnd", "gamma", "geometric",
+            "lognormal", "logistic", "montecarlo", "poisson", "triangular", "weibull", "pareto", "lookuprandom"])
+    def test_the_same_distribution_on_both_engines(self, build, mean, var, mean_tol, var_tol):
+        _run_stochastic_parity(build(7), mean, var, mean_tol, var_tol, name="seeded")
+
+    def test_each_engine_draws_the_same_numbers_on_every_run_whatever_the_run_seed(self):
+        def run(run_seed):
+            model = Model(starttime=0, stoptime=30, dt=1, name="seeded_runs")
+            model.converter("x").equation = sd.normal(0.0, 1.0, seed=3)
+            raw = RustSdEngine().load_model(model.to_json()).simulate(["x"], seed=run_seed)
+            return [value for _, value in sorted(raw["x"].items())]
+        assert run(1) == run(2) == run(None)
+
+    def test_a_seeded_draw_leaves_the_unseeded_ones_alone(self):
+        def run(with_seeded):
+            model = Model(starttime=0, stoptime=30, dt=1, name="seeded_beside")
+            model.converter("free").equation = sd.normal(0.0, 1.0)
+            if with_seeded:
+                model.converter("fixed").equation = sd.normal(0.0, 1.0, seed=3)
+            raw = RustSdEngine().load_model(model.to_json()).simulate(["free"], seed=5)
+            return [value for _, value in sorted(raw["free"].items())]
+        assert run(False) == run(True)
+
+    def test_the_cells_of_an_array_draw_apart(self):
+        model = Model(starttime=0, stoptime=200, dt=1, name="seeded_cells")
+        mean = model.constant("mean")
+        mean.setup_named_vector({"a": 0.0, "b": 0.0, "c": 0.0})
+        model.converter("d").equation = sd.normal(mean, 1.0, seed=3)
+        raw = RustSdEngine().load_model(model.to_json()).simulate(["d[a]", "d[b]", "d[c]"])
+        series = [np.array([value for _, value in sorted(raw[name].items())]) for name in ("d[a]", "d[b]", "d[c]")]
+        assert abs(np.corrcoef(series[0], series[1])[0, 1]) < 0.2
+        assert not np.array_equal(series[1], series[2])
+
+    def test_a_seed_that_is_no_whole_number_of_at_least_0(self):
+        for seed in (-1, 2.5):
+            _run_nan_parity(sd.normal(0.0, 1.0, seed=seed), "bad_seed")
+
+
+def _truncated_normal_moments(mean, stddev, lower, upper):
+    from scipy.stats import truncnorm
+    distribution = truncnorm((lower - mean) / stddev, (upper - mean) / stddev, loc=mean, scale=stddev)
+    return distribution.mean(), distribution.var()
+
+
+class TestParityBoundsAndSample:
+    """A random function's minimum, maximum and sample, as Stella reads them: drawn again
+    until a value lies within the bounds - NaN and a report after 100 draws - and held
+    from the start of each sample, which is cut down to whole steps."""
+
+    @pytest.mark.parametrize("build, mean, var", [
+        (lambda seed: sd.normal(0, 1, seed, -1, 1), *_truncated_normal_moments(0, 1, -1, 1)),
+        (lambda seed: sd.normal(10, 2, seed, 9), *_truncated_normal_moments(10, 2, 9, math.inf)),
+        (lambda seed: sd.uniform(0, 10, seed, 2, 4), 3.0, 1.0 / 3.0),
+        (lambda seed: sd.gamma(2, 3, seed, 4, 8), None, None),
+        (lambda seed: sd.poisson(4, seed, 2, 5), None, None),
+    ], ids=["normal", "normal_minimum_only", "uniform", "gamma", "poisson"])
+    @pytest.mark.parametrize("seeded", [True, False], ids=["seeded", "unseeded"])
+    def test_a_bounded_draw_on_both_engines(self, build, mean, var, seeded):
+        if mean is None:
+            # The moments of the bounded distribution, measured on the Python engine: both
+            # engines have to stay inside the bounds and agree with it
+            model = Model(starttime=0, stoptime=N_SAMPLES, dt=1, name="bounded_reference")
+            model.converter("x").equation = build(11)
+            values = np.array([model.evaluate_equation("x", float(t)) for t in range(N_SAMPLES + 1)])
+            mean, var = float(values.mean()), float(values.var())
+        _run_stochastic_parity(build(7 if seeded else None), mean, var,
+                               max(0.05, abs(mean) * 0.05), max(0.05, var * 0.2), name="bounded")
+
+    def test_bounds_on_both_engines_alike(self):
+        model = Model(starttime=0, stoptime=200, dt=1, name="bounds_par")
+        expressions = {
+            'equal': sd.normal(0, 1, 3, 0.5, 0.5),
+            'equal_discrete': sd.poisson(4, 3, 3, 3),
+            'nan_bounds': sd.uniform(0, 1, 3, sd.nan(), sd.nan()),
+            'discrete_inclusive': sd.binomial(10, 0.3, 4, 2, 4),
+            'montecarlo_bounded': sd.montecarlo(50, 5, 1, 1),
+        }
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
+        raw = RustSdEngine().load_model(model.to_json()).simulate(list(expressions))
+        for name in expressions:
+            python = [model.evaluate_equation(name, t) for t in times]
+            rust = [raw[name][rust_time_key(t)] for t in times]
+            assert set(python) == set(rust) or name in ("nan_bounds", "discrete_inclusive"), name
+        assert {model.evaluate_equation('discrete_inclusive', t) for t in times} == {2, 3, 4}
+        assert {raw['discrete_inclusive'][rust_time_key(t)] for t in times} == {2.0, 3.0, 4.0}
+
+    @pytest.mark.parametrize("build", [
+        lambda: sd.normal(0.0, 1.0, 3, 1.0, -1.0),
+        lambda: sd.normal(0.0, 1.0, 3, 10.0, 11.0),
+        lambda: sd.normal(0.0, 1.0, None, 10.0, 11.0),
+        lambda: sd.poisson(4.0, 3, 5.0, 2.0),
+    ], ids=["reversed", "out_of_reach", "out_of_reach_unseeded", "reversed_discrete"])
+    def test_bounds_that_cannot_be_met(self, build):
+        _run_nan_parity(build(), "unmet_bounds")
+
+    @pytest.mark.parametrize("sample, changes", [
+        (1.0, [1.5, 2.5, 3.5]),
+        (0.6, [1.0, 1.5, 2.0]),
+        (0.75, [1.25, 2.0, 2.75]),
+        (0.3, [0.75, 1.0, 1.25]),
+        (0.0, [0.75, 1.0, 1.25]),
+    ])
+    @pytest.mark.parametrize("seed", [31, None], ids=["seeded", "unseeded"])
+    def test_a_sample_holds_on_both_engines(self, sample, changes, seed):
+        """Stella's run (`random_dt_quarter`): from 0.5 at DT 0.25 the sample is cut down to
+        whole steps and counted from the start."""
+        model = Model(starttime=0.5, stoptime=5.0, dt=0.25, name="sample_par")
+        expressions = {'plain': sd.normal(0.0, 1.0, seed, sample=sample),
+                       'bounded': sd.normal(0.0, 1.0, seed, -1.0, 1.0, sample=sample),
+                       'montecarlo': sd.montecarlo(50, seed, sample=sample),
+                       'of_an_element': sd.uniform(0.0, sd.time() + 1.0, seed, sample=sample)}
+        for name, expression in expressions.items():
+            model.converter(name).equation = expression
+        times = timerange(model.starttime, model.stoptime, model.dt, exclusive=False)
+        raw = RustSdEngine().load_model(model.to_json()).simulate(list(expressions))
+        for name in ('plain', 'bounded', 'of_an_element'):
+            for values in ([model.evaluate_equation(name, t) for t in times],
+                           [raw[name][rust_time_key(t)] for t in times]):
+                changed = [t for t, before, after in zip(times[1:], values, values[1:]) if after != before]
+                assert changed[:3] == changes, name
+        # A held MONTECARLO changes only where a sample begins - where the normal draw changes
+        starts = {t for t, before, after in zip(times[1:], [model.evaluate_equation('plain', t) for t in times],
+                                                [model.evaluate_equation('plain', t) for t in times][1:])
+                  if after != before}
+        for values in ([model.evaluate_equation('montecarlo', t) for t in times],
+                       [raw['montecarlo'][rust_time_key(t)] for t in times]):
+            assert {t for t, before, after in zip(times[1:], values, values[1:]) if after != before} <= starts
+
+    def test_a_held_draw_is_drawn_again_after_a_reset(self):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="held_reset")
+        model.converter("x").equation = sd.normal(0.0, 1.0, sample=2)
+        first = [model.evaluate_equation("x", float(t)) for t in range(5)]
+        model.reset_cache()
+        second = [model.evaluate_equation("x", float(t)) for t in range(5)]
+        assert first[0] == first[1] and second[0] == second[1] and first != second
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -1326,6 +1737,677 @@ def _run_nan_parity(equation, name):
     assert " in 'x' at t=0.0: " in python_errors[0]
 
 
+def _non_negative_store(dt=1.0, order=("sales", "scrap"), stoptime=12.0):
+    """A store of 10 with a delivery of 3 and two outflows that want more than there is."""
+    model = Model(starttime=0, stoptime=stoptime, dt=dt, name="non_negative_par")
+    store = model.stock("store")
+    store.initial_value = 10.0
+    delivery = model.flow("delivery")
+    delivery.equation = 3.0 + sd.step(4.0, 6.0)
+    flows = {"sales": 8.0, "scrap": 5.0}
+    outflows = []
+    for name in order:
+        flow = model.flow(name)
+        flow.equation = flows[name] + 0.5 * sd.time()
+        outflows.append(flow)
+    store.inflows = [delivery]
+    store.outflows = outflows
+    store.non_negative = True
+    return model
+
+
+class TestParityNonNegativeStocks:
+    """A non-negative stock's outflows, cut back in the order of their list, and the biflows
+    among its flows - the serializer writes the cut back out, the engine computes it."""
+
+    @pytest.mark.parametrize("dt", [1.0, 0.5])
+    @pytest.mark.parametrize("order", [("sales", "scrap"), ("scrap", "sales")])
+    def test_outflows_in_the_order_of_their_list(self, dt, order):
+        run_parity(_non_negative_store(dt=dt, order=order), ["store", "delivery", "sales", "scrap"])
+
+    @pytest.mark.parametrize("biflow_place, rate", [
+        ("inflow", -5.0), ("inflow", 5.0), ("outflow", 5.0), ("outflow", -5.0)])
+    def test_a_biflow_in_either_list(self, biflow_place, rate):
+        model = Model(starttime=0, stoptime=8, dt=1, name="biflow_par")
+        stock = model.stock("stock")
+        stock.initial_value = 2.0
+        exchange = model.biflow("exchange")
+        exchange.equation = rate * sd.If(sd.time() < 4, 1.0, -0.5)
+        outflow = model.flow("outflow")
+        outflow.equation = 1.0 + 0.25 * sd.time()
+        if biflow_place == "inflow":
+            stock.inflows = [exchange]
+            stock.outflows = [outflow]
+        else:
+            stock.outflows = [outflow, exchange]
+        stock.non_negative = True
+        run_parity(model, ["stock", "exchange", "outflow"])
+
+    @pytest.mark.parametrize("returns_rate, transfer_rate", [(-4.0, 2.0), (2.0, -3.0), (-1.0, -6.0)])
+    def test_biflows_in_both_lists(self, returns_rate, transfer_rate):
+        model = Model(starttime=0, stoptime=10, dt=1, name="both_lists_par")
+        store = model.stock("store")
+        supply = model.flow("supply")
+        supply.equation = 5.0
+        returns = model.biflow("returns")
+        returns.equation = returns_rate
+        sales = model.flow("sales")
+        sales.equation = 3.0
+        transfer = model.biflow("transfer")
+        transfer.equation = transfer_rate
+        store.inflows = [supply, returns]
+        store.outflows = [sales, transfer]
+        store.non_negative = True
+        run_parity(model, ["store", "supply", "returns", "sales", "transfer"])
+
+    def test_two_inflows_running_backwards_and_one_depending_on_an_outflow(self):
+        model = Model(starttime=0, stoptime=6, dt=1, name="backwards_par")
+        stock = model.stock("stock")
+        stock.initial_value = 3.0
+        first = model.biflow("first")
+        first.equation = -2.0
+        second = model.biflow("second")
+        second.equation = -2.0
+        outflow = model.flow("outflow")
+        outflow.equation = 1.0
+        refill = model.flow("refill")
+        refill.equation = outflow * 2.0
+        stock.inflows = [refill, first, second]
+        stock.outflows = [outflow]
+        stock.non_negative = True
+        run_parity(model, ["stock", "first", "second", "outflow", "refill"])
+
+    def test_arrays(self):
+        model = Model(starttime=0, stoptime=6, dt=1, name="arrayed_par")
+        stock = model.stock("stock")
+        stock.setup_named_vector({"north": 10.0, "south": 1.0})
+        inflow = model.flow("inflow")
+        inflow.setup_named_vector({"north": 3.0, "south": 1.0})
+        first = model.flow("first")
+        first.setup_named_vector({"north": 8.0, "south": 1.0})
+        second = model.flow("second")
+        second.setup_named_vector({"north": 9.0, "south": 5.0})
+        exchange = model.biflow("exchange")
+        exchange.setup_named_vector({"north": -1.0, "south": 2.0})
+        stock.inflows = [inflow, exchange]
+        stock.outflows = [first, second]
+        stock.non_negative = True
+        names = ["{}[{}]".format(element, cell) for element in ("stock", "first", "second", "exchange")
+                 for cell in ("north", "south")]
+        run_parity(model, names)
+
+    def test_a_matrix(self):
+        model = Model(starttime=0, stoptime=4, dt=1, name="matrix_par")
+        stock = model.stock("stock")
+        stock.setup_matrix([2, 2], [[10.0, 1.0], [0.0, 4.0]])
+        outflow = model.flow("outflow")
+        outflow.setup_matrix([2, 2], [[4.0, 4.0], [4.0, 4.0]])
+        stock.outflows = [outflow]
+        stock.non_negative = True
+        names = ["{}[{}][{}]".format(element, row, column) for element in ("stock", "outflow")
+                 for row in (0, 1) for column in (0, 1)]
+        run_parity(model, names)
+
+    @pytest.mark.allow_rust_unused
+    def test_an_outflow_depending_on_a_later_one_is_refused_alike(self):
+        """The order check is the Python engine's own, run by the serializer."""
+        model = _non_negative_store()
+        model.flows["sales"].equation = model.flows["scrap"] * 1.0
+        with pytest.raises(Exception) as python:
+            model.simulate(["store"])
+        with pytest.raises(Exception) as rust:
+            model.simulate(["store"], backend="rust")
+        assert "depends on it" in str(python.value)
+        assert str(rust.value) == str(python.value)
+
+
+def _belt_model(fifo=False, exponential=False, fractions=(), initial=1000.0, transit=4.0,
+                inflow=250.0, dt=0.25, stoptime=50.0):
+    """The belt scenarios of `tests/unittests/test_belt.py` as a model: dt 0.25, transit 4,
+    250 entering per time unit. `transit` and each fraction may be a function of the model
+    returning an expression."""
+    model = Model(starttime=0.0, stoptime=stoptime, dt=dt, name="belt_par")
+    entering = model.flow("entering")
+    entering.equation = inflow
+    leaving = model.flow("leaving")
+    belt = model.conveyor("belt")
+    belt.transit_time = transit(model) if callable(transit) else transit
+    belt.initial_value = initial
+    belt.inflows = [entering]
+    belt.outflows = [leaving]
+    leaks = {}
+    for k, fraction in enumerate(fractions):
+        leaks[model.flow("leak_{}".format(k))] = fraction(model) if callable(fraction) else fraction
+    belt.leaks = leaks
+    belt.fifo = fifo
+    belt.exponential_leak = exponential
+    names = ["belt", "leaving"] + ["leak_{}".format(k) for k in range(len(fractions))]
+    return model, names
+
+
+def _later(switch, before, after):
+    return lambda model: sd.If(sd.time() < switch, before, after)
+
+
+class TestParityConveyors:
+    """Every case of `test_belt.py` and `test_conveyor.py` that runs a model, on both engines."""
+
+    @pytest.mark.parametrize("fifo", [False, True], ids=["traditional", "fifo"])
+    @pytest.mark.parametrize("case", [
+        dict(),
+        dict(initial=0.0),
+        dict(fractions=[0.2]),
+        dict(exponential=True, fractions=[0.1]),
+        dict(exponential=True, fractions=[0.1, 0.1]),
+        dict(fractions=[_later(4, 0.2, 0.4)]),
+        dict(fractions=[0.2], transit=_later(2, 4.0, 2.0), stoptime=100.0),
+        dict(transit=_later(8, 4.0, 2.0), stoptime=24.0),
+        dict(transit=_later(8, 4.0, 8.0), stoptime=24.0),
+        dict(initial=0.0, transit=1.1, stoptime=3.0),
+        dict(fractions=[0.2], initial=0.0, transit=1.1, stoptime=10.0),
+        dict(fractions=[0.7, 0.7]),
+        dict(exponential=True, fractions=[5.0, 5.0]),
+        dict(initial=[1.0, 2.0, 3.0, 4.0], inflow=0.0, stoptime=4.0),
+        dict(initial=[float(value) for value in range(16)], inflow=0.0, stoptime=4.0),
+        dict(initial=[1.0, 2.0], inflow=0.0, stoptime=4.0),
+        dict(initial=[1.0, 2.0, 3.0, 4.0, 5.0], inflow=0.0, stoptime=4.0),
+        dict(fractions=[1.0, 1.0], initial=100.0, stoptime=5.0),
+        dict(fractions=[0.1], initial=[1.0, 2.0, 3.0, 4.0], stoptime=5.0),
+    ], ids=["steady", "empty", "linear", "exponential", "two_exponential", "switching_fraction",
+            "shrinking_transit", "shorter_transit", "longer_transit", "transit_between_slats",
+            "partly_leaving", "linear_beyond_content", "exponential_beyond_content", "list_per_unit",
+            "list_per_slat", "short_list", "long_list", "leak_empties_slats", "list_with_leak"])
+    def test_the_belt(self, fifo, case):
+        model, names = _belt_model(fifo=fifo, **case)
+        run_parity(model, names)
+
+    def test_agecount_by_time_on_the_belt(self):
+        model, names = _belt_model(initial=[1.0, 2.0, 3.0, 4.0], inflow=9.0, dt=1.0, stoptime=6.0)
+        belt = model.stocks["belt"]
+        model.converter("age_0").equation = sd.agecount(belt, 0.0, 1.0)
+        model.converter("age_0_1").equation = sd.agecount(belt, 0.0, 2.0)
+        model.converter("age_3").equation = sd.agecount(belt, 3.0, 4.0)
+        model.converter("age_1").equation = sd.agecount(belt, 1.0, 1.0)
+        model.converter("from_1").equation = sd.agecount(belt, 1.0)
+        run_parity(model, names + ["age_0", "age_0_1", "age_3", "age_1", "from_1"])
+
+    @pytest.mark.parametrize("dt", [1.0, 0.25])
+    def test_agecount_with_equal_bounds_and_without_a_maximum(self, dt):
+        model, names = _belt_model(initial=0.0, inflow=10.0, dt=dt, stoptime=8.0)
+        belt = model.stocks["belt"]
+        model.converter("aged_2").equation = sd.agecount(belt, 2, 2)
+        model.converter("older").equation = sd.agecount(belt, 1)
+        run_parity(model, names + ["aged_2", "older"])
+
+    def test_the_age_group(self):
+        model = Model(starttime=0.0, stoptime=60.0, dt=1.0, name="cohorts_par")
+        turning_20 = model.flow("turning_20")
+        turning_20.equation = 100.0
+        mortality_rate = model.constant("mortality_rate")
+        mortality_rate.equation = 0.02
+        emigration_rate = model.converter("emigration_rate")
+        emigration_rate.equation = 0.01 + sd.step(0.02, 30)
+        turning_40 = model.flow("turning_40")
+        deaths = model.flow("deaths")
+        emigration = model.flow("emigration")
+        cohort = model.conveyor("aged_20_to_40")
+        cohort.transit_time = 20
+        cohort.initial_value = 1500.0
+        cohort.inflows = [turning_20]
+        cohort.outflows = [turning_40]
+        cohort.leaks = {deaths: mortality_rate, emigration: emigration_rate}
+        cohort.exponential_leak = True
+        aged_40_plus = model.stock("aged_40_plus")
+        aged_40_plus.inflows = [turning_40]
+        model.converter("youngest").equation = sd.agecount(cohort, 0, 5)
+        run_parity(model, ["aged_20_to_40", "turning_40", "deaths", "emigration", "aged_40_plus", "youngest"])
+
+    def test_an_initial_value_that_is_an_expression_and_a_chain(self):
+        model = Model(starttime=0.0, stoptime=12.0, dt=1.0, name="chain_par")
+        start = model.constant("start")
+        start.equation = 30.0
+        inflow = model.flow("inflow")
+        inflow.equation = 10.0
+        middle = model.flow("middle")
+        out = model.flow("out")
+        first = model.conveyor("first")
+        first.transit_time = 2
+        first.initial_value = start * 2.0
+        first.inflows = [inflow]
+        first.outflows = [middle]
+        second = model.conveyor("second")
+        second.transit_time = 3
+        second.inflows = [middle]
+        second.outflows = [out]
+        run_parity(model, ["first", "middle", "second", "out"])
+
+    def test_an_inflow_reading_the_conveyor(self):
+        model = Model(starttime=0.0, stoptime=6.0, dt=1.0, name="reads_par")
+        out = model.flow("out")
+        belt = model.conveyor("belt")
+        inflow = model.flow("inflow")
+        inflow.equation = belt * 0.1
+        belt.transit_time = 2
+        belt.initial_value = 10.0
+        belt.inflows = [inflow]
+        belt.outflows = [out]
+        run_parity(model, ["belt", "inflow", "out"])
+
+    @pytest.mark.allow_rust_unused
+    def test_an_inflow_reading_the_outflow_is_a_cycle_on_both(self):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="cycle_par")
+        out = model.flow("out")
+        inflow = model.flow("inflow")
+        inflow.equation = out * 0.5
+        belt = model.conveyor("belt")
+        belt.transit_time = 2
+        belt.initial_value = 10.0
+        belt.inflows = [inflow]
+        belt.outflows = [out]
+        with pytest.raises(Exception, match="Cyclic dependency"):
+            model.simulate(["out"])
+        with pytest.raises(Exception, match="Cyclic dependency"):
+            model.simulate(["out"], backend="rust")
+
+    def _regions(self):
+        model = Model(starttime=0.0, stoptime=10.0, dt=0.5, name="regions_par")
+        belt = model.conveyor("belt")
+        belt.setup_named_vector({"north": 0.0, "south": 0.0})
+        inflow = model.flow("inflow")
+        inflow.setup_named_vector({"north": 10.0, "south": 20.0})
+        return model, belt, inflow
+
+    @staticmethod
+    def _cells(*elements):
+        return ["{}[{}]".format(element, cell) for element in elements for cell in ("north", "south")]
+
+    def test_each_cell_has_a_belt_of_its_own(self):
+        model, belt, inflow = self._regions()
+        rate = model.constant("rate")
+        rate.equation = 0.1
+        out = model.flow("out")
+        loss = model.flow("loss")
+        belt["north"].initial_value = [1.0, 2.0, 3.0]
+        belt["south"].initial_value = 60.0
+        belt.transit_time = 3
+        belt.inflows = [inflow]
+        belt.outflows = [out]
+        belt.leaks = {loss: rate}
+        model.converter("young").equation = sd.agecount(belt, 0, 1)
+        model.converter("aged_1").equation = sd.agecount(belt, 1, 1)
+        model.converter("older").equation = sd.agecount(belt, 1)
+        run_parity(model, self._cells("belt", "out", "loss", "young", "aged_1", "older"))
+
+    def test_starts_of_the_whole_and_of_a_cell(self):
+        model, belt, inflow = self._regions()
+        out = model.flow("out")
+        belt.initial_value = [5.0]
+        belt["south"].initial_value = [7.0]
+        belt.transit_time = 1
+        belt.outflows = [out]
+        run_parity(model, self._cells("belt", "out"))
+
+    def test_transit_times_and_fractions_per_cell(self):
+        model, belt, inflow = self._regions()
+        transit = model.constant("transit")
+        transit.setup_named_vector({"north": 1.0, "south": 2.0})
+        rate = model.constant("rate")
+        rate.setup_named_vector({"north": 0.0, "south": 0.5})
+        out = model.flow("out")
+        loss = model.flow("loss")
+        belt.transit_time = transit
+        belt.inflows = [inflow]
+        belt.outflows = [out]
+        belt.leaks = {loss: rate}
+        run_parity(model, self._cells("belt", "out", "loss"))
+
+    def test_a_matrix(self):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="matrix_belt_par")
+        belt = model.conveyor("belt")
+        belt.setup_matrix([2, 2], [[1.0, 2.0], [3.0, 4.0]])
+        out = model.flow("out")
+        belt.transit_time = 1
+        belt.outflows = [out]
+        run_parity(model, ["{}[{}][{}]".format(element, row, column) for element in ("belt", "out")
+                           for row in (0, 1) for column in (0, 1)])
+
+    @pytest.mark.allow_rust_unused
+    def test_a_run_without_transit_time_or_outflow_is_refused_alike(self):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="incomplete_par")
+        belt = model.conveyor("belt")
+        for missing in ("no transit time", "no outflow"):
+            with pytest.raises(Exception) as python:
+                model.simulate(["belt"])
+            with pytest.raises(Exception) as rust:
+                model.simulate(["belt"], backend="rust")
+            assert missing in str(python.value) and str(rust.value) == str(python.value)
+            belt.transit_time = 2
+
+    @pytest.mark.parametrize("transit, rate, message", [
+        (_later(2, 2.0, 0.0), 0.1, "greater than zero"),
+        (lambda model: sd.nan(), 0.1, "greater than zero"),
+        (lambda model: 2.0, _later(1, 0.1, -0.1), "has to be zero or more"),
+    ])
+    def test_a_transit_time_or_fraction_that_becomes_invalid_is_refused_alike(self, transit, rate, message):
+        model, _ = _belt_model(transit=transit, fractions=[rate], dt=1.0, stoptime=6.0)
+        with pytest.raises(Exception) as python:
+            model.simulate(["leaving"])
+        with pytest.raises(Exception) as rust:
+            model.simulate(["leaving"], backend="rust")
+        assert message in str(python.value)
+        assert str(python.value).strip("\"'") in str(rust.value)
+
+    def test_a_scenario_runs_its_own_copy(self):
+        model, names = _belt_model(fractions=[lambda model: model.constant("rate")], dt=1.0, stoptime=10.0)
+        model.constants["rate"].equation = 0.1
+        results = {}
+        for backend in ("python", "rust"):
+            runner = BPTK_Py.bptk()
+            runner.register_scenario_manager({"sm": {"model": model}})
+            runner.register_scenarios(scenario_manager="sm",
+                                      scenarios={"base": {}, "leaky": {"constants": {"rate": 0.3}}})
+            results[backend] = runner.run_scenarios(scenario_managers=["sm"], scenarios=["base", "leaky"],
+                                                    equations=["leak_0"], backend=backend, return_format="df")
+        assert np.allclose(results["python"].values, results["rust"].values)
+
+
+class TestParityInteractionsAfter340:
+    """The constructs that reached the engine in 3.5.0, meeting each other, at a late start
+    and a fine dt, in stocks and arrays."""
+
+    def test_a_non_negative_stock_with_a_late_start_and_a_turning_biflow(self):
+        model = Model(starttime=3.0, stoptime=12.0, dt=0.25, name="late_non_negative")
+        stock = model.stock("stock")
+        stock.initial_value = 4.0
+        exchange = model.biflow("exchange")
+        exchange.equation = 3.0 * sd.sin(sd.time())
+        outflow = model.flow("outflow")
+        outflow.equation = 2.0
+        stock.inflows = [exchange]
+        stock.outflows = [outflow]
+        stock.non_negative = True
+        run_parity(model, ["stock", "exchange", "outflow"])
+
+    def test_an_unnamed_vector_of_non_negative_stocks(self):
+        model = Model(starttime=0, stoptime=6, dt=1, name="vector_non_negative")
+        stock = model.stock("stock")
+        stock.setup_vector(3, [5.0, 1.0, 0.0])
+        outflow = model.flow("outflow")
+        outflow.setup_vector(3, [2.0, 2.0, 2.0])
+        stock.outflows = [outflow]
+        stock.non_negative = True
+        run_parity(model, ["{}[{}]".format(name, cell) for name in ("stock", "outflow") for cell in range(3)])
+
+    def test_a_non_negative_stock_feeding_a_conveyor_feeding_one(self):
+        model = Model(starttime=1.0, stoptime=15.0, dt=0.5, name="chain_non_negative")
+        source = model.stock("source")
+        source.initial_value = 20.0
+        release = model.flow("release")
+        release.equation = 6.0
+        source.outflows = [release]
+        source.non_negative = True
+        arriving = model.flow("arriving")
+        belt = model.conveyor("belt")
+        belt.transit_time = 2.0
+        belt.inflows = [release]
+        belt.outflows = [arriving]
+        sink = model.stock("sink")
+        sales = model.flow("sales")
+        sales.equation = 4.0 + 0.0 / sd.max(sd.time() - 5.0, 0.0)
+        sink.inflows = [arriving]
+        sink.outflows = [sales]
+        sink.non_negative = True
+        run_parity(model, ["source", "release", "belt", "arriving", "sink", "sales"])
+
+    def test_arrayed_conveyors_into_arrayed_non_negative_stocks(self):
+        model = Model(starttime=0, stoptime=8, dt=1, name="arrayed_chain")
+        entering = model.flow("entering")
+        entering.setup_vector(2, [3.0, 1.0])
+        arriving = model.flow("arriving")
+        belt = model.conveyor("belt")
+        belt.setup_vector(2, [0.0, 0.0])
+        belt.transit_time = 2
+        belt.inflows = [entering]
+        belt.outflows = [arriving]
+        sink = model.stock("sink")
+        sink.setup_vector(2, [0.0, 0.0])
+        sales = model.flow("sales")
+        sales.setup_vector(2, [2.0, 2.0])
+        sink.inflows = [arriving]
+        sink.outflows = [sales]
+        sink.non_negative = True
+        run_parity(model, ["{}[{}]".format(name, cell) for name in ("belt", "arriving", "sink", "sales") for cell in (0, 1)])
+
+    def test_two_conveyors_in_a_row_at_a_late_start_and_agecount_in_a_stock(self):
+        model = Model(starttime=1.0, stoptime=12.0, dt=0.5, name="two_belts_late")
+        entering = model.flow("entering")
+        entering.equation = 10.0 + sd.time()
+        middle = model.flow("middle")
+        out = model.flow("out")
+        loss = model.flow("loss")
+        first = model.conveyor("first")
+        first.transit_time = 1.5
+        first.initial_value = [1.0, 2.0]
+        first.inflows = [entering]
+        first.outflows = [middle]
+        first.fifo = True
+        second = model.conveyor("second")
+        second.transit_time = 2.0
+        second.inflows = [middle]
+        second.outflows = [out]
+        second.leaks = {loss: 0.2}
+        second.exponential_leak = True
+        tally = model.stock("tally")
+        tally.equation = sd.agecount(second, 0, 1) + first * 0.01
+        run_parity(model, ["first", "middle", "second", "out", "loss", "tally"])
+
+    def test_nan_and_infinity_flowing_into_a_non_negative_stock(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name="nan_into_non_negative")
+        stock = model.stock("stock")
+        stock.initial_value = 3.0
+        bad = model.flow("bad")
+        bad.equation = sd.If(sd.time() >= 2, sd.nan(), 1.0)
+        huge = model.flow("huge")
+        huge.equation = sd.If(sd.time() >= 3, sd.Inf(), 0.0)
+        outflow = model.flow("outflow")
+        outflow.equation = 2.0 / sd.If(sd.time() >= 1, 0.0, 1.0)
+        stock.inflows = [bad, huge]
+        stock.outflows = [outflow]
+        stock.non_negative = True
+        run_parity(model, ["stock", "bad", "huge", "outflow"])
+
+    def test_array_methods_over_an_array_that_changes_inside_a_stock(self):
+        model = Model(starttime=0, stoptime=8, dt=0.5, name="array_methods_stock")
+        values = model.converter("values")
+        values.setup_vector(4, [0.0] * 4)
+        for cell, slope in enumerate([1.0, -1.0, 0.5, 0.0]):
+            values[cell].equation = 3.0 + slope * sd.time()
+        stock = model.stock("stock")
+        stock.equation = values.arr_rank(2) + values.arr_largest(2) + values.arr_interpolate(0.4)
+        run_parity(model, ["stock"])
+
+    def test_seeded_draws_in_an_array_inside_a_stock(self):
+        model = Model(starttime=0, stoptime=400, dt=0.5, name="seeded_array_stock")
+        mean = model.constant("mean")
+        mean.setup_vector(2, [1.0, 2.0])
+        draw = model.converter("draw")
+        draw.equation = sd.normal(mean, 1.0, seed=8)
+        stock = model.stock("stock")
+        stock.setup_vector(2, [0.0, 0.0])
+        stock.equation = draw
+        model.converter("poisson").equation = sd.poisson(4.0, seed=2)
+        python = model.simulate(["draw[0]", "draw[1]", "poisson"])
+        rust = model.simulate(["draw[0]", "draw[1]", "poisson"], backend="rust")
+        for name, expected in (("draw[0]", 1.0), ("draw[1]", 2.0), ("poisson", 2.0)):
+            assert abs(python[name].mean() - expected) < 0.15 and abs(rust[name].mean() - expected) < 0.15
+        assert not np.allclose(rust["draw[0]"].values - 1.0, rust["draw[1]"].values - 2.0)
+
+
+class TestParityScenariosAfter340:
+    """run_scenarios with scenario overrides reaching the constructs of 3.5.0."""
+
+    def _compare(self, model, scenarios, equations):
+        results = {}
+        for backend in ("python", "rust"):
+            runner = BPTK_Py.bptk()
+            runner.register_scenario_manager({"sm": {"model": model}})
+            runner.register_scenarios(scenario_manager="sm", scenarios=scenarios)
+            results[backend] = runner.run_scenarios(scenario_managers=["sm"], scenarios=list(scenarios),
+                                                    equations=equations, backend=backend, return_format="df")
+        assert np.allclose(results["python"].values, results["rust"].values, equal_nan=True)
+
+    def test_a_conveyor_transit_time_and_a_non_negative_outflow(self):
+        model, names = _belt_model(dt=1.0, stoptime=12.0, transit=lambda model: model.constant("transit"))
+        model.constants["transit"].equation = 4.0
+        sink = model.stock("sink")
+        sales = model.flow("sales")
+        rate = model.constant("rate")
+        rate.equation = 100.0
+        sales.equation = rate
+        sink.inflows = [model.flows["leaving"]]
+        sink.outflows = [sales]
+        sink.non_negative = True
+        self._compare(model, {"base": {}, "fast": {"constants": {"transit": 2.0, "rate": 400.0}}},
+                      ["belt", "leaving", "sink", "sales"])
+
+    def test_an_array_cell_and_lookup_tables(self):
+        model = Model(starttime=0, stoptime=6, dt=1, name="scenario_cells")
+        values = model.constant("values")
+        values.setup_vector(3, [1.0, 5.0, 3.0])
+        model.points["tab"] = [[0, 1], [5, 3]]
+        model.converter("position").equation = values.arr_rank(1)
+        model.converter("largest").equation = values.arr_largest(1)
+        model.converter("backward").equation = sd.lookupinv(sd.time(), "tab")
+        model.converter("whole").equation = sd.lookuparea("tab")
+        self._compare(model, {"base": {}, "other": {"constants": {"values[1]": -2.0},
+                                                    "points": {"tab": [[0, 0], [2, 4], [10, 4]]}}},
+                      ["position", "largest", "backward", "whole"])
+
+
+class TestParityDivisionByZero:
+    """A division by zero gives NaN and one `[ERROR]` per element, in the same words, on both
+    engines - for `/`, `%` and 0 to a negative power, from the step it happens on."""
+
+    def _compare(self, model, equations):
+        python_values, python_errors = _error_lines(
+            lambda: model.simulate(equations).sort_index(axis=1))
+        rust_values, rust_errors = _error_lines(
+            lambda: model.simulate(equations, backend="rust").sort_index(axis=1))
+        assert np.array_equal(python_values.values, rust_values.values, equal_nan=True)
+        assert sorted(python_errors) == sorted(rust_errors)
+        return python_values, python_errors
+
+    def _model(self):
+        model = Model(starttime=0, stoptime=5, dt=1, name="by_zero")
+        divisor = model.converter("divisor")
+        divisor.equation = sd.If(sd.time() >= 2, 0.0, 1.0)
+        return model, divisor
+
+    def test_divide_modulo_and_power(self):
+        model, divisor = self._model()
+        model.converter("quotient").equation = 10.0 / divisor
+        model.converter("remainder").equation = 5.0 % divisor
+        model.converter("reciprocal").equation = divisor ** -1.0
+        values, errors = self._compare(model, ["quotient", "remainder", "reciprocal"])
+        assert list(values["quotient"][:2]) == [10.0, 10.0] and values["quotient"][2:].isna().all()
+        assert len(errors) == 3
+        assert "[ERROR] division by zero in 'quotient' at t=2.0." in sorted(errors)[0]
+
+    def test_in_a_stock(self):
+        model, divisor = self._model()
+        stock = model.stock("level")
+        stock.initial_value = 0.0
+        stock.equation = 1.0 / divisor
+        self._compare(model, ["level"])
+
+    def test_a_divisor_that_is_a_stock_started_above_zero(self):
+        """The start evaluates the stock before what reads it, on both engines."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="stock_divisor")
+        level = model.stock("level")
+        level.initial_value = 10.0
+        model.converter("share").equation = 1.0 / level
+        values, errors = self._compare(model, ["share"])
+        assert errors == [] and list(values["share"]) == [0.1] * 4
+
+    def test_a_draw_of_zero(self):
+        """A numpy number divided by zero gave inf without a word on the Python engine."""
+        model = Model(starttime=0, stoptime=3, dt=1, name="draw_zero")
+        model.converter("ratio").equation = 1.0 / sd.poisson(0.0)
+        values, errors = self._compare(model, ["ratio"])
+        assert values["ratio"].isna().all() and len(errors) == 1
+
+    def test_an_invalid_percentile_is_reported_alike(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="percentile_errors")
+        values = model.constant("values")
+        values.setup_vector(3, [1.0, 5.0, 3.0])
+        weights = model.constant("weights")
+        weights.setup_vector(3, [1.0, -1.0, 2.0])
+        model.converter("too_high").equation = values.arr_percentile(sd.time() * 50.0)
+        model.converter("negative_weight").equation = values.arr_percentile(50.0, 0.0, weights)
+        values_seen, errors = self._compare(model, ["too_high", "negative_weight"])
+        assert len(errors) == 2 and values_seen["too_high"][:3].notna().all()
+        assert any("percentile and lower must lie between 0 and 100" in error for error in errors)
+
+    def test_mathematical_functions_outside_their_domain_are_reported(self):
+        """NaN and an `[ERROR]` for a finite argument outside the domain; ln of 0 is minus
+        infinity and an infinite argument is left to the function, both unreported."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="domains")
+        cases = {"sqrt": sd.sqrt(-4.0), "ln": sd.ln(-1.0), "log10": sd.log10(-2.0), "arcsin": sd.arcsin(2.0),
+                 "arccos": sd.arccos(-1.5), "ln_0": sd.ln(0.0), "sqrt_inf": sd.sqrt(math.inf),
+                 "sqrt_minus_inf": sd.sqrt(-math.inf), "ln_inf": sd.ln(math.inf), "fine": sd.arccos(0.5)}
+        for name, expression in cases.items():
+            model.converter(name).equation = expression
+        python, python_errors = _error_lines(lambda: model.simulate(list(cases)).sort_index(axis=1))
+        rust, rust_errors = _error_lines(lambda: model.simulate(list(cases), backend="rust").sort_index(axis=1))
+        assert np.allclose(python.values, rust.values, equal_nan=True)
+        assert sorted(python_errors) == sorted(rust_errors) and len(python_errors) == 5
+        row = python.iloc[0]
+        assert row["ln_0"] == -math.inf and row["sqrt_inf"] == math.inf and math.isnan(row["sqrt_minus_inf"])
+
+    def test_gammaln_is_the_log_of_gamma_itself(self):
+        """As Stella: NaN for every argument of 0 and below, the log above."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="gammaln_negative")
+        cases = {"negative_gamma": -2.5, "pole": -2.0, "positive_gamma": -1.5, "half": 0.5}
+        for name, x in cases.items():
+            model.converter(name).equation = sd.gammaln(x)
+        python, errors = _error_lines(lambda: model.simulate(list(cases)).sort_index(axis=1))
+        rust = model.simulate(list(cases), backend="rust").sort_index(axis=1)
+        assert np.allclose(python.values, rust.values, rtol=1e-12, equal_nan=True)
+        row = python.iloc[0]
+        assert math.isnan(row["negative_gamma"]) and math.isnan(row["pole"]) and errors == []
+        assert math.isnan(row["positive_gamma"])
+        assert row["half"] == pytest.approx(math.log(math.sqrt(math.pi)))
+
+    def test_round_to_more_digits_than_a_float_holds(self):
+        """Not division by zero, but the same edge of a float: too many digits leave the
+        value, too few give 0, and a value that overflows when scaled stays as it is."""
+        model = Model(starttime=0, stoptime=1, dt=1, name="round_edges")
+        cases = {"many": sd.round(2.345, 400.0), "few": sd.round(5.0, -400.0),
+                 "scaled_over": sd.round(1e300, 100.0), "plain": sd.round(-2.5, 0.0)}
+        for name, expression in cases.items():
+            model.converter(name).equation = expression
+        values, errors = self._compare(model, list(cases))
+        assert values.iloc[0].to_dict() == {"few": 0.0, "many": 2.345, "plain": -3.0, "scaled_over": 1e300}
+
+    def test_a_negative_base_to_a_fractional_power_is_nan(self):
+        """No division by zero, and nothing reported - Python gave a complex number."""
+        model, divisor = self._model()
+        model.converter("root").equation = (divisor - 9.0) ** (1.0 / 3.0)
+        values, errors = self._compare(model, ["root"])
+        assert values["root"].isna().all() and errors == []
+
+    def test_arrayed(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="by_zero_arrayed")
+        divisor = model.converter("divisor")
+        divisor.setup_vector(2, [1.0, 0.0])
+        top = model.converter("top")
+        top.setup_vector(2, [4.0, 4.0])
+        model.converter("share").equation = top / divisor
+        values, errors = self._compare(model, ["share[0]", "share[1]"])
+        assert list(values["share[0]"]) == [4.0] * 4 and values["share[1]"].isna().all()
+        assert len(errors) == 1 and "'share[1]'" in errors[0]
+
+
 class TestParityStochasticGuards:
     """Invalid parameters should return NaN in both backends."""
 
@@ -1365,6 +2447,8 @@ class TestParityStochasticGuards:
         pytest.param(sd.normalcdf(-1, 1, 0, 0), "ncdf_zero_std", id="normalcdf_zero_stddev"),
         pytest.param(sd.invnorm(0.5, 7, 0), "invnorm_zero_std", id="invnorm_zero_stddev"),
         pytest.param(sd.geometric(1.5), "geometric_p_gt_one", id="geometric_p_gt_one"),
+        pytest.param(sd.lookuprandom([[0, 1], [1, -1], [2, 1]]), "lookuprandom_negative", id="lookuprandom_negative_table"),
+        pytest.param(sd.lookuprandom([[0, 0], [1, 0]]), "lookuprandom_flat_zero", id="lookuprandom_without_area"),
         pytest.param(sd.binomial(1e300, 0.5), "binomial_too_large", id="a_binomial_count_too_large_to_draw"),
         pytest.param(sd.negbinomial(1e300, 0.5), "negbinomial_too_large", id="a_negbinomial_count_too_large_to_draw"),
     ])
@@ -1614,6 +2698,21 @@ class TestParityTrend:
         out.equation = sd.trend(model, inp, 2.0, 0.1)
         run_parity(model, ['out'], atol=1e-9)
 
+    def test_trend_is_0_while_the_average_is_0(self):
+        """As in Stella: an input of 0 gives a trend of 0 rather than a division by zero, and
+        FORCST built on it reads the input."""
+        model = Model(starttime=0, stoptime=6, dt=0.25, name='trend_zero_par')
+        inp = model.converter('input')
+        inp.equation = sd.step(10.0, 2.0)
+        out = model.converter('out')
+        out.equation = sd.trend(model, inp, 4.0)
+        ahead = model.converter('ahead')
+        ahead.equation = sd.forecast(model, inp, 4.0, 3.0)
+        run_parity(model, ['out', 'ahead'], atol=1e-9)
+        trend = out.plot(return_df=True)["out"]
+        assert list(trend[trend.index <= 2.0]) == [0.0] * 9
+        assert trend[2.25] == pytest.approx(3.75)
+
     def test_trend_large_averaging_time(self):
         """Slow response to a step."""
         model = Model(starttime=0, stoptime=20, dt=0.5, name='trend_slow_par')
@@ -1705,8 +2804,9 @@ class TestParityCascades:
 
 
 class TestParityStatelessBuiltins:
-    """RAMP, MIN/MAX over n, SAFEDIV, ROOTN, PERCENT, PMT/FV/PV, CGROWTH and COUNTER are
-    built from existing operators, so they reach the engine unchanged."""
+    """RAMP, MIN/MAX over n, SAFEDIV, ROOTN, PERCENT, PMT/FV/PV, CGROWTH, COUNTER, ISNAN,
+    REWORK, EXPBOUND, LOGISTICBOUND, MAXSOFT and MINSOFT are built from existing operators,
+    so they reach the engine unchanged."""
 
     def test_each_matches(self):
         model = Model(starttime=1, stoptime=15, dt=0.5, name='stateless_par')
@@ -1728,6 +2828,15 @@ class TestParityStatelessBuiltins:
             'pv': sd.pv(rate, 10.0, -100.0, 50.0),
             'cgrowth': sd.cgrowth(model, x),
             'counter': sd.counter(model, 2.0, 5.0),
+            'isnan': sd.isnan(sd.sqrt(x)),
+            'rework': sd.rework(sd.time()),
+            'expbound': sd.expbound(1.0, 9.0, x, 2.0, -4.0, 4.0),
+            'expbound_linear': sd.expbound(1.0, 9.0, x, 0.0, -4.0, 4.0),
+            'logisticbound': sd.logisticbound(1.0, 9.0, x, 0.0, 1.0),
+            'logisticbound_closed': sd.logisticbound(1.0, 9.0, x, 0.0, 1.0, -5.0, 5.0),
+            'maxsoft': sd.maxsoft(x, 1.0, 2.0),
+            'maxsoft_hard': sd.maxsoft(x, 1.0, 0.0),
+            'minsoft': sd.minsoft(x, 1.0, 2.0),
         }
         for name, expression in expressions.items():
             model.converter(name).equation = expression
@@ -1735,7 +2844,8 @@ class TestParityStatelessBuiltins:
 
 
 class TestParityThePast:
-    """INIT, PREVIOUS, HISTORY and DERIVN are built from DELAY, so they reach the engine."""
+    """INIT, PREVIOUS, HISTORY and DERIVN are built from DELAY; the RUN statistics read the
+    stored past of their variable on both engines."""
 
     def test_each_matches(self):
         model = Model(starttime=1, stoptime=12, dt=0.5, name='past_par')
@@ -1752,6 +2862,13 @@ class TestParityThePast:
             'history_moving': sd.history(model, x, sd.time() - 2.0),
             'derivn_1': sd.derivn(model, x, 1),
             'derivn_3': sd.derivn(model, x, 3),
+            'runcum': sd.runcum(model, x),
+            'runcum_window': sd.runcum(model, x, sd.time() - 2.0, sd.time()),
+            'runcum_as_a_stock': sd.runcum(model, x, sd.starttime(model), sd.time() - sd.dt(model)),
+            'runmax': sd.runmax(model, -x),
+            'runmin_window': sd.runmin(model, x * 2.0, sd.time() - 1.5),
+            'runmean': sd.runmean(model, x, 3.0, 8.0),
+            'runcumtarget': sd.runcumtarget(model, x - 20.0, 60.0),
         }
         for name, expression in expressions.items():
             model.converter(name).equation = expression
@@ -1846,6 +2963,33 @@ class TestParityDelay:
         a.equation = sd.time()
         b.equation = sd.delay(model, a, 0.0, 0.0)
         run_parity(model, ['a', 'b'], atol=1e-10)
+
+    @pytest.mark.parametrize("dt, durations", [
+        (1.0, [0.3, 0.5, 0.7, 1.5, 2.5]),
+        (0.25, [0.1, 0.125, 0.2, 0.3, 0.375]),
+    ])
+    def test_a_delay_shorter_than_dt_or_between_two_steps(self, dt, durations):
+        """The duration is rounded to whole steps, half a step up: under half a step the
+        delay reads its input at the same step."""
+        model = Model(starttime=0.0, stoptime=6.0, dt=dt, name="short_delays")
+        a = model.converter("a")
+        a.equation = 2.0 + sd.time()
+        names = []
+        for k, duration in enumerate(durations):
+            name = "delayed_{}".format(k)
+            model.converter(name).equation = sd.delay(model, a, duration, 1.0)
+            names.append(name)
+        run_parity(model, names)
+
+    def test_a_negative_delay_duration_is_refused_alike(self):
+        model = Model(starttime=0, stoptime=3, dt=1, name="negative_delay")
+        a = model.converter("a")
+        a.equation = 2.0 + sd.time()
+        model.converter("x").equation = sd.delay(model, a, -1.0, 1.0)
+        python, python_errors = _error_lines(lambda: model.simulate(["x"]))
+        rust, rust_errors = _error_lines(lambda: model.simulate(["x"], backend="rust"))
+        assert python["x"].isna().all() and rust["x"].isna().all()
+        assert python_errors == rust_errors and "delay_duration must not be negative" in python_errors[0]
 
     def test_delay_without_an_initial_value_starts_from_the_input_at_the_start(self):
         """XMILE's DELAY and the Python engine hold the input's value at the start time
@@ -2210,12 +3354,20 @@ COMPOUND_BASE = {
     "coswave": [2.0, 4.0], "sinwave": [2.0, 4.0],
     "max": [1.5, 2.5], "min": [1.5, 2.5],
     "safediv": [3.0, 2.0, -1.0],
+    "isnan": [2.0], "rework": [10.0],
+    "expbound": [1.0, 9.0, 4.0, 2.0, 2.0, 8.0],
+    "logisticbound": [1.0, 9.0, 4.0, 5.0, 1.0, 1.0, 10.0],
+    "maxsoft": [1.5, 1.0, 2.0], "minsoft": [1.5, 2.0, 2.0],
     "step": [2.0, 1.0], "ramp": [1.0, 1.0, 3.0],
     "pulse": [COMPOUND_MODEL, 2.0, 1.0, 2.0],
     "fv": [0.05, 10.0, -100.0, 0.0], "pmt": [0.05, 10.0, 1000.0, 0.0],
     "pv": [0.05, 10.0, -100.0, 0.0],
     "invnorm": [0.3, 1.0, 2.0], "normalcdf": [-1.0, 1.0, 0.0, 1.0],
     "lookup": [1.5, ([[0.0, 0.0], [2.0, 4.0], [4.0, 6.0]], COMPOUND_FIXED)],
+    "lookupinv": [1.5, ([[0.0, 0.0], [2.0, 4.0], [4.0, 6.0]], COMPOUND_FIXED)],
+    "lookuparea": [([[0.0, 0.0], [2.0, 4.0], [4.0, 6.0]], COMPOUND_FIXED), 0.5, 3.0],
+    **{name: [([[0.0, 0.0], [2.0, 4.0], [4.0, 6.0]], COMPOUND_FIXED), 0.5, 3.0]
+       for name in ("lookupmax", "lookupmin", "lookupmean")},
     "cgrowth": [COMPOUND_MODEL, 10.0], "counter": [COMPOUND_MODEL, 0.0, 5.0],
     "delay": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0],
     "delay1": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0], "delay3": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 1.0],
@@ -2225,9 +3377,12 @@ COMPOUND_BASE = {
     "trend": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 2.0, 0.1],
     "forecast": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 3.0, 2.0, 0.1],
     "npv": [COMPOUND_MODEL, (10.0, COMPOUND_ELEMENT), 0.1, 0.0],
+    "irr": [COMPOUND_MODEL, (10.0, COMPOUND_ELEMENT), -1.0],
     "derivn": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), (1, COMPOUND_FIXED)],
     "init": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT)], "previous": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 1.0],
     "history": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 1.0],
+    **{name: [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 0.5, 3.0] for name in ("runcum", "runmax", "runmin", "runmean")},
+    "runcumtarget": [COMPOUND_MODEL, (2.0, COMPOUND_ELEMENT), 3.0],
 }
 
 # Functions this file does not compare, and why.
@@ -2235,11 +3390,10 @@ COMPOUND_NOT_COMPARED = {
     # The engines draw from different generators: not value-comparable.
     **{name: "random" for name in ("beta", "binomial", "exprnd", "gamma", "geometric",
                                     "logistic", "lognormal", "montecarlo", "negbinomial",
-                                    "normal", "pareto", "poisson", "random", "triangular",
+                                    "normal", "pareto", "poisson", "random", "triangular", "lookuprandom", "normalpink",
                                     "uniform", "weibull")},
-    # Refused on the Rust engine until 3.5.0.
-    **{name: "not on the engine" for name in ("irr", "lookupinv", "lookuparea", "rank",
-                                               "interpolate", "agecount")},
+    # Takes a conveyor: compared in TestParityConveyors.
+    "agecount": "takes a conveyor",
     # No argument to fill.
     **{name: "no argument" for name in ("Inf", "nan", "pi", "time", "dt", "starttime", "stoptime")},
     # Conditions: covered below with compound comparisons.
@@ -2267,6 +3421,15 @@ COMPOUND_COMPARISONS = (operator.gt, operator.lt, operator.ge, operator.le, oper
 
 COMPOUND_FORMS = ("sum", "difference", "negation", "quotient")
 COMPOUND_PLACES = ("converter", "stock", "arrayed")
+
+# The array methods that take numbers besides the array: (method, the array's values, the
+# other arguments). An arrayed operand is no case here - each of those arguments is one number.
+COMPOUND_ARRAY_METHODS = {
+    "arr_rank": ([3.0, 1.0, 3.0, 2.0], [(3.0, COMPOUND_WHOLE)]),
+    "arr_interpolate": ([[0.0, 1.0, 4.0], [10.0, 11.0, 14.0]], [0.3, 0.6]),
+    "arr_largest": ([3.0, 1.0, 3.0, 2.0], [(2.0, COMPOUND_WHOLE)]),
+    "arr_percentile": ([3.0, 1.0, 3.0, 2.0], [40.0, 10.0]),
+}
 
 
 def _compound_functions():
@@ -2400,6 +3563,129 @@ class TestParityCompoundOperands:
             return
         run_parity(model, _compound_leaves(target), atol=1e-9)
 
+    @pytest.mark.parametrize("name, position", [
+        pytest.param(name, position, id="{}-{}".format(name, position))
+        for name in _compound_functions() if name in COMPOUND_BASE
+        for position, entry in enumerate(COMPOUND_BASE[name])
+        if entry is not COMPOUND_MODEL and _compound_kind(entry) not in (COMPOUND_FIXED, COMPOUND_ELEMENT)])
+    @pytest.mark.parametrize("literal", [math.nan, math.inf, -math.inf], ids=["nan", "inf", "minus_inf"])
+    # numpy says so when it answers sin(inf) and the like with NaN - which is the answer here
+    @pytest.mark.filterwarnings("ignore:invalid value encountered:RuntimeWarning")
+    def test_a_nan_or_infinite_literal_in_every_argument_position(self, name, position, literal):
+        """Written into the term as Python reads it back, and into the JSON as the builtin
+        that gives it - `nan` and `inf` are no names in the term, and no numbers in JSON."""
+        model = Model(starttime=0.0, stoptime=2.0, dt=1.0, name="{}_{}_literal".format(name, position))
+        arguments = []
+        for index, entry in enumerate(COMPOUND_BASE[name]):
+            if entry is COMPOUND_MODEL:
+                arguments.append(model)
+            elif index == position:
+                arguments.append(literal)
+            elif _compound_kind(entry) == COMPOUND_ELEMENT:
+                element = model.converter("input_{}".format(index))
+                element.equation = _compound_value(entry)
+                arguments.append(element)
+            else:
+                arguments.append(_compound_value(entry))
+        model.converter("target").equation = getattr(sd, name)(*arguments)
+        run_parity(model, ["target"], atol=1e-9)
+
+    @pytest.mark.parametrize("name, position", [
+        pytest.param(name, position, id="{}-{}".format(name, position))
+        for name in _compound_functions() if name in COMPOUND_BASE
+        for position, entry in enumerate(COMPOUND_BASE[name])
+        if entry is not COMPOUND_MODEL and _compound_kind(entry) not in (COMPOUND_FIXED, COMPOUND_ELEMENT)])
+    @pytest.mark.parametrize("value", [-2.5, -2.0, -1.0, 0.0, 0.5, 2.5, 1e300])
+    @pytest.mark.filterwarnings("ignore::RuntimeWarning")
+    def test_an_edge_value_in_every_argument_position(self, name, position, value):
+        """Negative, not whole, zero and huge, in every position: the same value or NaN on
+        both engines, and the same `[ERROR]` lines where an argument is refused."""
+        model = Model(starttime=1.0, stoptime=3.0, dt=0.5, name="{}_{}_edge".format(name, position))
+        arguments = []
+        for index, entry in enumerate(COMPOUND_BASE[name]):
+            if entry is COMPOUND_MODEL:
+                arguments.append(model)
+            elif index == position:
+                arguments.append(value)
+            elif _compound_kind(entry) == COMPOUND_ELEMENT:
+                element = model.converter("input_{}".format(index))
+                element.equation = _compound_value(entry) + 0.1 * sd.time()
+                arguments.append(element)
+            else:
+                arguments.append(_compound_value(entry))
+        model.converter("target").equation = getattr(sd, name)(*arguments)
+        python, python_errors = _error_lines(lambda: model.simulate(["target"]))
+        rust, rust_errors = _error_lines(lambda: model.simulate(["target"], backend="rust"))
+        assert np.allclose(python["target"].values, rust["target"].values, rtol=1e-9, atol=1e-9, equal_nan=True), \
+            "python {} rust {}".format(list(python["target"]), list(rust["target"]))
+        assert python_errors == rust_errors
+
+    @pytest.mark.parametrize("place", ["stock", "arrayed", "late_start"])
+    @pytest.mark.parametrize("literal", [math.nan, math.inf, -math.inf], ids=["nan", "inf", "minus_inf"])
+    @pytest.mark.filterwarnings("ignore::RuntimeWarning")
+    def test_a_non_finite_literal_in_a_stock_an_array_and_a_late_start(self, place, literal):
+        """The literal test for a converter, in the other places: a stock's equation, an
+        arrayed operand beside it, and dt 0.5 from starttime 1."""
+        late = place == "late_start"
+        model = Model(starttime=1.0 if late else 0.0, stoptime=4.0, dt=0.5 if late else 1.0, name="literal_" + place)
+        if place == "arrayed":
+            vector = model.converter("vector")
+            vector.setup_vector(2, [1.0, 2.0])
+            target = model.converter("target")
+            target.equation = vector * literal + sd.max(vector, literal)
+            names = ["target[0]", "target[1]"]
+        else:
+            target = model.stock("target") if place == "stock" else model.converter("target")
+            if place == "stock":
+                target.initial_value = 1.0
+            target.equation = sd.max(literal, 1.0) + sd.exp(literal) - sd.sqrt(literal) + sd.lookup(literal, [[0, 0], [2, 4]])
+            names = ["target"]
+        python = model.simulate(names)
+        rust = model.simulate(names, backend="rust")
+        assert np.allclose(python[names].values, rust[names].values, equal_nan=True)
+
+    @pytest.mark.parametrize("method, position", [(method, position) for method, (_, others) in COMPOUND_ARRAY_METHODS.items()
+                                                  for position in range(len(others))])
+    @pytest.mark.parametrize("form", COMPOUND_FORMS)
+    @pytest.mark.parametrize("place", ("converter", "stock"))
+    def test_a_compound_argument_of_an_array_method(self, method, position, form, place):
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="{}_{}_{}_{}".format(method, position, form, place))
+        values, others = COMPOUND_ARRAY_METHODS[method]
+        array = model.converter("array")
+        if isinstance(values[0], list):
+            array.setup_matrix([len(values), len(values[0])], values)
+        else:
+            array.setup_vector(len(values), values)
+        arguments = []
+        for index, entry in enumerate(others):
+            if index == position:
+                slope = 0.0 if _compound_kind(entry) == COMPOUND_WHOLE else COMPOUND_SLOPE
+                arguments.append(_compound_expression(model, form, _compound_value(entry), slope, False, "x"))
+            else:
+                arguments.append(_compound_value(entry))
+        target = model.stock("target") if place == "stock" else model.converter("target")
+        if place == "stock":
+            target.initial_value = 1.0
+        target.equation = getattr(array, method)(*arguments)
+        run_parity(model, ["target"], atol=1e-9)
+
+    @pytest.mark.parametrize("method, position", [("arr_rank", 0), ("arr_interpolate", 0), ("arr_interpolate", 1),
+                                                   ("arr_percentile", 0), ("arr_percentile", 1)])
+    def test_an_arrayed_number_for_an_array_method_is_refused(self, method, position):
+        """The rank and the weights are one number each: an array there is refused when the
+        expression is built, on both engines alike."""
+        model = Model(starttime=0.0, stoptime=4.0, dt=1.0, name="{}_{}_arrayed".format(method, position))
+        values, others = COMPOUND_ARRAY_METHODS[method]
+        array = model.converter("array")
+        if isinstance(values[0], list):
+            array.setup_matrix([len(values), len(values[0])], values)
+        else:
+            array.setup_vector(len(values), values)
+        arguments = [_compound_value(entry) for entry in others]
+        arguments[position] = _compound_expression(model, "sum", 0.5, COMPOUND_SLOPE, True, "x")
+        with pytest.raises(ops.OperatorError, match="is one number, not an array"):
+            getattr(array, method)(*arguments)
+
     @pytest.mark.parametrize("operation", list(COMPOUND_BINARY.values()), ids=lambda o: o.__name__)
 
     @pytest.mark.parametrize("side", ("left", "right"))
@@ -2448,3 +3734,228 @@ class TestParityCompoundOperands:
         target = model.stock("target") if place == "stock" else model.converter("target")
         target.equation = expression
         run_parity(model, _compound_leaves(target))
+
+
+# Valid arguments of each random function, in order; whole numbers do not grow with time.
+COMPOUND_RANDOM = {
+    "beta": [2.0, 3.0], "binomial": [(10.0, COMPOUND_WHOLE), 0.3], "exprnd": [2.0],
+    "gamma": [2.0, 1.5], "geometric": [0.3], "logistic": [1.0, 2.0], "lognormal": [1.0, 0.5],
+    "lookuprandom": [],  # takes a table, no expression
+    "montecarlo": [40.0], "negbinomial": [(3.0, COMPOUND_WHOLE), 0.4],
+    "normal": [5.0, 2.0], "normalpink": [COMPOUND_MODEL, 5.0, 2.0, 3.0], "pareto": [3.0, 2.0],
+    "poisson": [3.0], "random": [1.0, 4.0], "triangular": [1.0, 2.0, 5.0], "uniform": [1.0, 4.0],
+    "weibull": [1.5, 2.0],
+}
+
+
+def _random_cases():
+    for name, entries in COMPOUND_RANDOM.items():
+        for position, entry in enumerate(entries):
+            if entry is not COMPOUND_MODEL:
+                for form in COMPOUND_FORMS:
+                    yield pytest.param(name, position, form, id="{}-{}-{}".format(name, position, form))
+
+
+class TestRandomFunctionsWithCompoundArguments:
+    """The random functions are left out of the parity above, since the engines draw from
+    different generators. Each engine is compared with itself instead: a compound argument
+    has to draw what the same value through a single element draws, with the same seed."""
+
+    def test_every_random_function_is_covered(self):
+        random_functions = {name for name, reason in COMPOUND_NOT_COMPARED.items() if reason == "random"}
+        assert random_functions == set(COMPOUND_RANDOM)
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    @pytest.mark.parametrize("name, position, form", list(_random_cases()))
+    def test_a_compound_argument_draws_as_its_value(self, name, position, form, backend):
+        drawn = []
+        for compound in (True, False):
+            # dt other than 1, so that a term scaled by dt shows a missing parenthesis
+            model = Model(starttime=0.0, stoptime=6.0, dt=0.5, name="{}_{}_{}".format(name, position, form))
+            arguments = []
+            for index, entry in enumerate(COMPOUND_RANDOM[name]):
+                if entry is COMPOUND_MODEL:
+                    arguments.append(model)
+                elif index != position:
+                    arguments.append(_compound_value(entry))
+                elif compound:
+                    arguments.append(_compound_expression(model, form, _compound_value(entry), 0.0, False, "x"))
+                else:
+                    single = model.converter("single")
+                    single.equation = _compound_value(entry)
+                    arguments.append(single)
+            model.converter("target").equation = getattr(sd, name)(*arguments, seed=7)
+            drawn.append(model.simulate(["target"], backend=backend)["target"].to_numpy(float))
+        assert np.array_equal(drawn[0], drawn[1], equal_nan=True), "{} against {}".format(*drawn)
+
+
+# Expressions built at random and computed by plain Python arithmetic - a reference that
+# neither engine shares, so that it sees a mistake both of them make the same way.
+ORACLE_CONSTANTS = {"a": 10.0, "b": 3.0, "c": 2.0, "d": -7.5}
+ORACLE_BINARY = ("+", "-", "*", "/", "**", "%")
+ORACLE_COMPARISONS = {">": operator.gt, "<": operator.lt, ">=": operator.ge, "<=": operator.le,
+                      "==": operator.eq, "!=": operator.ne}
+
+
+def _oracle_tree(draw, depth):
+    """A random expression of at most `depth` levels, as nested tuples."""
+    if depth == 0 or draw.random() < 0.2:
+        leaf = draw.choice(["number", "constant", "constant", "time"])
+        if leaf == "number":
+            return ("number", draw.choice([0.5, 1.0, 2.0, 3.0, -4.0]))
+        return ("constant", draw.choice(sorted(ORACLE_CONSTANTS))) if leaf == "constant" else ("time",)
+    kind = draw.choice(["binary"] * 6 + ["negation", "max", "min", "abs", "if"])
+    if kind == "binary":
+        symbol = draw.choice(ORACLE_BINARY)
+        if symbol == "**":
+            # A small exponent of its own, so that the values stay in range
+            return ("**", _oracle_tree(draw, depth - 1), ("number", draw.choice([0.0, 1.0, 2.0, 3.0, -1.0])))
+        return (symbol, _oracle_tree(draw, depth - 1), _oracle_tree(draw, depth - 1))
+    if kind in ("negation", "abs"):
+        return (kind, _oracle_tree(draw, depth - 1))
+    if kind == "if":
+        return ("if", draw.choice(sorted(ORACLE_COMPARISONS)), _oracle_tree(draw, depth - 1),
+                _oracle_tree(draw, depth - 1), _oracle_tree(draw, depth - 1), _oracle_tree(draw, depth - 1))
+    return (kind, _oracle_tree(draw, depth - 1), _oracle_tree(draw, depth - 1))
+
+
+def _oracle_value(node, t):
+    """The value plain Python gives: NaN where a divisor is 0 and for a negative base to a
+    fractional power, a floored modulo - XMILE's rules, computed without the library."""
+    kind = node[0]
+    if kind == "number":
+        return node[1]
+    if kind == "constant":
+        return ORACLE_CONSTANTS[node[1]]
+    if kind == "time":
+        return t
+    if kind == "negation":
+        return -_oracle_value(node[1], t)
+    if kind == "abs":
+        return abs(_oracle_value(node[1], t))
+    if kind == "if":
+        left, right = _oracle_value(node[2], t), _oracle_value(node[3], t)
+        return _oracle_value(node[4] if ORACLE_COMPARISONS[node[1]](left, right) else node[5], t)
+    left, right = _oracle_value(node[1], t), _oracle_value(node[2], t)
+    if kind == "max":
+        return max(left, right)
+    if kind == "min":
+        return min(left, right)
+    if kind == "+":
+        return left + right
+    if kind == "-":
+        return left - right
+    if kind == "*":
+        return left * right
+    if kind in ("/", "%"):
+        if right == 0:
+            return math.nan
+        return left / right if kind == "/" else left % right
+    if left == 0 and right < 0 or left < 0 and right != int(right):
+        return math.nan
+    return left ** right
+
+
+def _oracle_expression(node, constants):
+    """The same expression in the SD DSL."""
+    kind = node[0]
+    if kind == "number":
+        return node[1]
+    if kind == "constant":
+        return constants[node[1]]
+    if kind == "time":
+        return sd.time()
+    if kind == "negation":
+        return -_oracle_expression(node[1], constants)
+    if kind == "abs":
+        return sd.abs(_oracle_expression(node[1], constants))
+    if kind == "if":
+        left, right = _oracle_expression(node[2], constants), _oracle_expression(node[3], constants)
+        return sd.If(ORACLE_COMPARISONS[node[1]](left, right), _oracle_expression(node[4], constants),
+                     _oracle_expression(node[5], constants))
+    left, right = _oracle_expression(node[1], constants), _oracle_expression(node[2], constants)
+    if kind in ("max", "min"):
+        return getattr(sd, kind)(left, right)
+    return {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv,
+            "**": operator.pow, "%": operator.mod}[kind](left, right)
+
+
+def _oracle_text(node):
+    kind = node[0]
+    if kind == "number":
+        return repr(node[1])
+    if kind == "constant":
+        return node[1]
+    if kind == "time":
+        return "t"
+    if kind in ("negation", "abs"):
+        return "{}({})".format("-" if kind == "negation" else "abs", _oracle_text(node[1]))
+    if kind == "if":
+        return "if({} {} {}, {}, {})".format(_oracle_text(node[2]), node[1], _oracle_text(node[3]),
+                                              _oracle_text(node[4]), _oracle_text(node[5]))
+    if kind in ("max", "min"):
+        return "{}({}, {})".format(kind, _oracle_text(node[1]), _oracle_text(node[2]))
+    return "({} {} {})".format(_oracle_text(node[1]), kind, _oracle_text(node[2]))
+
+
+def _oracle_parts(node):
+    yield node
+    for child in node[1:]:
+        if isinstance(child, tuple):
+            yield from _oracle_parts(child)
+
+
+def _oracle_trees(count, seed):
+    """`count` expressions each part of which is finite at every step - a NaN or an
+    infinity is the edge tests' subject, and Python's min and max of a NaN depend on the
+    order of their arguments."""
+    draw = random.Random(seed)
+    trees = []
+    while len(trees) < count:
+        tree = _oracle_tree(draw, 4)
+        if tree[0] in ("number", "constant", "time"):
+            continue
+        try:
+            values = [_oracle_value(part, t) for part in _oracle_parts(tree) for t in timerange(1.0, 4.5, 0.5)]
+        except (OverflowError, ZeroDivisionError):
+            continue
+        if all(math.isfinite(value) and abs(value) < 1e12 for value in values):
+            trees.append(tree)
+    return trees
+
+
+class TestExpressionsAgainstPlainArithmetic:
+    """Expressions built at random, run on both engines and compared with what plain
+    Python arithmetic gives. Parity cannot see a mistake both engines share; this can -
+    and it is the test that would have caught `a - (b + c)` computed as `a - b + c`."""
+
+    TREES = _oracle_trees(500, seed=20261022)
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    @pytest.mark.parametrize("place", ["converter", "stock"])
+    def test_every_expression(self, place, backend):
+        # dt other than 1 and a late start, so that a term scaled by dt or read at the
+        # wrong time shows
+        times = list(timerange(1.0, 4.5, 0.5))
+        wrong = []
+        for number, tree in enumerate(self.TREES):
+            model = Model(starttime=1.0, stoptime=4.0, dt=0.5, name="oracle_{}".format(number))
+            constants = {}
+            for name, value in ORACLE_CONSTANTS.items():
+                constants[name] = model.constant(name)
+                constants[name].equation = value
+            if place == "stock":
+                target = model.stock("target")
+                target.initial_value = 1.0
+                expected, level = [], 1.0
+                for t in times:
+                    expected.append(level)
+                    level += 0.5 * _oracle_value(tree, t)
+            else:
+                target = model.converter("target")
+                expected = [_oracle_value(tree, t) for t in times]
+            target.equation = _oracle_expression(tree, constants)
+            computed = model.simulate(["target"], backend=backend)["target"].tolist()
+            if not np.allclose(computed, expected, rtol=1e-9, atol=1e-9):
+                wrong.append("{}: {} instead of {}".format(_oracle_text(tree), computed, expected))
+        assert wrong == [], "{} of {} wrong, the first ones:\n".format(len(wrong), len(self.TREES)) + "\n".join(wrong[:5])

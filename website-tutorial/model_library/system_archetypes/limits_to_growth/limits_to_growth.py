@@ -21,17 +21,17 @@ def _(mo):
     mo.md(r"""
     # Limits to Growth Archetype
 
-    Nothing can grow indefinitely, hence a reinforceing, growing loop will destroy any system that is part of unless it is kept in check by a balancing loop.
+    Nothing can grow indefinitely, hence a reinforcing, growing loop will destroy any system that it is part of unless it is kept in check by a balancing loop.
 
     The following causal loop diagram shows the limits to growth archetype in its simplest form:
 
     ![Causal Loop Diagram of Limits to Growth Archetype](cld_limits_to_growth.svg)
 
-    At is heart is a reinforcing loop that changes the state of the system according to a growth factor, just as in the reinforcing loop archetype. But in contrast to that archetype, the growth factor isn't constant but is limit by the resource adequacy of the system.
+    At its heart is a reinforcing loop that changes the state of the system according to a growth factor. But that growth factor isn't constant: it is limited by the resource adequacy of the system.
 
-    The resource adequacy get's smaller and smaller when the systems state approaches the carrying capacity.
+    The resource adequacy gets smaller and smaller when the system's state approaches the carrying capacity.
 
-    If there are no delays in the system, then this limits to growth archetype while display S-shaped growth. If there are delays present, then the growth of the system will overshoot the carrying capacity and then will oscillate around that value.
+    If there are no delays in the system, then this limits to growth archetype will display S-shaped growth. If there are delays present, then the growth of the system will overshoot the carrying capacity and then will oscillate around that value.
     """)
     return
 
@@ -41,7 +41,7 @@ def _(mo):
     mo.md(r"""
     ## A Stock and Flow Model of the Limits To Growth Archetype
 
-    Let's take a look at a stock and flow diagram for this archetype. In this diagram, we've separated the fractional change into a constant, which is then multiplied by the resource adequacy. This leads to an _adjusted fractional change_
+    Let's take a look at a stock and flow diagram for this archetype. In this diagram, we've separated the fractional change into a constant, which is then multiplied by the resource adequacy. This leads to an _adjusted fractional change_.
 
     ![Stock and Flow Diagram of the Limits To Growth Archetype](sfd_limits_to_growth.svg)
 

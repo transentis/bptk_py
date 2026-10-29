@@ -6,14 +6,12 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2021 transentis labs GmbH
+# Copyright (c) 2021-2026 transentis labs GmbH
 # MIT License
-
 
 import datetime
 import difflib
 import os
-import re
 
 import numpy as np
 import pandas as pd
@@ -23,19 +21,8 @@ from ..logger import log
 from ..util import timerange
 from ..util import floating_point as fp
 
-def requested_element(equation):
-    """The element an equation request names. `stock[1,*]` and `stock[*,*]` ask for the
-    cells of `stock` - a model compiled from XMILE resolves the asterisk when it is
-    evaluated, so the request itself is no equation of the model."""
-    if "*" in equation:
-        search = re.search(r'\[([^)]+)\]', equation)
-        if search:
-            return equation.replace(search.group(0), "")
-    return equation
-
-
 class SdSimulation():
-    """Wraps the SimulationModel (XMILE) or Model (SD DSL) class and applies the scenario to it. 
+    """Wraps a Model and applies the scenario to it.
 
     Run the given simulation model from start to the model's stoptime or any other specified stoptime
     Will store all results in a dict, even for subsequent runs. This means, you  can run from t=0 to 500, then change a constant and continue running from 501 to 1000.
@@ -154,7 +141,7 @@ class SdSimulation():
         # beside its cells, are the caller's to report, with suggestions; asking for the
         # first here would raise, the second would answer zeros. A KeyError from inside
         # an equation that does exist is a real error and reaches the caller.
-        if equation not in self.mod.equations and requested_element(equation) not in self.mod.equations:
+        if equation not in self.mod.equations:
             return
         leaves_of = getattr(self.mod, "_arrayed_leaves", None)
         if leaves_of is not None and leaves_of(equation) is not None:
@@ -163,9 +150,6 @@ class SdSimulation():
         ## To avoid tail-recursion, start at 0 and use memoization to store the results and build results from the bottom
         for i in timerange(start, until+self.mod.dt, self.mod.dt):
             result = self.mod.equation(equation, i)
-
-            if "*" in equation: # Fix for *: compute the sum
-                result = sum(result)
 
             if not equation in self.results.keys():
                 self.results[equation] = {}

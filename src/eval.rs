@@ -10,6 +10,16 @@ impl SdModel {
             Expr::BinaryOp { op, left, right } => {
                 let l = self.eval_expr(left, state, step);
                 let r = self.eval_expr(right, state, step);
+                // NaN and one report per entity, as the Python engine does
+                let divides_by_zero = match op {
+                    BinOp::Div | BinOp::Mod => r == 0.0,
+                    BinOp::Pow => l == 0.0 && r < 0.0,
+                    _ => false,
+                };
+                if divides_by_zero {
+                    state.record_invalid("division", step, &[]);
+                    return f64::NAN;
+                }
                 eval_bin_op(*op, l, r)
             }
             Expr::UnaryOp { op, operand } => {

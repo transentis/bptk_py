@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>agecount_dt_quarter</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>8</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="belt">
+				<eqn>0</eqn>
+				<inflow>entering</inflow>
+				<outflow>exiting</outflow>
+				<conveyor>
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<flow name="entering">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="exiting">
+				<non_negative/>
+			</flow>
+			<aux name="age_0_1">
+				<eqn>AGECOUNT(belt, 0, 1)</eqn>
+			</aux>
+			<aux name="age_1_2">
+				<eqn>AGECOUNT(belt, 1, 2)</eqn>
+			</aux>
+			<aux name="age_3_4">
+				<eqn>AGECOUNT(belt, 3, 4)</eqn>
+			</aux>
+			<aux name="age_0_4">
+				<eqn>AGECOUNT(belt, 0, 4)</eqn>
+			</aux>
+			<aux name="age_2_2">
+				<eqn>AGECOUNT(belt, 2, 2)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="250" y="100" name="belt"/>
+				<flow label_side="bottom" x="173.75" y="100.0" name="entering">
+					<pts>
+						<pt x="120" y="100"/>
+						<pt x="227.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="326.25" y="100.0" name="exiting">
+					<pts>
+						<pt x="272.5" y="100"/>
+						<pt x="380" y="100"/>
+					</pts>
+				</flow>
+				<aux x="120" y="300" name="age_0_1"/>
+				<connector uid="1" angle="270">
+					<from>belt</from>
+					<to>age_0_1</to>
+				</connector>
+				<aux x="280" y="300" name="age_1_2"/>
+				<connector uid="2" angle="270">
+					<from>belt</from>
+					<to>age_1_2</to>
+				</connector>
+				<aux x="440" y="300" name="age_3_4"/>
+				<connector uid="3" angle="270">
+					<from>belt</from>
+					<to>age_3_4</to>
+				</connector>
+				<aux x="600" y="300" name="age_0_4"/>
+				<connector uid="4" angle="270">
+					<from>belt</from>
+					<to>age_0_4</to>
+				</connector>
+				<aux x="120" y="410" name="age_2_2"/>
+				<connector uid="5" angle="270">
+					<from>belt</from>
+					<to>age_2_2</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

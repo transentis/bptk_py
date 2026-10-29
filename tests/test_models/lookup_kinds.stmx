@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>lookup_kinds</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="gf_rising_extrapolate">
+				<eqn>TIME</eqn>
+				<gf type="extrapolate">
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="16"/>
+					<ypts>0,1,4,9,16</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_rising_discrete">
+				<eqn>TIME</eqn>
+				<gf type="discrete">
+					<xscale min="0" max="8"/>
+					<yscale min="0" max="9"/>
+					<ypts>0,1,4,9,9</ypts>
+				</gf>
+			</aux>
+			<aux name="inverse_extrapolate">
+				<eqn>LOOKUPINV(gf_rising_extrapolate, TIME * 2 - 2)</eqn>
+			</aux>
+			<aux name="inverse_discrete">
+				<eqn>LOOKUPINV(gf_rising_discrete, TIME)</eqn>
+			</aux>
+			<aux name="area_extrapolate">
+				<eqn>LOOKUPAREA(gf_rising_extrapolate, -2, TIME)</eqn>
+			</aux>
+			<aux name="area_discrete">
+				<eqn>LOOKUPAREA(gf_rising_discrete, -2, TIME)</eqn>
+			</aux>
+			<aux name="area_discrete_all">
+				<eqn>LOOKUPAREA(gf_rising_discrete)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="gf_rising_extrapolate"/>
+				<aux x="220" y="290" name="gf_rising_discrete"/>
+				<aux x="360" y="290" name="inverse_extrapolate"/>
+				<aux x="500" y="290" name="inverse_discrete"/>
+				<aux x="640" y="290" name="area_extrapolate"/>
+				<aux x="780" y="290" name="area_discrete"/>
+				<aux x="80" y="380" name="area_discrete_all"/>
+				<connector uid="1" angle="270">
+					<from>gf_rising_extrapolate</from>
+					<to>inverse_extrapolate</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>gf_rising_discrete</from>
+					<to>inverse_discrete</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>gf_rising_extrapolate</from>
+					<to>area_extrapolate</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>gf_rising_discrete</from>
+					<to>area_discrete</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>gf_rising_discrete</from>
+					<to>area_discrete_all</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

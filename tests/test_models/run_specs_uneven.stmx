@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>run_specs_uneven</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0.5</start>
+		<stop>7.1</stop>
+		<dt>0.3</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="level">
+				<eqn>10</eqn>
+				<inflow>adding</inflow>
+				<outflow>draining</outflow>
+			</stock>
+			<flow name="adding">
+				<eqn>PULSE(5, 2, 1.5)</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="draining">
+				<eqn>level * 0.1</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="time_now">
+				<eqn>TIME</eqn>
+			</aux>
+			<aux name="stepped">
+				<eqn>STEP(3, 2.2)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="level"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="adding">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="100.0" name="draining">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<aux x="80" y="290" name="time_now"/>
+				<aux x="220" y="290" name="stepped"/>
+				<connector uid="1" angle="270">
+					<from>level</from>
+					<to>draining</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

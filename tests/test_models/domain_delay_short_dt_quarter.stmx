@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>domain_delay_short_dt_quarter</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="4.4.1" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>4</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="input">
+				<eqn>2 + TIME</eqn>
+			</aux>
+			<aux name="d 0 1">
+				<eqn>DELAY(input, 0.1, 1)</eqn>
+			</aux>
+			<aux name="d 0 125">
+				<eqn>DELAY(input, 0.125, 1)</eqn>
+			</aux>
+			<aux name="d 0 2">
+				<eqn>DELAY(input, 0.2, 1)</eqn>
+			</aux>
+			<aux name="d 0 3">
+				<eqn>DELAY(input, 0.3, 1)</eqn>
+			</aux>
+			<aux name="minus 0 1">
+				<eqn>DELAY(input, -0.1, 1)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="input"/>
+				<aux x="200" y="290" name="d 0 1"/>
+				<aux x="320" y="290" name="d 0 125"/>
+				<aux x="440" y="290" name="d 0 2"/>
+				<aux x="560" y="290" name="d 0 3"/>
+				<aux x="680" y="290" name="minus 0 1"/>
+				<connector uid="1" angle="17.8808">
+					<from>input</from>
+					<to>d_0_1</to>
+				</connector>
+				<connector uid="2" angle="65.9376">
+					<from>input</from>
+					<to>d_0_125</to>
+				</connector>
+				<connector uid="3" angle="30.6479">
+					<from>input</from>
+					<to>d_0_2</to>
+				</connector>
+				<connector uid="4" angle="34.9797">
+					<from>input</from>
+					<to>d_0_3</to>
+				</connector>
+				<connector uid="5" angle="24.3169">
+					<from>input</from>
+					<to>minus_0_1</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

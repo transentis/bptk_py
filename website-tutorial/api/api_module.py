@@ -37,15 +37,15 @@ def _(mo):
     Modules can be nested.
 
     If you create model elements such as stocks, flows and
-    converters via the module, the elments are added to the model, but the element
+    converters via the module, the elements are added to the model, but the element
     names are turned into fully qualified names of the form
     parent_module_name.module_name.name.
 
-    The fully qualfied name is used as the equation
+    The fully qualified name is used as the equation
     name in the Model class and is needed when making calls to bptk.run_scenario or
     bptk.plot_scenario.
 
-    Check the [Beergame](/model_library/beergame/beergame_sd_dsl.md) or [Enterprise Digital Twin](/model_library/enterprise_digital_twin/enterprise_digital_twin.md) models to see the module class in action.
+    [Modules](../sd-dsl/sd_dsl_modules/sd_dsl_modules.md) explains how to build a model from modules; the [Beergame](/model_library/beergame/beergame_sd_dsl.md) and [Enterprise Digital Twin](/model_library/enterprise_digital_twin/enterprise_digital_twin.md) models use them.
     """)
     return
 
@@ -86,6 +86,20 @@ def _(mo):
     **converter(name)**
 
     Add a [Converter](./api_converter.md) to the model. The name of the converter will be a fully qualified name
+    consisting of all nested module names plus the actual element name using dot
+    notation, i.e. namespace.name
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Module.conveyor
+
+    **conveyor(name)**
+
+    Add a [Conveyor](./api_conveyor.md) to the model. The name of the conveyor will be a fully qualified name
     consisting of all nested module names plus the actual element name using dot
     notation, i.e. namespace.name
     """)
@@ -167,7 +181,7 @@ def _(mo):
     mo.md(r"""
     # Usage
 
-    Let's create a simple example model containing to modules _A_ and _B_ that depend on each other.
+    Let's create a simple example model containing two modules _A_ and _B_ that depend on each other.
     """)
     return
 
@@ -196,7 +210,7 @@ def _(Model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now create to module classes that define the actual model:
+    Now create two module classes that define the actual model:
     """)
     return
 
@@ -266,7 +280,7 @@ def _(A, B, model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Plot the graph for the *a_module.a_stock* element:
+    Plot the graph for the *a.stock* element:
     """)
     return
 
@@ -280,7 +294,7 @@ def _(model):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Of course you can also access the model element directly via their respective modules:
+    Of course you can also access the model elements directly via their respective modules:
     """)
     return
 
@@ -294,7 +308,7 @@ def _(a):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In practice you will probably set up and scenario managers and then access the model elements via the [bptk](./api_bptk.md) class.
+    In practice you will probably set up scenario managers and then access the model elements via the [bptk](./api_bptk.md) class.
     """)
     return
 

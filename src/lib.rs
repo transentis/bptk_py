@@ -8,6 +8,7 @@ pub mod json_parser;
 pub mod state;
 pub mod eval;
 pub mod builtins;
+pub mod conveyor;
 pub mod lookup;
 pub mod sim;
 

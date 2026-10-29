@@ -29,12 +29,21 @@ def _(mo):
 
     **Model(starttime=0, stoptime=0, dt=1, name='', scheduler=None, data_collector=None)**
 
-    This is the main agent base / System dynamics / Hybrid model class
+    This is the main agent-based / System dynamics / Hybrid model class
 
-    It can run manually generated SD models, AB Models or define hybrid models.
+    It can run manually generated SD models, AB models or define hybrid models.
 
     * **Parameters**
 
+
+        * **starttime** – Number (Default 0).
+        The time the simulation starts at.
+
+        * **stoptime** – Number (Default 0).
+        The time the simulation stops at, included.
+
+        * **dt** – Number (Default 1).
+        The length of a timestep.
 
         * **name** – String.
         Name of the model.
@@ -188,13 +197,13 @@ def _(mo):
 
     Called at the beginning of a simulation round.
 
-    Should be called by the Scheduler at the beginning of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+    Should be called by the Scheduler at the beginning of each round, before the agents' act methods are called. Add any logic here that is needed to update dynamic properties.
 
     * **Parameters**
 
 
         * **time** – Integer.
-        The current timestep of the simulation, i.e.(round+step\*dt)
+        The current timestep of the simulation, i.e. (round+step\*dt)
 
         * **sim_round** – Integer
         The current round of the simulation.
@@ -244,7 +253,7 @@ def _(mo):
         Number of random agents that should receive the event
 
         * **event_factory** – Function.
-        The factory (typicalla a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
+        The factory (typically a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
     """)
     return
 
@@ -360,7 +369,7 @@ def _(mo):
 
     **create_agents(agent_spec)**
 
-    Create agents according to the agent specificaction.
+    Create agents according to the agent specification.
 
     The agent specification is a dictionary containing the agent name and properties. Internally, this method then uses the registered agent factories to actually create the agents.
 
@@ -435,13 +444,13 @@ def _(mo):
 
     Called at end of a simulation round.
 
-    Should be called by the Scheduler at the end of each round, before the agents act methods are called. Add any logic here that is needed to update dynamic properties.
+    Should be called by the Scheduler at the end of each round, before the agents' act methods are called. Add any logic here that is needed to update dynamic properties.
 
     * **Parameters**
 
 
         * **time** – Integer.
-        The current timestep of the simulation, i.e.(round+step\*dt)
+        The current timestep of the simulation, i.e. (round+step\*dt)
 
         * **sim_round** – Integer
         The current round of the simulation.
@@ -496,7 +505,7 @@ def _(mo):
 
     **evaluate_equation(name, t)**
 
-    Evaluate an System Dynamics element’s equation at timestep t.
+    Evaluate a System Dynamics element’s equation at timestep t.
 
     * **Parameters**
 
@@ -553,16 +562,15 @@ def _(mo):
         Name of the function.
 
         * **fn** – Function
-        A function that will be used within a SD DSL model. The function must accept at least a _model_ parameter and a time _t_ parameter.
+        A function that will be used within an SD DSL model. The function must accept at least a _model_ parameter and a time _t_ parameter.
 
         * **elementwise** – Boolean (Default=True).
         What an arrayed argument means. `True` calls the function once per index, so the
         result is an array of the same shape - the rule every operator follows. `False`
         hands the whole array over instead: a list for an unnamed array, a dict keyed by
         the labels for a named one, nested for a matrix, and the result is a single value.
-        The element-wise form runs on the Rust engine. `elementwise=False` does not: a
-        run that asks for the Rust backend raises `RustBackendError`, and a run that
-        does not stays on the Python engine.
+        The element-wise form runs on the Rust engine, `elementwise=False` does not - see
+        [Limitations](../usage/limitations.md#the-rust-execution-engine).
 
     Returns:
     A function which wraps the user defined function for use within SD DSL models.
@@ -651,9 +659,9 @@ def _(mo):
 
     Set properties during model initialization.
 
-    This method does nothing in the parent class and can be overriden in child classes. It is called by the frame directly after the model is instantiated.
+    This method does nothing in the parent class and can be overridden in child classes. It is called by the framework directly after the model is instantiated.
 
-    Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories hier and set up model properties.
+    Implement this method in your model to perform any kind of initialization you may need. Typically you would register your agent factories here and set up model properties.
     """)
     return
 
@@ -680,7 +688,7 @@ def _(mo):
 
     * **Returns**
 
-        The first agent object that matches the criterian None otherwise.
+        The first agent object that matches the criteria, None otherwise.
     """)
     return
 
@@ -700,14 +708,10 @@ def _(mo):
         A name or list of names of lookup functions. The list can be passed as a Python list or a comma separated string.
 
         **format** – String (Default "plot").
-        What to return: "plot" draws the diagram and returns nothing, "axes" returns the
-        matplotlib Axes, "df" returns the underlying dataframe. "plot" relies on the notebook
-        displaying the figure as a side effect, which only Jupyter's inline backend does —
-        in marimo, and in a plain script, use "axes".
+        "plot", "axes" or "df", as for [bptk.plot_scenarios](api_bptk.md#bptk.plot_scenarios).
 
         **matplotlib_rc_settings** – Dict (Default None).
-        matplotlib settings for this one plot, laid over the central plotting configuration
-        rather than replacing it.
+        matplotlib settings for this one plot - see [Styling a single plot](../concepts/configuration/configuration.md#styling-a-single-plot).
     """)
     return
 
@@ -719,7 +723,7 @@ def _(mo):
 
     **random_agents(agent_type, num_agents)**
 
-    Retreive a number of random agents
+    Retrieve a number of random agents
 
     * **Parameters**
 
@@ -727,11 +731,11 @@ def _(mo):
         * **agent_type** – String.
         Type of agent to retrieve.
 
-        * **num_agents** – Number of agents of this type to retreive.
+        * **num_agents** – Number of agents of this type to retrieve.
 
     * **Returns**
 
-        List of agent IDs. The number of IDs might be less then num_agents if fewer agents are available.
+        List of agent IDs. The number of IDs might be less than num_agents if fewer agents are available.
     """)
     return
 
@@ -755,7 +759,7 @@ def _(mo):
         Number of random agents that should receive the event
 
         * **event_factory** – Function.
-        The factory (typicalla a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
+        The factory (typically a lambda function) that generates the desired event for a given target agent type. The function receives the agent_id as its parameter.
     """)
     return
 
@@ -792,7 +796,7 @@ def _(mo):
 
     Reset the model.
 
-    Clear out all agents, agent and event statistics and resets the cache of SD equations.
+    Clear out all agents, agent and event statistics and reset the cache of SD equations.
 
     The agent factories are kept though, so you could directly reconfigure the model using the configure method.
     """)
@@ -820,7 +824,7 @@ def _(mo):
 
     Run the simulation.
 
-    This esssentially just calls the run method of the models scheduler. Only relevant for agent-based models, does nothing on pure SD DSL models.
+    This essentially just calls the run method of the model's scheduler. Only relevant for agent-based models, does nothing on pure SD DSL models.
 
     * **Parameters**
 
@@ -828,7 +832,7 @@ def _(mo):
         If True, shows a progress bar while the simulation runs. It is built on tqdm, so it works in a terminal, in marimo and in Jupyter alike.
 
         * **collect_data** – Boolean (Default=True).
-        If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection of.
+        If True, data is automatically collected in the model's DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection off.
     """)
     return
 
@@ -864,7 +868,7 @@ def _(mo):
 
     Run a simulation step.
 
-    This esssentially just calls the run method of the models scheduler.
+    This essentially just calls the run method of the model's scheduler.
 
     * **Parameters**
 
@@ -875,7 +879,7 @@ def _(mo):
         If True, shows a progress bar while the simulation runs. It is built on tqdm, so it works in a terminal, in marimo and in Jupyter alike.
 
         * **collect_data** – Boolean (Default=True).
-        If True, data is automatically collected in the models DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection off.
+        If True, data is automatically collected in the model's DataCollector, e.g. for plotting the model behaviour. If you are training the model e.g. using reinforcement learning, it might be useful to turn data collection off.
     """)
     return
 
@@ -889,7 +893,7 @@ def _(mo):
 
     Configure a property of the model itself, as opposed to the properties of individual agents.
 
-    Properties set via this mechanism are stored internally in a dictionary of properties, the value of the property directly can be access directly as an object attribute, i.e. as self.<name of property>.
+    Properties set via this mechanism are stored internally in a dictionary of properties, the value of the property can be accessed directly as an object attribute, i.e. as self.<name of property>.
 
     A property set this way is not collected by the standard data collector and cannot be plotted directly - `collect_agent_statistics` sees the agents, not the model. Reading it back through `get_property`, or as an attribute, is what it is for.
 
@@ -913,7 +917,7 @@ def _(mo):
 
     Set the value of a model property by name.
 
-    Model properties can also be set directly via the model attributes, i.e. as self.<nname of property>=<value of property>
+    Model properties can also be set directly via the model attributes, i.e. as self.<name of property>=<value of property>
 
     * **Parameters**
 
@@ -1030,12 +1034,9 @@ def _(mo):
 
     * **Raises**
 
-        `ValueError` for anything the engine cannot express - a user-defined function
-        registered with `elementwise=False`, or one in a model that also has agents. An
-        ordinary user-defined function serialises: it becomes a node the engine answers
-        by calling back into Python. In a run, that `ValueError` becomes a
-        `RustBackendError`; see
-        [Execution Backends](../concepts/execution_backends/execution_backends.md).
+        `ValueError` for anything the engine cannot express, which
+        [Limitations](../usage/limitations.md#the-rust-execution-engine) lists. In a run it
+        becomes a `RustBackendError`.
     """)
     return
 

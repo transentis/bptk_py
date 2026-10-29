@@ -272,6 +272,20 @@ class TestArrayedConveyors(unittest.TestCase):
         self.assertAlmostEqual(model.evaluate_equation("young[south]", 5.0), 20.0)
 
 
+    def test_equal_bounds_and_no_maximum_per_cell(self):
+        model, belt, inflow = self._regions()
+        out = model.flow("out")
+        belt.transit_time = 3
+        belt.inflows = [inflow]
+        belt.outflows = [out]
+        model.converter("aged_1").equation = sd.agecount(belt, 1, 1)
+        model.converter("older").equation = sd.agecount(belt, 1)
+
+        self.assertAlmostEqual(model.evaluate_equation("aged_1[north]", 5.0), 5.0)
+        self.assertAlmostEqual(model.evaluate_equation("aged_1[south]", 5.0), 10.0)
+        self.assertAlmostEqual(model.evaluate_equation("older[north]", 5.0), 20.0)
+        self.assertAlmostEqual(model.evaluate_equation("older[south]", 5.0), 40.0)
+
 class TestAgecount(unittest.TestCase):
     def test_counts_the_material_by_its_time_on_the_belt(self):
         model = _cohorts()
@@ -281,6 +295,35 @@ class TestAgecount(unittest.TestCase):
         self.assertAlmostEqual(model.evaluate_equation("all", 25.0), model.evaluate_equation("aged_20_to_40", 25.0))
         self.assertAlmostEqual(model.evaluate_equation("youngest", 25.0),
                                sum(100.0 * 0.97 ** age for age in range(5)))
+
+    def _filling_belt(self, dt):
+        # Transit time 4, 10 entering per time unit: what entered in a step has age 0 at its end
+        model = Model(starttime=0.0, stoptime=8.0, dt=dt, name="filling")
+        entering = model.flow("entering")
+        entering.equation = 10.0
+        exiting = model.flow("exiting")
+        belt = model.conveyor("belt")
+        belt.transit_time = 4.0
+        belt.initial_value = 0.0
+        belt.inflows = [entering]
+        belt.outflows = [exiting]
+        return model, belt
+
+    def test_equal_bounds_count_the_one_step_of_that_age(self):
+        # As Stella: AGECOUNT(belt, 2, 2) is the material of age 2, one step's worth
+        for dt, expected in ((1.0, 10.0), (0.25, 2.5)):
+            model, belt = self._filling_belt(dt)
+            model.converter("aged_2").equation = sd.agecount(belt, 2, 2)
+            self.assertEqual(model.evaluate_equation("aged_2", 2.0), 0.0)
+            self.assertAlmostEqual(model.evaluate_equation("aged_2", 2.0 + dt), expected)
+            self.assertAlmostEqual(model.evaluate_equation("aged_2", 6.0), expected)
+
+    def test_without_a_maximum_everything_from_the_minimum_on(self):
+        model, belt = self._filling_belt(1.0)
+        model.converter("older").equation = sd.agecount(belt, 1)
+        self.assertEqual(model.evaluate_equation("older", 1.0), 0.0)
+        self.assertEqual(model.evaluate_equation("older", 3.0), 20.0)
+        self.assertEqual(model.evaluate_equation("older", 6.0), 30.0)
 
     def test_only_a_conveyor_has_ages(self):
         model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="no_conveyor")

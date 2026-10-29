@@ -30,8 +30,9 @@ def _(mo):
 
     ## Contents
 
-    - [Agent-based Modeling With BPTK-Py](./agent_based_modeling/agent_based_modeling.md)
-    - [Custom Data Collectors](./custom_datacollectors/custom_datacollectors.md)
+    - [Agent-based Modeling With BPTK-Py](./agent_based_modeling/agent_based_modeling.md) – agents, events and models, built step by step
+    - [Custom Data Collectors](./custom_datacollectors/custom_datacollectors.md) – collecting other statistics than the default ones
+    - [Training Agents](./training_agents/training_agents.md) – running a scenario for many episodes, so that agents can learn
     """)
     return
 

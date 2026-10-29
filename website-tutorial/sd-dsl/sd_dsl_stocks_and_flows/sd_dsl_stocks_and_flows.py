@@ -276,7 +276,7 @@ def _(mo):
     mo.md(r"""
     The south warehouse ships its 2 units on the first day and nothing after; the north one ships 3 a day until its last unit goes on day three.
 
-    Non-negative stocks run on the Python engine for now. Asking for `backend="rust"` raises `RustBackendError` naming the stock. The details of the API are on the [Stock](../../api/api_stock.md#stock.non_negative) page.
+    The details of the API are on the [Stock](../../api/api_stock.md#stock.non_negative) page.
     """)
     return
 
@@ -293,11 +293,11 @@ def _(mo):
     | Listed in  | Value    | What it does | At a non-negative stock |
     |------------|----------|--------------|-------------------------|
     | `inflows`  | positive | fills        | counts towards what the outflows may take |
-    | `inflows`  | negative | drains       | cut back, served **after every outflow** |
+    | `inflows`  | negative | drains       | cut back, served **before every outflow** |
     | `outflows` | positive | drains       | cut back, served **at its place in the list** |
     | `outflows` | negative | fills        | counts towards what the outflows may take |
 
-    A biflow that fills the stock is never cut back - nothing can make a stock negative by adding to it. A biflow that drains it is cut back like any outflow. Among the outflows it already has a place in the order; among the inflows it has none, so it comes last, after every outflow, and several of them are served in the order of the `inflows` list.
+    A biflow that fills the stock is never cut back - nothing can make a stock negative by adding to it. A biflow that drains it is cut back like any outflow. Among the outflows it already has a place in the order; among the inflows it comes first, before every outflow, as in Stella, and several of them are served in the order of the `inflows` list.
     """)
     return
 
@@ -310,11 +310,11 @@ def _(mo):
     - `returns`, among the **inflows**: goods coming back from customers when positive, goods sent back to the supplier when negative
     - `transfer`, among the **outflows**, after sales: goods sent to a branch when positive, goods received from the branch when negative
 
-    With the default settings the store sends 4 units a day back to the supplier and 2 to the branch, more than the supply leaves, so it runs empty on day 5. From then on the 5 units supplied each day go to sales first (3), then to the transfer, the next outflow in the list (2), and the returns, which drain the stock from the inflows list, come last and get nothing.
+    With the default settings the store sends 4 units a day back to the supplier and 2 to the branch, more than the supply leaves, so it runs empty on day 5. From then on the returns, which drain the stock from the inflows list, are served first and take 4 of the 5 units supplied each day; sales get the 1 that is left, and the transfer, the next outflow in the list, gets nothing.
 
     Things to try:
 
-    - Set the transfer to **-4**: the branch now sends goods, the transfer fills the store and counts as supply. With the returns at **-10** the store is empty again, and the returns get what sales leaves of the 9 units available: 6.
+    - Set the transfer to **-4**: the branch now sends goods, the transfer fills the store and counts as supply. With the returns at **-10** the store is empty again, and the returns, served first, take all 9 units available - sales get nothing.
     - Set the returns to **+4** and the transfer to **+8**: the returns now fill the store and count, 9 units are available, sales takes 3 and the transfer is cut back to 6 once the store is empty.
     """)
     return
@@ -594,7 +594,6 @@ def _(mo):
     - **The start.** `initial_value` as a number is the total on the belt, spread in the equilibrium its leakage implies. As a list it gives one value per time unit, **the first leaving first**.
     - **Arrays.** An arrayed conveyor has a belt per cell. A scalar outflow or leakage flow gets the conveyor's shape; transit time and shares can be arrayed elements.
     - **What is refused.** An equation on the conveyor or on a flow it drives, a biflow among its inflows, and more than one outflow - leakage goes into `leaks`.
-    - Conveyors and `agecount` run on the Python engine only for now; the Rust engine raises `RustBackendError` naming the conveyor.
 
     The details are on the [Conveyor](../../api/api_conveyor.md) page.
     """)

@@ -6,9 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2019 transentis labs GmbH
+# Copyright (c) 2019-2022 transentis labs GmbH
 # MIT License
-
 
 def sortEntities(IR):
     for name, model in IR["models"].items():

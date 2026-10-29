@@ -694,3 +694,101 @@ fn test_a_short_delay_in_a_stocks_equation_reads_the_current_step() {
     let results = model.simulate(&["level".to_string()], None).unwrap();
     assert_eq!(results["level"]["4.0"], 6.0);
 }
+
+/// The series of `name` at the whole steps 0..=n.
+fn series(results: &bptk_rust_engine::sim::SimulationResults, name: &str, n: usize) -> Vec<f64> {
+    (0..=n).map(|step| results[name][&format!("{:.1}", step as f64)]).collect()
+}
+
+#[test]
+fn test_a_conveyor_model_from_json() {
+    // A belt of 3 slats filled with 1, 2, 3: the first value leaves first; `oldest` is
+    // what has been on the belt two to three time units
+    let json = r#"{"name": "list", "specs": {"starttime": 0.0, "stoptime": 4.0, "dt": 1.0}, "entities": {
+        "stocks": [{"name": "belt",
+            "initial_value": {"type": "call", "function": "conveyor_start", "args": [
+                {"type": "literal", "value": 0.0}, {"type": "literal", "value": 0.0},
+                {"type": "literal", "value": 3.0}, {"type": "literal", "value": 0.0},
+                {"type": "literal", "value": 3.0}, {"type": "literal", "value": 1.0},
+                {"type": "literal", "value": 2.0}, {"type": "literal", "value": 3.0}]},
+            "equation": {"type": "call", "function": "conveyor_change", "args": []}}],
+        "flows": [{"name": "out", "equation": {"type": "call", "function": "conveyor_flow", "args": [
+            {"type": "ref", "name": "belt"}, {"type": "literal", "value": -1.0},
+            {"type": "literal", "value": 3.0}, {"type": "literal", "value": 0.0}]}}],
+        "converters": [{"name": "oldest", "equation": {"type": "call", "function": "agecount", "args": [
+            {"type": "ref", "name": "belt"}, {"type": "literal", "value": 2.0}, {"type": "literal", "value": 3.0}]}}]}}"#;
+
+    let model = parse_json(json).unwrap();
+    let names: Vec<String> = ["out", "belt", "oldest"].iter().map(|name| name.to_string()).collect();
+    let results = model.simulate(&names, None).unwrap();
+
+    assert_eq!(series(&results, "out", 4), vec![1.0, 2.0, 3.0, 0.0, 0.0]);
+    assert_eq!(series(&results, "belt", 4), vec![6.0, 5.0, 3.0, 0.0, 0.0]);
+    assert_eq!(series(&results, "oldest", 4), vec![1.0, 2.0, 3.0, 0.0, 0.0]);
+}
+
+#[test]
+fn test_a_conveyor_flow_of_something_other_than_a_conveyor_is_refused() {
+    let json = r#"{"name": "bad", "specs": {"starttime": 0.0, "stoptime": 1.0, "dt": 1.0}, "entities": {
+        "flows": [{"name": "out", "equation": {"type": "call", "function": "conveyor_flow", "args": [
+            {"type": "literal", "value": 1.0}, {"type": "literal", "value": -1.0},
+            {"type": "literal", "value": 3.0}, {"type": "literal", "value": 0.0}]}}]}}"#;
+    assert!(load_error(json).contains("first argument has to be a reference"));
+}
+
+#[test]
+fn test_montecarlo_fires_with_its_probability_per_time_unit() {
+    let json = r#"{"name": "mc", "specs": {"starttime": 0.0, "stoptime": 2000.0, "dt": 1.0}, "entities": {
+        "converters": [
+            {"name": "never", "equation": {"type": "call", "function": "montecarlo", "args": [{"type": "literal", "value": 0.0}]}},
+            {"name": "always", "equation": {"type": "call", "function": "montecarlo", "args": [{"type": "literal", "value": 100.0}]}},
+            {"name": "half", "equation": {"type": "call", "function": "montecarlo", "args": [{"type": "literal", "value": 50.0}]}}]}}"#;
+    let model = parse_json(json).unwrap();
+    let names: Vec<String> = ["never", "always", "half"].iter().map(|name| name.to_string()).collect();
+    let results = model.simulate(&names, Some(3)).unwrap();
+    let sum = |name: &str| series(&results, name, 2000).iter().sum::<f64>();
+    assert_eq!(sum("never"), 0.0);
+    assert_eq!(sum("always"), 2001.0);
+    assert!((sum("half") / 2001.0 - 0.5).abs() < 0.05);
+}
+
+#[test]
+fn test_a_converter_dividing_by_a_stock_reads_its_initial_value_at_the_start() {
+    // c = 1 / a with a starting at 10: nothing at the start sees a before it is started,
+    // so there is no division by zero to report
+    let json = r#"{"name": "start", "specs": {"starttime": 0.0, "stoptime": 2.0, "dt": 1.0}, "entities": {
+        "stocks": [{"name": "a", "initial_value": {"type": "literal", "value": 10.0}}],
+        "converters": [{"name": "c", "equation": {"type": "binary_op", "op": "div",
+            "left": {"type": "literal", "value": 1.0}, "right": {"type": "ref", "name": "a"}}}]}}"#;
+    let model = parse_json(json).unwrap();
+    let state = model.init(None).unwrap();
+    assert!(state.take_invalid().is_empty());
+    assert_eq!(state.memo[model.entity_index["c"]][0], 0.1);
+}
+
+#[test]
+fn test_initial_values_reading_each_other_through_converters_start_in_one_pass() {
+    // first starts with twice what second starts with, through a converter, and second
+    // with what a constant says: the start has to follow that chain, whatever the order
+    // the stocks are declared in
+    let json = r#"{"name": "chain", "specs": {"starttime": 0.0, "stoptime": 1.0, "dt": 1.0}, "entities": {
+        "stocks": [
+            {"name": "first", "initial_value": {"type": "ref", "name": "twice"}},
+            {"name": "second", "initial_value": {"type": "ref", "name": "size"}}],
+        "converters": [{"name": "twice", "equation": {"type": "binary_op", "op": "mul",
+            "left": {"type": "literal", "value": 2.0}, "right": {"type": "ref", "name": "second"}}}],
+        "constants": [{"name": "size", "equation": {"type": "literal", "value": 25.0}}]}}"#;
+    let model = parse_json(json).unwrap();
+    let results = model.simulate(&["first".to_string(), "twice".to_string()], None).unwrap();
+    assert_eq!(series(&results, "first", 1), vec![50.0, 50.0]);
+    assert_eq!(series(&results, "twice", 1), vec![50.0, 50.0]);
+}
+
+#[test]
+fn test_an_initial_value_that_reads_its_own_stock_is_refused_at_load() {
+    let json = r#"{"name": "cycle", "specs": {"starttime": 0.0, "stoptime": 1.0, "dt": 1.0}, "entities": {
+        "stocks": [{"name": "a", "initial_value": {"type": "ref", "name": "c"}}],
+        "converters": [{"name": "c", "equation": {"type": "binary_op", "op": "add",
+            "left": {"type": "ref", "name": "a"}, "right": {"type": "literal", "value": 1.0}}}]}}"#;
+    assert_eq!(load_error(json), "Cyclic dependency among non-stock entities: a → c → a");
+}

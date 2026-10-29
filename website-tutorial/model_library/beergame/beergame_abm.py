@@ -17,7 +17,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     # Hidden on purpose: this is plumbing, not documentation. Shown, it put a code block
-    # about marimo's table widget at the top of a page about growing a firm.
+    # about marimo's table widget at the top of a page about the beer game.
     def as_table(df):
         # marimo's table widget embeds only its first page - ten rows - and this page is
         # rendered rather than run, so there is no runtime to fetch the rest: every table
@@ -41,7 +41,30 @@ def _(mo):
 
     An agent-based model of the beer distribution game. Each of the players in the game is modeled as an agent.
 
-    First we explore the game using deterministic agents, then we let the agents learn by themselves using a reinforcement learning approach.
+    This page explores the game using deterministic agents; [Training AI to Play the Beer Game](training_ai_beergame.md) lets the agents learn by themselves using a reinforcement learning approach.
+
+    [Agent-based Modeling with BPTK-Py](../../abm/agent_based_modeling/agent_based_modeling.md) explains how agents are built in general; the rules, the costs and the dynamics of the game are on [Understanding the Beer Game](understanding_the_beergame.md).
+
+    ## The Agents
+
+    ![Agents](images/agents.png)
+
+    Each player in the game is modeled by an agent, so there are five agents: the consumer and the agents that are part of the supply chain, i.e. the retailer, the wholesaler, the distributor and the brewery.
+
+    The supply chain agents are essentially all the same - they have an internal state that captures:
+
+    * __Inventory,__ i.e. how much beer the agent has in stock.
+    * __Outstanding Orders,__ i.e. how much beer the agent has ordered from its supplier but has not received yet.
+    * __Backorder,__ i.e. how much beer the agent's customers have ordered but which the agent hasn't delivered yet.
+
+    In each timestep, the agent has to react to the following events:
+
+    * __Delivery.__ The beer delivered from the agent's supplier.
+    * __Order.__ The beer ordered by the agent's customer.
+
+    At the end of each timestep, after the agent has received deliveries and orders, the agent has to make an order decision, which is then passed on to its supplier as an order.
+
+    ![Agents](images/supply_chain_agents.png)
     """)
     return
 
@@ -81,6 +104,8 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Typical Player Behavior
+
+    The policy is explained on [Understanding the Beer Game](understanding_the_beergame.md#supply-chain-dynamics-dealing-with-changing-demands-for-beer).
     """)
     return
 
@@ -171,6 +196,8 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Ignore Backorder
+
+    The policy is explained on [Understanding the Beer Game](understanding_the_beergame.md#ignoring-backorders).
     """)
     return
 
@@ -209,6 +236,8 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Include Supply Line
+
+    The policy is explained on [Understanding the Beer Game](understanding_the_beergame.md#remembering-open-orders-including-the-supply-line).
     """)
     return
 
@@ -291,6 +320,8 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Slow Inventory Adjustment
+
+    The policy is explained on [Understanding the Beer Game](understanding_the_beergame.md#avoiding-the-whiplash-effect).
     """)
     return
 
@@ -388,6 +419,12 @@ def _(bptk):
 def _(mo):
     mo.md(r"""
     ## Order Balance Strategy
+
+    One simple strategy is to manage the order balance, i.e. the difference between incoming orders (those coming from the customer) and outgoing orders (those going to the supplier). Put simply, we would expect the balance to be a constant equal to the desired inventory, so a sensible ordering strategy is:
+
+    `Int(Max(Incoming Order + (2 * Incoming Order + Target Inventory - Order Balance) / Inventory Adjustment Time, 0))`
+
+    This policy is nice and simple, and it is almost good enough to keep the supply chain costs below the target of $29,300.
     """)
     return
 

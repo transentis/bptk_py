@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>arrays_stateful</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="D" size="3"/>
+		<dim name="R">
+			<elem name="north"/>
+			<elem name="south"/>
+		</dim>
+		<dim name="Z" size="2"/>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="input">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>STEP(10, 1)</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>STEP(20, 2)</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>RAMP(1, 3)</eqn>
+				</element>
+			</aux>
+			<aux name="delay_times">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>3</eqn>
+				</element>
+			</aux>
+			<aux name="ranking">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>5</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>9</eqn>
+				</element>
+			</aux>
+			<aux name="delayed">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>DELAY(input, 2)</eqn>
+			</aux>
+			<aux name="delayed_own_time">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>DELAY(input, delay_times)</eqn>
+			</aux>
+			<aux name="delayed3">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>DELAY3(input, 2)</eqn>
+			</aux>
+			<aux name="smoothed">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>SMTH1(input, 3)</eqn>
+			</aux>
+			<aux name="smoothed3">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>SMTH3(input, 3, 4)</eqn>
+			</aux>
+			<aux name="trended">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>TREND(input, 4)</eqn>
+			</aux>
+			<aux name="previous_input">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>PREVIOUS(input, 0)</eqn>
+			</aux>
+			<aux name="history_input">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>HISTORY(input, TIME - 1)</eqn>
+			</aux>
+			<aux name="picked">
+				<eqn>input[RANK(ranking, 1)]</eqn>
+			</aux>
+			<aux name="picked_last">
+				<eqn>input[RANK(ranking, 3)]</eqn>
+			</aux>
+			<stock name="collected">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>0</eqn>
+				<inflow>collecting</inflow>
+			</stock>
+			<flow name="collecting">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>input</eqn>
+				<non_negative/>
+			</flow>
+			<aux name="matrix">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+				</dimensions>
+				<element subscript="1,north">
+					<eqn>TIME</eqn>
+				</element>
+				<element subscript="1,south">
+					<eqn>2 * TIME</eqn>
+				</element>
+				<element subscript="2,north">
+					<eqn>STEP(5, 4)</eqn>
+				</element>
+				<element subscript="2,south">
+					<eqn>10</eqn>
+				</element>
+				<element subscript="3,north">
+					<eqn>RAMP(2, 1)</eqn>
+				</element>
+				<element subscript="3,south">
+					<eqn>TIME * TIME</eqn>
+				</element>
+			</aux>
+			<aux name="matrix_smoothed">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>SMTH1(matrix, 2)</eqn>
+			</aux>
+			<aux name="matrix_delayed">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+				</dimensions>
+				<eqn>DELAY(matrix, 1.5)</eqn>
+			</aux>
+			<aux name="cube">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+					<dim name="Z"/>
+				</dimensions>
+				<eqn>TIME</eqn>
+			</aux>
+			<aux name="cube_scaled">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+					<dim name="Z"/>
+				</dimensions>
+				<eqn>cube[D, R, Z] * matrix[D, R]</eqn>
+			</aux>
+			<aux name="cube_smoothed">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+					<dim name="Z"/>
+				</dimensions>
+				<eqn>SMTH1(cube_scaled, 2)</eqn>
+			</aux>
+			<aux name="cube_total">
+				<eqn>SUM(cube_scaled[*, *, *])</eqn>
+			</aux>
+			<aux name="cube_slice">
+				<eqn>SUM(cube_scaled[2, *, 1])</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="input"/>
+				<aux x="220" y="290" name="delay_times"/>
+				<aux x="360" y="290" name="ranking"/>
+				<aux x="500" y="290" name="delayed"/>
+				<aux x="640" y="290" name="delayed_own_time"/>
+				<aux x="780" y="290" name="delayed3"/>
+				<aux x="80" y="380" name="smoothed"/>
+				<aux x="220" y="380" name="smoothed3"/>
+				<aux x="360" y="380" name="trended"/>
+				<aux x="500" y="380" name="previous_input"/>
+				<aux x="640" y="380" name="history_input"/>
+				<aux x="780" y="380" name="picked"/>
+				<aux x="80" y="470" name="picked_last"/>
+				<stock x="350" y="100" name="collected"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="collecting">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<aux x="220" y="470" name="matrix"/>
+				<aux x="360" y="470" name="matrix_smoothed"/>
+				<aux x="500" y="470" name="matrix_delayed"/>
+				<aux x="640" y="470" name="cube"/>
+				<aux x="780" y="470" name="cube_scaled"/>
+				<aux x="80" y="560" name="cube_smoothed"/>
+				<aux x="220" y="560" name="cube_total"/>
+				<aux x="360" y="560" name="cube_slice"/>
+				<connector uid="1" angle="270">
+					<from>input</from>
+					<to>delayed</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>delay_times</from>
+					<to>delayed_own_time</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>input</from>
+					<to>delayed_own_time</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>input</from>
+					<to>delayed3</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>input</from>
+					<to>smoothed</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>input</from>
+					<to>smoothed3</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>input</from>
+					<to>trended</to>
+				</connector>
+				<connector uid="8" angle="270">
+					<from>input</from>
+					<to>previous_input</to>
+				</connector>
+				<connector uid="9" angle="270">
+					<from>input</from>
+					<to>history_input</to>
+				</connector>
+				<connector uid="10" angle="270">
+					<from>ranking</from>
+					<to>picked</to>
+				</connector>
+				<connector uid="11" angle="270">
+					<from>input</from>
+					<to>picked</to>
+				</connector>
+				<connector uid="12" angle="270">
+					<from>ranking</from>
+					<to>picked_last</to>
+				</connector>
+				<connector uid="13" angle="270">
+					<from>input</from>
+					<to>picked_last</to>
+				</connector>
+				<connector uid="14" angle="270">
+					<from>input</from>
+					<to>collecting</to>
+				</connector>
+				<connector uid="15" angle="270">
+					<from>matrix</from>
+					<to>matrix_smoothed</to>
+				</connector>
+				<connector uid="16" angle="270">
+					<from>matrix</from>
+					<to>matrix_delayed</to>
+				</connector>
+				<connector uid="17" angle="270">
+					<from>cube</from>
+					<to>cube_scaled</to>
+				</connector>
+				<connector uid="18" angle="270">
+					<from>matrix</from>
+					<to>cube_scaled</to>
+				</connector>
+				<connector uid="19" angle="270">
+					<from>cube_scaled</from>
+					<to>cube_smoothed</to>
+				</connector>
+				<connector uid="20" angle="270">
+					<from>cube_scaled</from>
+					<to>cube_total</to>
+				</connector>
+				<connector uid="21" angle="270">
+					<from>cube_scaled</from>
+					<to>cube_slice</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

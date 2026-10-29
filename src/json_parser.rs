@@ -119,16 +119,24 @@ pub enum ParseError {
         expected: &'static str,
         got: usize,
     },
-    /// `delay` reads the past of an element, so its first argument has to name one.
-    DelayInputNotAnEntity,
+    /// `seeded` around something other than a random builtin's call.
+    SeededWithoutDraw,
+    /// A `bounded` whose last argument is not the call of a random function.
+    BoundedWithoutDraw,
+    /// `delay` and `irr` read the past of an element, so their first argument has to name
+    /// one; the function's name.
+    PastOfNoEntity(&'static str),
     /// Two entities of the same name; the second used to replace the first unnoticed.
     DuplicateEntity(String),
     /// A string where a number belongs - only a lookup's table name is a string.
     StringOutsideLookup(String),
-    /// A `lookup` call without the name of a table as its second argument.
-    LookupWithoutTable,
+    /// A lookup call without the name of a table where it belongs, or with the wrong
+    /// number of arguments; the function's name.
+    LookupWithoutTable(String),
     /// A `lookup` of a table the model does not have; it used to read 0.0.
     UnknownLookupTable(String),
+    /// A kind of table XMILE does not have; the name given.
+    UnknownLookupKind(String),
     /// Points that are no lookup table; the message says why.
     InvalidLookupPoints(String),
 }
@@ -170,18 +178,41 @@ impl std::fmt::Display for ParseError {
                  string, the name of its table",
                 text
             ),
-            ParseError::LookupWithoutTable => write!(
+            ParseError::LookupWithoutTable(function) => write!(
                 f,
-                "Function 'lookup' takes an input and the name of a table"
+                "Function '{}' takes {}",
+                function,
+                if function == "lookuprandom" {
+                    "the name of a table"
+                } else if matches!(function.as_str(), "lookuparea" | "lookupmax" | "lookupmin" | "lookupmean") {
+                    "the name of a table, a from and a to"
+                } else {
+                    "an input and the name of a table"
+                }
             ),
             ParseError::UnknownLookupTable(name) => {
                 write!(f, "Lookup of a table the model does not have: '{}'", name)
             }
-            ParseError::InvalidLookupPoints(message) => write!(f, "{}", message),
-            ParseError::DelayInputNotAnEntity => write!(
+            ParseError::UnknownLookupKind(kind) => write!(
                 f,
-                "Function 'delay' reads the past of an element, so its first argument has \
-                 to be a reference to one"
+                "A lookup table is continuous, extrapolate or discrete, not '{}'",
+                kind
+            ),
+            ParseError::InvalidLookupPoints(message) => write!(f, "{}", message),
+            ParseError::BoundedWithoutDraw => write!(
+                f,
+                "Function 'bounded' takes a minimum, a maximum and the call of a random function, last"
+            ),
+            ParseError::SeededWithoutDraw => write!(
+                f,
+                "Function 'seeded' takes a seed, the keys of a cell and the call of a random \
+                 function, last"
+            ),
+            ParseError::PastOfNoEntity(function) => write!(
+                f,
+                "Function '{}' reads the past of an element, so its first argument has \
+                 to be a reference to one",
+                function
             ),
         }
     }
@@ -265,8 +296,10 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
         }
     }
 
-    // Topological sort of non-stock entities
-    let eval_order = topological_sort(&entities, jm.specs.dt)?;
+    // Topological sort of non-stock entities, for every step; and of all entities, for
+    // the start, where a stock is its initial value rather than its flows
+    let eval_order = topological_sort(&entities, jm.specs.dt, false)?;
+    let init_order = topological_sort(&entities, jm.specs.dt, true)?;
 
     Ok(SdModel {
         name: jm.name.unwrap_or_default(),
@@ -277,6 +310,7 @@ pub fn parse_json(json: &str) -> Result<SdModel, ParseError> {
         entity_index,
         graphical_functions,
         eval_order,
+        init_order,
         #[cfg(feature = "python")]
         // `Py` is not `Clone`, so the empty slots are built rather than repeated.
         callbacks: callbacks.names.iter().map(|_| None).collect(),
@@ -306,7 +340,14 @@ fn collect_lookup_tables<'a>(expr: &'a Expr, names: &mut Vec<&'a String>) {
         }
         Expr::UnaryOp { operand, .. } => collect_lookup_tables(operand, names),
         Expr::Call { function, args } => {
-            if let BuiltinFn::Lookup(name) = function {
+            if let BuiltinFn::Lookup(name, _)
+            | BuiltinFn::LookupInv(name, _)
+            | BuiltinFn::LookupArea(name, _)
+            | BuiltinFn::LookupMax(name, _)
+            | BuiltinFn::LookupMin(name, _)
+            | BuiltinFn::LookupMean(name, _)
+            | BuiltinFn::LookupRandom(name, _) = function
+            {
                 names.push(name);
             }
             for arg in args {
@@ -387,22 +428,44 @@ fn resolve_expr(
             })
         }
         JsonExpr::Call { function, args } => {
-            // Special case: lookup function — second arg is the table name
-            if function == "lookup" && args.len() == 2 {
-                if let JsonExpr::Literal {
-                    value: JsonLiteralValue::String(table_name),
-                } = &args[1]
+            // The lookups name their table in a string: `lookup` and `lookupinv` as their
+            // second argument, after the input, `lookuparea`, `lookupmax`, `lookupmin` and
+            // `lookupmean` as their first, before from and to.
+            // A string after the other arguments names the kind of table; without it the
+            // table is continuous
+            let table_lookup: Option<(usize, usize, fn(String, LookupKind) -> BuiltinFn)> = match function.as_str() {
+                "lookup" => Some((1, 2, BuiltinFn::Lookup)),
+                "lookupinv" => Some((1, 2, BuiltinFn::LookupInv)),
+                "lookuparea" => Some((0, 3, BuiltinFn::LookupArea)),
+                "lookupmax" => Some((0, 3, BuiltinFn::LookupMax)),
+                "lookuprandom" => Some((0, 1, BuiltinFn::LookupRandom)),
+                "lookupmin" => Some((0, 3, BuiltinFn::LookupMin)),
+                "lookupmean" => Some((0, 3, BuiltinFn::LookupMean)),
+                _ => None,
+            };
+            if let Some((position, count, builtin)) = table_lookup {
+                let (table_args, kind) = match args.get(count) {
+                    Some(JsonExpr::Literal { value: JsonLiteralValue::String(name) }) if args.len() == count + 1 => (
+                        &args[..count],
+                        LookupKind::from_name(name).ok_or_else(|| ParseError::UnknownLookupKind(name.clone()))?,
+                    ),
+                    _ => (&args[..], LookupKind::Continuous),
+                };
+                if let (true, Some(JsonExpr::Literal { value: JsonLiteralValue::String(table_name) })) =
+                    (table_args.len() == count, table_args.get(position))
                 {
-                    let resolved_args = vec![resolve_expr(&args[0], entity_index, callbacks)?];
+                    let resolved_args = table_args
+                        .iter()
+                        .enumerate()
+                        .filter(|&(i, _)| i != position)
+                        .map(|(_, a)| resolve_expr(a, entity_index, callbacks))
+                        .collect::<Result<_, _>>()?;
                     return Ok(Expr::Call {
-                        function: BuiltinFn::Lookup(table_name.clone()),
+                        function: builtin(table_name.clone(), kind),
                         args: resolved_args,
                     });
                 }
-            }
-
-            if function == "lookup" {
-                return Err(ParseError::LookupWithoutTable);
+                return Err(ParseError::LookupWithoutTable(function.clone()));
             }
             let builtin = parse_builtin_fn(function)?;
             let (fewest, most, expected) = arity(&builtin);
@@ -413,12 +476,50 @@ fn resolve_expr(
                     got: args.len(),
                 });
             }
+            // The values and their tiebreaks come in pairs, after the rank
+            if matches!(builtin, BuiltinFn::ArrRank) && args.len() % 2 == 0 {
+                return Err(ParseError::WrongArgumentCount {
+                    function: function.clone(),
+                    expected: "a rank, then values and as many tiebreak values, so an odd number of",
+                    got: args.len(),
+                });
+            }
+            // The values and their weights come in pairs, after the three numbers
+            if matches!(builtin, BuiltinFn::ArrPercentile) && args.len() % 2 == 0 {
+                return Err(ParseError::WrongArgumentCount {
+                    function: function.clone(),
+                    expected: "whether it weighs, a percentile, a lower one, then values and as many weights, so an odd number of",
+                    got: args.len(),
+                });
+            }
             let resolved_args: Vec<Expr> = args
                 .iter()
                 .map(|a| resolve_expr(a, entity_index, callbacks))
                 .collect::<Result<_, _>>()?;
-            if matches!(builtin, BuiltinFn::Delay) && !matches!(resolved_args[0], Expr::Ref(_)) {
-                return Err(ParseError::DelayInputNotAnEntity);
+            let past_of = match builtin {
+                BuiltinFn::Delay => Some("delay"),
+                BuiltinFn::Irr => Some("irr"),
+                BuiltinFn::RunCum => Some("runcum"),
+                BuiltinFn::RunMax => Some("runmax"),
+                BuiltinFn::RunMin => Some("runmin"),
+                BuiltinFn::RunMean => Some("runmean"),
+                BuiltinFn::RunCumTarget => Some("runcumtarget"),
+                BuiltinFn::ConveyorFlow => Some("conveyor_flow"),
+                BuiltinFn::AgeCount => Some("agecount"),
+                _ => None,
+            };
+            if let Some(function) = past_of {
+                if !matches!(resolved_args[0], Expr::Ref(_)) {
+                    return Err(ParseError::PastOfNoEntity(function));
+                }
+            }
+            if matches!(builtin, BuiltinFn::Seeded) && resolved_args.last().and_then(draw_of).is_none() {
+                return Err(ParseError::SeededWithoutDraw);
+            }
+            if matches!(builtin, BuiltinFn::Bounded)
+                && !matches!(&resolved_args[2], Expr::Call { function, .. } if seeded_draw_name(function).is_some())
+            {
+                return Err(ParseError::BoundedWithoutDraw);
             }
             Ok(Expr::Call {
                 function: builtin,
@@ -462,22 +563,31 @@ fn resolve_expr(
 fn arity(function: &BuiltinFn) -> (usize, Option<usize>, &'static str) {
     use BuiltinFn::*;
     match function {
-        Time | Dt | Starttime | Stoptime | Pi | Inf | Nan => (0, Some(0), "no"),
+        Time | Dt | Starttime | Stoptime | Pi | Inf | Nan | ConveyorChange | LookupRandom(..) => (0, Some(0), "no"),
         Abs | Sqrt | Exp | Ln | Log10 | Sin | Cos | Tan | Arcsin | Arccos | Arctan | Floor
         | Ceil | Trunc | Factorial | GammaLN | Exprnd | Geometric | Montecarlo | Poisson
-        | Lookup(_) => (1, Some(1), "1"),
+        | Lookup(..) | LookupInv(..) | Positive => (1, Some(1), "1"),
         Sinwave | Coswave | Max | Min | Step | Combinations | Permutations | Random | Normal
-        | Beta | Binomial | NegBinomial | Lognormal | Logistic | Weibull | Pareto => {
+        | Beta | Binomial | NegBinomial | Lognormal | Logistic | Weibull | Pareto | LookupArea(..)
+        | LookupMax(..) | LookupMin(..) | LookupMean(..)
+        | Irr | CutOut | CutIn | RunCumTarget => {
             (2, Some(2), "2")
         }
-        Delay | Triangular => (3, Some(3), "3"),
+        Delay | Triangular | AgeCount | RunCum | RunMax | RunMin | RunMean => (3, Some(3), "3"),
+        ConveyorStart => (6, None, "at least 6"),
+        ConveyorFlow => (4, None, "at least 4"),
         Round | GammaDist => (1, Some(2), "1 or 2"),
         Pulse | Invnorm => (1, Some(3), "1 to 3"),
         NormalCDF => (2, Some(4), "2 to 4"),
         ArrSum | ArrProd | ArrMean | ArrMedian | ArrStddev | ArrMax | ArrMin => {
             (0, None, "any number of")
         }
-        ArrRank => (2, None, "at least 2"),
+        ArrLargest => (2, None, "at least 2"),
+        ArrRank | ArrInterpolate => (3, None, "at least 3"),
+        ArrPercentile => (5, None, "at least 5"),
+        Seeded => (2, None, "at least 2"),
+        Sample => (2, Some(2), "2"),
+        Bounded => (3, Some(3), "3"),
     }
 }
 
@@ -538,6 +648,12 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
         "step" => Ok(BuiltinFn::Step),
         "pulse" => Ok(BuiltinFn::Pulse),
         "delay" => Ok(BuiltinFn::Delay),
+        "irr" => Ok(BuiltinFn::Irr),
+        "runcum" => Ok(BuiltinFn::RunCum),
+        "runmax" => Ok(BuiltinFn::RunMax),
+        "runmin" => Ok(BuiltinFn::RunMin),
+        "runmean" => Ok(BuiltinFn::RunMean),
+        "runcumtarget" => Ok(BuiltinFn::RunCumTarget),
         // Combinatorial & special
         "combinations" => Ok(BuiltinFn::Combinations),
         "permutations" => Ok(BuiltinFn::Permutations),
@@ -569,7 +685,20 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
         "arr_mean" => Ok(BuiltinFn::ArrMean),
         "arr_median" => Ok(BuiltinFn::ArrMedian),
         "arr_stddev" => Ok(BuiltinFn::ArrStddev),
+        "seeded" => Ok(BuiltinFn::Seeded),
+        "bounded" => Ok(BuiltinFn::Bounded),
+        "sample" => Ok(BuiltinFn::Sample),
+        "positive" => Ok(BuiltinFn::Positive),
+        "cut_out" => Ok(BuiltinFn::CutOut),
+        "cut_in" => Ok(BuiltinFn::CutIn),
+        "conveyor_start" => Ok(BuiltinFn::ConveyorStart),
+        "conveyor_flow" => Ok(BuiltinFn::ConveyorFlow),
+        "conveyor_change" => Ok(BuiltinFn::ConveyorChange),
+        "agecount" => Ok(BuiltinFn::AgeCount),
+        "arr_largest" => Ok(BuiltinFn::ArrLargest),
         "arr_rank" => Ok(BuiltinFn::ArrRank),
+        "arr_percentile" => Ok(BuiltinFn::ArrPercentile),
+        "arr_interpolate" => Ok(BuiltinFn::ArrInterpolate),
         "arr_max" => Ok(BuiltinFn::ArrMax),
         "arr_min" => Ok(BuiltinFn::ArrMin),
         _ => Err(ParseError::UnknownFunction(name.to_string())),
@@ -578,13 +707,10 @@ fn parse_builtin_fn(name: &str) -> Result<BuiltinFn, ParseError> {
 
 // ── Topological sort ────────────────────────────────────────────────────────
 
-/// Collect direct entity references (Ref(idx)) from an expression.
-fn collect_refs(expr: &Expr, refs: &mut Vec<usize>) {
-    collect_refs_inner(expr, refs, false, 1.0)
-}
-
-/// Like `collect_refs`, but treats the *input* of a `delay(...)` as a dependency on
-/// a past timestep rather than the current one, so it contributes no ordering edge.
+/// Collect the entity references (Ref(idx)) of an expression.
+///
+/// With `break_delays`, the *input* of a `delay(...)` counts as a dependency on a past
+/// timestep rather than the current one, so it contributes no ordering edge.
 ///
 /// `delay` evaluates to `memo[input][step - delay_steps]` (see builtins.rs), a cell
 /// written in an earlier step, so the input need not be evaluated before the delay
@@ -595,10 +721,6 @@ fn collect_refs(expr: &Expr, refs: &mut Vec<usize>) {
 /// read the current step, so its edge is kept and such a loop stays unsolvable. A
 /// non-literal duration cannot be decided at load time; those are assumed to be at
 /// least one dt.
-fn collect_refs_breaking_delays(expr: &Expr, refs: &mut Vec<usize>, dt: f64) {
-    collect_refs_inner(expr, refs, true, dt)
-}
-
 fn collect_refs_inner(expr: &Expr, refs: &mut Vec<usize>, break_delays: bool, dt: f64) {
     match expr {
         Expr::Literal(_) => {}
@@ -652,34 +774,54 @@ fn delay_is_known_zero_steps(args: &[Expr], dt: f64) -> bool {
 /// Topological sort of non-stock entities so they can be eagerly evaluated
 /// in dependency order. Returns indices into the entities vec.
 ///
+/// With `at_start` it sorts every entity for the start time instead: there a stock holds
+/// its initial value, so it comes after what that reads, and whatever reads a stock comes
+/// after the stock. One pass in that order settles the start the way the Python engine
+/// does by evaluating on demand.
+///
 /// Two passes: first with every reference treated as a same-step dependency, which
 /// keeps the evaluation order of all models that already worked exactly as it was.
 /// Only if that reports a cycle is the sort retried with the input edges of
 /// `delay(...)` dropped — those read a past memo cell and so break loops (see
-/// `collect_refs_breaking_delays`). A model that is cyclic under both passes is
+/// `collect_refs_inner`). A model that is cyclic under both passes is
 /// genuinely unsolvable in a single pass per timestep and is rejected.
-fn topological_sort(entities: &[Entity], dt: f64) -> Result<Vec<usize>, ParseError> {
-    if let Ok(order) = topological_sort_pass(entities, dt, false) {
+fn topological_sort(entities: &[Entity], dt: f64, at_start: bool) -> Result<Vec<usize>, ParseError> {
+    if let Ok(order) = topological_sort_pass(entities, dt, false, at_start) {
         return Ok(order);
     }
-    match topological_sort_pass(entities, dt, true) {
+    match topological_sort_pass(entities, dt, true, at_start) {
         Ok(order) => Ok(order),
         // Only now, on the definitive failure, is it worth naming the culprits.
-        Err(_) => Err(ParseError::CyclicDependency(describe_cycles(entities, dt))),
+        Err(_) => Err(ParseError::CyclicDependency(describe_cycles(entities, dt, at_start))),
     }
 }
 
+/// Whether `entity` takes part in the sort: every entity at the start, else the non-stocks.
+fn is_sorted(entity: &Entity, at_start: bool) -> bool {
+    at_start || !matches!(entity.kind, EntityKind::Stock { .. })
+}
+
+/// What `entity` reads: a stock at the start its initial value, anything else its equation.
+fn references(entity: &Entity, break_delays: bool, dt: f64) -> Vec<usize> {
+    let expr = match entity.kind {
+        EntityKind::Stock { ref initial_value } => initial_value,
+        _ => &entity.equation,
+    };
+    let mut refs = Vec::new();
+    collect_refs_inner(expr, &mut refs, break_delays, dt);
+    refs
+}
+
 /// Adjacency list "entity → entities that must be evaluated before it", restricted to
-/// non-stock entities and using the same edges the second sorting pass uses.
-fn dependency_edges(entities: &[Entity], dt: f64) -> HashMap<usize, Vec<usize>> {
+/// the entities the sort orders and using the same edges the second sorting pass uses.
+fn dependency_edges(entities: &[Entity], dt: f64, at_start: bool) -> HashMap<usize, Vec<usize>> {
     let mut edges: HashMap<usize, Vec<usize>> = HashMap::new();
     for (idx, entity) in entities.iter().enumerate() {
-        if matches!(entity.kind, EntityKind::Stock { .. }) {
+        if !is_sorted(entity, at_start) {
             continue;
         }
-        let mut refs = Vec::new();
-        collect_refs_breaking_delays(&entity.equation, &mut refs, dt);
-        refs.retain(|&dep| !matches!(entities[dep].kind, EntityKind::Stock { .. }));
+        let mut refs = references(entity, true, dt);
+        refs.retain(|&dep| is_sorted(&entities[dep], at_start));
         refs.sort_unstable();
         refs.dedup();
         edges.insert(idx, refs);
@@ -693,8 +835,8 @@ fn dependency_edges(entities: &[Entity], dt: f64) -> HashMap<usize, Vec<usize>> 
 /// model. Groups the entities with Tarjan's algorithm and then reports, per group, the
 /// shortest cycle through its lowest-numbered member — a short path reads better than a
 /// dump of everything involved, and the group size is appended when it is larger.
-fn describe_cycles(entities: &[Entity], dt: f64) -> Vec<String> {
-    let edges = dependency_edges(entities, dt);
+fn describe_cycles(entities: &[Entity], dt: f64, at_start: bool) -> Vec<String> {
+    let edges = dependency_edges(entities, dt, at_start);
     let mut descriptions = Vec::new();
 
     for group in strongly_connected_components(&edges) {
@@ -828,40 +970,27 @@ fn topological_sort_pass(
     entities: &[Entity],
     dt: f64,
     break_delays: bool,
+    at_start: bool,
 ) -> Result<Vec<usize>, ParseError> {
     let n = entities.len();
 
-    let non_stock_indices: Vec<usize> = (0..n)
-        .filter(|i| !matches!(entities[*i].kind, EntityKind::Stock { .. }))
-        .collect();
+    let sorted_indices: Vec<usize> = (0..n).filter(|&i| is_sorted(&entities[i], at_start)).collect();
 
-    let is_non_stock: Vec<bool> = (0..n)
-        .map(|i| !matches!(entities[i].kind, EntityKind::Stock { .. }))
-        .collect();
-
-    // Map entity index → position in non_stock_indices
+    // Map entity index → position in sorted_indices
     let mut idx_to_pos: HashMap<usize, usize> = HashMap::new();
-    for (pos, &idx) in non_stock_indices.iter().enumerate() {
+    for (pos, &idx) in sorted_indices.iter().enumerate() {
         idx_to_pos.insert(idx, pos);
     }
 
-    let ns_count = non_stock_indices.len();
+    let ns_count = sorted_indices.len();
     let mut in_degree = vec![0usize; ns_count];
     let mut dependents: Vec<Vec<usize>> = vec![Vec::new(); ns_count];
 
-    for (pos, &idx) in non_stock_indices.iter().enumerate() {
-        let mut refs = Vec::new();
-        if break_delays {
-            collect_refs_breaking_delays(&entities[idx].equation, &mut refs, dt);
-        } else {
-            collect_refs(&entities[idx].equation, &mut refs);
-        }
-        for dep_idx in refs {
-            if is_non_stock[dep_idx] {
-                if let Some(&dep_pos) = idx_to_pos.get(&dep_idx) {
-                    in_degree[pos] += 1;
-                    dependents[dep_pos].push(pos);
-                }
+    for (pos, &idx) in sorted_indices.iter().enumerate() {
+        for dep_idx in references(&entities[idx], break_delays, dt) {
+            if let Some(&dep_pos) = idx_to_pos.get(&dep_idx) {
+                in_degree[pos] += 1;
+                dependents[dep_pos].push(pos);
             }
         }
     }
@@ -876,7 +1005,7 @@ fn topological_sort_pass(
 
     let mut sorted: Vec<usize> = Vec::with_capacity(ns_count);
     while let Some(pos) = queue.pop() {
-        sorted.push(non_stock_indices[pos]);
+        sorted.push(sorted_indices[pos]);
         for &dep_pos in &dependents[pos] {
             in_degree[dep_pos] -= 1;
             if in_degree[dep_pos] == 0 {
@@ -890,4 +1019,80 @@ fn topological_sort_pass(
     }
 
     Ok(sorted)
+}
+
+/// The name a seeded draw is reported under - `seed:` and the Python engine's name of the
+/// distribution - or `None` for a builtin that draws nothing.
+/// The random function a `seeded` node draws from: its last argument, or the draw inside the
+/// `bounded` that is its last argument.
+pub fn draw_of(expr: &Expr) -> Option<&BuiltinFn> {
+    match expr {
+        Expr::Call { function: BuiltinFn::Bounded, args } => draw_of(&args[2]),
+        Expr::Call { function, .. } if seeded_draw_name(function).is_some() => Some(function),
+        _ => None,
+    }
+}
+
+/// What a draw with bounds reports: bounds the draw never met in its tries, or a minimum
+/// above the maximum.
+pub fn bounds_report(function: &BuiltinFn, reversed: bool) -> &'static str {
+    use BuiltinFn::*;
+    match (function, reversed) {
+        (Random, false) => "bounds:uniform:missed",
+        (Random, true) => "bounds:uniform:reversed",
+        (Normal, false) => "bounds:normal:missed",
+        (Normal, true) => "bounds:normal:reversed",
+        (Beta, false) => "bounds:beta:missed",
+        (Beta, true) => "bounds:beta:reversed",
+        (Binomial, false) => "bounds:binomial:missed",
+        (Binomial, true) => "bounds:binomial:reversed",
+        (NegBinomial, false) => "bounds:negbinomial:missed",
+        (NegBinomial, true) => "bounds:negbinomial:reversed",
+        (Exprnd, false) => "bounds:exprnd:missed",
+        (Exprnd, true) => "bounds:exprnd:reversed",
+        (GammaDist, false) => "bounds:gamma:missed",
+        (GammaDist, true) => "bounds:gamma:reversed",
+        (Geometric, false) => "bounds:geometric:missed",
+        (Geometric, true) => "bounds:geometric:reversed",
+        (Lognormal, false) => "bounds:lognormal:missed",
+        (Lognormal, true) => "bounds:lognormal:reversed",
+        (Logistic, false) => "bounds:logistic:missed",
+        (Logistic, true) => "bounds:logistic:reversed",
+        (Montecarlo, false) => "bounds:montecarlo:missed",
+        (Montecarlo, true) => "bounds:montecarlo:reversed",
+        (Poisson, false) => "bounds:poisson:missed",
+        (Poisson, true) => "bounds:poisson:reversed",
+        (Triangular, false) => "bounds:triangular:missed",
+        (Triangular, true) => "bounds:triangular:reversed",
+        (Weibull, false) => "bounds:weibull:missed",
+        (Weibull, true) => "bounds:weibull:reversed",
+        (Pareto, false) => "bounds:pareto:missed",
+        (Pareto, true) => "bounds:pareto:reversed",
+        (LookupRandom(..), false) => "bounds:lookuprandom:missed",
+        (LookupRandom(..), true) => "bounds:lookuprandom:reversed",
+        _ => "bounds:unknown:missed",
+    }
+}
+
+pub fn seeded_draw_name(function: &BuiltinFn) -> Option<&'static str> {
+    use BuiltinFn::*;
+    Some(match function {
+        Random => "seed:uniform",
+        Normal => "seed:normal",
+        Beta => "seed:beta",
+        Binomial => "seed:binomial",
+        NegBinomial => "seed:negbinomial",
+        Exprnd => "seed:exprnd",
+        GammaDist => "seed:gamma",
+        Geometric => "seed:geometric",
+        Lognormal => "seed:lognormal",
+        Logistic => "seed:logistic",
+        Montecarlo => "seed:montecarlo",
+        Poisson => "seed:poisson",
+        Triangular => "seed:triangular",
+        Weibull => "seed:weibull",
+        Pareto => "seed:pareto",
+        LookupRandom(..) => "seed:lookuprandom",
+        _ => return None,
+    })
 }

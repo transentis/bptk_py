@@ -25,9 +25,7 @@ def _(mo):
     mo.md(r"""
     Many modelers prefer to build models using visual modeling environments and not directly in code. One such environment is Stella Architect. Using Stella Architect, you can build System Dynamics models visually. You can then import them into Python using BPTK and work with them much like with any other model.
 
-    The framework automatically re-transpiles the XMILE model if changes are made in the visual modeling environment. So you can model in Stella Architect and experiment with scenarios in a notebook.
-
-    Transpiled models work stand-alone, so you can run them anywhere independently of the modeling environment.
+    The framework transpiles the XMILE model into an SD DSL model and does so again whenever you change it in the visual modeling environment, as [XMILE Step by Step](../../xmile/xmile_step_by_step/xmile_step_by_step.md) explains. So you can model in Stella Architect and experiment with scenarios in a notebook.
     """)
     return
 
@@ -51,7 +49,7 @@ def _(mo):
 
     The scenario file tells the framework where to find the [XMILE model](./simulation_models/customer_acquisition_xmile.stmx) and which scenarios to set up.
 
-    In our case the file looks like this - the only difference to the SD DSL scenario definition is the inclusion of the XMILE source.
+    In our case the file looks like this - the only difference to the SD DSL scenario definition is the inclusion of the XMILE source, which [XMILE Step by Step](../../xmile/xmile_step_by_step/xmile_step_by_step.md) explains.
 
     ```JSON
     {
@@ -135,7 +133,7 @@ def _(bptk_3):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    NOTE: Once the XMILE file has been transpiled into a Python model, the framework is independent of the XMILE file. All simulation is done in Python. The software that was used to create the XMILE file is not needed by the BPTK framework.
+    NOTE: Once the XMILE file has been transpiled, the model runs without the software that created it - on the Python engine or on the Rust engine.
     """)
     return
 

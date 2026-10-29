@@ -1,3 +1,14 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2022-2026 transentis labs GmbH
+# MIT License
+
 import re
 
 def resolve(expression, entity, dimensions):
@@ -31,7 +42,7 @@ def resolve(expression, entity, dimensions):
         if type_ == "call" and name_ == "size": # Size function
                 args_ = expression["args"]
 
-                if args_[0]["type"] == "identifier" and args_[0]["name"] in dimensions:
+                if isinstance(args_[0], dict) and args_[0]["type"] == "identifier" and args_[0]["name"] in dimensions:
                     expression = len(dimensions[args_[0]["name"]]["labels"])
 
                 else: # If no dimension hit was made, simply keep on traversing

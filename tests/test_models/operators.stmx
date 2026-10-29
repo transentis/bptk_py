@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>operators</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>5</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="power_chain">
+				<eqn>2 ^ 3 ^ 2</eqn>
+			</aux>
+			<aux name="minus_power">
+				<eqn>-2 ^ 2</eqn>
+			</aux>
+			<aux name="power_negative">
+				<eqn>2 ^ -1</eqn>
+			</aux>
+			<aux name="minus_chain">
+				<eqn>10 - 3 - 2</eqn>
+			</aux>
+			<aux name="divide_chain">
+				<eqn>12 / 3 / 2</eqn>
+			</aux>
+			<aux name="mod_times">
+				<eqn>7 MOD 3 * 2</eqn>
+			</aux>
+			<aux name="times_mod">
+				<eqn>2 * 7 MOD 3</eqn>
+			</aux>
+			<aux name="and_or">
+				<eqn>IF TIME &lt; 1 OR TIME &gt; 3 AND TIME &lt; 4 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="or_and">
+				<eqn>IF TIME &gt; 3 AND TIME &lt; 4 OR TIME &lt; 1 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="equal_time">
+				<eqn>IF TIME = 1.5 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="not_equal">
+				<eqn>IF TIME &lt;&gt; 1.5 THEN 1 ELSE 0</eqn>
+			</aux>
+			<aux name="if_nested">
+				<eqn>IF TIME &lt; 1 THEN 1 ELSE IF TIME &lt; 3 THEN 2 ELSE 3</eqn>
+			</aux>
+			<aux name="if_in_expression">
+				<eqn>10 + (IF TIME &gt; 2 THEN 5 ELSE 0) * 2</eqn>
+			</aux>
+			<aux name="not_zero">
+				<eqn>NOT 0</eqn>
+			</aux>
+			<aux name="and_numbers">
+				<eqn>1 AND 0.5</eqn>
+			</aux>
+			<aux name="or_numbers">
+				<eqn>0 OR 0</eqn>
+			</aux>
+			<aux name="comparison_value">
+				<eqn>(TIME &gt; 2) + (TIME &gt; 4)</eqn>
+			</aux>
+			<aux name="unary_plus">
+				<eqn>+3 - -2</eqn>
+			</aux>
+			<aux name="number_exponent">
+				<eqn>1.5e2 + 2E-1</eqn>
+			</aux>
+			<stock name="s_uniflow">
+				<eqn>10</eqn>
+				<outflow>o_negative</outflow>
+			</stock>
+			<flow name="o_negative">
+				<eqn>-5</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="power_chain"/>
+				<aux x="220" y="290" name="minus_power"/>
+				<aux x="360" y="290" name="power_negative"/>
+				<aux x="500" y="290" name="minus_chain"/>
+				<aux x="640" y="290" name="divide_chain"/>
+				<aux x="780" y="290" name="mod_times"/>
+				<aux x="80" y="380" name="times_mod"/>
+				<aux x="220" y="380" name="and_or"/>
+				<aux x="360" y="380" name="or_and"/>
+				<aux x="500" y="380" name="equal_time"/>
+				<aux x="640" y="380" name="not_equal"/>
+				<aux x="780" y="380" name="if_nested"/>
+				<aux x="80" y="470" name="if_in_expression"/>
+				<aux x="220" y="470" name="not_zero"/>
+				<aux x="360" y="470" name="and_numbers"/>
+				<aux x="500" y="470" name="or_numbers"/>
+				<aux x="640" y="470" name="comparison_value"/>
+				<aux x="780" y="470" name="unary_plus"/>
+				<aux x="80" y="560" name="number_exponent"/>
+				<stock x="350" y="100" name="s_uniflow"/>
+				<flow label_side="bottom" x="461.25" y="100.0" name="o_negative">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+			</view>
+		</views>
+	</model>
+</xmile>

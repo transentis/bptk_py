@@ -23,7 +23,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Hybrid models are agent based models that "contain" a System Dynamics model. The agents can call the elements of the SD model. The SD model elements can also call properties on the agent-based model via user defined sd functions.
+    Hybrid models are agent-based models that "contain" a System Dynamics model. The agents can call the elements of the SD model. The SD model elements can also call properties on the agent-based model via user-defined SD functions.
     """)
     return
 

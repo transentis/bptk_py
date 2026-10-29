@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>domain_delay</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>4</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="input">
+				<eqn>2 + TIME</eqn>
+			</aux>
+			<aux name="minus 1">
+				<eqn>DELAY(input, -1, 1)</eqn>
+			</aux>
+			<aux name="minus 3">
+				<eqn>DELAY(input, -3, 1)</eqn>
+			</aux>
+			<aux name="d 0 3">
+				<eqn>DELAY(input, 0.3, 1)</eqn>
+			</aux>
+			<aux name="d 0 5">
+				<eqn>DELAY(input, 0.5, 1)</eqn>
+			</aux>
+			<aux name="d 0 7">
+				<eqn>DELAY(input, 0.7, 1)</eqn>
+			</aux>
+			<aux name="d 1 5">
+				<eqn>DELAY(input, 1.5, 1)</eqn>
+			</aux>
+			<aux name="d 2 5">
+				<eqn>DELAY(input, 2.5, 1)</eqn>
+			</aux>
+			<aux name="d 0">
+				<eqn>DELAY(input, 0, 1)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="120" name="input"/>
+				<aux x="210" y="120" name="minus 1"/>
+				<aux x="340" y="120" name="minus 3"/>
+				<aux x="470" y="120" name="d 0 3"/>
+				<aux x="600" y="120" name="d 0 5"/>
+				<aux x="730" y="120" name="d 0 7"/>
+				<aux x="80" y="240" name="d 1 5"/>
+				<aux x="210" y="240" name="d 2 5"/>
+				<aux x="340" y="240" name="d 0"/>
+				<connector uid="1" angle="0">
+					<from>input</from>
+					<to>minus_1</to>
+				</connector>
+				<connector uid="2" angle="0">
+					<from>input</from>
+					<to>minus_3</to>
+				</connector>
+				<connector uid="3" angle="0">
+					<from>input</from>
+					<to>d_0_3</to>
+				</connector>
+				<connector uid="4" angle="0">
+					<from>input</from>
+					<to>d_0_5</to>
+				</connector>
+				<connector uid="5" angle="0">
+					<from>input</from>
+					<to>d_0_7</to>
+				</connector>
+				<connector uid="6" angle="0">
+					<from>input</from>
+					<to>d_1_5</to>
+				</connector>
+				<connector uid="7" angle="0">
+					<from>input</from>
+					<to>d_2_5</to>
+				</connector>
+				<connector uid="8" angle="0">
+					<from>input</from>
+					<to>d_0</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

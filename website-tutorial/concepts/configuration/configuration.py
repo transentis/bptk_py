@@ -341,6 +341,20 @@ def _(mo):
     drawing calls, never written into matplotlib's global `rcParams`, so a figure you
     build with `plt.subplots()` keeps matplotlib's own defaults.
 
+    To draw your own chart in BPTK's look - a dataframe from `return_df=True`, say - wrap
+    the drawing call in `bptk_style()`. It applies the fonts, sizes and figure size of the
+    configuration for that one call; the colours and the transparency are in
+    `BPTK_Py.plotting_config.settings`:
+
+    ```python
+    import BPTK_Py
+    from BPTK_Py.visualizations import bptk_style
+
+    settings = BPTK_Py.plotting_config.settings
+    with bptk_style():
+        ax = df.plot(kind="area", stacked=False, color=settings["colors"], alpha=settings["alpha"])
+    ```
+
     The default title size is chosen for the default figure width of 20. A different
     `figsize` scales the title with it, so a narrow plot does not cut its title off; a
     title size you set yourself with `"axes.titlesize"` is used as it is.

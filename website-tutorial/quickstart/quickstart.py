@@ -40,7 +40,7 @@ def _(mo):
     * Simulation results are returned as Pandas dataframes.
     * Numerics via NumPy and SciPy.
 
-    Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the model classes themselves. This makes interactive modeling, coding and testing very painless, especially in a reactive notebook environment such as marimo.
+    Model settings and scenarios are kept in JSON files. These settings are automatically loaded by the framework upon initialization, as are the models they name. This makes interactive modeling, coding and testing very painless, especially in a reactive notebook environment such as marimo.
     """)
     return
 
@@ -80,7 +80,7 @@ def _(mo):
     mo.md(r"""
     To illustrate the different ways of building simulation models using BPTK, we will use a simple model of customer acquisition known as the [Bass Diffusion Model](https://en.wikipedia.org/wiki/Bass_diffusion_model). It describes the process of how new products or services are adopted by consumers.
 
-    We will build it four times over: with the System Dynamics DSL, with agent-based modeling, as a hybrid of the two, and as a XMILE model.
+    We will build it four times over: with the System Dynamics DSL, with agent-based modeling, as a hybrid of the two, and as an XMILE model.
 
     The basic structure of the model is illustrated in the following causal loop diagram:
 

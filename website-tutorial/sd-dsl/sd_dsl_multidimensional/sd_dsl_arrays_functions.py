@@ -136,7 +136,7 @@ def _(mo, prod_result):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Array Rank
+    ## Array Largest
     """)
     return
 
@@ -155,14 +155,14 @@ def _(model):
     rank_vector = model.converter('rank_vector')
     rank_vector.setup_vector(5, [-2.0, -0.1, 3.1, 5.2, 11.1])
     rank_result = model.converter('rank_result')
-    rank_result.equation = rank_vector.arr_rank(1)
+    rank_result.equation = rank_vector.arr_largest(1)
     return rank_result, rank_vector
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \text{rank}
+    \text{largest}
     \left(
     \begin{pmatrix}
     -2.0\\
@@ -192,14 +192,14 @@ def _(mo, rank_result):
 def _(model, rank_vector):
     #The fourth-highest element
     rank_result_fourth = model.converter('rank_result_fourth')
-    rank_result_fourth.equation = rank_vector.arr_rank(4)
+    rank_result_fourth.equation = rank_vector.arr_largest(4)
     return (rank_result_fourth,)
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \text{rank}
+    \text{largest}
     \left(
     \begin{pmatrix}
     -2.0\\
@@ -229,14 +229,14 @@ def _(mo, rank_result_fourth):
 def _(model, rank_vector):
     #The lowest element
     rank_result_lowest = model.converter('rank_result_lowest')
-    rank_result_lowest.equation = rank_vector.arr_rank(-1)
+    rank_result_lowest.equation = rank_vector.arr_largest(-1)
     return (rank_result_lowest,)
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \text{rank}
+    \text{largest}
     \left(
     \begin{pmatrix}
     -2.0\\
@@ -1319,9 +1319,9 @@ def _(boston_total, mo, weighted):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## XMILE's RANK
+    ## Array Rank
 
-    `sd.rank(array, r, tiebreak=None)` is XMILE's `RANK`: the **position** of the `r`-th smallest entry of a vector, counting from 0 - not the entry itself, which is what `arr_rank` returns. Entries of equal value are ordered by `tiebreak`, a vector of the same size, and then by position. A matrix is ranked by a row or a column, as in `sd.rank(sales[:, 'q1'], 1)`; an `r` outside the vector gives NaN.
+    `array.arr_rank(r, tiebreak=None)` is XMILE's `RANK`: the **position** of the `r`-th smallest entry of a vector, counting from 1 as XMILE and Stella do - not the entry itself, which is what `arr_largest` returns. Entries of equal value are ordered by `tiebreak`, a vector of the same size, and then by position. A matrix is ranked by a row or a column, as in `sales[:, 'q1'].arr_rank(1)`; an `r` outside the vector gives NaN.
     """)
     return
 
@@ -1330,18 +1330,18 @@ def _(model, sd):
     bids = model.converter('bids')
     bids.setup_vector(4, [6.0, 2.0, 8.0, 5.0])
     second_lowest = model.converter('second_lowest')
-    second_lowest.equation = sd.rank(bids, 2)
-    return (second_lowest,)
+    second_lowest.equation = bids.arr_rank(2)
+    return bids, second_lowest
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     \begin{equation*}
-    \text{rank}\left(\begin{pmatrix} 6.0 & 2.0 & 8.0 & 5.0 \end{pmatrix}, 2\right) = 3
+    \text{rank}\left(\begin{pmatrix} 6.0 & 2.0 & 8.0 & 5.0 \end{pmatrix}, 2\right) = 4
     \end{equation*}
 
-    The second smallest bid, 5.0, stands at position 3. Stella counts from 1 and says 4.
+    The second smallest bid, 5.0, stands at position 4. To read it from the vector, whose labels count from 0, subtract 1.
     """)
     return
 
@@ -1357,9 +1357,9 @@ def _(mo, second_lowest):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Interpolate
+    ## Array Interpolate
 
-    `sd.interpolate(array, w1, w2)` is Stella's `INTERPOLATE`: a value between the entries of an array, with one weight per dimension. A weight of 0 is the first entry of its dimension, 1 the last, and between them the value is interpolated linearly - for a matrix first along the columns, then along the rows. Weights outside 0 to 1 are held at the ends.
+    `array.arr_interpolate(w1, w2)` is Stella's `INTERPOLATE`: a value between the entries of an array, with one weight per dimension. A weight of 0 is the first entry of its dimension, 1 the last, and between them the value is interpolated linearly - for a matrix first along the columns, then along the rows. Weights outside 0 to 1 are held at the ends.
     """)
     return
 
@@ -1368,7 +1368,7 @@ def _(model, sd):
     grid = model.converter('grid')
     grid.setup_matrix([2, 3], [[0.0, 2.0, 4.0], [8.0, 6.0, 5.0]])
     between = model.converter('between')
-    between.equation = sd.interpolate(grid, 0.75, 0.25)
+    between.equation = grid.arr_interpolate(0.75, 0.25)
     return (between,)
 
 
@@ -1380,8 +1380,6 @@ def _(mo):
     \end{equation*}
 
     A quarter of the way along the columns the rows read 1.0 and 7.0; three quarters of the way from the first row to the second gives 5.5.
-
-    `sd.rank` and `sd.interpolate` run on the Python engine only for now; the aggregations, also along one dimension, run on both.
     """)
     return
 
@@ -1391,6 +1389,60 @@ def _(between, mo):
         print(between(1))
 
     mo.plain_text(captured_interpolate.getvalue())
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Array Percentile
+
+    `array.arr_percentile(percentile, lower=None, weights=None)` is Stella's `PERCENTILE`: the value below which `percentile` percent of the entries lie, over every entry of a vector or a matrix. `percentile` and `lower` lie between 0 and 100; anything else gives NaN and an `[ERROR]`.
+
+    - **Without weights** the entries are sorted and the rank is `percentile * (n - 1) / 100`. A whole rank gives the entry there; a rank between two entries gives the **mean of the two**, not a value interpolated between them. So the result is a staircase: for four entries every percentile strictly between 0 and 33.3 gives the mean of the two smallest.
+    - **With weights** - an array of the same size, each entry counted as often as its weight says - the rule is a different one: each entry stands at the middle of its share of the total weight, two neighbours meet at their mean on the border between their shares, and in between the value is interpolated in a straight line. Below the first middle and above the last the result is the smallest and the largest entry. With every weight 1 this is therefore not the same as no weights.
+    - **`lower`** takes the value at that percentile off the result, so `arr_percentile(75.0, 25.0)` is the spread between the two. A `lower` of 0 takes nothing off: Stella writes 0 there when it needs the place for the weights.
+
+    Both rules are Stella's own. They differ from the usual definitions, such as numpy's, and from each other - which is why they are spelled out here.
+    """)
+    return
+
+@app.cell
+def _(bids, model):
+    lots = model.converter('lots')
+    lots.setup_vector(4, [1.0, 1.0, 1.0, 3.0])
+    middle_bid = model.converter('middle_bid')
+    middle_bid.equation = bids.arr_percentile(50.0)
+    weighted_bid = model.converter('weighted_bid')
+    weighted_bid.equation = bids.arr_percentile(50.0, weights=lots)
+    bid_spread = model.converter('bid_spread')
+    bid_spread.equation = bids.arr_percentile(75.0, 25.0)
+    return bid_spread, middle_bid, weighted_bid
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    \begin{equation*}
+    \begin{aligned}
+    b &= \begin{pmatrix} 6.0 & 2.0 & 8.0 & 5.0 \end{pmatrix} \\
+    w &= \begin{pmatrix} 1 & 1 & 1 & 3 \end{pmatrix} \\
+    \text{percentile}(b, 50) &= 5.5 \\
+    \text{percentile}(b, 50, w) &= 5.1\overline{6} \\
+    \text{percentile}(b, 75) - \text{percentile}(b, 25) &= 3.5
+    \end{aligned}
+    \end{equation*}
+
+    Sorted, the bids are 2, 5, 6 and 8. The median rank is 1.5, between 5 and 6, so the result is their mean, 5.5. With three lots on the bid of 5, that bid holds half of the weight, its middle sits at 41.7 percent, and the border to the bid of 6 at 66.7 percent, where the value is 5.5; 50 percent lies a third of the way between them. The spread is 7.0 - 3.5: the 75th percentile, at rank 2.25, is the mean of 6 and 8, the 25th the mean of 2 and 5.
+    """)
+    return
+
+@app.cell
+def _(bid_spread, middle_bid, mo, weighted_bid):
+    with mo.capture_stdout() as captured_percentile:
+        print(middle_bid(1), weighted_bid(1), bid_spread(1))
+
+    mo.plain_text(captured_percentile.getvalue())
     return
 
 

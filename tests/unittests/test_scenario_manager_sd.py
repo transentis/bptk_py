@@ -191,6 +191,34 @@ class TestScenarioManagerSD(unittest.TestCase):
 
         self.assertEqual(scenarioManager.scenarios, {})
 
+    def test_an_old_transpiled_file_newer_than_its_source_is_compiled_again(self):
+        """A file an earlier release transpiled is a plain class, and it can be newer
+        than its source; the scenarios run on the Model compiled from that source."""
+        import shutil, sys, tempfile, time
+        source = os.path.join(os.path.dirname(__file__), "..", "test_models", "init.stmx")
+
+        with tempfile.TemporaryDirectory() as folder:
+            os.makedirs(os.path.join(folder, "old_models"))
+            shutil.copy(source, os.path.join(folder, "old_models", "init.stmx"))
+            time.sleep(0.01)
+            with open(os.path.join(folder, "old_models", "init.py"), "w", encoding="UTF-8") as file:
+                file.write("class simulation_model:\n    starttime, stoptime, dt = 0, 1, 1\n")
+            sys.path.insert(0, folder)
+            try:
+                manager = ScenarioManagerSd(scenarios={"base": {}}, name="mgr",
+                                            model_file=os.path.join(folder, "old_models", "init"),
+                                            source=os.path.join(folder, "old_models", "init.stmx"))
+                manager.scenarios = {"base": SimulationScenario(dictionary={}, name="base", model=None,
+                                                                scenario_manager_name="mgr")}
+                manager.model_module = "old_models/init"
+                manager.instantiate_model()
+            finally:
+                sys.path.remove(folder)
+                for name in [name for name in sys.modules if name.split(".")[0] == "old_models"]:
+                    sys.modules.pop(name)
+
+        self.assertIsInstance(manager.scenarios["base"].model, Model)
+
     def test_instantiate_model_reports_an_error_inside_the_module(self):
         """Only a failed import means "the last part is a class". An error raised by the
         model module itself used to send the loader down that path too, and the log

@@ -6,15 +6,14 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
 
 from contextlib import contextmanager
 
 from .element import Element
 from .element import ElementError
-from .operators import Operator
+from .operators import Operator, _source
 
 
 # A stock whose equation is built from its flow lists assigns that equation itself, and
@@ -149,14 +148,14 @@ class Stock(Element):
 
     def build_function_string(self):
         start_string = "lambda model, t : ( ("
-        start_string += str(self.__initial_value) + \
+        start_string += _source(self.__initial_value) + \
             ") if (t <= model.starttime) else (model.memoize('{}',t-model.dt))".format(self.name)
 
         if self.equation is not None:
             start_string += "+ model.dt*("
             if isinstance(self._equation, (float, int)):
                 self._function_string = start_string + \
-                    str(self._equation) + ") )"
+                    _source(self._equation) + ") )"
             else:
                 self._function_string = start_string + \
                     self._equation.term("t-model.dt") + ") )"
@@ -324,9 +323,9 @@ class Stock(Element):
         def element(name):
             return self.model.flows.get(name) or self.model.biflows[name]
 
-        # The order the cell serves what leaves it: the outflows, then the biflows among
-        # the inflows, for when they run backwards.
-        served = outflows + [name for name in inflows if name in self.model.biflows]
+        # The order the cell serves what leaves it, as in Stella: the biflows among the
+        # inflows, for when they run backwards, then the outflows.
+        served = [name for name in inflows if name in self.model.biflows] + outflows
         for position, name in enumerate(served):
             for later in served[position + 1:]:
                 if _depends_on(element(name).equation, {later}):
@@ -334,7 +333,7 @@ class Stock(Element):
                         "'{}' comes before '{}' in the outflows of '{}', but depends on "
                         "it. An outflow that depends on another one takes the lower "
                         "priority: put it later in the list. A biflow among the inflows "
-                        "comes after every outflow.".format(name, later, self.name))
+                        "comes before every outflow.".format(name, later, self.name))
         # A flow that depends on an outflow of the same stock cannot count towards what
         # that outflow may take - it would wait for itself. As in Stella, it is left out,
         # and only the stock's content is available.
@@ -353,7 +352,8 @@ class Stock(Element):
         """What `flow` may move at `t`.
 
         A flow that brings material in moves what it wants. One that takes material out
-        takes at most what is left once the flows served before it have had theirs.
+        takes at most what is left once the flows served before it have had theirs - the
+        draining biflows among the inflows first, in their order, then the outflows in theirs.
         """
         inflows, outflows = self._cut
         is_outflow = flow in outflows
@@ -367,12 +367,14 @@ class Stock(Element):
             else:
                 brought = model.biflows[name].wanted(t)
                 available += max(0, brought if how == "in" else -brought)
-        for earlier in outflows:
-            if earlier == flow:
-                return max(0, min(wanted, available))
-            available -= max(0, model.memoize(earlier, t))
         for earlier in inflows:
             if earlier == flow:
+                return -max(0, min(-wanted, available))
+            # Only a biflow can drain; a flow is not read, it may depend on an outflow
+            if earlier in model.biflows:
+                available -= max(0, -model.memoize(earlier, t))
+        for earlier in outflows:
+            if earlier == flow:
                 break
-            available -= max(0, -model.memoize(earlier, t))
-        return -max(0, min(-wanted, available))
+            available -= max(0, model.memoize(earlier, t))
+        return max(0, min(wanted, available))

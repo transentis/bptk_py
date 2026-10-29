@@ -17,7 +17,7 @@ import BPTK_Py.logger.logger as logmod
 from BPTK_Py.sddsl import functions as sd
 from BPTK_Py.scenariorunners.sd_runner import SdRunner
 from tests.helpers.log_helpers import clear_log, read_log
-from tests.helpers.arrayed_fixtures import build_workforce_model
+from tests.helpers.arrayed_fixtures import build_matrix_model, build_workforce_model
 
 
 # ---------------------------------------------------------------------------
@@ -569,46 +569,6 @@ class TestRustBackendRefusal:
         with pytest.raises(RustBackendError, match="pending"):
             model.simulate(["out"], backend="rust")
 
-    @pytest.mark.parametrize("name, build", [
-        ("lookupinv", lambda source: sd.lookupinv(source, [[0, 0], [10, 10]])),
-        ("lookuparea", lambda source: sd.lookuparea([[0, 0], [10, 10]], 0.0, source)),
-        ("irr", lambda source: sd.irr(source.model, source)),
-    ])
-    def test_a_builtin_the_engine_does_not_have_yet_raises(self, name, build):
-        model = Model(starttime=0, stoptime=5, dt=1, name="not_on_the_engine")
-        source = model.converter("source")
-        source.equation = 2.5
-        model.converter("out").equation = build(source)
-
-        with pytest.raises(RustBackendError, match=name):
-            model.simulate(["out"], backend="rust")
-
-    def test_a_conveyor_raises(self):
-        model = Model(starttime=0, stoptime=5, dt=1, name="conveyor")
-        belt = model.conveyor("belt")
-        belt.transit_time = 2
-        belt.outflows = [model.flow("out")]
-
-        with pytest.raises(RustBackendError, match="'belt' is a conveyor"):
-            model.simulate(["belt"], backend="rust")
-
-    def test_a_random_function_with_a_seed_raises(self):
-        model = Model(starttime=0, stoptime=5, dt=1, name="seeded")
-        model.converter("draw").equation = sd.poisson(4.0, seed=3)
-
-        with pytest.raises(RustBackendError, match="'poisson' with a seed"):
-            model.simulate(["draw"], backend="rust")
-
-    def test_a_non_negative_stock_raises(self):
-        model = Model(starttime=0, stoptime=5, dt=1, name="non_negative")
-        stock = model.stock("store")
-        outflow = model.flow("sales")
-        outflow.equation = 1.0
-        stock.outflows = [outflow]
-        stock.non_negative = True
-
-        with pytest.raises(RustBackendError, match="Stock 'store' is non-negative"):
-            model.simulate(["store"], backend="rust")
 
     def test_a_non_numeric_constant_raises(self):
         model = Model(starttime=0, stoptime=5, dt=1, name="non_numeric_const")
@@ -632,8 +592,9 @@ class TestRustBackendRefusal:
                                equations=["stock"], backend="rust")
 
     def test_a_model_without_to_json_says_so(self, monkeypatch):
-        """A model compiled from XMILE is a plain class with no serialization at all.
-        The message names that, rather than repeating an AttributeError."""
+        """A class of the user's own, or a file transpiled by a release before 3.5.0,
+        has no serialization at all. The message names that, rather than repeating an
+        AttributeError."""
         model = Model(starttime=0, stoptime=3, dt=1, name="no_to_json")
         stock = model.stock("stock")
         stock.initial_value = 0.0
@@ -649,7 +610,7 @@ class TestRustBackendRefusal:
 
         bptk = self._bptk_with(model)
 
-        with pytest.raises(RustBackendError, match="XMILE"):
+        with pytest.raises(RustBackendError, match="Only a BPTK-Py Model is serialized"):
             bptk.run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
                                equations=["stock"], backend="rust")
 
@@ -1094,7 +1055,7 @@ def _assert_step_dicts_equal(py_step, rust_step, step_idx, rel=1e-9, abs_tol=1e-
                     "step {}/{}/{}/{}: time keys differ".format(
                         step_idx, manager, scenario, eq)
                 for t in py_eq:
-                    assert py_eq[t] == pytest.approx(rust_eq[t], rel=rel, abs=abs_tol), \
+                    assert py_eq[t] == pytest.approx(rust_eq[t], rel=rel, abs=abs_tol, nan_ok=True), \
                         "step {} @ t={}: {}/{}/{} python={} rust={}".format(
                             step_idx, t, manager, scenario, eq, py_eq[t], rust_eq[t])
 
@@ -1547,6 +1508,60 @@ def _resume_history(builder, scenario_managers, scenarios, equations, total_step
 
 class TestRustResume:
     """Resume correctness for Rust-backed sessions restored from external state."""
+
+    def test_a_conveyor_resumed_moves_its_belt_as_an_uninterrupted_session(self):
+        """The belt is not in the exported grid, so the engine exports nothing and the
+        session is replayed rather than resumed with an empty belt."""
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=1, name="conveyor_resume")
+            inflow = model.flow("inflow")
+            inflow.equation = 10.0 + sd.time()
+            out = model.flow("out")
+            loss = model.flow("loss")
+            belt = model.conveyor("belt")
+            belt.transit_time = 3
+            belt.initial_value = 30.0
+            belt.inflows = [inflow]
+            belt.outflows = [out]
+            belt.leaks = {loss: 0.1}
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+
+        whole = _run_session_history(build(), ["mgr"], ["base"], ["belt", "out", "loss"],
+                                     steps=11, backend="rust")
+        resumed = _resume_history(build, ["mgr"], ["base"], ["belt", "out", "loss"],
+                                  total_steps=11, break_after=5)
+        for i in range(11):
+            _assert_step_dicts_equal(whole[i], resumed[i], i)
+
+    def test_a_seeded_draw_resumed_draws_what_an_uninterrupted_session_draws(self):
+        """A seeded draw is made from seed, step and cell alone, so neither the restart nor
+        the session's own seed changes it - and a whole run draws the same."""
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=1, name="seeded_resume")
+            model.converter("draw").equation = sd.poisson(4.0, seed=3)
+            total = model.stock("total")
+            total.initial_value = 0.0
+            inflow = model.flow("inflow")
+            inflow.equation = model.converters["draw"]
+            total.equation = inflow
+            b = BPTK_Py.bptk()
+            b.register_scenario_manager({"mgr": {"model": model}})
+            b.register_scenarios(scenarios={"base": {}}, scenario_manager="mgr")
+            return b
+
+        whole = _run_session_history(build(), ["mgr"], ["base"], ["draw", "total"],
+                                     steps=11, backend="rust", seed=1)
+        resumed = _resume_history(build, ["mgr"], ["base"], ["draw", "total"],
+                                  total_steps=11, break_after=4, seed=2)
+        for i in range(11):
+            _assert_step_dicts_equal(whole[i], resumed[i], i)
+        run = build().run_scenarios(scenario_managers=["mgr"], scenarios=["base"],
+                                    equations=["draw"], backend="rust", return_format="df")
+        draws = [whole[i]["mgr"]["base"]["draw"][float(i)] for i in range(11)]
+        assert list(run["draw"]) == pytest.approx(draws)
 
     def test_resume_simple_deterministic(self):
         """A 10-step simple session, broken after step 5 and resumed on a fresh
@@ -2313,6 +2328,58 @@ class TestAnArrayedElementAskedForByItsName:
         assert "[ERROR] begin_session: " + self._MESSAGE in read_log()
 
 
+class TestCellsAskedForAsInXmile:
+    """`name[1,germany]` names a cell, and an asterisk sums over its dimension, as in
+    Stella - the spelling the pages of models compiled from XMILE use."""
+
+    def _bptk(self, manager):
+        instance = BPTK_Py.bptk()
+        instance.register_scenario_manager({manager: {"model": build_workforce_model()},
+                                            manager + "_matrix": {"model": build_matrix_model()}})
+        instance.register_scenarios(scenarios={"base": {}}, scenario_manager=manager)
+        instance.register_scenarios(scenarios={"base": {}}, scenario_manager=manager + "_matrix")
+        return instance
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_an_asterisk_sums_and_a_label_names_a_cell(self, backend):
+        df = self._bptk("xmile_cells_" + backend).run_scenarios(
+            scenario_managers=["xmile_cells_" + backend], scenarios=["base"],
+            equations=["headcount[*]", "total_headcount", "headcount[JUNIOR]", "headcount[junior]"],
+            backend=backend)
+
+        assert list(df.columns) == ["headcount[*]", "total_headcount", "headcount[JUNIOR]", "headcount[junior]"]
+        assert df["headcount[*]"].tolist() == pytest.approx(df["total_headcount"].tolist())
+        assert df["headcount[JUNIOR]"].tolist() == df["headcount[junior]"].tolist()
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_a_row_of_a_matrix(self, backend):
+        manager = "xmile_rows_{}_matrix".format(backend)
+        df = self._bptk(manager[:-len("_matrix")]).run_scenarios(
+            scenario_managers=[manager], scenarios=["base"],
+            equations=["allocation[1,*]", "allocation[*,*]", "allocation[0,1]"], backend=backend)
+
+        assert df.iloc[0].tolist() == [9.0, 14.0, 3.0]
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_a_label_the_dimension_does_not_have_is_reported(self, backend):
+        clear_log()
+        df = self._bptk("xmile_unknown_" + backend).run_scenarios(
+            scenario_managers=["xmile_unknown_" + backend], scenarios=["base"],
+            equations=["headcount[trainee]", "total_headcount"], backend=backend)
+
+        assert list(df.columns) == ["total_headcount"]
+        assert 'No simulation model containing equation "headcount[trainee]"' in read_log()
+
+    @pytest.mark.parametrize("backend", ["python", "rust"])
+    def test_a_session(self, backend):
+        instance = self._bptk("xmile_session_" + backend)
+        instance.begin_session(scenarios=["base"], scenario_managers=["xmile_session_" + backend],
+                               equations=["headcount[*]", "total_headcount"], backend=backend)
+
+        step = instance.run_step()["xmile_session_" + backend]["base"]
+        assert step["headcount[*]"] == pytest.approx(step["total_headcount"])
+
+
 class TestASessionWithAnUnknownEquation:
     """A misspelt equation in a session used to vanish: Python logged a `[WARN]` to
     the log file only, the engine said nothing at all."""
@@ -3011,3 +3078,216 @@ class TestCustomFunctionParity:
             return bptk
 
         _interleave_step(builder, ["session_mgr"], ["base"], ["scaled", "stock"], steps=5)
+
+
+# ---------------------------------------------------------------------------
+# Sessions, Python against Rust, for what reached the engine in 3.5.0
+# ---------------------------------------------------------------------------
+
+def _errors_of(run):
+    """Call `run` and return its result and the `[ERROR]` lines it printed, without times."""
+    import contextlib
+    import io
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = run()
+    return result, sorted(line.split(", ", 1)[1] for line in output.getvalue().splitlines() if "[ERROR]" in line)
+
+
+def _bptk_of(model, scenarios=None):
+    b = BPTK_Py.bptk()
+    b.register_scenario_manager({"mgr": {"model": model}})
+    b.register_scenarios(scenarios=scenarios or {"base": {}}, scenario_manager="mgr")
+    return b
+
+
+def _session_parity(build, equations, steps, settings=None, resume_at=None):
+    """The same session on both engines, step by step: values and `[ERROR]` lines. With
+    `resume_at`, the Rust session is also restarted there from its state and compared."""
+    python, python_errors = _errors_of(lambda: _run_session_history(
+        _bptk_of(build()), ["mgr"], ["base"], equations, steps, settings_per_step=settings))
+    rust, rust_errors = _errors_of(lambda: _run_session_history(
+        _bptk_of(build()), ["mgr"], ["base"], equations, steps, settings_per_step=settings, backend="rust"))
+    for i in range(steps):
+        _assert_step_dicts_equal(python[i], rust[i], i)
+    assert python_errors == rust_errors
+    if resume_at is not None:
+        resumed = _resume_history(lambda: _bptk_of(build()), ["mgr"], ["base"], equations, steps,
+                                  break_after=resume_at, settings_per_step=settings)
+        for i in range(steps):
+            _assert_step_dicts_equal(python[i], resumed[i], i)
+    return python
+
+
+def _constants_at(step, **constants):
+    return [None] * step + [{"mgr": {"base": {"constants": constants}}}]
+
+
+class TestSessionParityAfter340:
+    """Step by step, with settings per step, at a model dt finer than the session's - the
+    case in which a constant set at a step used to reach the model steps before it."""
+
+    def test_a_constant_set_at_a_step_holds_from_that_step_on(self):
+        def build():
+            model = Model(starttime=0, stoptime=6, dt=0.5, name="dt_half")
+            rate = model.constant("rate")
+            rate.equation = 1.0
+            inflow = model.flow("inflow")
+            inflow.equation = rate
+            stock = model.stock("stock")
+            stock.equation = inflow
+            model.converter("past").equation = sd.previous(model, inflow, 0.0)
+            model.converter("value").equation = sd.npv(model, inflow, 0.1, 0.0)
+            return model
+        history = _session_parity(build, ["stock", "inflow", "past", "value"], 7,
+                                  settings=_constants_at(2, rate=10.0), resume_at=4)
+        # The model step from 1.5 to 2 still flows at the old rate, the two after it at the new
+        assert history[2]["mgr"]["base"]["stock"][2.0] == 2.0
+        assert history[3]["mgr"]["base"]["stock"][3.0] == 12.0
+
+    def test_irr_of_a_stream_changed_at_a_step(self):
+        def build():
+            model = Model(starttime=1, stoptime=13, dt=0.25, name="irr_session")
+            payment = model.constant("payment")
+            payment.equation = -100.0
+            cash = model.converter("cash")
+            cash.equation = sd.If(sd.time() < 3, payment, 30.0)
+            model.converter("rate").equation = sd.irr(model, cash, 0.0)
+            return model
+        _session_parity(build, ["cash", "rate"], 12, settings=_constants_at(1, payment=-50.0), resume_at=6)
+
+    def test_a_conveyor_with_agecount_feeding_a_non_negative_stock(self):
+        def build():
+            model = Model(starttime=0, stoptime=10, dt=0.5, name="conveyor_session")
+            transit = model.constant("transit")
+            transit.equation = 3.0
+            rate = model.constant("rate")
+            rate.equation = 0.1
+            entering = model.flow("entering")
+            entering.equation = 10.0
+            leaving = model.flow("leaving")
+            loss = model.flow("loss")
+            belt = model.conveyor("belt")
+            belt.transit_time = transit
+            belt.initial_value = 30.0
+            belt.inflows = [entering]
+            belt.outflows = [leaving]
+            belt.leaks = {loss: rate}
+            model.converter("young").equation = sd.agecount(belt, 0, 1)
+            store = model.stock("store")
+            sales = model.flow("sales")
+            sales.equation = 12.0
+            store.inflows = [leaving]
+            store.outflows = [sales]
+            store.non_negative = True
+            return model
+        _session_parity(build, ["belt", "leaving", "loss", "young", "store", "sales"], 11,
+                        settings=_constants_at(3, transit=1.5, rate=0.3), resume_at=5)
+
+    def test_tables_set_at_a_step_reach_every_lookup(self):
+        def build():
+            model = Model(starttime=0, stoptime=8, dt=0.5, name="points_session")
+            model.points["tab"] = [[0, 1], [5, 3]]
+            model.converter("forward").equation = sd.lookup(sd.time(), "tab")
+            model.converter("backward").equation = sd.lookupinv(sd.time() * 0.5, "tab")
+            model.converter("whole").equation = sd.lookuparea("tab")
+            model.converter("so_far").equation = sd.lookuparea("tab", None, sd.time())
+            return model
+        settings = [None, None, {"mgr": {"base": {"points": {"tab": [[0, 0], [2, 4], [10, 4]]}}}}]
+        history = _session_parity(build, ["forward", "backward", "whole", "so_far"], 9, settings=settings, resume_at=4)
+        assert history[2]["mgr"]["base"]["whole"][2.0] == 36.0
+
+    def test_array_methods_and_a_division_by_zero(self):
+        def build():
+            model = Model(starttime=0, stoptime=6, dt=1, name="arrays_session")
+            values = model.converter("values")
+            values.setup_vector(4, [0.0] * 4)
+            for cell, slope in enumerate([1.0, -1.0, 0.5, 0.0]):
+                values[cell].equation = 3.0 + slope * sd.time()
+            divisor = model.constant("divisor")
+            divisor.equation = 2.0
+            model.converter("position").equation = values.arr_rank(2)
+            model.converter("second").equation = values.arr_largest(2)
+            model.converter("between").equation = values.arr_interpolate(0.4)
+            model.converter("share").equation = 1.0 / divisor
+            return model
+        _session_parity(build, ["position", "second", "between", "share"], 7,
+                        settings=_constants_at(3, divisor=0.0), resume_at=5)
+
+    def test_running_statistics_over_a_resume(self):
+        """The RUN statistics read the stored past of their variable: a session restored
+        halfway has to bring that past along, with a constant changed before the break."""
+        def build():
+            model = Model(starttime=0, stoptime=8, dt=0.5, name="running_session")
+            rate = model.constant("rate")
+            rate.equation = 2.0
+            source = model.converter("source")
+            source.equation = rate * sd.sinwave(3.0, 4.0) + sd.time()
+            model.converter("total").equation = sd.runcum(model, source)
+            model.converter("window_max").equation = sd.runmax(model, source, sd.time() - 1.0, sd.time())
+            model.converter("mean").equation = sd.runmean(model, source)
+            model.converter("reached").equation = sd.runcumtarget(model, source, 12.0)
+            return model
+        _session_parity(build, ["total", "window_max", "mean", "reached"], 9,
+                        settings=_constants_at(2, rate=-1.0), resume_at=5)
+
+    def test_seeded_draws_are_the_same_in_a_session_a_run_and_a_resume_on_python(self):
+        def build():
+            model = Model(starttime=0, stoptime=8, dt=1, name="seeded_python_session")
+            model.converter("draw").equation = sd.normal(0.0, 1.0, seed=4)
+            return model
+        session = _run_session_history(_bptk_of(build()), ["mgr"], ["base"], ["draw"], 9)
+        resumed = _resume_history(lambda: _bptk_of(build()), ["mgr"], ["base"], ["draw"], 9,
+                                  break_after=4, backend="python")
+        whole = build().simulate(["draw"])
+        for i in range(9):
+            assert session[i]["mgr"]["base"]["draw"][float(i)] == resumed[i]["mgr"]["base"]["draw"][float(i)] \
+                == whole["draw"][float(i)]
+
+
+class TestCustomFunctionsWithTheConstructsOf350:
+    """A user-defined function where the constructs of 3.5.0 take their arguments."""
+
+    @staticmethod
+    def _compare(build, equations):
+        python, rust = _both_backends(build, equations)
+        for name in equations:
+            assert rust[name].tolist() == pytest.approx(python[name].tolist(), nan_ok=True), name
+
+    def test_as_the_outflow_of_a_non_negative_stock(self):
+        def build():
+            model = Model(starttime=0, stoptime=6, dt=1, name="callback_non_negative")
+            model.function("demand", lambda model, t: 3.0 + t)
+            stock = model.stock("stock")
+            stock.initial_value = 10.0
+            outflow = model.flow("outflow")
+            outflow.equation = model.functions["demand"]()
+            stock.outflows = [outflow]
+            stock.non_negative = True
+            return model
+        self._compare(build, ["stock", "outflow"])
+
+    def test_as_the_transit_time_of_a_conveyor(self):
+        def build():
+            model = Model(starttime=0, stoptime=8, dt=1, name="callback_conveyor")
+            model.function("transit", lambda model, t: 2.0 if t < 4 else 1.0)
+            entering = model.flow("entering")
+            entering.equation = 5.0
+            leaving = model.flow("leaving")
+            belt = model.conveyor("belt")
+            belt.transit_time = model.functions["transit"]()
+            belt.inflows = [entering]
+            belt.outflows = [leaving]
+            return model
+        self._compare(build, ["belt", "leaving"])
+
+    def test_as_the_mean_of_a_seeded_draw_and_the_rank_of_arr_rank(self):
+        def build():
+            model = Model(starttime=0, stoptime=6, dt=1, name="callback_seeded_rank")
+            model.function("which", lambda model, t: 1.0 + t % 3)
+            values = model.constant("values")
+            values.setup_vector(3, [4.0, 1.0, 9.0])
+            model.converter("position").equation = values.arr_rank(model.functions["which"]())
+            model.converter("draw").equation = sd.normal(model.functions["which"](), 0.0, seed=1)
+            return model
+        self._compare(build, ["position", "draw"])

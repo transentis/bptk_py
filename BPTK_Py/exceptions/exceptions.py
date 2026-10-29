@@ -1,4 +1,13 @@
-
+#                                                       /`-
+# _                                  _   _             /####`-
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2019-2026 transentis labs GmbH
+# MIT License
 
 class WrongParamException(Exception):
     pass
@@ -32,7 +41,7 @@ class RustBackendError(Exception):
     from the engine, looked exactly like one that had.
 
     Four things cause it, and the message says which: the model cannot be expressed in
-    the engine's format, it is a compiled XMILE model and has no serialization at all,
+    the engine's format, it is no `Model` and has no serialization at all,
     this installation has no Rust engine, or the engine failed while running.
 
     A user-defined function is not one of them. Such a model runs on the engine and
@@ -57,8 +66,9 @@ def rust_backend_error(error):
     if isinstance(error, AttributeError):
         return RustBackendError(
             "This model cannot be serialized for the Rust engine, so backend='rust' "
-            "cannot be served. A model compiled from XMILE is a plain Python class with "
-            "no serialization; such models reach the engine in a later release. Ask for "
+            "cannot be served. Only a BPTK-Py Model is serialized - a class of your own "
+            "is not, and neither is a file transpiled from XMILE by a release before "
+            "3.5.0 whose source is gone. Build the model as a Model, or ask for "
             "backend='python'. ({})".format(error))
 
     return RustBackendError(

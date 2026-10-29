@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>delay_variable</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>20</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="input">
+				<eqn>TIME</eqn>
+			</aux>
+			<aux name="delay_time">
+				<eqn>2 + STEP(2, 8) - STEP(3, 14)</eqn>
+			</aux>
+			<aux name="delayed">
+				<eqn>DELAY(input, delay_time)</eqn>
+			</aux>
+			<aux name="delayed_init">
+				<eqn>DELAY(input, delay_time, -1)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="input"/>
+				<aux x="220" y="290" name="delay_time"/>
+				<aux x="360" y="290" name="delayed"/>
+				<aux x="500" y="290" name="delayed_init"/>
+				<connector uid="1" angle="270">
+					<from>delay_time</from>
+					<to>delayed</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>input</from>
+					<to>delayed</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>delay_time</from>
+					<to>delayed_init</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>input</from>
+					<to>delayed_init</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

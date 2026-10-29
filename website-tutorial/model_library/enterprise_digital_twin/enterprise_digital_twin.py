@@ -23,29 +23,29 @@ def _(mo):
 
     ## Introduction
 
-    This notebook introduces an __Enterprise Digital Twin__ for consulting firms that we at [transentis](https://www.transentis.com) are currently working for our internal performance management system.
+    This notebook introduces an __Enterprise Digital Twin__ for consulting firms that we at [transentis](https://www.transentis.com) are currently working on for our internal performance management system.
 
     ### What exactly is an Enterprise Digital Twin?
 
     The idea of a digital twin is to create a "digital copy" of your system of interest (e.g. a device, a vehicle, a factory or even an enterprise) that not only allows you to gather information about the system, but also allows you to interact with the system and to test the consequences of changes to the system before they are put into action.
 
-    So if you had a digital twin of a railway system and all the trains running on it, you could see which seats are occupied (and by whom), see key operating parameters of the train (such as its speed, weight and energy consumption) and you could answer questions such as "What will happen if the train is delayed by 20 Minutes?").
+    So if you had a digital twin of a railway system and all the trains running on it, you could see which seats are occupied (and by whom), see key operating parameters of the train (such as its speed, weight and energy consumption) and you could answer questions such as "What will happen if the train is delayed by 20 minutes?"
 
     ![Enterprise Digital Twin](images/enterprise_digital_twin.svg)
 
     At the enterprise level, we use the following definition: An Enterprise Digital Twin is a digital representation of the (relevant parts) of your enterprise and its environment that is updated in (near) real-time. It provides an overview of what is going on in the enterprise NOW (based on historical data) and lets you project the current state into the FUTURE (based on computational models).
 
-    The key purpose of a digital twin is to aid decision making. It fullfills this purpose by providing you will all relevant information in real time and allowing you to test the potential outcome of decisions before putting them into practice. It also lets you experiment with alternative future scenarios – these can range from changing market conditions, changes to concrete customer situations and revnue streams and changes to your workforce.
+    The key purpose of a digital twin is to aid decision making. It fulfills this purpose by providing you with all relevant information in real time and allowing you to test the potential outcome of decisions before putting them into practice. It also lets you experiment with alternative future scenarios – these can range from changing market conditions, changes to concrete customer situations and revenue streams and changes to your workforce.
 
-    In principle, you could even use the digital twin to enact the decisions you make by connecting it to an _Enterprise API_ that automates those actions – our objective here is to use the enterprise digital twin for _augemented decision making_ and not for _automated decision making_.
+    In principle, you could even use the digital twin to enact the decisions you make by connecting it to an _Enterprise API_ that automates those actions – our objective here is to use the enterprise digital twin for _augmented decision making_ and not for _automated decision making_.
 
     ### Isn't an Enterprise Digital Twin Just a Simulation Model?
 
-    At the basic level, the "predict the future" part of an enterprise digital twin IS a simulation model. What makes it different from "classical", desktop based simulations is that it is directly connected to the "business intelligence" part of the entperprise digital twin, so you can seamlessly project data you have about how your business is performing right now into the future. This makes the experience of actually using the simulation much better and you don't need to tediously download data from your BI systems to (re-)calibrate your simulation model.
+    At the basic level, the "predict the future" part of an enterprise digital twin IS a simulation model. What makes it different from "classical", desktop based simulations is that it is directly connected to the "business intelligence" part of the enterprise digital twin, so you can seamlessly project data you have about how your business is performing right now into the future. This makes the experience of actually using the simulation much better and you don't need to tediously download data from your BI systems to (re-)calibrate your simulation model.
 
     This works because the simulation model follows the "API first" principle - the simulation is accessible via a REST API which allows calibration on the fly.
 
-    The enterprise digital twin we're presenting here is a simulation model built using [Agent-based modeling](../../abm/abm.md) and [System Dynamics](../../sd-dsl/sddsl.md) modeling. These are rule-based analytical approaches which could be complemented and augmented using statistical analytics techniques
+    The enterprise digital twin we're presenting here is a simulation model built using [Agent-based modeling](../../abm/abm.md) and [System Dynamics](../../sd-dsl/sddsl.md) modeling. These are rule-based analytical approaches which could be complemented and augmented using statistical analytics techniques.
 
     >NOTE: The enterprise digital twin presented here is __work in progress__: we're in the process of extending our internal enterprise digital twin with a simulation model that allows us to project our current business into the future and to explore alternative scenarios. We report our progress at our events - upcoming dates and materials from past ones are at [academy.transentis.com/en/events](https://academy.transentis.com/en/events).
     """)
@@ -57,7 +57,7 @@ def _(mo):
     mo.md(r"""
     ## Objectives of Our Enterprise Digital Twin
 
-    The key objective of our digital twin is to not only provide us with a view of of how business has developed over the past months, but also of what is going on in the business _right now_ and how it _might develop_ in the future:
+    The key objective of our digital twin is to not only provide us with a view of how business has developed over the past months, but also of what is going on in the business _right now_ and how it _might develop_ in the future:
 
     * our consultants and the client projects they are working on
     * our internal innovation and transformation projects that improve our knowledge base and improve our professional services
@@ -71,11 +71,11 @@ def _(mo):
     We would like all of this to be summarized using performance indicators:
 
     * _Consulting Capacity._ The number of consulting FTEs
-    * _Utilization._ The percentage of time that a consulting FTE is busy on client project
+    * _Utilization._ The percentage of time that a consulting FTE is busy on client projects.
     * _Consulting Fees._ The average consulting fee (per consulting day).
-    * _Profit Margins_ The average profit margin.
+    * _Profit Margins._ The average profit margin.
     * _Cash Flow and Cash._ Monthly cash flow and overall cash level.
-    * _Revenue Risk._ An estimiation of how uncertain or revenue stream is when it is projected into the future.
+    * _Revenue Risk._ An estimation of how uncertain our revenue stream is when it is projected into the future.
 
     The following diagram shows how these KPIs fit together using a variation of the DuPont System - the [transentis blog](https://www.transentis.com/blog) covers these indicators in more depth:
 
@@ -89,9 +89,9 @@ def _(mo):
 
     But we will also need a lot of "KPI accounting", where we track and accumulate information such as the consulting effort spent on projects and the revenue generated through that over different time periods.
 
-    System Dynamics is ideal for this, which is why we decided to build our enterprise digital twin using a hybrid modeling approach: the core simulation is built using Agent-based modling and within that model we embed a separate System Dynamics model that keeps track of the key performance indicators.
+    System Dynamics is ideal for this, which is why we decided to build our enterprise digital twin using a hybrid modeling approach: the core simulation is built using Agent-based modeling and within that model we embed a separate System Dynamics model that keeps track of the key performance indicators.
 
-    Currently, all interaction between the Agent-based model and the System Dynamics model is via the Controlling agent: From the perspective of the System Dynamics model, the Controlling agent is an exogenous environment that provides data as a time-series. The Controlling Agents reads back the relevant values form the System Dynamics model in order to make them available for the charts.
+    Currently, all interaction between the Agent-based model and the System Dynamics model is via the Controlling agent: From the perspective of the System Dynamics model, the Controlling agent is an exogenous environment that provides data as a time-series. The Controlling agent reads back the relevant values from the System Dynamics model in order to make them available for the charts.
 
     ![Enterprise Digital Twin Model](./images/edt_model.svg)
 
@@ -101,15 +101,15 @@ def _(mo):
 
     #### Consultant
 
-    _Consultants_ are responsible for delivering consulting services to customers in the form of _projects_ – all of the companies revenue is generated through consultants working projects.
+    _Consultants_ are responsible for delivering consulting services to customers in the form of _projects_ – all of the company's revenue is generated through consultants working projects.
 
-    Consultants currently have have four states states: _Hired_, _Available_, _Busy_, _Inactive_.
+    Consultants currently have four states: _Hired_, _Available_, _Busy_, _Inactive_.
 
     Once an employment contract has been signed, we know a consultant is coming on board at some future date. As long as that date hasn't arrived, the consultant is in the _Hired_ state.
 
-    As soon as they entere the company they become _Available_ and they actively seek projects that are not yet fully staffed.
+    As soon as they enter the company they become _Available_ and they actively seek projects that are not yet fully staffed.
 
-    Once they join a project, the consultants switch in to the _Busy_ state, start expending effort on the project and thus also generate revenue.
+    Once they join a project, the consultants switch into the _Busy_ state, start expending effort on the project and thus also generate revenue.
 
     As soon as a project the consultant is working on has been completed, consultants switch back into the _Available_ state again and start looking for another project to work on - this can be a client project or, if no consulting project is available, an internal marketing campaign.
 
@@ -125,7 +125,7 @@ def _(mo):
 
     Each project has an associated daily rate, which is charged for each day of work done on the project.
 
-    Once the effort allocated to a project is used up through consultants working on the project, there is a certain probability that more effort may be allocated (the concrete probability will depending on the client situation).
+    Once the effort allocated to a project is used up through consultants working on the project, there is a certain probability that more effort may be allocated (the concrete probability will depend on the client situation).
 
     Once the project has reached its deadline, it stops - but there is also a certain probability attached to the project that it might lead to one or more follow-on projects (currently this is the key way we generate new business). Within the model, follow-on projects are "spawned" as new project agents.
 
@@ -179,9 +179,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    To understand now the model works, we will no experiment with the model step-by-step. We'll keep the experiments at the conceptual, "business" level – please do check the code for more details.
+    To understand how the model works, we will now experiment with the model step-by-step. We'll keep the experiments at the conceptual, "business" level – please do check the code for more details.
 
-    The simulation is set to run for two years in monthly timesteps – this is quite a good event horizon for what we want to achieve. Anything shorter will not be long enough to see the effect of "strategic" measures, anything much longer becomes to speculative for our purposes.
+    The simulation is set to run for two years in monthly timesteps – this is quite a good event horizon for what we want to achieve. Anything shorter will not be long enough to see the effect of "strategic" measures, anything much longer becomes too speculative for our purposes.
     """)
     return
 
@@ -199,7 +199,7 @@ def _(mo):
     mo.md(r"""
     Let's get started with the simplest scenario possible: one project and no consultants.
 
-    The following graph shows the projects state over time: It starts in the acquired state and once it reaches the start date in timestep 5, it switches into the _Ready_ state.
+    The following graph shows the project's state over time: It starts in the acquired state and once it reaches the start date in timestep 5, it switches into the _Ready_ state.
 
     Because we don't have any consultants, the project never starts and just remains in the ready state.
 
@@ -242,7 +242,7 @@ def _(mo):
 def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smEDT"],
-        kind="area",
+        kind="line",
         scenarios=["story_1"],
         title="Revenue",
         agents=["controlling"],
@@ -250,7 +250,7 @@ def _(bptk):
         agent_properties=["revenue"],
         agent_property_types=["total"],
         series_names={
-             "smEDT_base_controlling_active_revenue_total" : "Overall Revenue"
+             "smEDT_story_1_controlling_active_revenue_total" : "Overall Revenue"
          },
          x_label="Month",
         y_label="Euro", format="axes",
@@ -358,7 +358,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The accumlated earnings show that we reach break-even quickly once our consultants are working, but 6 months of work are not enough to sustain even the consultant wages in the long run.
+    The accumulated earnings show that we reach break-even quickly once our consultants are working, but 6 months of work are not enough to sustain even the consultant wages in the long run.
     """)
     return
 
@@ -433,9 +433,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now we assume that there is a certain probabiliy that a projects budget (effort) is extended while it hasn't reached it's deadline.
+    Now we assume that there is a certain probability that a project's budget (effort) is extended while it hasn't reached its deadline.
 
-    And once the project has reached it's deadline, there is a probability that it leads to follow on projects.
+    And once the project has reached its deadline, there is a probability that it leads to follow on projects.
 
     We can immediately see how the number of projects changes in the graph below:
     """)
@@ -523,7 +523,7 @@ def _(mo):
     mo.md(r"""
     In practice, working with the revenue risk concept is very useful - but sometimes we explicitly want to see how much of the future revenue is actually certain (via actual contracts) and how much revenue is speculative.
 
-    We can achieve this by specifing a revenue risk level - the plot below shows revenues for 0% risk and 50% risk levels.
+    We can achieve this by specifying a revenue risk level - the plot below shows revenues for 0% risk and 50% risk levels.
     """)
     return
 
@@ -561,11 +561,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now let's make it more interesting by adding consultants (10 all together) and projects: we'll start with two projects that require two consultants (so our utilization will be low initially) and assume that three more projects start after three months.
+    Now let's make it more interesting by adding consultants (10 altogether) and projects: we'll start with two projects that require two consultants (so our utilization will be low initially) and assume that three more projects start after three months.
 
     Let's examine how the company now performs using the performance indicators introduced above.
 
-    The first thing to look at is how our consulting capacity develops and to compare this to the number of projects - we can immediately see that during the first six months, demand is to low and we have an overcapacit of four consulting FTEs:
+    The first thing to look at is how our consulting capacity develops and to compare this to the number of projects - we can immediately see that during the first six months, demand is too low and we have an overcapacity of four consulting FTEs:
     """)
     return
 
@@ -595,7 +595,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is also reflected in the next chart, which shows the companies utilization rate, both on a monthly basis and as a cumulative "to date" measure. The utilization rate measures how much of a consultants time is spent working on client projects. Because only the work on client projects genereates revenue, a high utilization rate is desirable (but don't forget that consultants are also needed to acquire new clients and generate new business, so we should leave time for that).
+    This is also reflected in the next chart, which shows the company's utilization rate, both on a monthly basis and as a cumulative "to date" measure. The utilization rate measures how much of a consultant's time is spent working on client projects. Because only the work on client projects generates revenue, a high utilization rate is desirable (but don't forget that consultants are also needed to acquire new clients and generate new business, so we should leave time for that).
     """)
     return
 
@@ -627,7 +627,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The chart above reflects daily life in a consulting firm quite nicely: we can see utilization is bad at the beginning (which would lead to a flurry of marketing and sales activities). Then utilization picks up and by month 15 the utilization rate reaches 0.8 ... month 17 and 19 show quite a lot of fluctuation, which in reality would be quite tense times ... before utiliziation picks up again.
+    The chart above reflects daily life in a consulting firm quite nicely: we can see utilization is bad at the beginning (which would lead to a flurry of marketing and sales activities). Then utilization picks up and by month 15 the utilization rate reaches 0.8 ... month 17 and 19 show quite a lot of fluctuation, which in reality would be quite tense times ... before utilization picks up again.
 
     The utilization rate is by far the most important operative measure which needs to be monitored very closely.
     """)
@@ -637,7 +637,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The next chart shows the daily consulting fees - needless to say this is an important measure, because it directly impacts revenue. In practice the daily rates are often fixed by contracts etc. and it takes quite some to change them. Hence as a KPI, this is more relevant from a long-term strategic perspective and not so much from an operative perspective.
+    The next chart shows the daily consulting fees - needless to say this is an important measure, because it directly impacts revenue. In practice the daily rates are often fixed by contracts etc. and it takes quite some time to change them. Hence as a KPI, this is more relevant from a long-term strategic perspective and not so much from an operative perspective.
     """)
     return
 
@@ -667,7 +667,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The most important operative measure is the cash flow - whatever happens, we must ensure that we spend less money then we receive. The graph below shows that our company didn't to a good job here - because our utilization rate was bad during the first six months, we lost a lot of money.
+    The most important operative measure is the cash flow - whatever happens, we must ensure that we spend less money than we receive. The graph below shows that our company didn't do a good job here - because our utilization rate was bad during the first six months, we lost a lot of money.
     """)
     return
 
@@ -697,7 +697,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Cash flow starts picking up in month six, but the chart below shows that it takes 15 months before our cash reaches its original level – that is a very long time and it is doubtful the company would survive this, unless the projected revenues where fairly certain.
+    Cash flow starts picking up in month six, but the chart below shows that it takes 15 months before our cash reaches its original level – that is a very long time and it is doubtful the company would survive this, unless the projected revenues were fairly certain.
     """)
     return
 
@@ -764,11 +764,11 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Our final chart plots our accumulated revenue, accumulated expenses and accumulated earnings: we make a modest profit at the end of the first year, despite our poor utilization at the beginning of the year,
+    Our final chart plots our accumulated revenue, accumulated expenses and accumulated earnings: we make a modest profit at the end of the first year, despite our poor utilization at the beginning of the year.
 
     If you compare the earnings chart to the cash chart you will notice that our cash position looks much worse than the accumulated earnings - this is because we are assuming a collection time of two months, i.e. it takes two months for revenue to arrive in our bank account.
 
-    Two months collection time is quite realistic and this illustrates nicely why – from an operational perspective – cash and cash flow are more relevant then earnings.
+    Two months collection time is quite realistic and this illustrates nicely why – from an operational perspective – cash and cash flow are more relevant than earnings.
     """)
     return
 
@@ -786,8 +786,8 @@ def _(bptk):
         agent_property_types=["total"],
         series_names={
              "smEDT_story_5_controlling_active_accumulated_earnings_total" : "Earnings (To Date)",
-             "smEDT_story_5_controlling_active_accumulated_revenue_total" : "Earnings (To Date)",
-             "smEDT_story_5_controlling_active_accumulated_expenses_total" : "Earnings (To Date)"
+             "smEDT_story_5_controlling_active_accumulated_revenue_total" : "Revenue (To Date)",
+             "smEDT_story_5_controlling_active_accumulated_expenses_total" : "Expenses (To Date)"
         },
          x_label="Month",
         y_label="Euro", format="axes",
@@ -812,16 +812,16 @@ def _(mo):
     [`scenarios/interactive.json`](./scenarios/interactive.json) beside this page. The
     experiments below are done by editing that file and re-running the cell.
 
-    The scenario is calibrated to provide "full" utilization of six consultants via three projects, the simulation runs over 24 months at a granularity of 1 week. The consultants start with zero projects and it takes two weeks for them to become assigned to a project, which is why the company looses a little money in the first month - note how long it takes for the level of cash to break even again.
+    The scenario is calibrated to provide "full" utilization of six consultants via three projects, the simulation runs over 24 months in steps of a quarter month, about a week - finer than the monthly steps of the stories above. The consultants start with zero projects and it takes two weeks for them to become assigned to a project, which is why the company loses a little money in the first month - note how long it takes for the level of cash to break even again.
 
     Here are a few experiments to try. For each one, change the setting in
     `scenarios/interactive.json` and run the cell below again:
 
-    1. Increase billing rates on all three projects by 10%, i.e. from  € 1000 to € 1100.
-        * What is the percentage increate of your revenue?
+    1. Increase billing rates on all three projects by 10%, i.e. from € 1000 to € 1100.
+        * What is the percentage increase of your revenue?
         * What is the percentage increase of your earnings?
     2. Decrease billing rates on all three projects by 10%, i.e. from € 1000 to € 900
-        * What is the percentage decreate of your revenue?
+        * What is the percentage decrease of your revenue?
         * What is the percentage decrease of your earnings?
     3. Reset the billing rates to €1000 on each project
     4. Halve the contracted effort on each project, i.e. from 48 to 24 months
@@ -949,9 +949,9 @@ def _(mo):
 
     ![Enterprise Digital Twin Architecture](images/edt_architecture.svg)
 
-    We serve up the digital twin simulation using the [BPKT API Server](../../api/api_bptk_server/api_bptk_server.md) and use the low-code development plattform [Appsmith](https://www.appsmith.com) for the front-end. Appsmith also provides us with user management. We use it for most of our "internal" applications and that way our users have a single point of access.
+    We serve up the digital twin simulation using the [BPTK API Server](../../api/api_bptk_server/api_bptk_server.md) and use the low-code development platform [Appsmith](https://www.appsmith.com) for the front-end. Appsmith also provides us with user management. We use it for most of our "internal" applications and that way our users have a single point of access.
 
-    We feed the API server the correct initial settings using a scenario file we generate on the fly (based on transentis "as is" situation, which we read from our data warehouse) and can then look at how our business might develop using the dashboard. For this we have a separate "reporting server" which sits between the frontend and the digital twin backend. The diagram below shows illustrates this architecture.
+    We feed the API server the correct initial settings using a scenario file we generate on the fly (based on transentis' "as is" situation, which we read from our data warehouse) and can then look at how our business might develop using the dashboard. For this we have a separate "reporting server" which sits between the frontend and the digital twin backend. The diagram above illustrates this architecture.
     """)
     return
 
@@ -961,7 +961,7 @@ def _(mo):
     mo.md(r"""
     ## Open Issues and Next Steps
 
-    Our experiments above show how we can prototype the business logic of a professional service firm (PSF) using an _Enterprise Digital Twin_ buit using a mixed Agent-based and System Dynamics modeling approach.
+    Our experiments above show how we can prototype the business logic of a professional service firm (PSF) using an _Enterprise Digital Twin_ built using a mixed Agent-based and System Dynamics modeling approach.
 
     In its current state, the digital twin captures the core business of the PSF: delivering consulting services via projects and consultants.
 
@@ -969,10 +969,10 @@ def _(mo):
 
     What will the next steps be?
 
-    To capture the everday reality of a consultancy, we need to be a little more detailed regarding the core business:
+    To capture the everyday reality of a consultancy, we need to be a little more detailed regarding the core business:
 
     * allowing for different seniority levels among consultants, along with differentiated consulting fees.
-    * taking a more differentiated view of consultant availability - currently we are assuming consultants are available full time. But new consultants will be enter the company and some may also leave, consultants may only be working part time and – for more precise cash flow predictions – we will need to model vacations in more detail.
+    * taking a more differentiated view of consultant availability - currently we are assuming consultants are available full time. But new consultants will enter the company and some may also leave, consultants may only be working part time and – for more precise cash flow predictions – we will need to model vacations in more detail.
 
     Once we have these aspects built in, we will be able to make predictions of how our consulting business will develop given the current staff level and project contracts.
 
@@ -986,7 +986,7 @@ def _(mo):
     mo.md(r"""
     # Further Reading
 
-    Our thinking on Professional Services firms and the relevant KPIs was originally inspired by David Maister's excellent work, in particular _True Professionalism_ and _Managing The Professional Service Firm_.
+    Our thinking on professional services firms and the relevant KPIs was originally inspired by David Maister's excellent work, in particular _True Professionalism_ and _Managing The Professional Service Firm_.
     """)
     return
 

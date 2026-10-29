@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>arrays</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>3</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<dimensions>
+		<dim name="D" size="3"/>
+		<dim name="R">
+			<elem name="north"/>
+			<elem name="south"/>
+		</dim>
+	</dimensions>
+	<model>
+		<variables>
+			<aux name="v">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>2</eqn>
+				</element>
+			</aux>
+			<aux name="v_ties">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>2</eqn>
+				</element>
+			</aux>
+			<aux name="tiebreak">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>5</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>0</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>1</eqn>
+				</element>
+			</aux>
+			<aux name="w">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>v * TIME</eqn>
+			</aux>
+			<aux name="mat">
+				<dimensions>
+					<dim name="D"/>
+					<dim name="R"/>
+				</dimensions>
+				<element subscript="1,north">
+					<eqn>1</eqn>
+				</element>
+				<element subscript="1,south">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2,north">
+					<eqn>3</eqn>
+				</element>
+				<element subscript="2,south">
+					<eqn>4</eqn>
+				</element>
+				<element subscript="3,north">
+					<eqn>5</eqn>
+				</element>
+				<element subscript="3,south">
+					<eqn>6</eqn>
+				</element>
+			</aux>
+			<aux name="sum_v">
+				<eqn>SUM(v[*])</eqn>
+			</aux>
+			<aux name="mean_v">
+				<eqn>MEAN(v[*])</eqn>
+			</aux>
+			<aux name="stddev_v">
+				<eqn>STDDEV(v[*])</eqn>
+			</aux>
+			<aux name="prod_v">
+				<eqn>PROD(v[*])</eqn>
+			</aux>
+			<aux name="size_v">
+				<eqn>SIZE(v)</eqn>
+			</aux>
+			<aux name="max_v">
+				<eqn>MAX(v[*])</eqn>
+			</aux>
+			<aux name="min_v">
+				<eqn>MIN(v[*])</eqn>
+			</aux>
+			<aux name="sum_w">
+				<eqn>SUM(w[*])</eqn>
+			</aux>
+			<aux name="rank_1">
+				<eqn>RANK(v, 1)</eqn>
+			</aux>
+			<aux name="rank_3">
+				<eqn>RANK(v, 3)</eqn>
+			</aux>
+			<aux name="rank_ties">
+				<eqn>RANK(v_ties, 2)</eqn>
+			</aux>
+			<aux name="rank_tiebreak">
+				<eqn>RANK(v_ties, 2, tiebreak)</eqn>
+			</aux>
+			<aux name="interpolate_half">
+				<eqn>INTERPOLATE(v, 0.5)</eqn>
+			</aux>
+			<aux name="interpolate_off">
+				<eqn>INTERPOLATE(v, 0.3)</eqn>
+			</aux>
+			<aux name="sum_range">
+				<eqn>SUM(v[1:2])</eqn>
+			</aux>
+			<aux name="sum_mat">
+				<eqn>SUM(mat[*, *])</eqn>
+			</aux>
+			<aux name="sum_north">
+				<eqn>SUM(mat[*, north])</eqn>
+			</aux>
+			<aux name="sum_row_2">
+				<eqn>SUM(mat[2, *])</eqn>
+			</aux>
+			<aux name="transposed">
+				<dimensions>
+					<dim name="R"/>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>mat'</eqn>
+			</aux>
+			<stock name="s_arr">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>10</eqn>
+				<outflow>o_first_arr</outflow>
+				<outflow>o_second_arr</outflow>
+				<non_negative/>
+			</stock>
+			<flow name="o_first_arr">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<eqn>8</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="o_second_arr">
+				<dimensions>
+					<dim name="D"/>
+				</dimensions>
+				<element subscript="1">
+					<eqn>2</eqn>
+				</element>
+				<element subscript="2">
+					<eqn>8</eqn>
+				</element>
+				<element subscript="3">
+					<eqn>12</eqn>
+				</element>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="v"/>
+				<aux x="220" y="290" name="v_ties"/>
+				<aux x="360" y="290" name="tiebreak"/>
+				<aux x="500" y="290" name="w"/>
+				<aux x="640" y="290" name="mat"/>
+				<aux x="780" y="290" name="sum_v"/>
+				<aux x="80" y="380" name="mean_v"/>
+				<aux x="220" y="380" name="stddev_v"/>
+				<aux x="360" y="380" name="prod_v"/>
+				<aux x="500" y="380" name="size_v"/>
+				<aux x="640" y="380" name="max_v"/>
+				<aux x="780" y="380" name="min_v"/>
+				<aux x="80" y="470" name="sum_w"/>
+				<aux x="220" y="470" name="rank_1"/>
+				<aux x="360" y="470" name="rank_3"/>
+				<aux x="500" y="470" name="rank_ties"/>
+				<aux x="640" y="470" name="rank_tiebreak"/>
+				<aux x="780" y="470" name="interpolate_half"/>
+				<aux x="80" y="560" name="interpolate_off"/>
+				<aux x="220" y="560" name="sum_range"/>
+				<aux x="360" y="560" name="sum_mat"/>
+				<aux x="500" y="560" name="sum_north"/>
+				<aux x="640" y="560" name="sum_row_2"/>
+				<aux x="780" y="560" name="transposed"/>
+				<stock x="350" y="100" name="s_arr"/>
+				<flow label_side="bottom" x="461.25" y="100.0" name="o_first_arr">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="150.0" name="o_second_arr">
+					<pts>
+						<pt x="360" y="117.5"/>
+						<pt x="360" y="150"/>
+						<pt x="550" y="150"/>
+					</pts>
+				</flow>
+				<connector uid="1" angle="270">
+					<from>v</from>
+					<to>w</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>v</from>
+					<to>sum_v</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>v</from>
+					<to>mean_v</to>
+				</connector>
+				<connector uid="4" angle="270">
+					<from>v</from>
+					<to>stddev_v</to>
+				</connector>
+				<connector uid="5" angle="270">
+					<from>v</from>
+					<to>prod_v</to>
+				</connector>
+				<connector uid="6" angle="270">
+					<from>v</from>
+					<to>size_v</to>
+				</connector>
+				<connector uid="7" angle="270">
+					<from>v</from>
+					<to>max_v</to>
+				</connector>
+				<connector uid="8" angle="270">
+					<from>v</from>
+					<to>min_v</to>
+				</connector>
+				<connector uid="9" angle="270">
+					<from>w</from>
+					<to>sum_w</to>
+				</connector>
+				<connector uid="10" angle="270">
+					<from>v</from>
+					<to>rank_1</to>
+				</connector>
+				<connector uid="11" angle="270">
+					<from>v</from>
+					<to>rank_3</to>
+				</connector>
+				<connector uid="12" angle="270">
+					<from>v_ties</from>
+					<to>rank_ties</to>
+				</connector>
+				<connector uid="13" angle="270">
+					<from>tiebreak</from>
+					<to>rank_tiebreak</to>
+				</connector>
+				<connector uid="14" angle="270">
+					<from>v_ties</from>
+					<to>rank_tiebreak</to>
+				</connector>
+				<connector uid="15" angle="270">
+					<from>v</from>
+					<to>interpolate_half</to>
+				</connector>
+				<connector uid="16" angle="270">
+					<from>v</from>
+					<to>interpolate_off</to>
+				</connector>
+				<connector uid="17" angle="270">
+					<from>v</from>
+					<to>sum_range</to>
+				</connector>
+				<connector uid="18" angle="270">
+					<from>mat</from>
+					<to>sum_mat</to>
+				</connector>
+				<connector uid="19" angle="270">
+					<from>mat</from>
+					<to>sum_north</to>
+				</connector>
+				<connector uid="20" angle="270">
+					<from>mat</from>
+					<to>sum_row_2</to>
+				</connector>
+				<connector uid="21" angle="270">
+					<from>mat</from>
+					<to>transposed</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

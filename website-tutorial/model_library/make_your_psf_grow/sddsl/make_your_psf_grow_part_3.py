@@ -75,7 +75,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    So one imporant learning is that even if you have a good conceptual understanding of how your business works,  this understanding alone still doesn't mean you will be able to make better decisions.
+    So one important learning is that even if you have a good conceptual understanding of how your business works, this understanding alone still doesn't mean you will be able to make better decisions.
     """)
     return
 
@@ -91,7 +91,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Ultimately, the best thing to do is to use the System Dynamics model we build in the last chapter.
+    Ultimately, the best thing to do is to use the System Dynamics model we built in the last chapter.
     """)
     return
 
@@ -99,7 +99,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    But whatever kind of situation I am prototyping, once I have a conceptual model and some concrete quantities for the elements in the model I first like to write down the key equations and crunch the numbers using pencil and paper - that gives me a good sense of where the diffcult issues lie. Once I have figured those out, I can then build a more sophisticated model using a spreadsheet or some other modeling tool if necessary.
+    But whatever kind of situation I am prototyping, once I have a conceptual model and some concrete quantities for the elements in the model I first like to write down the key equations and crunch the numbers using pencil and paper - that gives me a good sense of where the difficult issues lie. Once I have figured those out, I can then build a more sophisticated model using a spreadsheet or some other modeling tool if necessary.
     """)
     return
 
@@ -115,7 +115,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In practice, quantifying your model may take some time because you will have to do some data mining first to arive at the quantities you need (e.g. answering questions such as "how much effort do we spend on business development vs. project delivery, on average?") - I mostly work with educated guess for the figures I don't know, that way I can start building and testing the quantitative model while the data mining work is going on.
+    In practice, quantifying your model may take some time because you will have to do some data mining first to arrive at the quantities you need (e.g. answering questions such as "how much effort do we spend on business development vs. project delivery, on average?") - I mostly work with educated guesses for the figures I don't know, that way I can start building and testing the quantitative model while the data mining work is going on.
     """)
     return
 
@@ -131,7 +131,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Let's do a few quick calcuations to make sure we understand the numbers... the company has 200 professional staff members, 20% of which are assigned to business development. This means that 160 persons are continuously working on projects. The initial project backlog has 320 months in absolute terms, i.e. the backlog relative to the number of project staff is  2 months into the future. This backlog will remain constant in the steady state "base case" scenario - I've plotted this below and you can recreate this curve in the game if you set the number of people you hire to 0 and the percentage of staff allocated to business development to 20%.
+    Let's do a few quick calculations to make sure we understand the numbers... the company has 200 professional staff members, 20% of which are assigned to business development. This means that 160 persons are continuously working on projects. The initial project backlog has 320 months in absolute terms, i.e. the backlog relative to the number of project staff is 2 months into the future. This backlog will remain constant in the steady state "base case" scenario - I've plotted this below and you can recreate this curve in the game if you set the number of people you hire to 0 and the percentage of staff allocated to business development to 20%.
     """)
     return
 
@@ -155,7 +155,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Hiring people always costs money, in our case the wages and extra workplace cost. To make the right hiring decisions we therefore need to know how much money we can spend on new hires. To work that out we need to look at the PSFs cash flow.
+    Hiring people always costs money, in our case the wages and extra workplace cost. To make the right hiring decisions we therefore need to know how much money we can spend on new hires. To work that out we need to look at the PSF's cash flow.
     """)
     return
 
@@ -171,7 +171,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The cost side is a little more intricate: each staff member costs EUR 100000/12=8333 on salaries and an extra EUR 1000 workplace cost, i.e. EUR 9333. At 200 persons in the company, this sums to EUR 414,615 in staff cost. We also have overhead cost of EUR 306,000 per month, so the total cost is at EUR 1,839,333.
+    The cost side is a little more intricate: each staff member costs EUR 80000/12=6667 on salaries and an extra EUR 1000 workplace cost, i.e. EUR 7667. At 200 persons in the company, this sums to EUR 1,533,333 in staff cost. We also have overhead cost of EUR 306,000 per month, so the total cost is at EUR 1,839,333.
     """)
     return
 
@@ -299,7 +299,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    - It is irrelevant whether the acquisition success rate is 100% or less \[Dash] what counts is how many project months you generate per month of business acquisition. In reality this figure will not be constant, but experience shows that it doesn't fluctuate wildly either. It will also depend on the kind of services you offer and you may have to work with different figures for different services.
+    - It is irrelevant whether the acquisition success rate is 100% or less - what counts is how many project months you generate per month of business acquisition. In reality this figure will not be constant, but experience shows that it doesn't fluctuate wildly either. It will also depend on the kind of services you offer and you may have to work with different figures for different services.
     - The "acquisition" overhead is quite high at 25% - typically we would like to see an overhead that is closer to 10%. But as we are assuming a 100% success rate, the figures are actually quite realistic as a whole.
     """)
     return
@@ -308,7 +308,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now what happens if we make the PSF grow by hiring people more professional staff?
+    Now what happens if we make the PSF grow by hiring more professional staff?
     """)
     return
 
@@ -378,7 +378,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Don't forget it takes 3 months before a new hire finally comes on board, so she doesn't arrive until month 5, and then another 6 months before the new business developer acquires her first project, hence the project backlog doesn't start building up until  the beginning of month 12. I've tabulated the data in the spreadsheet below.
+    Don't forget it takes 3 months before a new hire finally comes on board, so she doesn't arrive until month 5, and then another 6 months before the new business developer acquires her first project, hence the project backlog doesn't start building up until the beginning of month 12. I've tabulated the data in the spreadsheet below.
     """)
     return
 
@@ -411,7 +411,7 @@ def _(as_table, bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Don't forget that each project acquired feeds 8 project delivery staff - so we need to ensure that 8 project delivery persons is on board by week 39, so we need to hire those people in week 26 and adjust the staff allocation to 4100/209 in week 39.
+    Don't forget that each project acquired feeds 8 project delivery staff - so we need to ensure that 8 project delivery persons are on board before the backlog starts building up in month 12: we hire them in month 7, they are on board in month 11, and we adjust the staff allocation to 4100/209 in month 11.
     """)
     return
 
@@ -419,7 +419,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    What about the project backlog? We now have 41 business developers that generate 41 * 16/4 = 164 months of projects per month. As we have 168 project delivery staff, this means that our backlog will decrease by 4 weeks per month and this will continue until the backlog reaches a level of 164 months. The only way to avoid this is either to hire 2 business developers (matching the 1:4 ratio or to hire just 4 project developers, in which case we would have to strech the delivery of one of the projects from two months to four months.
+    What about the project backlog? We now have 41 business developers that generate 41 * 16/4 = 164 months of projects per month. As we have 168 project delivery staff, this means that our backlog will decrease by 4 project months per month and this will continue until the backlog reaches a level of 164 months. The only way to avoid this is either to hire 2 business developers (matching the 1:4 ratio) or to hire just 4 project developers, in which case we would have to stretch the delivery of one of the projects from two months to four months.
     """)
     return
 
@@ -475,7 +475,7 @@ def _(as_table, bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now what about our finances? Well in the short run, because we make more revenue with more people in the 9 person scenario, our revenue increases. Our cash level decreases slightly at first and ends up being slightly above the amount we had in the base case. But we're still way of our target of EUR 26 Mio.
+    Now what about our finances? Well in the short run, because we make more revenue with more people in the 9 person scenario, our revenue increases. Our cash level decreases slightly at first and ends up being slightly above the amount we had in the base case. But we're still way off our target of EUR 26 Mio.
     """)
     return
 
@@ -528,7 +528,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We also need to remember that our new project development staff will arrive in month 11 - so we will need to carry 24 - 10 = 14 weeks of their staff cost.
+    We also need to remember that our new project development staff will arrive in month 11 - so we will need to carry 24 - 10 = 14 months of their staff cost.
     """)
     return
 
@@ -597,7 +597,7 @@ def _(businessDeveloperMonths, cashShortfall, collectionTime, projectDeliveryFee
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Solving this for newBusinessDevelopmentStaff we arrive at 28.4 new business developers. This rounds to 29 new business developers and thus 116 new project delivery staff and total of 145 new staff. Try implementing this strategy in the game and see whether this helps you to achive the easy target cash level.
+    Solving this for newBusinessDevelopmentStaff we arrive at 28.4 new business developers. This rounds to 29 new business developers and thus 116 new project delivery staff and a total of 145 new staff. Try implementing this strategy in the game and see whether this helps you to achieve the easy target cash level.
     """)
     return
 
@@ -605,7 +605,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    I've added the graph for this scenario bellow and I've also tabulated the precise figures:
+    I've added the graph for this scenario below and I've also tabulated the precise figures:
     """)
     return
 
@@ -705,7 +705,7 @@ def _(mo):
     * What does the staff size in your projects depend on?
     * Could you design your services such that you can work in parallel better (and thus deliver results faster)?
 
-    In the next chapter, we will tackle the [_expert cash target_](make_your_psf_grow_part_4.md)
+    In the next chapter, we will tackle the [_expert cash target_](make_your_psf_grow_part_4.md).
     """)
     return
 

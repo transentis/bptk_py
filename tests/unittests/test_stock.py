@@ -410,11 +410,12 @@ def _with_biflow(listed_as, biflow_equation, initial_value=2.0, outflow_equation
 class TestBiflowsOfANonNegativeStock(unittest.TestCase):
     """A biflow is cut back while it drains the stock and left alone while it fills it."""
 
-    def test_an_inflow_running_backwards_comes_after_every_outflow(self):
+    def test_an_inflow_running_backwards_comes_before_every_outflow(self):
+        # As in Stella: the draining biflow takes what it wants first
         model = _with_biflow("inflow", -5.0)
 
-        self.assertEqual(model.evaluate_equation("outflow", 0.0), 1.0)
-        self.assertEqual(model.evaluate_equation("exchange", 0.0), -1.0)
+        self.assertEqual(model.evaluate_equation("exchange", 0.0), -2.0)
+        self.assertEqual(model.evaluate_equation("outflow", 0.0), 0)
         self.assertEqual(model.evaluate_equation("stock", 1.0), 0.0)
 
     def test_an_inflow_bringing_material_counts(self):
@@ -471,14 +472,21 @@ class TestBiflowsOfANonNegativeStock(unittest.TestCase):
 
         self.assertEqual(model.evaluate_equation("exchange", 0.0), -5.0)
 
-    def test_an_outflow_depending_on_a_biflow_inflow_is_refused(self):
+    def test_a_biflow_inflow_depending_on_an_outflow_is_refused(self):
         model = _with_biflow("inflow", -5.0)
-        model.flows["outflow"].equation = model.biflows["exchange"] * -1.0
+        model.biflows["exchange"].equation = model.flows["outflow"] * -1.0
 
         with self.assertRaises(ElementError) as context:
-            model.evaluate_equation("outflow", 0.0)
+            model.evaluate_equation("exchange", 0.0)
 
-        self.assertIn("A biflow among the inflows comes after every outflow", str(context.exception))
+        self.assertIn("A biflow among the inflows comes before every outflow", str(context.exception))
+
+    def test_an_outflow_depending_on_a_biflow_inflow_is_fine(self):
+        model = _with_biflow("inflow", -1.0)
+        model.flows["outflow"].equation = model.biflows["exchange"] * -1.0
+
+        self.assertEqual(model.evaluate_equation("exchange", 0.0), -1.0)
+        self.assertEqual(model.evaluate_equation("outflow", 0.0), 1.0)
 
     def test_an_arrayed_biflow_is_cut_back_per_cell(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="arrayed_biflow")
@@ -493,7 +501,8 @@ class TestBiflowsOfANonNegativeStock(unittest.TestCase):
         stock.inflows = [exchange]
         stock.non_negative = True
 
-        self.assertEqual(model.evaluate_equation("exchange[0]", 0.0), -1.0)
+        self.assertEqual(model.evaluate_equation("exchange[0]", 0.0), -2.0)
+        self.assertEqual(model.evaluate_equation("outflow[0]", 0.0), 0)
         self.assertEqual(model.evaluate_equation("exchange[1]", 0.0), -5.0)
         self.assertEqual(model.evaluate_equation("stock[0]", 1.0), 0.0)
         self.assertEqual(model.evaluate_equation("stock[1]", 1.0), 4.0)
@@ -516,9 +525,9 @@ class TestBiflowsOfANonNegativeStock(unittest.TestCase):
             store.non_negative = True
             return [model.evaluate_equation(name, 0.0) for name in ("sales", "transfer", "returns")]
 
-        # Draining from both lists: the transfer at its place, the returns after it.
-        self.assertEqual(run(-4.0, 2.0), [3.0, 2.0, 0])
+        # Draining from both lists: the returns first, then sales and the transfer in order.
+        self.assertEqual(run(-4.0, 2.0), [1.0, 0, -4.0])
         # A transfer running backwards fills the store and counts.
-        self.assertEqual(run(-10.0, -4.0), [3.0, -4.0, -6.0])
+        self.assertEqual(run(-10.0, -4.0), [0, -4.0, -9.0])
         # Returns running forwards fill the store and count.
         self.assertEqual(run(4.0, 8.0), [3.0, 6.0, 4.0])

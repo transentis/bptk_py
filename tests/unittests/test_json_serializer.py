@@ -104,7 +104,7 @@ class TestJsonSerializerEdgeCases(unittest.TestCase):
 
 
 class TestNonNegativeStockSerialization(unittest.TestCase):
-    def test_a_non_negative_stock_raises_by_name(self):
+    def test_an_outflow_is_written_out_cut_back(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="non_negative")
         stock = model.stock("store")
         outflow = model.flow("sales")
@@ -112,10 +112,15 @@ class TestNonNegativeStockSerialization(unittest.TestCase):
         stock.outflows = [outflow]
         stock.non_negative = True
 
-        with self.assertRaisesRegex(ValueError, "Stock 'store' is non-negative"):
-            model_to_json(model)
+        flows = json.loads(model_to_json(model))["entities"]["flows"]
 
-    def test_an_arrayed_non_negative_stock_raises_by_cell(self):
+        self.assertEqual(flows[0]["equation"], {
+            "type": "call", "function": "cut_out",
+            "args": [{"type": "call", "function": "positive", "args": [lit(1.0)]},
+                     {"type": "binary_op", "op": "div", "left": ref("store"),
+                      "right": {"type": "call", "function": "dt", "args": []}}]})
+
+    def test_each_cell_of_an_arrayed_stock_cuts_its_own_outflow(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="arrayed_non_negative")
         stock = model.stock("store")
         stock.setup_vector(2, [1.0, 1.0])
@@ -124,8 +129,9 @@ class TestNonNegativeStockSerialization(unittest.TestCase):
         stock.outflows = [outflow]
         stock.non_negative = True
 
-        with self.assertRaisesRegex(ValueError, r"Stock 'store\[0\]' is non-negative"):
-            model_to_json(model)
+        flows = {flow["name"]: flow["equation"] for flow in json.loads(model_to_json(model))["entities"]["flows"]}
+
+        self.assertEqual(flows["sales[1]"]["args"][1]["left"], ref("store[1]"))
 
     def test_flow_lists_alone_serialize(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="lists")
@@ -157,26 +163,65 @@ class TestConveyorSerialization(unittest.TestCase):
         belt.outflows = [model.flow("out")]
         return model, belt
 
-    def test_a_conveyor_raises_by_name(self):
+    def test_a_conveyor_starts_its_belt_and_drives_its_outflow(self):
         model, _ = self._model()
 
-        with self.assertRaisesRegex(ValueError, "'belt' is a conveyor"):
-            model_to_json(model)
+        entities = json.loads(model_to_json(model))["entities"]
 
-    def test_agecount_raises_by_name(self):
+        self.assertEqual(entities["stocks"][0]["initial_value"]["function"], "conveyor_start")
+        self.assertEqual(entities["stocks"][0]["equation"]["function"], "conveyor_change")
+        self.assertEqual(entities["flows"][0]["equation"]["args"][:2], [ref("belt"), lit(-1.0)])
+
+    def test_agecount_without_a_maximum(self):
         model, belt = self._model()
         model.converter("young").equation = sd.agecount(belt, 0, 1)
-        with self.assertRaisesRegex(ValueError, "'agecount' does not run on the Rust engine"):
-            _expr_to_json(model.converters["young"].equation)
+        model.converter("older").equation = sd.agecount(belt, 1)
+
+        self.assertEqual(_expr_to_json(model.converters["older"].equation),
+                         {"type": "call", "function": "agecount",
+                          "args": [ref("belt"), lit(1.0), {"type": "call", "function": "nan", "args": []}]})
 
 
 class TestSeededSerialization(unittest.TestCase):
-    def test_a_random_function_with_a_seed_raises_by_name(self):
+    def test_a_seeded_draw_is_wrapped_with_its_seed(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="seeded")
-        model.converter("draw").equation = sd.normal(10.0, 2.0, seed=1)
+        seed = model.constant("seed")
+        seed.equation = 4.0
+        model.converter("draw").equation = sd.normal(10.0, 2.0, seed=seed)
 
-        with self.assertRaisesRegex(ValueError, "'normal' with a seed"):
-            model_to_json(model)
+        converters = json.loads(model_to_json(model))["entities"]["converters"]
+
+        self.assertEqual(converters[0]["equation"], {
+            "type": "call", "function": "seeded",
+            "args": [ref("seed"), {"type": "call", "function": "normal", "args": [lit(10.0), lit(2.0)]}]})
+
+    def test_bounds_go_inside_the_seed_and_a_sample_around_everything(self):
+        model = Model(starttime=0, stoptime=2, dt=1, name="bounded")
+        model.converter("draw").equation = sd.normal(10.0, 2.0, 4, minimum=8.0, sample=2.0)
+        model.converter("unseeded").equation = sd.exprnd(3.0, maximum=5.0)
+
+        converters = {entity["name"]: entity["equation"]
+                      for entity in json.loads(model_to_json(model))["entities"]["converters"]}
+
+        normal = {"type": "call", "function": "normal", "args": [lit(10.0), lit(2.0)]}
+        no_bound = {"type": "call", "function": "nan", "args": []}
+        bounded = {"type": "call", "function": "bounded", "args": [lit(8.0), no_bound, normal]}
+        self.assertEqual(converters["draw"], {"type": "call", "function": "sample", "args": [
+            lit(2.0), {"type": "call", "function": "seeded", "args": [lit(4.0), bounded]}]})
+        self.assertEqual(converters["unseeded"]["function"], "bounded")
+        self.assertEqual(converters["unseeded"]["args"][1:], [lit(5.0), {"type": "call", "function": "exprnd", "args": [lit(3.0)]}])
+
+    def test_a_seeded_draw_in_an_array_carries_its_cell(self):
+        import zlib
+        model = Model(starttime=0, stoptime=2, dt=1, name="seeded_cells")
+        mean = model.constant("mean")
+        mean.setup_named_vector({"a": 0.0, "b": 0.0})
+        model.converter("draw").equation = sd.normal(mean, 1.0, seed=3)
+
+        converters = {entity["name"]: entity["equation"]
+                      for entity in json.loads(model_to_json(model))["entities"]["converters"]}
+
+        self.assertEqual(converters["draw[b]"]["args"][:2], [lit(3.0), lit(float(zlib.crc32(b"b")))])
 
     def test_without_a_seed_it_serializes_as_before(self):
         model = Model(starttime=0, stoptime=2, dt=1, name="unseeded")
@@ -260,7 +305,7 @@ class TestArrayedSerialization(unittest.TestCase):
              "args": [ref("m[0][0]"), ref("m[0][1]"), ref("m[1][0]"), ref("m[1][1]")]})
 
     def test_the_leaf_order_is_the_order_python_aggregates_in(self):
-        """`arr_rank` and `arr_median` sort, so both engines must see one order.
+        """`arr_largest` and `arr_median` sort, so both engines must see one order.
 
         Checked against the Python term rather than restated: the names in the term
         string are the order the Python operator builds, and they have to match the
@@ -276,11 +321,38 @@ class TestArrayedSerialization(unittest.TestCase):
                                           element.arr_median().term())
                 self.assertEqual(json_order, python_order)
 
-    def test_arr_rank_carries_the_rank_as_its_last_argument(self):
+    def test_arr_largest_carries_the_rank_as_its_last_argument(self):
+        self.assertEqual(
+            _expr_to_json(self.vector.arr_largest(2)),
+            {"type": "call", "function": "arr_largest",
+             "args": [ref("v[a]"), ref("v[b]"), ref("v[c]"), lit(2.0)]})
+
+    def test_rank_carries_the_rank_first_then_values_and_tiebreaks(self):
         self.assertEqual(
             _expr_to_json(self.vector.arr_rank(2)),
             {"type": "call", "function": "arr_rank",
-             "args": [ref("v[a]"), ref("v[b]"), ref("v[c]"), lit(2.0)]})
+             "args": [lit(2.0), ref("v[a]"), ref("v[b]"), ref("v[c]"), lit(0.0), lit(0.0), lit(0.0)]})
+        self.assertEqual(
+            _expr_to_json(self.vector.arr_rank(2, self.vector))["args"][4:],
+            [ref("v[a]"), ref("v[b]"), ref("v[c]")])
+
+    def test_percentile_says_first_whether_it_weighs(self):
+        self.assertEqual(
+            _expr_to_json(self.vector.arr_percentile(40.0)),
+            {"type": "call", "function": "arr_percentile",
+             "args": [lit(0.0), lit(40.0), lit(0.0), ref("v[a]"), ref("v[b]"), ref("v[c]"), lit(1.0), lit(1.0), lit(1.0)]})
+        self.assertEqual(
+            _expr_to_json(self.vector.arr_percentile(40.0, 10.0, self.vector))["args"][:3] ,
+            [lit(1.0), lit(40.0), lit(10.0)])
+
+    def test_interpolate_carries_the_columns_and_its_weights_first(self):
+        self.assertEqual(
+            _expr_to_json(self.vector.arr_interpolate(0.5)),
+            {"type": "call", "function": "arr_interpolate",
+             "args": [lit(0.0), lit(0.5), ref("v[a]"), ref("v[b]"), ref("v[c]")]})
+        self.assertEqual(
+            _expr_to_json(self.matrix.arr_interpolate(0.5, 0.25))["args"][:3],
+            [lit(2.0), lit(0.5), lit(0.25)])
 
     def test_arr_size_folds_to_a_literal(self):
         # The vector size, not the leaf count: 2 for a 2x2 matrix, as in Python.
@@ -654,8 +726,8 @@ def test_concurrent_serializations_do_not_interleave():
 # Operators the serializer renders with code of their own rather than from one of its
 # tables. A new operator class has to land in a table or here.
 _RENDERED_BY_CODE = {
-    "UnaryOperator", "ArrayRankOperator", "ArraySizeOperator", "DotOperator",
-    "ComparisonOperator", "If", "Not", "Lookup", "Smooth", "Trend", "Delay", "Invnorm",
+    "UnaryOperator", "ArrayLargestOperator", "ArraySizeOperator", "DotOperator",
+    "ComparisonOperator", "If", "Not", "Lookup", "LookupInverse", "LookupArea", "LookupStatistic", "LookupRandom", "Smooth", "Trend", "Delay", "Irr", "RunStatistic", "RunCumTarget", "Invnorm", "Rank", "Percentile", "Interpolate", "AgeCount",
     "SmoothN", "MaterialDelay", "Forecast", "Npv",
     "NaryOperator", "ArrayLines",
 }
@@ -704,5 +776,5 @@ def test_every_builtin_the_serializer_writes_is_one_the_engine_reads():
     known = set(re.findall(r'^\s*"(\w+)" => Ok\(', parser.read_text(), re.MULTILINE))
 
     written = ({entry[1] for entry in js._AGGREGATIONS + js._BINARY_OPERATORS + js._CALLS}
-               | {"arr_rank", "neg", "not", "delay", "invnorm"} | set(js._COMPARISON_SIGN_MAP.values()))
+               | {"arr_largest", "arr_rank", "arr_interpolate", "neg", "not", "delay", "invnorm"} | set(js._COMPARISON_SIGN_MAP.values()))
     assert written - known == set()

@@ -59,7 +59,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The main constraint that stops you from hiring  thousands of business developers straight away is that growth costs money:  you first have to pay for business development before you start making money with projects. In a real life situation, you are betting your shareholders money on the future by hiring many business developers and project delivery staff and hoping that the business developers will manage to aquire the projects you forecast. If they don't, you will go bust. And if they do, and you don't manage to hire the required staff or integrate them well you risk losing a lot of business. So either way growth is a risky endeavour.
+    The main constraint that stops you from hiring thousands of business developers straight away is that growth costs money: you first have to pay for business development before you start making money with projects. In a real life situation, you are betting your shareholders' money on the future by hiring many business developers and project delivery staff and hoping that the business developers will manage to acquire the projects you forecast. If they don't, you will go bust. And if they do, and you don't manage to hire the required staff or integrate them well you risk losing a lot of business. So either way growth is a risky endeavour.
     """)
     return
 
@@ -67,7 +67,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Nevertheless, it is interesting to work out what the maximum possible growth could be. An easy way to work this out is as follows - from the scenarios above we know that whatever we do our cashflow will not increase until month 13. Now if we take a look at month 12 of the base case, then this is how much cash we could use to hire extra staff. We also know that we have to pay for 8 months of the new business developer wages and for two months of the new project wages before revenue sarts increasing due to the new hires. So if we hire __maximumBusinessDevelopmentHires__ business developers, the following equation must hold true:
+    Nevertheless, it is interesting to work out what the maximum possible growth could be. An easy way to work this out is as follows - from the scenarios above we know that whatever we do our cashflow will not increase until month 13. Now if we take a look at month 12 of the base case, then this is how much cash we could use to hire extra staff. We also know that we have to pay for 8 months of the new business developer wages and for two months of the new project wages before revenue starts increasing due to the new hires. So if we hire __maximumBusinessDevelopmentHires__ business developers, the following equation must hold true:
     """)
     return
 
@@ -83,7 +83,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Solving this we arive at a value of 103 new business developers and thus 412 project staff, given a total of 515 new staff.  Try using these numbers in the game!
+    Solving this we arrive at a value of 103 new business developers and thus 412 project staff, giving a total of 515 new staff. Try using these numbers in the game!
 
     Here is the calculation done using BPTK and SymPy.
     """)
@@ -249,7 +249,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is where having a simulation comes in handy - if we take a look at our revenue in month eleven, we see that this is much lower than expected. If you look at the project backlog, we can see why: the number of project weeks actually increases from 320 to 572, though we expected the level to stay at 320. The reason for this is that we can never deliver more projects weeks than are in the project backlog. In our case, the project backlog is at 320. In month eleven, because of the new staff, we would like to deliver 404 weeks of project, due to the new staff. But there are only 320 weeks in the backlog. On the other hand, thanks to the new business development staff we actually have 143 * 4 = 572 projects incoming. So in month 11 we arrive at 572 net new weeks of projects, but the staff is underutilized for one month.
+    This is where having a simulation comes in handy - if we take a look at our revenue in month eleven, we see that this is much lower than expected. If you look at the project backlog, we can see why: the number of project months actually increases from 320 to 572, though we expected the level to stay at 320. The reason for this is that we can never deliver more project months than are in the project backlog. In our case, the project backlog is at 320. In month eleven, because of the new staff, we would like to deliver 404 project months, due to the new staff. But there are only 320 project months in the backlog. On the other hand, thanks to the new business development staff we actually have 143 * 4 = 572 projects incoming. So in month 11 we arrive at 572 net new project months, but the staff is underutilized for one month.
     """)
     return
 
@@ -289,7 +289,7 @@ def _(as_table, bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    There is not much we can do about this because our backlog just isn't large enough to deal with so many new staff. What we can do of course is hire fewer people to ensure we don't go bankrupt. Our cash level drops to EUR -70,000, which corresponds to around 7 Staff people. So if we hire 2 fewer business developers und thus 10 people less all together we should be ok.
+    There is not much we can do about this because our backlog just isn't large enough to deal with so many new staff. What we can do of course is hire fewer people to ensure we don't go bankrupt. Our cash level drops to EUR -70,000, which corresponds to around 7 staff people. So if we hire 2 fewer business developers and thus 10 people less altogether we should be ok.
     """)
     return
 
@@ -297,7 +297,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    I've plotted and tabluated the data for this scenario below
+    I've plotted and tabulated the data for this scenario below:
     """)
     return
 
@@ -514,7 +514,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    As you can see we achive very steady growth in personell - but the cash level drops initially (as expected) then increases, then drops again very aggressively.
+    As you can see we achieve very steady growth in personnel - but the cash level drops initially (as expected) then increases, then drops again very aggressively.
     """)
     return
 
@@ -530,7 +530,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is best explained by looking at the allocation of staff. and the backlog of project weeks: First of all the new hires are assiged to business development. Then new projects start rolling in at quite a rate, so all the staff is assigned to work on projects - in this case the allocation of business development staff drops below the critical 20% needed to ensure enough projects are acquired in the long run.
+    This is best explained by looking at the allocation of staff and the backlog of project months: First of all the new hires are assigned to business development. Then new projects start rolling in at quite a rate, so all the staff is assigned to work on projects - in this case the allocation of business development staff drops below the critical 20% needed to ensure enough projects are acquired in the long run.
     """)
     return
 
@@ -555,7 +555,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Needless to say, the project backlog starts to drop quite quickly and suddenly there are far to few projects in the project pipeline - now all staff are allocated to business development.
+    Needless to say, the project backlog starts to drop quite quickly and suddenly there are far too few projects in the project pipeline - now all staff are allocated to business development.
     """)
     return
 
@@ -580,7 +580,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This scenario is actually very common in reality, unfortunately I know this not only from our clients but also form my own personal experience: what management does is to hire a few business developers when things are going well. Of course the cash flow immediately get's worse, which always feels bad. So then one doesn't like to hire project staff, because after all, maybe the business developers will not be successfull. So when projects finally roll in, you don't have enough project delivery capacity. So you assign business developers to project work, which helps in the short run, but unfortunately means you are doing to little project acquisition work...
+    This scenario is actually very common in reality, unfortunately I know this not only from our clients but also from my own personal experience: what management does is to hire a few business developers when things are going well. Of course the cash flow immediately gets worse, which always feels bad. So then one doesn't like to hire project staff, because after all, maybe the business developers will not be successful. So when projects finally roll in, you don't have enough project delivery capacity. So you assign business developers to project work, which helps in the short run, but unfortunately means you are doing too little project acquisition work...
     """)
     return
 
@@ -743,7 +743,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The second - and to me the more important learning - is that is very easy to fall into the trap of doing to little business development when everything is running smoothly which then quickly leads to the oscillatory behaviour we discussed above.
+    The second - and to me the more important learning - is that it is very easy to fall into the trap of doing too little business development when everything is running smoothly which then quickly leads to the oscillatory behaviour we discussed above.
     """)
     return
 

@@ -4,7 +4,7 @@ from BPTK_Py import Model
 from BPTK_Py.sddsl.element import Element
 from BPTK_Py.sddsl.operators import ArrayedEquation, OperatorError, Operator, DotOperator
 from BPTK_Py.sddsl.operators import DivisionOperator, ModOperator, PowerOperator, NumericalMultiplicationOperator, UnaryOperator, ComparisonOperator, BinaryOperator, AdditionOperator
-from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayRankOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
+from BPTK_Py.sddsl.operators import ArrayProductOperator, ArraySumOperator, ArraySizeOperator, ArrayLargestOperator, ArrayMeanOperator, ArrayMedianOperator, ArrayStandardDeviationOperator
 from BPTK_Py.sddsl.operators import ArrayMaxOperator, ArrayMinOperator
 from BPTK_Py.sddsl.operators import Function, SubtractionOperator, MultiplicationOperator, Pulse, _get_element_dimensions
 from BPTK_Py.sddsl.operators import Delay
@@ -772,7 +772,7 @@ class TestArrayOperators(unittest.TestCase):
         self.assertEqual(copy.index,2)
 
     def test_array_rank_operator_clone_with_index(self):
-        arrayRO = ArrayRankOperator(element=[1,2,3], rank=14)
+        arrayRO = ArrayLargestOperator(element=[1,2,3], rank=14)
         copy = arrayRO.clone_with_index(index=2)
 
         self.assertEqual(copy.element,[1,2,3])
@@ -822,7 +822,7 @@ class TestArrayOperators(unittest.TestCase):
         converter1.equation = 1.0
         
         converter2 = model.converter("converter2")
-        converter2.equation = converter1.arr_rank(3)
+        converter2.equation = converter1.arr_largest(3)
         self.assertEqual(converter2(1),0.0)
 
         converter3 = model.converter("converter3")
@@ -1077,13 +1077,13 @@ class TestLnLog10FloorCeilOperators(unittest.TestCase):
         model = Model()
         element = Element(model=model, name="x", function_string=None)
         op = Ln(element)
-        self.assertIn("np.log(", op.term("t"))
+        self.assertIn("in_domain(model, 'ln'", op.term("t"))
         self.assertIn(element.term("t"), op.term("t"))
 
     def test_ln_term_with_scalar(self):
         from BPTK_Py.sddsl.operators import Ln
         op = Ln(2.718)
-        self.assertIn("np.log(", op.term("t"))
+        self.assertIn("in_domain(model, 'ln'", op.term("t"))
         self.assertIn("2.718", op.term("t"))
 
     def test_log10_term_with_element(self):
@@ -1091,13 +1091,13 @@ class TestLnLog10FloorCeilOperators(unittest.TestCase):
         model = Model()
         element = Element(model=model, name="x", function_string=None)
         op = Log10(element)
-        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn("in_domain(model, 'log10'", op.term("t"))
         self.assertIn(element.term("t"), op.term("t"))
 
     def test_log10_term_with_scalar(self):
         from BPTK_Py.sddsl.operators import Log10
         op = Log10(100.0)
-        self.assertIn("np.log10(", op.term("t"))
+        self.assertIn("in_domain(model, 'log10'", op.term("t"))
         self.assertIn("100.0", op.term("t"))
 
     def test_floor_term_with_element(self):
@@ -1417,7 +1417,7 @@ class TestGenericArrayProtocol(unittest.TestCase):
     def test_every_aggregation_reports_itself_scalar(self):
         model, v, u, mat, s = self._model()
         for aggregation in (v.arr_sum(), v.arr_prod(), v.arr_mean(), v.arr_median(),
-                            v.arr_stddev(), v.arr_size(), v.arr_rank(1),
+                            v.arr_stddev(), v.arr_size(), v.arr_largest(1),
                             v.arr_max(), v.arr_min()):
             self.assertFalse(aggregation.is_any_subelement_arrayed(),
                              msg=type(aggregation).__name__)
@@ -1437,7 +1437,7 @@ class TestGenericArrayProtocol(unittest.TestCase):
         self.assertEqual(average(1), 13.0)
 
         largest = model.converter("largest")
-        largest.equation = sd.sqrt(v.arr_rank(1))
+        largest.equation = sd.sqrt(v.arr_largest(1))
         self.assertFalse(largest.arrayed)
         self.assertEqual(largest(1), 3.0)
 
@@ -1634,10 +1634,11 @@ class TestRankAndInterpolate(unittest.TestCase):
         breaks = model.constant("breaks")
         breaks.setup_vector(3, [9.0, 1.0, 0.0])
 
-        self.assertEqual(_value(model, sd.rank(vector, 2), "second"), 3.0)
-        self.assertEqual(_value(model, sd.rank(ties, 2), "tie"), 0.0)
-        self.assertEqual(_value(model, sd.rank(ties, 2, breaks), "broken"), 1.0)
-        self.assertEqual(_value(model, sd.rank(matrix[:, "b"], 1), "column"), 0.0)
+        # Positions count from 1, as in XMILE and Stella
+        self.assertEqual(_value(model, vector.arr_rank(2), "second"), 4.0)
+        self.assertEqual(_value(model, ties.arr_rank(2), "tie"), 1.0)
+        self.assertEqual(_value(model, ties.arr_rank(2, breaks), "broken"), 2.0)
+        self.assertEqual(_value(model, matrix[:, "b"].arr_rank(1), "column"), 1.0)
 
     def test_a_rank_outside_the_array_gives_nan(self):
         model, vector, named, matrix = _arrays()
@@ -1645,15 +1646,87 @@ class TestRankAndInterpolate(unittest.TestCase):
 
         for rank in (0, 5, 1.5):
             with self.subTest(rank=rank):
-                self.assertTrue(math.isnan(_value(model, sd.rank(vector, rank), "r{}".format(rank).replace(".", "_"))))
+                self.assertTrue(math.isnan(_value(model, vector.arr_rank(rank), "r{}".format(rank).replace(".", "_"))))
 
     def test_what_rank_refuses(self):
         model, vector, named, matrix = _arrays()
 
         with self.assertRaises(OperatorError):
-            sd.rank(matrix, 1)
+            matrix.arr_rank(1)
         with self.assertRaises(OperatorError):
-            sd.rank(vector, 1, named)
+            vector.arr_rank(1, named)
+
+    def test_percentile_as_stella_computes_it(self):
+        """Stella's runs (`test_models/stella_extras`): without weights
+        a staircase, with them a line through the middle of each weight."""
+        from tests.helpers.stella import stella_results
+        import numpy as np
+        stella = stella_results("stella_extras")
+        model = Model(starttime=0.0, stoptime=12.0, dt=0.5, name="percentile")
+        arrays = {}
+        for name, values in {"sorted": [1, 2, 3, 4, 5], "orig": [3, 1, 4, 1, 5], "equal": [1] * 5,
+                             "first_2": [2, 1, 1, 1, 1], "last_2": [1, 1, 1, 1, 2], "middle_3": [1, 1, 3, 1, 1],
+                             "last_half": [1, 1, 1, 1, 0.5], "last_6": [1, 1, 1, 1, 6], "first_4": [4, 1, 1, 1, 1]}.items():
+            arrays[name] = model.constant(name)
+            arrays[name].setup_vector(5, [float(value) for value in values])
+        p = sd.time() * 100.0 / 12.0
+        curves = {"percentile sorted": arrays["sorted"].arr_percentile(p),
+                  "percentile orig": arrays["orig"].arr_percentile(p),
+                  "percentile orig w last 6": arrays["orig"].arr_percentile(p, 0.0, arrays["last_6"])}
+        for weights in ("equal", "first_2", "last_2", "middle_3", "last_half"):
+            curves["percentile w " + weights.replace("_", " ")] = arrays["sorted"].arr_percentile(p, 0.0, arrays[weights])
+        for column, expression in curves.items():
+            target = model.converter(column.replace(" ", "_"))
+            target.equation = expression
+            computed = [model.evaluate_equation(target.name, float(t)) for t in stella.index]
+            # At p = 0 with weights Stella gives 0; the SD DSL the smallest value, as without
+            expected = stella[column].values.copy()
+            if " w " in column:
+                expected[0] = 1.0
+            np.testing.assert_allclose(computed, expected, atol=1e-9, err_msg=column)
+        fixed = {"percentile 0": arrays["orig"].arr_percentile(0.0),
+                 "percentile 60": arrays["orig"].arr_percentile(60.0),
+                 "percentile difference": arrays["orig"].arr_percentile(50.0, 25.0),
+                 "percentile weighted": arrays["orig"].arr_percentile(50.0, 0.0, arrays["last_6"]),
+                 "percentile weighted cut": arrays["orig"].arr_percentile(75.0, 25.0, arrays["last_6"]),
+                 "percentile weighted first": arrays["orig"].arr_percentile(50.0, 0.0, arrays["first_4"])}
+        for column, expression in fixed.items():
+            self.assertAlmostEqual(_value(model, expression, column.replace(" ", "_")), stella[column].iloc[0],
+                                   places=9, msg=column)
+
+    def test_percentile_of_a_matrix_reads_every_cell(self):
+        model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="percentile_matrix")
+        cells = model.constant("cells")
+        cells.setup_matrix([2, 2], [[4.0, 1.0], [3.0, 2.0]])
+        self.assertEqual(_value(model, cells.arr_percentile(100.0 / 3.0), "second"), 2.0)
+        self.assertEqual(_value(model, cells.arr_percentile(50.0), "between"), 2.5)
+
+    def test_an_invalid_percentile_or_weight_gives_nan(self):
+        import math
+        model, vector, named, matrix = _arrays()
+        negative = model.constant("negative")
+        negative.setup_vector(4, [1.0, -1.0, 1.0, 1.0])
+        zeros = model.constant("zeros")
+        zeros.setup_vector(4, [0.0] * 4)
+        for name, expression in {"above": vector.arr_percentile(101.0), "below": vector.arr_percentile(-1.0),
+                                 "lower": vector.arr_percentile(50.0, 120.0),
+                                 "negative_weight": vector.arr_percentile(50.0, 0.0, negative),
+                                 "no_weight": vector.arr_percentile(50.0, 0.0, zeros),
+                                 "nan": vector.arr_percentile(sd.nan())}.items():
+            with self.subTest(name=name):
+                self.assertTrue(math.isnan(_value(model, expression, name)))
+
+    def test_what_percentile_refuses(self):
+        model, vector, named, matrix = _arrays()
+
+        with self.assertRaises(OperatorError):
+            model.constant("single").arr_percentile(50.0)
+        with self.assertRaises(OperatorError):
+            vector.arr_percentile(50.0, 0.0, named)
+        with self.assertRaises(OperatorError):
+            vector.arr_percentile(vector)
+        with self.assertRaises(OperatorError):
+            vector.arr_percentile(50.0, vector)
 
     def test_interpolate_between_the_elements(self):
         model = Model(starttime=0.0, stoptime=1.0, dt=1.0, name="interpolate")
@@ -1662,17 +1735,17 @@ class TestRankAndInterpolate(unittest.TestCase):
         single = model.constant("single")
         single.setup_vector(1, [7.0])
 
-        self.assertEqual(_value(model, sd.interpolate(points, 0.75, 0.25), "isee"), 5.5)
-        self.assertEqual(_value(model, sd.interpolate(points[0, :], 1.5), "clamped"), 4.0)
-        self.assertEqual(_value(model, sd.interpolate(points[:, 2], 0.5), "column"), 4.5)
-        self.assertEqual(_value(model, sd.interpolate(single, 0.3), "one_value"), 7.0)
+        self.assertEqual(_value(model, points.arr_interpolate(0.75, 0.25), "isee"), 5.5)
+        self.assertEqual(_value(model, points[0, :].arr_interpolate(1.5), "clamped"), 4.0)
+        self.assertEqual(_value(model, points[:, 2].arr_interpolate(0.5), "column"), 4.5)
+        self.assertEqual(_value(model, single.arr_interpolate(0.3), "one_value"), 7.0)
         import math
-        self.assertTrue(math.isnan(_value(model, sd.interpolate(points[0, :], sd.nan()), "no_weight")))
+        self.assertTrue(math.isnan(_value(model, points[0, :].arr_interpolate(sd.nan()), "no_weight")))
 
     def test_what_interpolate_refuses(self):
         model, vector, named, matrix = _arrays()
 
         with self.assertRaises(OperatorError):
-            sd.interpolate(matrix, 0.5)
+            matrix.arr_interpolate(0.5)
         with self.assertRaises(OperatorError):
-            sd.interpolate(model.constant("single"), 0.5)
+            model.constant("single").arr_interpolate(0.5)

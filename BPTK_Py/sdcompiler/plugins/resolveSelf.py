@@ -1,3 +1,14 @@
+#                                                       /`-
+# _                                  _   _             /####`-
+# | |                                | | (_)           /########`-
+# | |_ _ __ __ _ _ __  ___  ___ _ __ | |_ _ ___       /###########`-
+# | __| '__/ _` | '_ \/ __|/ _ \ '_ \| __| / __|   ____ -###########/
+# | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
+# \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
+#
+# Copyright (c) 2022-2026 transentis labs GmbH
+# MIT License
+
 def resolve(expression, entity):
     '''
     This function traverses the AST and replaces the SELF identifier by the entity's name
@@ -13,7 +24,8 @@ def resolve(expression, entity):
         name_ = expression["name"]
         type_ = expression["type"]
 
-        if name_ == "self" and type_ =="identifier":
+        # SELF in a module has the module's name in front of it by now: `inner.self`
+        if (name_ == "self" or name_.endswith(".self")) and type_ in ("identifier", "array"):
             expression["name"] = entity["name"]
 
         if "args" in expression.keys():

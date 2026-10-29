@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee" uses_submodels="true"/>
+		<name>inner</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<model name="inner">
+		<variables>
+			<aux name="factor" access="input">
+				<eqn>1</eqn>
+			</aux>
+			<aux name="x" access="output">
+				<eqn>5 * factor</eqn>
+			</aux>
+			<stock name="kept" access="output">
+				<eqn>0</eqn>
+				<inflow>adding</inflow>
+				<non_negative/>
+			</stock>
+			<flow name="adding">
+				<eqn>factor</eqn>
+				<non_negative/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="800" page_height="600" type="stock_flow">
+				<aux x="100" y="100" name="factor"/>
+				<aux x="250" y="60" name="x"/>
+				<stock x="300" y="200" name="kept"/>
+				<flow label_side="bottom" x="200" y="200" name="adding">
+					<pts><pt x="120" y="200"/><pt x="277.5" y="200"/></pts>
+				</flow>
+				<connector uid="1" angle="0"><from>factor</from><to>x</to></connector>
+				<connector uid="2" angle="270"><from>factor</from><to>adding</to></connector>
+			</view>
+		</views>
+	</model>
+</xmile>

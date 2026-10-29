@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>conveyor_options</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<stock name="c_capacity">
+				<eqn>0</eqn>
+				<inflow>in_capacity</inflow>
+				<outflow>out_capacity</outflow>
+				<conveyor>
+					<len>3</len>
+					<capacity>25</capacity>
+				</conveyor>
+			</stock>
+			<stock name="c_inflow_limit">
+				<eqn>0</eqn>
+				<inflow>in_limit</inflow>
+				<outflow>out_limit</outflow>
+				<conveyor>
+					<len>3</len>
+					<in_limit>6</in_limit>
+				</conveyor>
+			</stock>
+			<stock name="c_arrest">
+				<eqn>0</eqn>
+				<inflow>in_arrest</inflow>
+				<outflow>out_arrest</outflow>
+				<conveyor>
+					<len>3</len>
+					<arrest>IF TIME &gt;= 4 AND TIME &lt; 6 THEN 1 ELSE 0</arrest>
+				</conveyor>
+			</stock>
+			<stock name="c_leak_zone">
+				<eqn>0</eqn>
+				<inflow>in_zone</inflow>
+				<outflow>out_zone</outflow>
+				<outflow>leak_zone</outflow>
+				<conveyor>
+					<len>4</len>
+				</conveyor>
+			</stock>
+			<flow name="in_capacity">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_capacity">
+				<non_negative/>
+			</flow>
+			<flow name="in_limit">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_limit">
+				<non_negative/>
+			</flow>
+			<flow name="in_arrest">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_arrest">
+				<non_negative/>
+			</flow>
+			<flow name="in_zone">
+				<eqn>10</eqn>
+				<non_negative/>
+			</flow>
+			<flow name="out_zone">
+				<non_negative/>
+			</flow>
+			<flow name="leak_zone" leak_start="0.5" leak_end="1">
+				<eqn>0.2</eqn>
+				<non_negative/>
+				<leak/>
+			</flow>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<stock x="350" y="100" name="c_capacity"/>
+				<stock x="350" y="270" name="c_inflow_limit"/>
+				<stock x="350" y="440" name="c_arrest"/>
+				<stock x="350" y="610" name="c_leak_zone"/>
+				<flow label_side="bottom" x="238.75" y="100.0" name="in_capacity">
+					<pts>
+						<pt x="150" y="100"/>
+						<pt x="327.5" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="100.0" name="out_capacity">
+					<pts>
+						<pt x="372.5" y="100"/>
+						<pt x="550" y="100"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="270.0" name="in_limit">
+					<pts>
+						<pt x="150" y="270"/>
+						<pt x="327.5" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="270.0" name="out_limit">
+					<pts>
+						<pt x="372.5" y="270"/>
+						<pt x="550" y="270"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="440.0" name="in_arrest">
+					<pts>
+						<pt x="150" y="440"/>
+						<pt x="327.5" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="440.0" name="out_arrest">
+					<pts>
+						<pt x="372.5" y="440"/>
+						<pt x="550" y="440"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="238.75" y="610.0" name="in_zone">
+					<pts>
+						<pt x="150" y="610"/>
+						<pt x="327.5" y="610"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="461.25" y="610.0" name="out_zone">
+					<pts>
+						<pt x="372.5" y="610"/>
+						<pt x="550" y="610"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="455.0" y="660.0" name="leak_zone">
+					<pts>
+						<pt x="360" y="627.5"/>
+						<pt x="360" y="660"/>
+						<pt x="550" y="660"/>
+					</pts>
+				</flow>
+			</view>
+		</views>
+	</model>
+</xmile>

@@ -65,9 +65,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    - You are not only competing for customers but also for human resources, i.e. the professionals you need to deliver your service. When market conditions are good for selling services, they are often bad for hiring professionals, because all your competitors are also trying to recruit fresh talent. This is why professional service firms are much less scalable then firms that create consumer goods or firms that provide online services.
-    - When you bring new professionals on board, it takes a while for them to learn about how you go about your business. Not only are they not productive themselves, they also bring down the productivity of the experience professionals who are showing them the ropes.
-    - You need these professionals both to acquire new business (e.g. for service development effort and pre-sales bidding effort that is not billable) and also to deliver the associated service. If you don't do this well, you can easily end up with an oscillating business where you first have to much business, but to few professional resources, then you have to little business and to many resources and so on.
+    - You are not only competing for customers but also for human resources, i.e. the professionals you need to deliver your service. When market conditions are good for selling services, they are often bad for hiring professionals, because all your competitors are also trying to recruit fresh talent. This is why professional service firms are much less scalable than firms that create consumer goods or firms that provide online services.
+    - When you bring new professionals on board, it takes a while for them to learn about how you go about your business. Not only are they not productive themselves, they also bring down the productivity of the experienced professionals who are showing them the ropes.
+    - You need these professionals both to acquire new business (e.g. for service development effort and pre-sales bidding effort that is not billable) and also to deliver the associated service. If you don't do this well, you can easily end up with an oscillating business where you first have too much business, but too few professional resources, then you have too little business and too many resources and so on.
     """)
     return
 
@@ -91,7 +91,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Let me start with how the professional service firm (PSF) makes money. To keep our discussion simple I assume the PSF delivers its service in the form of projects. The projects are billed regularly (e.g. weekly). The revenue is then calculated as the project delivery rate (measured in staff weeks per week) times the weekly project delivery fee (which I assume is identical for each staff member). The project delivery rate itself will depend on how many staff members are working on projects, the volume of the projects (measured in staff weeks) and the duration of the projects (measured in calendar weeks). These factors determine the PSFs revenue, I've illustrated them in the causal loop diagram below.
+    Let me start with how the professional service firm (PSF) makes money. To keep our discussion simple I assume the PSF delivers its service in the form of projects. The projects are billed regularly (e.g. weekly). The revenue is then calculated as the project delivery rate (measured in staff weeks per week) times the weekly project delivery fee (which I assume is identical for each staff member). The project delivery rate itself will depend on how many staff members are working on projects, the volume of the projects (measured in staff weeks) and the duration of the projects (measured in calendar weeks). These factors determine the PSF's revenue, I've illustrated them in the causal loop diagram below.
     """)
     return
 
@@ -107,7 +107,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    After a delay the revenue is collected and arrives in the PSFs bank account, increasing its stock of cash. Of course the cash balance also has a negative influence, viz. the costs, which are determined by the cost of the professional staff (salaries, workplace costs) and fixed costs (such as marketing costs, administrative overhead, ...). I've added these connections to the diagram below.
+    After a delay the revenue is collected and arrives in the PSF's bank account, increasing its stock of cash. Of course the cash balance also has a negative influence, viz. the costs, which are determined by the cost of the professional staff (salaries, workplace costs) and fixed costs (such as marketing costs, administrative overhead, ...). I've added these connections to the diagram below.
     """)
     return
 
@@ -131,7 +131,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Well, the company wants to grow and the only way to achieve significant growth is by hiring new staff; the amount of cash available to the PSF will determine the hiring rate. Any new staff coming on board create will create cost - I've illustrated this balancing loop in the diagram below.
+    Well, the company wants to grow and the only way to achieve significant growth is by hiring new staff; the amount of cash available to the PSF will determine the hiring rate. Any new staff coming on board will create cost - I've illustrated this balancing loop in the diagram below.
     """)
     return
 
@@ -147,7 +147,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    So far, we have investigated how the company will create revenue by delivering projects. Clearly the rate at which the staff can deliver projects doesn't only depend on the number of staff available, but also on the number of current projects. The faster the projects are delivered, the faster the current number of projects goes down - if no new projects come in, the PSF will go ot ouf business. I've added the negative feedback from the project delivery rate to the projects below.
+    So far, we have investigated how the company will create revenue by delivering projects. Clearly the rate at which the staff can deliver projects doesn't only depend on the number of staff available, but also on the number of current projects. The faster the projects are delivered, the faster the current number of projects goes down - if no new projects come in, the PSF will go out of business. I've added the negative feedback from the project delivery rate to the projects below.
     """)
     return
 
@@ -171,7 +171,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Well, obviously the professional service staff can't just spend its time delivering projects, it also needs to spend some of its time acquiring new projects. The number of business development staff will determine the rate at which new business is developed, along with the effort to find prospective customers and with the prospecting success. The result of business development efforts are proposals, some of which are successful, some of which are not. Experience also shows that there is mostly a significant delay between generating a lead, writing a proposal and the time the new assignment starts. It is important to note that although these factors can be influenced by the company (after all, that is what marketing is all about), they are mainly determined by the market you are operating in.
+    Well, obviously the professional service staff can't just spend its time delivering projects, it also needs to spend some of its time acquiring new projects. The number of business development staff will determine the rate at which new business is developed, along with the effort to find prospective customers and with the prospecting success. The results of business development efforts are proposals, some of which are successful, some of which are not. Experience also shows that there is mostly a significant delay between generating a lead, writing a proposal and the time the new assignment starts. It is important to note that although these factors can be influenced by the company (after all, that is what marketing is all about), they are mainly determined by the market you are operating in.
     """)
     return
 
@@ -179,7 +179,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The actual ratio of business development time to project delivery time will depend on the staffing policy - some PSFs have teams dedicated to developing business, each team member spending all its time developing business and none delivering projects. In other companies, some of the staff both develop business and deliver projects, sharing their time between the two tasks. I will investigate the implications of these strategies a little later in this chapter, for now it is sufficent to add these facts to the sketch.
+    The actual ratio of business development time to project delivery time will depend on the staffing policy - some PSFs have teams dedicated to developing business, each team member spending all its time developing business and none delivering projects. In other companies, some of the staff both develop business and deliver projects, sharing their time between the two tasks. I will investigate the implications of these strategies a little later in this chapter, for now it is sufficient to add these facts to the sketch.
     """)
     return
 
@@ -261,7 +261,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The challenge is to increase your cash and up with at least EUR 26 Mio. at the beginning of month 24.
+    The challenge is to increase your cash and end up with at least EUR 26 Mio. at the beginning of month 24.
     """)
     return
 
@@ -269,7 +269,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Its not as easy as it sounds, in fact it is quite difficult to end up with more cash then if you had done nothing at all.
+    It's not as easy as it sounds, in fact it is quite difficult to end up with more cash than if you had done nothing at all.
     """)
     return
 
@@ -302,9 +302,9 @@ def _(mo):
     7. __Billing Interval.__ Projects are charged on a monthly basis.
     8. __Collection Duration.__ The collection duration is 2 months, i.e. it takes 2 months after revenue is collected and arrives in the bank.
     9. __Workplace Cost.__ The workplace cost per staff member is at EUR 1000 per month (rent, laptop, software licenses and services, ...).
-    10. __Overhead Cost.__ The company has overhead cost of EUR 306.000 per month (administrative cost, ...).
+    10. __Overhead Cost.__ The company has overhead cost of EUR 306,000 per month (administrative cost, ...).
     11. __Staff Salary.__ The average salary per staff member is at EUR 80,000 per year.
-    12. __Hiring Duration.__  The hiring duration for new staff is 3 months
+    12. __Hiring Duration.__ The hiring duration for new staff is 3 months.
     13. __Initial Cash.__ The initial cash is at EUR 1,000,000.
     14. __Initial Staff.__ The company initially has 200 professional staff members, 20% of which are assigned to business development. At this setting, the company is stable.
     15. __Initial Backlog.__ The initial backlog of project weeks is 320 person-months, and the initial number of prospective projects/proposals in the sales pipeline is also 320 person-months.
@@ -315,7 +315,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Before you read on, please try the challenge for yourself: first test the stable setting at 20% business development and zero hires and just "click the game through". Make sure you understand what the graphs mean. Then hire some people in the first months and see what happens to your staff level. Can you explain why the graphs change when they do? Can you see the dynamic we depicted in our conceptual model? Once you have understood the basic dynamics, start experimenting and try to solve the challenges - don't be ashamed to use pencil and paper to make a few calculations, you will most likely need too!
+    Before you read on, please try the challenge for yourself: first test the stable setting at 20% business development and zero hires and just "click the game through". Make sure you understand what the graphs mean. Then hire some people in the first months and see what happens to your staff level. Can you explain why the graphs change when they do? Can you see the dynamic we depicted in our conceptual model? Once you have understood the basic dynamics, start experimenting and try to solve the challenges - don't be ashamed to use pencil and paper to make a few calculations, you will most likely need to!
     """)
     return
 

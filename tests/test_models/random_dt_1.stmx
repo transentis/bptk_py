@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>random_dt_1</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>10000</stop>
+		<dt>1</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="gf_pdf">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="4"/>
+					<yscale min="0" max="2"/>
+					<ypts>0,1,2,1,0</ypts>
+				</gf>
+			</aux>
+			<aux name="normal_1">
+				<eqn>NORMAL(10, 2)</eqn>
+			</aux>
+			<aux name="normal_truncated">
+				<eqn>NORMAL(0, 1, 5, -1, 1)</eqn>
+			</aux>
+			<aux name="lognormal_1">
+				<eqn>LOGNORMAL(10, 2)</eqn>
+			</aux>
+			<aux name="exprnd_1">
+				<eqn>EXPRND(4)</eqn>
+			</aux>
+			<aux name="gamma_1">
+				<eqn>GAMMA(2, 3)</eqn>
+			</aux>
+			<aux name="weibull_1">
+				<eqn>WEIBULL(2, 3)</eqn>
+			</aux>
+			<aux name="geometric_1">
+				<eqn>GEOMETRIC(0.25)</eqn>
+			</aux>
+			<aux name="negbinomial_1">
+				<eqn>NEGBINOMIAL(3, 0.4)</eqn>
+			</aux>
+			<aux name="pareto_1">
+				<eqn>PARETO(3, 2)</eqn>
+			</aux>
+			<aux name="poisson_1">
+				<eqn>POISSON(4)</eqn>
+			</aux>
+			<aux name="binomial_1">
+				<eqn>BINOMIAL(10, 0.3)</eqn>
+			</aux>
+			<aux name="triangular_1">
+				<eqn>TRIANGULAR(1, 2, 6)</eqn>
+			</aux>
+			<aux name="logistic_1">
+				<eqn>LOGISTIC(5, 2)</eqn>
+			</aux>
+			<aux name="random_1">
+				<eqn>RANDOM(2, 8)</eqn>
+			</aux>
+			<aux name="random_seed_a">
+				<eqn>RANDOM(0, 1, 7)</eqn>
+			</aux>
+			<aux name="random_seed_b">
+				<eqn>RANDOM(0, 1, 7)</eqn>
+			</aux>
+			<aux name="montecarlo_1">
+				<eqn>MONTECARLO(50)</eqn>
+			</aux>
+			<aux name="normal_both">
+				<eqn>NORMAL(0, 1, 11, -1, 1)</eqn>
+			</aux>
+			<aux name="normal_min_only">
+				<eqn>NORMAL(0, 1, 12, 0)</eqn>
+			</aux>
+			<aux name="normal_max_only">
+				<eqn>NORMAL(0, 1, 13, NAN, 0)</eqn>
+			</aux>
+			<aux name="normal_unseeded">
+				<eqn>NORMAL(0, 1, NAN, -1, 1)</eqn>
+			</aux>
+			<aux name="normal_same_seed_a">
+				<eqn>NORMAL(10, 2, 14, 9, 12)</eqn>
+			</aux>
+			<aux name="normal_same_seed_b">
+				<eqn>NORMAL(10, 2, 14, 9, 12)</eqn>
+			</aux>
+			<aux name="lognormal_bounds">
+				<eqn>LOGNORMAL(10, 2, 15, 9, 11)</eqn>
+			</aux>
+			<aux name="uniform_bounds">
+				<eqn>UNIFORM(0, 10, 16, 2, 4)</eqn>
+			</aux>
+			<aux name="exprnd_bounds">
+				<eqn>EXPRND(4, 17, 1, 3)</eqn>
+			</aux>
+			<aux name="exprnd_from_zero">
+				<eqn>EXPRND(4, 18, 0, 2)</eqn>
+			</aux>
+			<aux name="gamma_bounds">
+				<eqn>GAMMA(2, 3, 19, 4, 8)</eqn>
+			</aux>
+			<aux name="gamma_bounds_unseeded">
+				<eqn>GAMMA(2, 3, NAN, 4, 8)</eqn>
+			</aux>
+			<aux name="gamma_bounds_scale_1">
+				<eqn>GAMMA(2, 1, 52, 1, 3)</eqn>
+			</aux>
+			<aux name="weibull_bounds">
+				<eqn>WEIBULL(2, 3, 20, 1, 3)</eqn>
+			</aux>
+			<aux name="pareto_bounds">
+				<eqn>PARETO(3, 2, 21, 3.5, 5)</eqn>
+			</aux>
+			<aux name="triangular_bounds">
+				<eqn>TRIANGULAR(1, 2, 6, 22, 2, 4)</eqn>
+			</aux>
+			<aux name="logistic_bounds">
+				<eqn>LOGISTIC(5, 2, 23, 3, 6)</eqn>
+			</aux>
+			<aux name="beta_inside">
+				<eqn>BETA(1, 3, 46, 0.5, 0.6)</eqn>
+			</aux>
+			<aux name="poisson_bounds">
+				<eqn>POISSON(4, 24, 2, 5)</eqn>
+			</aux>
+			<aux name="binomial_bounds">
+				<eqn>BINOMIAL(10, 0.3, 25, 2, 4)</eqn>
+			</aux>
+			<aux name="geometric_bounds">
+				<eqn>GEOMETRIC(0.25, 26, 2, 4)</eqn>
+			</aux>
+			<aux name="negbinomial_bounds">
+				<eqn>NEGBINOMIAL(3, 0.4, 27, 1, 3)</eqn>
+			</aux>
+			<aux name="normal_equal">
+				<eqn>NORMAL(0, 1, 43, 0.5, 0.5)</eqn>
+			</aux>
+			<aux name="normal_reversed">
+				<eqn>NORMAL(0, 1, 41, 1, -1)</eqn>
+			</aux>
+			<aux name="beta_equal">
+				<eqn>BETA(1, 3, 48, 0.5, 0.5)</eqn>
+			</aux>
+			<aux name="beta_reversed">
+				<eqn>BETA(1, 3, 49, 0.6, 0.5)</eqn>
+			</aux>
+			<aux name="poisson_equal">
+				<eqn>POISSON(4, 44, 3, 3)</eqn>
+			</aux>
+			<aux name="poisson_reversed">
+				<eqn>POISSON(4, 47, 5, 2)</eqn>
+			</aux>
+			<aux name="normal_out_of_reach">
+				<eqn>NORMAL(0, 1, 42, 10, 11)</eqn>
+			</aux>
+			<aux name="normal_tail_2_3">
+				<eqn>NORMAL(0, 1, 72, 2, 3)</eqn>
+			</aux>
+			<aux name="normal_tail_3_4">
+				<eqn>NORMAL(0, 1, 73, 3, 4)</eqn>
+			</aux>
+			<aux name="normal_tail_4_5">
+				<eqn>NORMAL(0, 1, 74, 4, 5)</eqn>
+			</aux>
+			<aux name="normal_tail_5_6">
+				<eqn>NORMAL(0, 1, 75, 5, 6)</eqn>
+			</aux>
+			<aux name="normal_tail_6_7">
+				<eqn>NORMAL(0, 1, 76, 6, 7)</eqn>
+			</aux>
+			<aux name="normal_sample_zero">
+				<eqn>NORMAL(0, 1, 45, NAN, NAN, 0)</eqn>
+			</aux>
+			<aux name="lookuprandom_1">
+				<eqn>LOOKUPRANDOM(gf_pdf)</eqn>
+			</aux>
+			<aux name="normalpink_1">
+				<eqn>NORMALPINK(10, 2, 5)</eqn>
+			</aux>
+			<aux name="normal_sampled">
+				<eqn>NORMAL(10, 2, 3, -100, 100, 5)</eqn>
+			</aux>
+			<aux name="exprnd_truncated">
+				<eqn>EXPRND(4, 3, 1, 6)</eqn>
+			</aux>
+			<aux name="gf_flat">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="4"/>
+					<yscale min="0" max="2"/>
+					<ypts>1,1,1,1,1</ypts>
+				</gf>
+			</aux>
+			<aux name="gf_step">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="0" max="4"/>
+					<yscale min="0" max="2"/>
+					<ypts>0,0,1,1,1</ypts>
+				</gf>
+			</aux>
+			<aux name="lookuprandom_flat">
+				<eqn>LOOKUPRANDOM(gf_flat)</eqn>
+			</aux>
+			<aux name="lookuprandom_step">
+				<eqn>LOOKUPRANDOM(gf_step)</eqn>
+			</aux>
+			<aux name="normalpink_seeded">
+				<eqn>NORMALPINK(10, 2, 5, 7)</eqn>
+			</aux>
+			<aux name="normal_seed_7">
+				<eqn>NORMAL(10, 2, 7)</eqn>
+			</aux>
+			<aux name="normalpink_min_10">
+				<eqn>NORMALPINK(10, 2, 5, 7, 10)</eqn>
+			</aux>
+			<aux name="normalpink_bounded_10_20">
+				<eqn>NORMALPINK(10, 2, 5, 7, 10, 20)</eqn>
+			</aux>
+			<aux name="normalpink_sample_3">
+				<eqn>NORMALPINK(10, 2, 5, 7, NAN, NAN, 3)</eqn>
+			</aux>
+			<aux name="normalpink_corr_1">
+				<eqn>NORMALPINK(10, 2, 1, 7)</eqn>
+			</aux>
+			<aux name="normalpink_corr_0_75">
+				<eqn>NORMALPINK(10, 2, 0.75, 7)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="80" name="gf_pdf"/>
+				<aux x="220" y="80" name="normal_1"/>
+				<aux x="360" y="80" name="normal_truncated"/>
+				<aux x="500" y="80" name="lognormal_1"/>
+				<aux x="640" y="80" name="exprnd_1"/>
+				<aux x="780" y="80" name="gamma_1"/>
+				<aux x="920" y="80" name="weibull_1"/>
+				<aux x="80" y="170" name="geometric_1"/>
+				<aux x="220" y="170" name="negbinomial_1"/>
+				<aux x="360" y="170" name="pareto_1"/>
+				<aux x="500" y="170" name="poisson_1"/>
+				<aux x="640" y="170" name="binomial_1"/>
+				<aux x="780" y="170" name="triangular_1"/>
+				<aux x="920" y="170" name="logistic_1"/>
+				<aux x="80" y="260" name="random_1"/>
+				<aux x="220" y="260" name="random_seed_a"/>
+				<aux x="360" y="260" name="random_seed_b"/>
+				<aux x="500" y="260" name="montecarlo_1"/>
+				<aux x="640" y="260" name="normal_both"/>
+				<aux x="780" y="260" name="normal_min_only"/>
+				<aux x="920" y="260" name="normal_max_only"/>
+				<aux x="80" y="350" name="normal_unseeded"/>
+				<aux x="220" y="350" name="normal_same_seed_a"/>
+				<aux x="360" y="350" name="normal_same_seed_b"/>
+				<aux x="500" y="350" name="lognormal_bounds"/>
+				<aux x="640" y="350" name="uniform_bounds"/>
+				<aux x="780" y="350" name="exprnd_bounds"/>
+				<aux x="920" y="350" name="exprnd_from_zero"/>
+				<aux x="80" y="440" name="gamma_bounds"/>
+				<aux x="220" y="440" name="gamma_bounds_unseeded"/>
+				<aux x="360" y="440" name="gamma_bounds_scale_1"/>
+				<aux x="500" y="440" name="weibull_bounds"/>
+				<aux x="640" y="440" name="pareto_bounds"/>
+				<aux x="780" y="440" name="triangular_bounds"/>
+				<aux x="920" y="440" name="logistic_bounds"/>
+				<aux x="80" y="530" name="beta_inside"/>
+				<aux x="220" y="530" name="poisson_bounds"/>
+				<aux x="360" y="530" name="binomial_bounds"/>
+				<aux x="500" y="530" name="geometric_bounds"/>
+				<aux x="640" y="530" name="negbinomial_bounds"/>
+				<aux x="780" y="530" name="normal_equal"/>
+				<aux x="920" y="530" name="normal_reversed"/>
+				<aux x="80" y="620" name="beta_equal"/>
+				<aux x="220" y="620" name="beta_reversed"/>
+				<aux x="360" y="620" name="poisson_equal"/>
+				<aux x="500" y="620" name="poisson_reversed"/>
+				<aux x="640" y="620" name="normal_out_of_reach"/>
+				<aux x="780" y="620" name="normal_tail_2_3"/>
+				<aux x="920" y="620" name="normal_tail_3_4"/>
+				<aux x="80" y="710" name="normal_tail_4_5"/>
+				<aux x="220" y="710" name="normal_tail_5_6"/>
+				<aux x="360" y="710" name="normal_tail_6_7"/>
+				<aux x="500" y="710" name="normal_sample_zero"/>
+				<aux x="640" y="710" name="lookuprandom_1"/>
+				<aux x="780" y="710" name="normalpink_1"/>
+				<aux x="920" y="710" name="normal_sampled"/>
+				<aux x="80" y="800" name="exprnd_truncated"/>
+				<connector uid="1" angle="270">
+					<from>gf_pdf</from>
+					<to>lookuprandom_1</to>
+				</connector>
+				<aux x="80" y="890" name="gf_flat"/>
+				<aux x="220" y="890" name="gf_step"/>
+				<aux x="360" y="890" name="lookuprandom_flat"/>
+				<aux x="500" y="890" name="lookuprandom_step"/>
+				<connector uid="2" angle="270">
+					<from>gf_flat</from>
+					<to>lookuprandom_flat</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>gf_step</from>
+					<to>lookuprandom_step</to>
+				</connector>
+				<aux x="80" y="980" name="normalpink_seeded"/>
+				<aux x="220" y="980" name="normal_seed_7"/>
+				<aux x="360" y="980" name="normalpink_min_10"/>
+				<aux x="500" y="980" name="normalpink_bounded_10_20"/>
+				<aux x="640" y="980" name="normalpink_sample_3"/>
+				<aux x="780" y="980" name="normalpink_corr_1"/>
+				<aux x="920" y="980" name="normalpink_corr_0_75"/>
+			</view>
+		</views>
+	</model>
+</xmile>

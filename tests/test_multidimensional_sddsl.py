@@ -401,26 +401,26 @@ MINMAX = [
 ]
 
 # --- Comparisons and logic --------------------------------------------------
-# These evaluate to a genuine Python `bool`, not to 1.0 / 0.0 - measured
-# 2026-09-08, and the expectations say so rather than guessing a convention.
+# These evaluate to 1.0 or 0.0, as on the Rust engine: a genuine `bool` made
+# `(TIME > 2) + (TIME > 4)` a chain of comparisons and `AND` give an operand.
 # The inputs straddle the threshold: 4 and 9 are below 10, 16 and 25 above.
 
 COMPARISONS = [
     Case("gt", lambda v, s, w: v > 10.0,
          lambda v, s, w, k, sh: leaf_of(v, k, sh) > 10.0,
-         lambda x, s, y: x > 10.0),
+         lambda x, s, y: float(x > 10.0)),
     Case("lt", lambda v, s, w: v < 10.0,
          lambda v, s, w, k, sh: leaf_of(v, k, sh) < 10.0,
-         lambda x, s, y: x < 10.0),
+         lambda x, s, y: float(x < 10.0)),
     Case("ge", lambda v, s, w: v >= 16.0,
          lambda v, s, w, k, sh: leaf_of(v, k, sh) >= 16.0,
-         lambda x, s, y: x >= 16.0),
+         lambda x, s, y: float(x >= 16.0)),
     Case("le", lambda v, s, w: v <= 9.0,
          lambda v, s, w, k, sh: leaf_of(v, k, sh) <= 9.0,
-         lambda x, s, y: x <= 9.0),
+         lambda x, s, y: float(x <= 9.0)),
     Case("ne", lambda v, s, w: v != 9.0,
          lambda v, s, w, k, sh: leaf_of(v, k, sh) != 9.0,
-         lambda x, s, y: x != 9.0),
+         lambda x, s, y: float(x != 9.0)),
 ]
 
 CONDITIONALS = [
@@ -431,14 +431,14 @@ CONDITIONALS = [
     Case("and_", lambda v, s, w: sd.And(v > 5.0, v < 20.0),
          lambda v, s, w, k, sh: sd.And(leaf_of(v, k, sh) > 5.0,
                                        leaf_of(v, k, sh) < 20.0),
-         lambda x, s, y: (x > 5.0) and (x < 20.0)),
+         lambda x, s, y: float((x > 5.0) and (x < 20.0))),
     Case("or_", lambda v, s, w: sd.Or(v < 5.0, v > 20.0),
          lambda v, s, w, k, sh: sd.Or(leaf_of(v, k, sh) < 5.0,
                                       leaf_of(v, k, sh) > 20.0),
-         lambda x, s, y: (x < 5.0) or (x > 20.0)),
+         lambda x, s, y: float((x < 5.0) or (x > 20.0))),
     Case("not_", lambda v, s, w: sd.Not(v > 10.0),
          lambda v, s, w, k, sh: sd.Not(leaf_of(v, k, sh) > 10.0),
-         lambda x, s, y: not (x > 10.0)),
+         lambda x, s, y: float(not (x > 10.0))),
 ]
 
 ALL_ELEMENTWISE = (ARITHMETIC + REFLECTED + [REFLECTED_TIMES] + POWER_MODULO
@@ -621,7 +621,7 @@ class TestMinMax:
 class TestComparisons:
     """A comparison over an array yields one boolean per index.
 
-    They evaluate to a genuine `bool`; the inputs 4, 9, 16, 25 straddle every
+    They evaluate to 1.0 or 0.0, as on the Rust engine; the inputs 4, 9, 16, 25 straddle every
     threshold used, so a case cannot pass by accident of all-true or all-false.
     `ComparisonOperator.resolve_dimensions` used to return -1, which declared the
     result scalar and took every `If` built on a comparison down with it.
@@ -807,7 +807,7 @@ class TestAggregations:
     """Only what `test_sddsl.py` does not already check against numpy.
 
     Covered there, across four element types and both naming modes: `arr_sum`,
-    `arr_prod`, `arr_mean`, `arr_median`, `arr_stddev`, `arr_size`, `arr_rank`. Left
+    `arr_prod`, `arr_mean`, `arr_median`, `arr_stddev`, `arr_size`, `arr_largest`. Left
     here: the two operators that do not exist yet, and the edges.
     """
 
@@ -885,7 +885,7 @@ class TestAggregations:
         pytest.param(99, 1.0, id="far_above_range_clamps_to_minimum"),
         pytest.param(-1, 1.0, id="negative_clamps_to_minimum"),
     ])
-    def test_arr_rank_clamps_instead_of_returning_nan(self, rank, expected):
+    def test_arr_largest_clamps_instead_of_returning_nan(self, rank, expected):
         """Out of range gives the minimum, not NaN.
 
         Pinned because NaN is the plausible-looking answer, and specifying it for the
@@ -896,7 +896,7 @@ class TestAggregations:
         v = model.constant("v")
         v.setup_vector(len(values), list(values))
         target = model.converter("target")
-        target.equation = v.arr_rank(rank)
+        target.equation = v.arr_largest(rank)
         assert target(1) == pytest.approx(expected)
 
 

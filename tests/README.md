@@ -30,7 +30,7 @@ dependencies.
 
 `conftest.py` decides what a given platform and install can run:
 
-- a module that needs an optional extra (`[plotting]`, `[xmile]`, `[server]`) or the
+- a module that needs an optional extra (`[plotting]`, `[server]`) or the
   compiled Rust engine is not collected when that is missing - see
   `_OPTIONAL_TEST_MODULES`
 - the markers `requires_extra`, `requires_rust` and `requires_threads` skip single tests

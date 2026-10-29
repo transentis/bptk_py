@@ -150,7 +150,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Converters:** effect of profitability on capacity utilization,capacity utilization, inventory coverage
+    **Converters:** effect of profitability on capacity utilization, capacity utilization, inventory coverage
     """)
     return
 
@@ -1235,7 +1235,7 @@ def _(mo):
     mo.md(r"""
     Let's quickly run through the base case first, which starts the model in equilibrium.
 
-    The equilibrium price for our product is set at EUR 3. This is equal to both the indicated price  and the expected price. The minimum price (the amount we need to be profitable) is at EUR 1.5
+    The equilibrium price for our product is set at EUR 3. This is equal to both the indicated price  and the expected price. The minimum price (the amount we need to be profitable) is at EUR 1.5.
     """)
     return
 
@@ -1369,7 +1369,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The graph below shows how the actual demand and the inventory develops - as expected, there is an inital demand peak. But this causes the inventory to drop, which increases the price. The increase price leads to increased production, which then lowers the price and thus increases demand.
+    The graph below shows how the actual demand and the inventory develop - as expected, there is an initial demand peak. But this causes the inventory to drop, which increases the price. The increased price leads to increased production, which then lowers the price and thus increases demand.
     """)
     return
 
@@ -1387,7 +1387,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    This is because the actual price affects the demand - if the price is higher then the reference price, demand drops, if the price is lower, demand increases compared to the reference demand.
+    This is because the actual price affects the demand - if the price is higher than the reference price, demand drops, if the price is lower, demand increases compared to the reference demand.
 
     The plot below shows how the dependency is quantified in this model using a non-linear function - the exact shape of this function will depend on your specific situation.
     """)
@@ -1407,7 +1407,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We also assume that prices are sensitive to the availability of the product. If the product becomes scare (i.e. the inventory coverage falls), prices go up, and vice versa. The dependency is modelled using the following table function:
+    We also assume that prices are sensitive to the availability of the product. If the product becomes scarce (i.e. the inventory coverage falls), prices go up, and vice versa. The dependency is modelled using the following table function:
     """)
     return
 
@@ -1443,7 +1443,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The price increases initially, because of the drop in inventory coverage. But the inventory coverage quickly recoveres due to increase production. Because inventory coverage influences the price, this leads to a price that is actually lower than the original price, but also to a demand that is higher than that indicated by the initial market shock.
+    The price increases initially, because of the drop in inventory coverage. But the inventory coverage quickly recovers due to increased production. Because inventory coverage influences the price, this leads to a price that is actually lower than the original price, but also to a demand that is higher than that indicated by the initial market shock.
     """)
     return
 
@@ -1461,7 +1461,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    even though the overall demand incrase is only at around 75%, our profits more than double, as seen in the graph below.
+    Even though the overall demand increase is only at around 75%, our profits more than double, as seen in the graph below.
     """)
     return
 

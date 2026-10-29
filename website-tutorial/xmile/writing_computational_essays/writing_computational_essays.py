@@ -23,7 +23,7 @@ def _(mo):
 
     ### How to use Python and notebooks to rapidly build interactive stories based on System Dynamics simulations
 
-    *If you want to use the insights gained from simulation models to transform your enterprise, just having the model and the insights alone are often not enough – you need to develop a good story that persuades your stakeholders to make decisions and take action.*
+    *If you want to use the insights gained from simulation models to transform your enterprise, just having the model and the insights alone is often not enough – you need to develop a good story that persuades your stakeholders to make decisions and take action.*
 
     *Our BPTK_PY library allows you to convert System Dynamics models into Python code and run them in a notebook, which is a wonderful place for writing interactive, data-driven papers and reports.*
 
@@ -31,19 +31,19 @@ def _(mo):
 
     Writing such interactive stories is quite challenging, even if your simulation model is already fairly complete, because you need to craft the storyline while testing different scenarios with the simulation model.
 
-    We realised early on that what we needed a "interactive writing environment" that would help us to prototype a complex story line while still building the model:
+    We realised early on that what we needed was an "interactive writing environment" that would help us to prototype a complex story line while still building the model:
 
     * Build an initial simulation model using a visual modeling tool.
     * Start writing a story around the model using the interactive writing environment.
     * Use the new questions and insights that arise during the writing process to drive experiments with the simulation model – this may lead to changes in both the model and the storyline.
 
-    In 2014 we started writing such "computational essays" using [Wolfram Research'](http://www.wolfram.com) Mathematica®.
+    In 2014 we started writing such "computational essays" using [Wolfram Research's](http://www.wolfram.com) Mathematica®.
 
     Mathematica is a wonderful and very powerful tool to support this process – it is a complete environment that supports writing, computation, presentation and very sophisticated interactive dashboards.
 
     Mathematica does not contain native support for System Dynamics, but we crafted a small library that allows us to import System Dynamics models based on the XMILE standard and to run them in Mathematica.
 
-    But since 2014 a lot has happened in the world of computational modelling ... Python has become the premiere programming language for data science and its use has thus become even more ubiquitous, and with it the notebook as a working environment - first [Jupyter](http://www.jupyter.org), and more recently [marimo](https://marimo.io), which is what this documentation is written in.
+    But since 2014 a lot has happened in the world of computational modelling ... Python has become the premier programming language for data science and its use has thus become even more ubiquitous, and with it the notebook as a working environment - first [Jupyter](http://www.jupyter.org), and more recently [marimo](https://marimo.io), which is what this documentation is written in.
 
     Both Mathematica and Python notebooks are fantastic environments for creating computational essays and "story-driven simulations":
 
@@ -69,9 +69,9 @@ def _(mo):
     More advanced examples for using models as computable objects are:
 
     * creating interactive games (see our version of the [Beergame](https://beergame.transentis.com) and the computational essay that goes with it. We built the model underlying the game using System Dynamics and transpiled the model into Javascript using our Javascript transpiler),
-    * performing monte-carlo sensitivity analysis of a model on multiple machines in parallel, using state-of-the art, scalable parallel processing engines such as [Apache Spark](http://spark.apache.org)
+    * performing Monte Carlo sensitivity analysis of a model on multiple machines in parallel, using state-of-the-art, scalable parallel processing engines such as [Apache Spark](http://spark.apache.org)
     * training machine learning algorithms using System Dynamics models.
-    * combining system dynamics models with other computational model techniques, such as agent based modeling.
+    * combining system dynamics models with other computational model techniques, such as agent-based modeling.
 
     BPTK-Py is open source under the [MIT license](https://en.wikipedia.org/wiki/MIT_License), so you are free to use it in your own modeling projects. The notebook you are reading and the System Dynamics model behind it live in the [BPTK-Py repository](https://github.com/transentis/bptk_py) next to this page; the [installation instructions](../../usage/installation.md) say how to run them yourself.
 
@@ -96,9 +96,9 @@ def _(mo):
 
     ### Importing The Framework
 
-    The Business Prototyping Toolkit for Python comes with a model transpiler, which automatically converts SD-models created with [Stella](http://www.iseesystems.com) into Python Code, a model simulator which lets you run those models in a Python environment (such as a notebook), a simple format for defining scenarios, and some methods to plot simulation results - these methods form the BPTK API.
+    The Business Prototyping Toolkit for Python comes with a model transpiler, which automatically converts SD-models created with [Stella](http://www.iseesystems.com) into SD DSL code, a model simulator which lets you run those models in a Python environment (such as a notebook), a simple format for defining scenarios, and some methods to plot simulation results - these methods form the BPTK API.
 
-    For most users this will be enough initially: you create the model using Stella and experiment with it by defining scenarios and plotting graphs in a notebook. Whenever you change the model in Stella, it is automatically transpiled to Python in a background process - so you can work on your model in Stella and write your computational essay in the notebook in parallel.
+    For most users this will be enough initially: you create the model using Stella and experiment with it by defining scenarios and plotting graphs in a notebook. Whenever you change the model in Stella, it is transpiled again in the background, as [XMILE Step by Step](../xmile_step_by_step/xmile_step_by_step.md) explains - so you can work on your model in Stella and write your computational essay in the notebook in parallel.
 
     You only need very limited Python skills to do this - the following sections show all the code that is needed to get up and running, and the [installation instructions](../../usage/installation.md) cover the setup. We have found that even modelers who are new to notebooks and Python can get productive with the toolkit within a few hours.
 
@@ -136,9 +136,7 @@ def _(mo):
     mo.md(r"""
     Scenarios are just particular settings for the constants and graphical functions in your model and scenario managers are a simple way of grouping scenarios.
 
-    You can create scenarios directly in Python, but the easiest way to maintain them is to keep them in separate files – you can define as many scenario managers and scenarios in a file as you would like and use as many files as you would like. Each scenario manager references the model it pertains to. So you can run multiple simulation models in one notebook.
-
-    All the scenario definition files are kept in the ``scenarios/`` folder. The BPTK_Py framework will automatically scan this folder and load the scenarios – including the underlying simulation models – into memory.
+    Here they are kept in files in the ``scenarios/`` folder, which BPTK-Py reads when it starts - [Scenarios In Depth](../../concepts/scenarios/scenarios.md) describes the format.
 
     The following code lists all available scenario managers and scenarios:
     """)
@@ -165,70 +163,13 @@ def _(bptk, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    As the filename suggests, scenarios are defined using the [JSON format](http://www.json.org):
+    The scenarios of this page differ in the number of initial open tasks - 80, 100 and 120.
 
-    ```json
-    {
-      "smSimpleProjectManagement": {
-        "source": "simulation_models/sd_simple_project.itmx",
-        "model": "simulation_models/sd_simple_project",
-        "scenarios": {
-          "scenario100": {
-            "constants": {
-              "deadline": 100,
-              "effortPerTask": 1,
-              "initialOpenTasks": 100,
-              "initialStaff": 1
-            }
-          }
-        }
-      }
-    }
-    ```
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The outer bracket  defines the scenario manager. Next to containing a number of scenarios, the scenario manager also defines which model the scenarios apply to (the `source` field and also the `model` file which contains the model's transpiled Python code.
-
-    Each scenario gets a name (`scenario100` in this example) and a list of constants which define the scenario settings.
-
-    We can also take a look at how the scenario is stored in our Python Scenario Manager:
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.scenario_manager_factory.get_scenario("smSimpleProjectManagement","scenario100").dictionary
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The only difference in `scenario80` is that we have set the number of initial open tasks to 80 instead of 100.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.scenario_manager_factory.get_scenario("smSimpleProjectManagement","scenario80").dictionary
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
     ### Plotting Scenario Results
     #### Example 1: Multiple Equations for one scenario
     Let's assume that we would like to plot multiple equations for the same scenario.
 
-    All plotting is done using the ``bptk.plot_cenarios`` method. We just need to pass the name of the scenario ('scenario100') and the list of equations ('openTasks' and 'closedTasks').
+    All plotting is done using the ``bptk.plot_scenarios`` method. We just need to pass the name of the scenario ('scenario100') and the list of equations ('openTasks' and 'closedTasks').
     """)
     return
 
@@ -237,44 +178,10 @@ def _(mo):
 def _(bptk):
     bptk.plot_scenarios(
         scenario_managers=["smSimpleProjectManagement"],
-        scenarios=["scenario100"], 
+        scenarios=["scenario100"],
         equations=['openTasks','closedTasks'],
         title="Tasks remaining vs. Tasks closed",
         freq="D",
-        start_date="1/1/2018",
-        x_label="Time",
-        y_label="Tasks", format="axes"
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    As you can see we can easly change the name of the diagram, the axes labels and the time scale. A legend showing the names of the plotted equations is displayed automatically. The colors for the plots are set in a configuration file - you can learn more about how to do this in the advanced documentation contained in our tutorial.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    #### Renaming the series
-    The equation names (such as `openTasks`) are often not the kind of names you want to show to the reader – in this case for instance we would much rather use the phrase `Open Tasks`.
-
-    Fortunately we can use the ``series_name`` parameter to rename them.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smSimpleProjectManagement"],
-        scenarios=["scenario100"], 
-        equations=['openTasks','closedTasks'],
-        title="Renaming Equations",
-         freq="D",
         start_date="1/1/2018",
         x_label="Time",
         y_label="Tasks",
@@ -286,6 +193,8 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    The title, the axis labels, the time scale and the names of the series are all arguments of the same call; [Advanced Plotting Features](../../concepts/advanced_plotting_features/advanced_plotting_features.md) shows them and the other kinds of graph, and [Configuration](../../concepts/configuration/configuration.md#configure-graphic-settings) the colours.
+
     #### Example 2: Plot one equation for multiple scenarios
     Now let us change the perspective. In the above example we assumed one scenario for which we simulate multiple equations. Now we simulate **one equation for multiple scenarios**. This is useful whenever we want to compare the behaviour of the same model element between different scenarios.
 
@@ -301,7 +210,7 @@ def _(bptk):
         scenarios=["scenario80","scenario100","scenario120"],
         equations=["openTasks"],
         title="One Equation for Multiple Scenarios",
-         freq="D",
+        freq="D",
         start_date="1/1/2018",
         x_label="Time",
         y_label="Tasks",
@@ -314,111 +223,11 @@ def _(bptk):
     return
 
 
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smSimpleProjectManagement"],
-        scenarios="scenario80,scenario100,scenario120",
-        equations="productivity",
-        title="One Equation with Multiple Scenarios",
-         freq="D",
-        start_date="1/1/2018",
-        x_label="Time",
-        y_label="Producitivty %",
-        series_names={
-            "smSimpleProjectManagement_scenario80_productivity":"80 initial open tasks",
-            "smSimpleProjectManagement_scenario100_productivity":"100 initial open tasks",
-            "smSimpleProjectManagement_scenario120_productivity":"120 initial open tasks"
-        }, format="axes"
-    )
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    #### What if I want another kind of graph?
-
-    The default output format for our plots shows each plot with a shaded area. This can easly be changed using the``kind`` parameter. Currently we also support the `line` and `stacked` setting.
+    To work with the numbers rather than a plot, pass `return_df=True` and you get a pandas dataframe - see [Accessing Raw Simulation Results](../../concepts/accessing_raw_simulation_results/accessing_raw_simulation_results.md).
     """)
-    return
-
-
-@app.cell
-def _(bptk):
-    bptk.plot_scenarios(
-        scenario_managers=["smSimpleProjectManagement"],
-        scenarios="scenario80,scenario100,scenario120",
-        equations="openTasks",
-        kind="line",
-        title="One Equation for Multiple Scenarios",
-         freq="D",
-        start_date="1/1/2018",
-        x_label="Time",
-        y_label="Tasks",
-        series_names={
-            "smSimpleProjectManagement_scenario80_openTasks":"80 initial open tasks",
-            "smSimpleProjectManagement_scenario100_openTasks":"100 initial open tasks",
-            "smSimpleProjectManagement_scenario120_openTasks":"120 initial open tasks"}, format="axes"
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    #### What if I need the underlying data?
-
-    Sometimes you may not be interested in plotting a graph but would rather use the underlying data directly. This is easy – you can use use the `return_df=True` setting to return a dataframe containing all of the data in the scenario. The dataframe is provided as a [Pandas](http://pandas.pydata.org/) dataframe.
-    """)
-    return
-
-
-@app.cell
-def _(bptk):
-    data=bptk.plot_scenarios(
-            scenario_managers=["smSimpleProjectManagement"],
-            scenarios=["scenario80"],
-             freq="D",
-            start_date="1/1/2018",
-            equations=[
-                "openTasks",
-                "closedTasks",
-                "completionRate",
-                "remainingTime",
-                "schedulePressure",
-                "productivity",
-            ],
-            return_df=True
-    )
-    return (data,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The dataframe is a table with a row for each day and a column for each of the scenarios. Using the `pandas.DataFrame.head` function we can show the first five rows of the dataframe:
-    """)
-    return
-
-
-@app.cell
-def _(data):
-    data.head()
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    Once you have the dataframe, you can use the full power of `Python` and the `pandas` library to access the data, e.g. the `iloc`indexer to access a particular row.
-    """)
-    return
-
-
-@app.cell
-def _(data):
-    data.iloc[4]
     return
 
 
@@ -427,33 +236,24 @@ def _(mo):
     mo.md(r"""
     ### Accessing The Underlying System Dynamics Model
 
-    The underlying System Dynamics model is automatically converted from the XMILE format into Python code – currently our transpiler only supports conversion of models in XMILE format, but we are planning to create a compiler for models in other formats.
+    The underlying System Dynamics model is automatically converted from the XMILE format into SD DSL code. Both the Stella/XMILE model and the compiled model are kept in the `simulation_models` directory.
 
-    We keep both the Stella/XMILE models and the compiled models in the `/MODELS` directory.
-
-    The actual equations underlying the simulation are stored in a dictonary of Python lambda functions within the class, e.g. here are the equations for closed tasks, open tasks and the completion rate:
+    The compiled model is written in the SD DSL: a `Model` that first defines every element and then sets the initial values and equations, both grouped by kind. Here are the closed tasks, the open tasks and the completion rate from the second part:
 
     ```
+    # Stocks
+    closedTasks.initial_value = 0.0
+    closedTasks.inflows = [completionRate]
+    openTasks.initial_value = initialOpenTasks
+    openTasks.outflows = [completionRate]
 
-    'closedTasks': lambda t : 0 if  t  <=  self.starttime  else self.memoize('closedTasks',t-self.dt)
-                +  self.dt  * ( self.memoize('completionRate',t-self.dt) ),
-
-    'openTasks': lambda t : self.memoize('initialOpenTasks', t) if  t  <=  self.starttime  else
-                    self.memoize('openTasks',t-self.dt) +
-                    self.dt  * ( -1 * ( self.memoize('completionRate',t-self.dt) ) ),
-
-    'staff': lambda t : self.memoize('initialStaff', t) if  t  <=  self.starttime
-            else self.memoize('staff',t-self.dt)
-            +  self.dt  * 0,
-
-    'completionRate': lambda t : max( 0, min( self.memoize('openTasks', t), self.memoize('staff', t) *
-                    self.memoize('productivity', t) / self.memoize('effortPerTask', t) ) ),
-
+    # Flows
+    completionRate.equation = sd.max(0.0, sd.min(openTasks, ((staff * productivity) / effortPerTask)))
     ```
 
-    Because of the recursive nature of System Dynamics equations we use memoization to remember previous values – this makes the equations more cumbersome to read (and write should you want to create your own), but it dramatically speeds up calculations.
+    Because of the recursive nature of System Dynamics equations, the Python engine uses memoization to remember previous values – it dramatically speeds up calculations.
 
-    You can easily access (and change) these lambda functions if you want to, they are stored in a dictionary within the model, which itself is associated with the scenario. Assocating the model with the scenario is essential because it ensure that the scenario settings are automatically applied to the model.
+    When the model runs, each equation becomes a Python function of the time `t`. You can easily access (and change) these functions if you want to, they are stored in a dictionary within the model, which itself is associated with the scenario. Associating the model with the scenario is essential because it ensures that the scenario settings are automatically applied to the model.
     """)
     return
 
@@ -497,7 +297,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Having the model in a python class is useful for other purposes too – for instance you can access the list of stocks, flows and converters to check which elements are in your model:
+    Having the model in a Python class is useful for other purposes too – for instance you can access the list of stocks, flows and converters to check which elements are in your model:
     """)
     return
 
@@ -566,7 +366,7 @@ def _(mo):
     mo.md(r"""
     ### Checking and Comparing Models
 
-    We can also easily compare two different versions of a model to each other - for instance let's assume we have two versions of our project management model, which say contain different settings for the graphical function we use to model the effect of schedule pressure on productivity and also the number of inital open tasks (as defined in the underlying model, not in the scenarios).
+    We can also easily compare two different versions of a model to each other - for instance let's assume we have two versions of our project management model, which say contain different settings for the graphical function we use to model the effect of schedule pressure on productivity and also the number of initial open tasks (as defined in the underlying model, not in the scenarios).
 
     Let's compare the results between the models:
     """)
@@ -590,7 +390,7 @@ def _(bptk):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We can also create some code that automatically lists all of the model elements that have changed between the two models:
+    We can also create some code that automatically lists the constants whose values differ between the two models:
     """)
     return
 
@@ -608,10 +408,10 @@ def _(bptk, mo):
         for constant_name in current.constants:
             if constant_name not in v0.equations:
                 continue
-            hier = current.equations[constant_name](1)
-            dort = v0.equations[constant_name](1)
-            if hier != dort:
-                print(f"{constant_name}, current model: {hier}, model v0: {dort}")
+            current_value = current.equations[constant_name](1)
+            v0_value = v0.equations[constant_name](1)
+            if current_value != v0_value:
+                print(f"{constant_name}, current model: {current_value}, model v0: {v0_value}")
 
     mo.plain_text(differences.getvalue())
     return
@@ -620,7 +420,7 @@ def _(bptk, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Note that this last function isn't part of the BPTK framework, but it uses a number of methods provided by the framework this shows the real power of making models computable: because you can manipulate models using code, you can easily create your own functions to use your models in any way you want.
+    Note that this last function isn't part of the BPTK framework, but it uses a number of methods provided by the framework - this shows the real power of making models computable: because you can manipulate models using code, you can easily create your own functions to use your models in any way you want.
     """)
     return
 

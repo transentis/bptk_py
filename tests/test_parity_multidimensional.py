@@ -372,6 +372,57 @@ class TestTimeAndTableFunctions:
             v, [(0.0, 0.0), (4.0, 40.0), (9.0, 90.0), (25.0, 250.0)]))
 
     @pytest.mark.parametrize("shape", SHAPES)
+    def test_lookupinv_per_index(self, shape):
+        check(shape, lambda v, s, w: sd.lookupinv(
+            v, [(0.0, 0.0), (4.0, 40.0), (9.0, 90.0), (25.0, 250.0)]))
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_lookuparea_per_index(self, shape):
+        check(shape, lambda v, s, w: sd.lookuparea(
+            [(0.0, 0.0), (4.0, 40.0), (9.0, 90.0), (25.0, 250.0)], 1.0, v))
+
+    @pytest.mark.parametrize("kind", ("extrapolate", "discrete"))
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_each_kind_of_table_per_index(self, shape, kind):
+        table = [(2.0, 0.0), (4.0, 40.0), (9.0, 90.0), (12.0, 60.0)]
+        check(shape, lambda v, s, w: sd.lookup(v, table, kind=kind)
+              + sd.lookupinv(v * 3.0, [(0.0, 0.0), (4.0, 40.0), (9.0, 50.0)], kind=kind)
+              + sd.lookuparea(table, 1.0, v, kind=kind)
+              + sd.lookupmax(table, 1.0, v, kind=kind) + sd.lookupmin(table, v, 10.0, kind=kind)
+              + sd.lookupmean(table, 1.0, v + 3.0, kind=kind))
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_equal_bounds_give_each_cell_its_bound(self, shape):
+        check(shape, lambda v, s, w: sd.normal(v, 1.0, 7, v, v) + sd.poisson(v, None, v, v, sample=2.0)
+              + sd.normalpink(v.model, v, 1.0, 3.0, 7, v, v))
+
+    @pytest.mark.parametrize("seed", [7, None], ids=["seeded", "unseeded"])
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_bounds_and_a_sample_per_index(self, shape, seed):
+        """Each cell draws within its own bounds and holds for the sample, on both engines -
+        the engines draw different numbers, so what they share is the rule."""
+        from BPTK_Py._rust_engine import RustSdEngine
+        from tests.helpers.parity import rust_time_key
+        model, v, s, w = build(shape)
+        model.stoptime = 40.0
+        target = model.converter("target")
+        target.equation = sd.normal(v, 1.0, seed, v - 0.5, v + 0.5, sample=2.0)
+        names = leaf_names(target)
+        bounds = {name: model.evaluate_equation(cell, 0.0) for name, cell in zip(names, leaf_names(v))}
+        raw = RustSdEngine().load_model(model.to_json()).simulate(names)
+        times = [float(t) for t in range(41)]
+        for name in names:
+            for values in ([model.evaluate_equation(name, t) for t in times],
+                           [raw[name][rust_time_key(t)] for t in times]):
+                assert all(bounds[name] - 0.5 <= value <= bounds[name] + 0.5 for value in values), name
+                assert all(values[i] == values[i + 1] for i in range(0, 40, 2)), name
+                assert len(set(values)) > 10, name
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_irr_per_index(self, shape):
+        check(shape, lambda v, s, w: sd.irr(v.model, v - 3.0 * sd.time(), -1.0), atol=1e-9)
+
+    @pytest.mark.parametrize("shape", SHAPES)
     def test_step_with_an_arrayed_height(self, shape):
         check(shape, lambda v, s, w: sd.step(v, 2.0))
 
@@ -420,6 +471,12 @@ class TestStatefulFunctions:
         ("pmt", lambda v: sd.pmt(0.05, 10.0, v)),
         ("cgrowth", lambda v: sd.cgrowth(v.model, v)),
         ("ramp", lambda v: sd.ramp(v, 2.0)),
+        ("isnan", lambda v: sd.isnan(sd.sqrt(v - 3.0))),
+        ("rework", lambda v: sd.rework(v)),
+        ("expbound", lambda v: sd.expbound(1.0, 9.0, v, 2.0, 1.0, 5.0)),
+        ("logisticbound", lambda v: sd.logisticbound(1.0, 9.0, v, 3.0, 1.0, 1.0, 5.0)),
+        ("maxsoft", lambda v: sd.maxsoft(v, 3.0, 2.0)),
+        ("minsoft", lambda v: sd.minsoft(v, 3.0, 2.0)),
     ])
     @pytest.mark.parametrize("shape", SHAPES)
     def test_stateless_builtins(self, shape, name, build):
@@ -430,6 +487,10 @@ class TestStatefulFunctions:
         ("previous", lambda v: sd.previous(v.model, v, 0.0)),
         ("history", lambda v: sd.history(v.model, v, 1.0)),
         ("derivn", lambda v: sd.derivn(v.model, v * v, 1)),
+        ("runcum", lambda v: sd.runcum(v.model, v, sd.time() - 2.0, sd.time())),
+        ("runmax", lambda v: sd.runmax(v.model, -v)),
+        ("runmean", lambda v: sd.runmean(v.model, v * v)),
+        ("runcumtarget", lambda v: sd.runcumtarget(v.model, v, 4.0)),
     ])
     @pytest.mark.parametrize("shape", SHAPES)
     def test_builtins_over_the_past(self, shape, name, build):
@@ -496,9 +557,58 @@ class TestAggregations:
         check_scalar(shape, lambda v, s, w: getattr(v, aggregation)())
 
     @pytest.mark.parametrize("shape", SHAPES)
-    @pytest.mark.parametrize("rank", [1, 2, 3, 4, 99, 0, -1])
-    def test_arr_rank(self, shape, rank):
+    @pytest.mark.parametrize("rank", [1, 2, 3, 4, 99, 0, -1, 2.5, math.nan])
+    def test_arr_largest(self, shape, rank):
+        check_scalar(shape, lambda v, s, w: v.arr_largest(rank))
+
+    @pytest.mark.parametrize("shape", VECTORS)
+    @pytest.mark.parametrize("rank", [1, 2, 3, 0, 4, 2.5, -1])
+    def test_rank(self, shape, rank):
         check_scalar(shape, lambda v, s, w: v.arr_rank(rank))
+
+    @pytest.mark.parametrize("shape", VECTORS)
+    def test_rank_with_a_tiebreak_and_a_rank_that_moves(self, shape):
+        check_scalar(shape, lambda v, s, w: v.arr_rank(sd.time() - 0.5, v * 0.0 - v), second=True)
+
+    def test_rank_orders_ties_by_tiebreak_then_by_position(self):
+        model = Model(starttime=0.0, stoptime=6.0, dt=1.0, name="rank_ties")
+        values = model.converter("values")
+        values.setup_vector(5, [0.0] * 5)
+        for cell, value in enumerate([2.0, 1.0, 2.0, 1.0, 2.0]):
+            values[cell].equation = value
+        breaks = model.converter("breaks")
+        breaks.setup_vector(5, [0.0] * 5)
+        for cell, value in enumerate([0.0, 0.0, -1.0, 0.0, -1.0]):
+            breaks[cell].equation = value
+        model.converter("plain").equation = values.arr_rank(sd.min(sd.time(), 5.0))
+        model.converter("broken").equation = values.arr_rank(sd.min(sd.time(), 5.0), breaks)
+        run_parity(model, ["plain", "broken"], atol=1e-10)
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    @pytest.mark.parametrize("percentile", [0.0, 12.5, 40.0, 50.0, 100.0, -5.0, 120.0, math.nan])
+    def test_percentile(self, shape, percentile):
+        check_scalar(shape, lambda v, s, w: v.arr_percentile(percentile))
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_percentile_with_weights_a_cut_and_a_percentile_that_moves(self, shape):
+        check_scalar(shape, lambda v, s, w: v.arr_percentile(sd.time() * 10.0, 20.0, v * 0.0 + 1.0 + v * v), second=True)
+
+    @pytest.mark.parametrize("shape", VECTORS)
+    @pytest.mark.parametrize("weight", [0.0, 0.37, 0.5, 1.0, -0.2, 1.4])
+    def test_interpolate_a_vector(self, shape, weight):
+        check_scalar(shape, lambda v, s, w: v.arr_interpolate(weight))
+
+    @pytest.mark.parametrize("shape", MATRICES)
+    @pytest.mark.parametrize("weights", [(0.0, 0.0), (0.37, 0.81), (1.0, 0.25), (-0.5, 2.0)])
+    def test_interpolate_a_matrix(self, shape, weights):
+        check_scalar(shape, lambda v, s, w: v.arr_interpolate(*weights))
+
+    @pytest.mark.parametrize("shape", SHAPES)
+    def test_interpolate_with_a_weight_that_moves_and_one_that_is_nan(self, shape):
+        def expression(v, s, w):
+            weights = [sd.time() / 4.0] * (1 if shape in VECTORS else 2)
+            return v.arr_interpolate(*weights) + v.arr_interpolate(*([sd.nan()] + weights[1:]))
+        check_scalar(shape, expression)
 
     @pytest.mark.parametrize("shape", SHAPES)
     def test_arr_size(self, shape):

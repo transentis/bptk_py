@@ -62,7 +62,7 @@ def _(mo):
     mo.md(r"""
     ### Stocks
 
-    A stock represents a part of a system whose value at any given instant in time depends on the systems past behavior. The value of the stocks at a particular instant in time cannot simply be determined by measuring the value of the other parts of the system at that instant in time – the only way you can calculate it is by measuring how it changes at every instant and adding up all these changes.
+    A stock represents a part of a system whose value at any given instant in time depends on the system's past behavior. The value of the stocks at a particular instant in time cannot simply be determined by measuring the value of the other parts of the system at that instant in time – the only way you can calculate it is by measuring how it changes at every instant and adding up all these changes.
     """)
     return
 
@@ -72,7 +72,7 @@ def _(mo):
     mo.md(r"""
     ![Population Stock](./sfd_population.svg)
 
-    The stock in our model represents the population at each timestep. Initially, we assume 80 mio. people living in our fictional country.  We create a model by entering `model.stock(<name>)`. The name of our stock is "population".
+    The stock in our model represents the population at each timestep. Initially, we assume 80 million people living in our fictional country. We create a stock by entering `model.stock(<name>)`. The name of our stock is "population".
     """)
     return
 
@@ -159,13 +159,13 @@ def _(mo):
     mo.md(r"""
     In our simple example, the population is the sum of births minus the deaths plus the initial value or the value from the last timestep.
 
-    The Logic in System Dynamics is always the same: Values at timestep ``t`` depend on the result at ``t-1`` Let us look at the population:
+    The logic in System Dynamics is always the same: values at timestep ``t`` depend on the result at ``t-1``. Let us look at the population:
     ```
 
     population.equation = births - deaths
 
-    population (1)  = 80,000,0000 (start time)
-    population (2) = population(1) + (births(2) - deaths(2)) = 80,000,000 + (1,000,000 - 2,000,000) = 79,000,000
+    population (1) = 80,000,000 (start time)
+    population (2) = population(1) + (births(1) - deaths(1)) = 80,000,000 + (1,000,000 - 2,000,000) = 79,000,000
     population (3) = population(2) + (births(2) - deaths(2)) = 79,000,000 + (1,000,000 - 2,000,000) = 78,000,000
 
     and so on...
@@ -252,7 +252,7 @@ def _(mo):
     mo.md(r"""
     ### Connectors
 
-    Much like in causal loop diagrams the connectors of a system show how the parts of a system influence each other.  Stocks can only be influenced by flows (i.e. there can be no connector that connects into a stock), flows can be influenced by stocks, other flows, and by converters. Converters either are not influenced at all (i.e. they are at the systems boundary) or are influenced by stocks, flows and other converters.
+    Much like in causal loop diagrams the connectors of a system show how the parts of a system influence each other. Stocks can only be influenced by flows (i.e. there can be no connector that connects into a stock), flows can be influenced by stocks, other flows, and by converters. Converters either are not influenced at all (i.e. they are at the system's boundary) or are influenced by stocks, flows and other converters.
 
     Please note that we do not explicitly model connectors but create the connection by defining equations. Equations are expressive enough to represent interactions between model elements.
 
@@ -281,7 +281,7 @@ def _(foodAvailable):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The converters `foodAvailablePerPerson` and `birthRate` are formulas. `foodAvailablePerPerson` depends on `population` and `foodAvailable`. The more people the less food per person. The birth rate decreases if we have less than one unit food per person.
+    The converters `foodAvailablePerPerson` and `birthRate` are formulas. `foodAvailablePerPerson` depends on `population` and `foodAvailable`. The more people the less food per person. The birth rate decreases if we have less than one unit of food per person.
     """)
     return
 
@@ -381,7 +381,7 @@ def _(model_2):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We now need to connect the `deathRate` lookup to the `foodAvailablePerPopulation`:
+    We now need to connect the `deathRate` lookup to the `foodAvailablePerPerson`:
     """)
     return
 
@@ -534,7 +534,7 @@ def _(bptk_scenarios):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    According to the stock and flow diagram `foodAvailable` influences `foodAvailablePerPerson`. The less food we have, the less food one person has. `foodAvailablePerPerson` then affects the births and deaths. Less people are born and more people die because we don't have enough food for each person. As a result, the population of `scenario07` decreases.
+    According to the stock and flow diagram `foodAvailable` influences `foodAvailablePerPerson`. The less food we have, the less food one person has. `foodAvailablePerPerson` then affects the births and deaths. Fewer people are born and more people die because we don't have enough food for each person. As a result, the population of `scenario07` decreases.
     """)
     return
 
@@ -555,7 +555,7 @@ def _(mo):
     mo.md(r"""
     ## Export Data as a Pandas Dataframe
 
-    We built BPTK-Py with integration in mind. This means, you can easily export the simulation results as so-called "DataFrames". This is a standard Python exchange format for data. This means you can easily process the simulation results in other data analysis / data science packages for further processing (Machine Learning, Data enrichment and many more). Just add the argument ``return_df=True`` to the plot_scenarios call:
+    We built BPTK-Py with integration in mind. This means you can easily export the simulation results as so-called "DataFrames". This is a standard Python exchange format for data. This means you can easily process the simulation results in other data analysis / data science packages for further processing (Machine Learning, Data enrichment and many more). Just add the argument ``return_df=True`` to the plot_scenarios call:
     """)
     return
 

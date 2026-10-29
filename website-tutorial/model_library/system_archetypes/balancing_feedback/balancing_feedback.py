@@ -21,7 +21,7 @@ def _(mo):
     mo.md(r"""
     # Balancing Feedback Archetype
 
-    Balancing feedback loops seek to close the gap between the current state of a system and it's desired state (the goal state).
+    Balancing feedback loops seek to close the gap between the current state of a system and its desired state (the goal state).
 
     Even simple balancing loops can exhibit quite complex behaviour, because in reality we often encounter delays within the loop.
 
@@ -29,9 +29,9 @@ def _(mo):
 
     ![Causal Loop Diagram of the Balancing Feedback Loop](cld_balancing_loop.svg)
 
-    The diagram explains what happens when the _Actual State_ of a system deviates from the _Desired State_ of the system: The system observes the gap and then takes appropriate action to close the gap. There may be delays in observing and comunicating the current state of the system, there may be delays in making decisions regarding the correct actions to take, and there may be delays in actually implementing the actions once a decision has been made.
+    The diagram explains what happens when the _Actual State_ of a system deviates from the _Desired State_ of the system: The system observes the gap and then takes appropriate action to close the gap. There may be delays in observing and communicating the current state of the system, there may be delays in making decisions regarding the correct actions to take, and there may be delays in actually implementing the actions once a decision has been made.
 
-    Typical examples from corporate life are reporting delays: in many companies, financial reports are always lagging behind reality, so it may take a while before management realizes that the profitability of the company has decreased. Management may then take some time to agree on which measures to take, e.g. to cut costs or to improve marketing and sales processes. Then again it may take some time to actually take action. e.g. because it takes time to assemble an appropriate task force. Meanwhile the state of the system has changed yet again. Taken together, delays may lead to oscialltory behaviour, as illustrated in the graph.
+    Typical examples from corporate life are reporting delays: in many companies, financial reports are always lagging behind reality, so it may take a while before management realizes that the profitability of the company has decreased. Management may then take some time to agree on which measures to take, e.g. to cut costs or to improve marketing and sales processes. Then again it may take some time to actually take action, e.g. because it takes time to assemble an appropriate task force. Meanwhile the state of the system has changed yet again. Taken together, delays may lead to oscillatory behaviour, as the scenario with delays below shows.
     """)
     return
 
@@ -51,7 +51,7 @@ def _(mo):
 
     The gap itself is simply the difference between the desired state and the (delayed measurement of the) actual state.
 
-    Based on this model, we can easily create the following model using the SD DSL:
+    Based on this diagram, we can easily build the model using the SD DSL:
     """)
     return
 
@@ -114,9 +114,9 @@ def _(bptk_1):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The actual state slowly adjust to the desired state - note that it takes much longer then 40 weeks to adjust to the desired state: the size of the action depends on the size of the gap, as the gap gets smaller, so does the size of the action.
+    The actual state slowly adjusts to the desired state - note that it takes much longer than the adjustment time of 30 weeks to adjust to the desired state: the size of the action depends on the size of the gap, as the gap gets smaller, so does the size of the action.
 
-    Now let's take a look at what happens when we adjust the delays - in the next scenario, we assume all delays are equal to 10 weeks.
+    Now let's take a look at what happens when we adjust the delays - in the next scenario, we assume all three delays are 4 weeks and the adjustment time is 12 weeks.
     """)
     return
 
@@ -145,9 +145,9 @@ def _(bptk_1):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In this scenario we see oscillating behavior: first it takes quite some time for any change in the actual state. Because of the delay in the observation of the actual state, we take to much action and overshoot the goal: the actual state becomes bigger than the desired state.
+    In this scenario we see oscillating behavior: first it takes quite some time for any change in the actual state. Because of the delay in the observation of the actual state, we take too much action and overshoot the goal: the actual state becomes bigger than the desired state.
 
-    The system then corrects its action downwards, but again the desired state is overshot and the actual state ends up being to small. The oscillations dampen down, but we can see it will take some time for the system to adjust.
+    The system then corrects its action downwards, but again the desired state is overshot and the actual state ends up being too small. The oscillations dampen down, but we can see it will take some time for the system to adjust.
     """)
     return
 
@@ -157,7 +157,7 @@ def _(mo):
     mo.md(r"""
     ## Experimenting with the Balancing Feedback Archetype
 
-    The dashboard below let's you experiment with different settings for delays and adjustment times.
+    The dashboard below lets you experiment with different settings for delays and adjustment times.
     """)
     return
 

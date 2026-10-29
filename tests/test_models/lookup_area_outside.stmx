@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>lookup_area_outside</name>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.9.2" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs method="Euler" time_units="Months" isee:instantaneous_flows="false">
+		<start>0</start>
+		<stop>12</stop>
+		<dt reciprocal="true">2</dt>
+	</sim_specs>
+	<model>
+		<variables>
+			<aux name="gf_ends">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="2" max="8"/>
+					<yscale min="3" max="7"/>
+					<ypts>3,5,7,6</ypts>
+				</gf>
+			</aux>
+			<aux name="area_from_0">
+				<eqn>LOOKUPAREA(gf_ends, 0, TIME)</eqn>
+			</aux>
+			<aux name="inverse_below">
+				<eqn>LOOKUPINV(gf_ends, 1)</eqn>
+			</aux>
+			<aux name="inverse_above">
+				<eqn>LOOKUPINV(gf_ends, 10)</eqn>
+			</aux>
+		</variables>
+		<views>
+			<view isee:show_pages="false" background="white" page_width="1000" page_height="800" type="stock_flow">
+				<aux x="80" y="290" name="gf_ends"/>
+				<aux x="220" y="290" name="area_from_0"/>
+				<aux x="360" y="290" name="inverse_below"/>
+				<aux x="500" y="290" name="inverse_above"/>
+				<connector uid="1" angle="270">
+					<from>gf_ends</from>
+					<to>area_from_0</to>
+				</connector>
+				<connector uid="2" angle="270">
+					<from>gf_ends</from>
+					<to>inverse_below</to>
+				</connector>
+				<connector uid="3" angle="270">
+					<from>gf_ends</from>
+					<to>inverse_above</to>
+				</connector>
+			</view>
+		</views>
+	</model>
+</xmile>

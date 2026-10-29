@@ -51,7 +51,7 @@ def _(mo):
     mo.md(r"""
     ## Use Simple Sketches To Capture Initial Ideas And Define The Scope
 
-    So, in this case, we have a simple sketch showing the kinds of marketing that has is going on or could be going on. We have got classical outbound marketing, we have got inbound marketing, we have got word-of-mouth marketing and referral marketing and during such a discussion, you may well find out that actually what you have been doing so far, typically, is perhaps outbound marketing and you have completely neglected other strategies such as referral strategies or inbound marketing.
+    So, in this case, we have a simple sketch showing the kinds of marketing that is going on or could be going on. We have got classical outbound marketing, we have got inbound marketing, we have got word-of-mouth marketing and referral marketing and during such a discussion, you may well find out that actually what you have been doing so far, typically, is perhaps outbound marketing and you have completely neglected other strategies such as referral strategies or inbound marketing.
 
     ![Use Simple Sketches](images/simple_sketches.svg)
 
@@ -73,21 +73,21 @@ def _(mo):
     mo.md(r"""
     ## Capture Key Interactions
 
-    Once you have understood the key concepts, the next thing to do in prototyping is to a build a more detailed model of how the system you are trying to change works. Depending on the kind of challenge, quite a number of different kinds of modeling techniques could be useful here.
+    Once you have understood the key concepts, the next thing to do in prototyping is to build a more detailed model of how the system you are trying to change works. Depending on the kind of challenge, quite a number of different kinds of modeling techniques could be useful here.
 
     In our concrete case, we want to understand the factors that influence the service adoption rate and potential benefits and costs associated with any changes we make to the current approach.
 
-    We are dealing with a dynamic problem, because we would like the service adoption rate to change and increase over time – whenever you are confronted with dynamic complexity at a strategic level, causal loop diagrams are good weapon to choose.
+    We are dealing with a dynamic problem, because we would like the service adoption rate to change and increase over time – whenever you are confronted with dynamic complexity at a strategic level, causal loop diagrams are a good weapon to choose.
 
-    They are useful to capture the key interactions in a system and to capture the dynamics behavior of a system. We will cover causal loop diagrams in detail in the next chapter of this course.
+    They are useful to capture the key interactions in a system and to capture the dynamic behavior of a system.
 
     ![Key Interactions](images/key_interactions.svg)
 
-    Let’s take a brief look at what this little model is telling us: On the left hand side we have a loop that shows how we acquire customers via advertising – the more money we spend on advertising, the more people we will reach, and some of these people will become customers of our service. This is a loop, because all marketing is constrained by market saturation – if our service is really successful and we gain more and more customers, advertising will become less effective because a lot of our adverts will reach people who already are our customers.
+    Let’s take a brief look at what this little model is telling us: On the left hand side we have a loop that shows how we acquire customers via advertising – the more money we spend on advertising, the more people we will reach, and some of these people will become customers of our service. This is a balancing loop, because all marketing is constrained by market saturation – if our service is really successful and we gain more and more customers, advertising will become less effective because a lot of our adverts will reach people who already are our customers.
 
     In the middle of the diagram, we can see the new referral marketing idea we want to experiment with – the idea is to get people who have already subscribed to our service to refer new customers; we give them a – yet to be determined – amount of free service time for every referral. This is a positive loop, because the more customers we have the more referrals they ought to generate, thus – if the referral scheme is successful – increasing our customer base very rapidly.
 
-    Needless to say we are interested not only in the benefits of such a referral schema but also in its cost. On the right side of the diagram you can see all the factors affecting the profitability of the service. We assume there is an operative margin associated with each subscription and we use this to recuperate the initial investment and pay for marketing activities.
+    Needless to say we are interested not only in the benefits of such a referral scheme but also in its cost. On the right side of the diagram you can see all the factors affecting the profitability of the service. We assume there is an operative margin associated with each subscription and we use this to recuperate the initial investment and pay for marketing activities.
 
     So while this is a small model at a very abstract level, it actually captures all the essential elements. We probably could use this basic model quite well in a real life situation – we would probably end up making it slightly more detailed to account for different advertising channels and there would be a number of special effects in service adoption rates we would have to account for … but it certainly would be a good starting point.
     """)
@@ -339,7 +339,7 @@ def _(mo):
     mo.md(r"""
     ## Make A Decision On How To Move Forward
 
-    Now that we have analyzed new marketing strategies, we are ready to make a recommendation to the CEO – adopt a referral program, because unless the service flops completely, you can’t really loose.
+    Now that we have analyzed new marketing strategies, we are ready to make a recommendation to the CEO – adopt a referral program, because unless the service flops completely, you can’t really lose.
 
     If the service does flop, we need to pull the plug very quickly.
 

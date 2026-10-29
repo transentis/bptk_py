@@ -6,9 +6,8 @@
 # | |_| | | (_| | | | \__ \  __/ | | | |_| \__ \  |    | `-#######/
 # \__|_|  \__,_|_| |_|___/\___|_| |_|\__|_|___/  |____|    `- # /
 #
-# Copyright (c) 2018 transentis labs GmbH
+# Copyright (c) 2018-2026 transentis labs GmbH
 # MIT License
-
 
 from contextlib import contextmanager
 from functools import wraps
@@ -18,6 +17,7 @@ import pandas as pd
 # operators render terms such as `np.mean(...)`, `math.floor(...)` or
 # `sddsl_builtins.evaluate(...)`, so these names are used, though nothing here calls them.
 from .operators import *
+from .operators import _source
 from . import sddsl_builtins
 import numpy as np
 import statistics
@@ -310,7 +310,7 @@ class Element(ArrayMethods):
         else:
             self._equation = None
         self.model.reset_cache()
-        self._function_string = "lambda model, t: {}".format(self.equation)
+        self._function_string = "lambda model, t: {}".format(_source(self.equation))
         self.generate_function()
 
     @property
