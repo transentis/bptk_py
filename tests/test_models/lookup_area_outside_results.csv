@@ -1,0 +1,26 @@
+﻿time;area from 0;gf ends;inverse above;inverse below
+0;0;3;NaN;NaN
+0,5;0;3;NaN;NaN
+1;0;3;NaN;NaN
+1,5;0;3;NaN;NaN
+2;0;3;NaN;NaN
+2,5;1,625;3,5;NaN;NaN
+3;3,5;4;NaN;NaN
+3,5;5,625;4,5;NaN;NaN
+4;8;5;NaN;NaN
+4,5;10,625;5,5;NaN;NaN
+5;13,5;6;NaN;NaN
+5,5;16,625;6,5;NaN;NaN
+6;20;7;NaN;NaN
+6,5;23,4375;6,75;NaN;NaN
+7;26,75;6,5;NaN;NaN
+7,5;29,9375;6,25;NaN;NaN
+8;33;6;NaN;NaN
+8,5;33;6;NaN;NaN
+9;33;6;NaN;NaN
+9,5;33;6;NaN;NaN
+10;33;6;NaN;NaN
+10,5;33;6;NaN;NaN
+11;33;6;NaN;NaN
+11,5;33;6;NaN;NaN
+12;33;6;NaN;NaN

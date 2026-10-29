@@ -1,0 +1,7 @@
+﻿time;s first only;p first only;s interval 0;p interval 0;s interval 1 5;p interval 1 5;s volume only;p volume only;a volume only
+1;0;0;0;0;0;0;0;20;20
+2;0;20;0;20;0;20;20;20;20
+3;20;20;20;0;20;0;40;20;20
+4;40;20;20;0;20;20;60;20;20
+5;60;20;20;0;40;20;80;20;20
+6;80;20;20;0;60;0;100;20;20

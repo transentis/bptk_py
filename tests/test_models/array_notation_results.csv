@@ -1,0 +1,5 @@
+﻿time;base[1];base[2];base[3];base[4];base[5];counting[1];counting[2];counting[3];counting[4];counting[5];first two stages;growing[1];growing[2];growing[3];growing[4];growing[5];index value[1];index value[2];index value[3];index value[4];index value[5];last stage;next element[1];next element[2];next element[3];next element[4];next element[5];previous element[1];previous element[2];previous element[3];previous element[4];previous element[5];production[early];production[middle];production[late];second stage by number;stage number[early];stage number[middle];stage number[late]
+0;1;4;9;16;25;1;2;3;4;5;30;0;0;0;0;0;10;20;30;40;50;30;4;9;16;25;0;0;1;4;9;16;10;20;30;20;1;2;3
+1;1;4;9;16;25;1;2;3;4;5;30;1;2;4;8;16;10;20;30;40;50;30;4;9;16;25;0;0;1;4;9;16;10;20;30;20;1;2;3
+2;1;4;9;16;25;1;2;3;4;5;30;2;4;8;16;32;10;20;30;40;50;30;4;9;16;25;0;0;1;4;9;16;10;20;30;20;1;2;3
+3;1;4;9;16;25;1;2;3;4;5;30;3;6;12;24;48;10;20;30;40;50;30;4;9;16;25;0;0;1;4;9;16;10;20;30;20;1;2;3
